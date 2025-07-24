@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import ProspecPage from './pages/ProspecPage';
 import NovaPropostaPage from './pages/NovaPropostaPage';
 import ControlePage from './pages/ControlePage';
+import UGsPage from './pages/UGsPage';
 import NotificationContainer from './components/common/NotificationContainer';
 
 // Estilos
@@ -112,6 +113,13 @@ function AppContent() {
         <Route path="/controle" element={
           <ProtectedRoute requirePermission="controle">
             <ControlePage />
+          </ProtectedRoute>
+        } />
+
+        {/* Rota protegida das UGs */}
+        <Route path="/ugs" element={
+          <ProtectedRoute requirePermission="ugs">
+            <UGsPage />
           </ProtectedRoute>
         } />
         
