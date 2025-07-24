@@ -19,11 +19,10 @@ const UGsPage = () => {
   });
   const [formData, setFormData] = useState({
     nomeUsina: '',
-    capacidade: '',
-    localizacao: '',
-    status: 'Ativa',
-    dataInicio: '',
-    observacoes: ''
+    potenciaCA: '',
+    potenciaCC: '',
+    fatorCapacidade: '',
+    capacidadeCalculada: ''
   });
 
   const { showNotification } = useNotification();
@@ -43,37 +42,40 @@ const UGsPage = () => {
       // Simular carregamento
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Dados mock de UGs
+      // Dados mock de UGs com campos originais
       const ugsMock = [
         {
           id: 1,
           nomeUsina: 'Usina Solar Goiânia I',
-          capacidade: 1200.50,
-          localizacao: 'Goiânia, GO',
-          status: 'Ativa',
-          dataInicio: '2024-01-15',
-          clientesVinculados: 25,
-          observacoes: 'Usina principal da região metropolitana'
+          potenciaCA: 4.8,
+          potenciaCC: 5.2,
+          fatorCapacidade: 35.0,
+          capacidade: 1310.4,
+          media: 1250,
+          calibrado: 1350,
+          clientesVinculados: 25
         },
         {
           id: 2,
           nomeUsina: 'Usina Solar Brasília II',
-          capacidade: 980.75,
-          localizacao: 'Brasília, DF',
-          status: 'Ativa',
-          dataInicio: '2024-03-20',
-          clientesVinculados: 18,
-          observacoes: 'Atende região do Plano Piloto'
+          potenciaCA: 3.6,
+          potenciaCC: 4.0,
+          fatorCapacidade: 32.5,
+          capacidade: 936.0,
+          media: 890,
+          calibrado: 920,
+          clientesVinculados: 18
         },
         {
           id: 3,
           nomeUsina: 'Usina Solar Anápolis III',
-          capacidade: 1450.25,
-          localizacao: 'Anápolis, GO',
-          status: 'Em Construção',
-          dataInicio: '2025-02-01',
-          clientesVinculados: 0,
-          observacoes: 'Previsão de conclusão em junho/2025'
+          potenciaCA: 6.0,
+          potenciaCC: 6.5,
+          fatorCapacidade: 38.0,
+          capacidade: 1774.8,
+          media: 0,
+          calibrado: 0,
+          clientesVinculados: 0
         }
       ];
 
@@ -127,26 +129,42 @@ const UGsPage = () => {
     });
   };
 
+  const calcularCapacidade = () => {
+    const potenciaCC = parseFloat(formData.potenciaCC) || 0;
+    const fatorCapacidade = parseFloat(formData.fatorCapacidade) || 0;
+    
+    if (potenciaCC > 0 && fatorCapacidade > 0) {
+      const capacidade = 720 * potenciaCC * (fatorCapacidade / 100);
+      setFormData(prev => ({
+        ...prev,
+        capacidadeCalculada: capacidade.toFixed(2) + ' MWh'
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        capacidadeCalculada: ''
+      }));
+    }
+  };
+
   const abrirModal = (ug = null) => {
     if (ug) {
       setUGEditando(ug);
       setFormData({
         nomeUsina: ug.nomeUsina,
-        capacidade: ug.capacidade.toString(),
-        localizacao: ug.localizacao,
-        status: ug.status,
-        dataInicio: ug.dataInicio,
-        observacoes: ug.observacoes
+        potenciaCA: ug.potenciaCA.toString(),
+        potenciaCC: ug.potenciaCC.toString(),
+        fatorCapacidade: ug.fatorCapacidade.toString(),
+        capacidadeCalculada: ug.capacidade.toFixed(2) + ' MWh'
       });
     } else {
       setUGEditando(null);
       setFormData({
         nomeUsina: '',
-        capacidade: '',
-        localizacao: '',
-        status: 'Ativa',
-        dataInicio: '',
-        observacoes: ''
+        potenciaCA: '',
+        potenciaCC: '',
+        fatorCapacidade: '',
+        capacidadeCalculada: ''
       });
     }
     setShowModal(true);
@@ -166,23 +184,46 @@ const UGsPage = () => {
 
   const salvarUG = async () => {
     try {
-      if (!formData.nomeUsina || !formData.capacidade || !formData.localizacao) {
+      if (!formData.nomeUsina || !formData.potenciaCA || !formData.potenciaCC || !formData.fatorCapacidade) {
         showNotification('Preencha todos os campos obrigatórios!', 'error');
         return;
       }
 
-      const capacidade = parseFloat(formData.capacidade);
-      if (isNaN(capacidade) || capacidade <= 0) {
-        showNotification('Capacidade deve ser um número válido!', 'error');
+      const potenciaCA = parseFloat(formData.potenciaCA);
+      const potenciaCC = parseFloat(formData.potenciaCC);
+      const fatorCapacidade = parseFloat(formData.fatorCapacidade);
+      
+      if (isNaN(potenciaCA) || potenciaCA <= 0) {
+        showNotification('Potência CA deve ser um número válido!', 'error');
         return;
       }
+      
+      if (isNaN(potenciaCC) || potenciaCC <= 0) {
+        showNotification('Potência CC deve ser um número válido!', 'error');
+        return;
+      }
+      
+      if (isNaN(fatorCapacidade) || fatorCapacidade <= 0 || fatorCapacidade > 100) {
+        showNotification('Fator de Capacidade deve ser entre 0 e 100!', 'error');
+        return;
+      }
+
+      // Calcular capacidade
+      const capacidade = 720 * potenciaCC * (fatorCapacidade / 100);
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
       if (ugEditando) {
         const novasUGs = ugs.map(ug => 
           ug.id === ugEditando.id 
-            ? { ...ug, ...formData, capacidade: capacidade }
+            ? { 
+                ...ug, 
+                nomeUsina: formData.nomeUsina,
+                potenciaCA,
+                potenciaCC,
+                fatorCapacidade,
+                capacidade
+              }
             : ug
         );
         setUGs(novasUGs);
@@ -190,8 +231,13 @@ const UGsPage = () => {
       } else {
         const novaUG = {
           id: Date.now(),
-          ...formData,
-          capacidade: capacidade,
+          nomeUsina: formData.nomeUsina,
+          potenciaCA,
+          potenciaCC,
+          fatorCapacidade,
+          capacidade,
+          media: 0,
+          calibrado: 0,
           clientesVinculados: 0
         };
         setUGs(prev => [...prev, novaUG]);
@@ -252,11 +298,11 @@ const UGsPage = () => {
 
   const calcularEstatisticas = () => {
     const total = ugs.length;
-    const ativas = ugs.filter(ug => ug.status === 'Ativa').length;
+    const ativas = ugs.filter(ug => ug.clientesVinculados > 0).length;
     const capacidadeTotal = ugs.reduce((acc, ug) => acc + ug.capacidade, 0);
-    const clientesTotal = ugs.reduce((acc, ug) => acc + ug.clientesVinculados, 0);
+    const potenciaCATotalUG = ugs.reduce((acc, ug) => acc + ug.potenciaCA, 0);
     
-    return { total, ativas, capacidadeTotal, clientesTotal };
+    return { total, ativas, capacidadeTotal, potenciaCATotalUG };
   };
 
   const stats = calcularEstatisticas();
@@ -292,14 +338,14 @@ const UGsPage = () => {
             <div className="stat-icon">⚡</div>
             <div className="stat-info">
               <div className="stat-value">{stats.capacidadeTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
-              <div className="stat-label">MWh Total</div>
+              <div className="stat-label">Capacidade Total</div>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">👥</div>
+            <div className="stat-icon">🔌</div>
             <div className="stat-info">
-              <div className="stat-value">{stats.clientesTotal}</div>
-              <div className="stat-label">Clientes Ativos</div>
+              <div className="stat-value">{stats.potenciaCATotalUG.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
+              <div className="stat-label">Potência CA Total</div>
             </div>
           </div>
         </section>
@@ -344,7 +390,7 @@ const UGsPage = () => {
             </div>
             
             <div className="filter-group">
-              <label>Capacidade Mín (MWh):</label>
+              <label>Potência CA Mín (MW):</label>
               <input
                 type="number"
                 value={filtros.capacidadeMin}
@@ -356,7 +402,7 @@ const UGsPage = () => {
             </div>
             
             <div className="filter-group">
-              <label>Capacidade Máx (MWh):</label>
+              <label>Potência CA Máx (MW):</label>
               <input
                 type="number"
                 value={filtros.capacidadeMax}
@@ -394,12 +440,13 @@ const UGsPage = () => {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Status</th>
-                    <th>Nome da Usina</th>
+                    <th>Usina</th>
+                    <th>Potência CA (MW)</th>
+                    <th>Potência CC (MW)</th>
+                    <th>Fator Capacidade</th>
                     <th>Capacidade (MWh)</th>
-                    <th>Localização</th>
-                    <th>Data Início</th>
-                    <th>Clientes</th>
+                    <th>Média (kWh)</th>
+                    <th>Calibragem (kWh)</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -407,28 +454,43 @@ const UGsPage = () => {
                   {ugsFiltradas.map(ug => (
                     <tr key={ug.id}>
                       <td>
-                        <span className={`status-badge ${getStatusClass(ug.status)}`}>
-                          {getStatusIcon(ug.status)} {ug.status}
-                        </span>
-                      </td>
-                      <td>
                         <div className="ug-name">
                           <strong>{ug.nomeUsina}</strong>
-                          {ug.observacoes && (
-                            <small title={ug.observacoes}>💬</small>
+                          {ug.clientesVinculados > 0 && (
+                            <small className="clients-indicator" title={`${ug.clientesVinculados} clientes`}>
+                              👥 {ug.clientesVinculados}
+                            </small>
                           )}
                         </div>
                       </td>
                       <td>
-                        <span className="capacity-value">
-                          {ug.capacidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+                        <span className="power-value">
+                          {ug.potenciaCA.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td>{ug.localizacao}</td>
-                      <td>{new Date(ug.dataInicio).toLocaleDateString('pt-BR')}</td>
                       <td>
-                        <span className={`clients-count ${ug.clientesVinculados > 0 ? 'has-clients' : 'no-clients'}`}>
-                          {ug.clientesVinculados}
+                        <span className="power-value">
+                          {ug.potenciaCC.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="factor-value">
+                          {ug.fatorCapacidade.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td>
+                        <span className="capacity-value">
+                          {ug.capacidade.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`media-value ${ug.media > 0 ? 'has-data' : 'no-data'}`}>
+                          {ug.media > 0 ? ug.media.toLocaleString('pt-BR') : '-'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`calibragem-value ${ug.calibrado > 0 ? 'has-data' : 'no-data'}`}>
+                          {ug.calibrado > 0 ? ug.calibrado.toLocaleString('pt-BR') : '-'}
                         </span>
                       </td>
                       <td>
@@ -481,56 +543,60 @@ const UGsPage = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label>Capacidade (MWh) *</label>
+                  <label>Potência CA (MW) *</label>
                   <input
                     type="number"
-                    value={formData.capacidade}
-                    onChange={(e) => handleFormChange('capacidade', e.target.value)}
-                    placeholder="1200.50"
+                    value={formData.potenciaCA}
+                    onChange={(e) => handleFormChange('potenciaCA', e.target.value)}
+                    placeholder="Ex: 4.8"
                     min="0"
                     step="0.01"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Localização *</label>
+                  <label>Potência CC (MW) *</label>
+                  <input
+                    type="number"
+                    value={formData.potenciaCC}
+                    onChange={(e) => {
+                      handleFormChange('potenciaCC', e.target.value);
+                      calcularCapacidade();
+                    }}
+                    placeholder="Ex: 5.2"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Fator de Capacidade (%) *</label>
+                  <input
+                    type="number"
+                    value={formData.fatorCapacidade}
+                    onChange={(e) => {
+                      handleFormChange('fatorCapacidade', e.target.value);
+                      calcularCapacidade();
+                    }}
+                    placeholder="Ex: 35"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Capacidade (MWh) - Calculada Automaticamente</label>
                   <input
                     type="text"
-                    value={formData.localizacao}
-                    onChange={(e) => handleFormChange('localizacao', e.target.value)}
-                    placeholder="Ex: Goiânia, GO"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleFormChange('status', e.target.value)}
-                  >
-                    <option value="Ativa">Ativa</option>
-                    <option value="Em Construção">Em Construção</option>
-                    <option value="Planejada">Planejada</option>
-                    <option value="Inativa">Inativa</option>
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label>Data de Início</label>
-                  <input
-                    type="date"
-                    value={formData.dataInicio}
-                    onChange={(e) => handleFormChange('dataInicio', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group full-width">
-                  <label>Observações</label>
-                  <textarea
-                    value={formData.observacoes}
-                    onChange={(e) => handleFormChange('observacoes', e.target.value)}
-                    placeholder="Informações adicionais sobre a UG..."
-                    rows="3"
+                    value={formData.capacidadeCalculada}
+                    readOnly
+                    style={{
+                      background: '#f8f9fa',
+                      color: '#666',
+                      fontWeight: '600'
+                    }}
+                    placeholder="Será calculada automaticamente"
                   />
                 </div>
               </div>
