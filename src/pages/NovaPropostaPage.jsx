@@ -329,7 +329,7 @@ const NovaPropostaPage = () => {
                   id="beneficio1"
                   defaultChecked
                 />
-                <label htmlFor="beneficio1">1. {economiaValue || 20}% de economia na tarifa de energia elétrica</label>
+                <label htmlFor="beneficio1">1. A Aupus Energia irá oferecer uma economia de até {economiaValue || 20}% no valor da energia elétrica, sem impostos</label>
               </div>
               
               <div className="checkbox-group beneficio-item">
@@ -337,9 +337,8 @@ const NovaPropostaPage = () => {
                   {...register('beneficio2')}
                   type="checkbox"
                   id="beneficio2"
-                  defaultChecked
                 />
-                <label htmlFor="beneficio2">2. Sem taxa de adesão ao plano</label>
+                <label htmlFor="beneficio2">2. A Aupus Energia irá oferecer uma economia de até 50% nos valor referente a bandeira tarifária, sem impostos</label>
               </div>
               
               <div className="checkbox-group beneficio-item">
@@ -347,7 +346,6 @@ const NovaPropostaPage = () => {
                   {...register('beneficio3')}
                   type="checkbox"
                   id="beneficio3"
-                  defaultChecked
                 />
                 <label htmlFor="beneficio3">3. Isenção de taxa de adesão</label>
               </div>
