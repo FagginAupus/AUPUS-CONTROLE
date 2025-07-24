@@ -70,51 +70,21 @@ const NovaPropostaPage = () => {
   };
 
   const onSubmit = async (data) => {
-    setLoading(true);
-    
     try {
+      setLoading(true);
+      
       // Simular salvamento
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Processar dados
-      const dadosProposta = {
-        ...data,
-        numeroProposta,
-        descontoTarifa: data.economia / 100,
-        descontoBandeira: data.bandeira / 100,
-        ucs: []
-      };
-
-      // Coletar dados das UCs
-      for (let i = 1; i <= numeroUCs; i++) {
-        const distribuidora = data[`distribuidora${i}`];
-        const numeroUC = data[`numeroUC${i}`];
-        const apelido = data[`apelido${i}`];
-        const ligacao = data[`ligacao${i}`];
-        const consumo = data[`consumo${i}`];
-
-        if (distribuidora && numeroUC && apelido && ligacao && consumo) {
-          dadosProposta.ucs.push({
-            distribuidora,
-            numeroUC,
-            apelido,
-            ligacao,
-            consumo: parseFloat(consumo)
-          });
-        }
-      }
-
-      console.log('Dados da proposta:', dadosProposta);
-      
       showNotification('Proposta salva com sucesso!', 'success');
       
-      // Resetar formulário
-      reset();
-      setNumeroUCs(1);
-      gerarNumeroProposta();
+      // Redirecionar para PROSPEC
+      setTimeout(() => {
+        window.location.href = '/prospec';
+      }, 1000);
       
     } catch (error) {
-      showNotification('Erro ao salvar proposta: ' + error.message, 'error');
+      showNotification('Erro ao salvar proposta', 'error');
     } finally {
       setLoading(false);
     }
@@ -123,9 +93,9 @@ const NovaPropostaPage = () => {
   const limparFormulario = () => {
     if (window.confirm('Deseja limpar todos os dados do formulário?')) {
       reset();
-      setNumeroUCs(1);
       gerarNumeroProposta();
-      showNotification('Formulário limpo!', 'success');
+      setNumeroUCs(1);
+      showNotification('Formulário limpo!', 'info');
     }
   };
 
@@ -133,7 +103,7 @@ const NovaPropostaPage = () => {
     <div className="page-container">
       <div className="container">
         <Header 
-          title="Nova Proposta" 
+          title="NOVA PROPOSTA" 
           subtitle="Aupus Energia" 
           icon="📝" 
         />
@@ -195,7 +165,8 @@ const NovaPropostaPage = () => {
           <section className="form-section">
             <h2>Consultor e Configurações</h2>
             
-            <div className="checkbox-group">
+            {/* Checkbox Sem Consultor - CENTRALIZADO */}
+            <div className="checkbox-group sem-consultor">
               <input
                 {...register('semConsultor')}
                 type="checkbox"
@@ -291,24 +262,19 @@ const NovaPropostaPage = () => {
           <section className="form-section">
             <h2>Unidades Consumidoras</h2>
             
-            <div id="ucsContainer">
-              {Array.from({ length: numeroUCs }, (_, i) => i + 1).map(i => (
+            <div className="ucs-container">
+              {Array.from({ length: numeroUCs }, (_, i) => (
                 <div key={i} className="uc-card">
-                  <h3>UC {i}</h3>
+                  <h3>UC {i + 1}</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor={`distribuidora${i}`}>Distribuidora</label>
-                      <select
-                        {...register(`distribuidora${i}`)}
-                        id={`distribuidora${i}`}
-                        defaultValue="Equatorial"
-                      >
-                        <option value="Equatorial">Equatorial</option>
-                        <option value="Cemig">Cemig</option>
-                        <option value="Copel">Copel</option>
-                        <option value="Enel">Enel</option>
-                        <option value="Light">Light</option>
-                      </select>
+                      <label htmlFor={`apelido${i}`}>Apelido da UC *</label>
+                      <input
+                        {...register(`apelido${i}`, { required: true })}
+                        type="text"
+                        id={`apelido${i}`}
+                        placeholder="Ex: Loja Centro"
+                      />
                     </div>
                     
                     <div className="form-group">
@@ -318,16 +284,6 @@ const NovaPropostaPage = () => {
                         type="text"
                         id={`numeroUC${i}`}
                         placeholder="Ex: 12345678"
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor={`apelido${i}`}>Apelido da UC *</label>
-                      <input
-                        {...register(`apelido${i}`, { required: true })}
-                        type="text"
-                        id={`apelido${i}`}
-                        placeholder="Ex: Loja Centro"
                       />
                     </div>
                     
@@ -361,43 +317,42 @@ const NovaPropostaPage = () => {
             </div>
           </section>
 
-          {/* Benefícios */}
+          {/* Benefícios - CENTRALIZADOS */}
           <section className="form-section">
-            <h2>Benefícios</h2>
+            <h2>Benefícios do Plano</h2>
+            
             <div className="beneficios-grid">
-              <div className="checkbox-group">
+              <div className="checkbox-group beneficio-item">
                 <input
                   {...register('beneficio1')}
                   type="checkbox"
                   id="beneficio1"
                   defaultChecked
                 />
-                <label htmlFor="beneficio1">
-                  1. A Aupus Energia irá oferecer uma economia de até {economiaValue || 20}% no valor da energia elétrica, sem impostos
-                </label>
+                <label htmlFor="beneficio1">1. {economiaValue || 20}% de economia na tarifa de energia elétrica</label>
               </div>
               
-              <div className="checkbox-group">
+              <div className="checkbox-group beneficio-item">
                 <input
                   {...register('beneficio2')}
                   type="checkbox"
                   id="beneficio2"
+                  defaultChecked
                 />
-                <label htmlFor="beneficio2">
-                  2. A Aupus Energia irá oferecer uma economia de até 50% no valor referente à bandeira tarifária, sem impostos
-                </label>
+                <label htmlFor="beneficio2">2. Sem taxa de adesão ao plano</label>
               </div>
               
-              <div className="checkbox-group">
+              <div className="checkbox-group beneficio-item">
                 <input
                   {...register('beneficio3')}
                   type="checkbox"
                   id="beneficio3"
+                  defaultChecked
                 />
                 <label htmlFor="beneficio3">3. Isenção de taxa de adesão</label>
               </div>
               
-              <div className="checkbox-group">
+              <div className="checkbox-group beneficio-item">
                 <input
                   {...register('beneficio4')}
                   type="checkbox"
@@ -407,7 +362,7 @@ const NovaPropostaPage = () => {
                 <label htmlFor="beneficio4">4. Não há cobrança de taxa de cancelamento</label>
               </div>
               
-              <div className="checkbox-group">
+              <div className="checkbox-group beneficio-item">
                 <input
                   {...register('beneficio5')}
                   type="checkbox"
@@ -417,7 +372,7 @@ const NovaPropostaPage = () => {
                 <label htmlFor="beneficio5">5. Não há fidelidade contratual</label>
               </div>
               
-              <div className="checkbox-group">
+              <div className="checkbox-group beneficio-item">
                 <input
                   {...register('beneficio6')}
                   type="checkbox"
@@ -425,6 +380,36 @@ const NovaPropostaPage = () => {
                   defaultChecked
                 />
                 <label htmlFor="beneficio6">6. O cliente pode cancelar a qualquer momento</label>
+              </div>
+              
+              <div className="checkbox-group beneficio-item">
+                <input
+                  {...register('beneficio7')}
+                  type="checkbox"
+                  id="beneficio7"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio7">7. Atendimento personalizado</label>
+              </div>
+              
+              <div className="checkbox-group beneficio-item">
+                <input
+                  {...register('beneficio8')}
+                  type="checkbox"
+                  id="beneficio8"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio8">8. Suporte técnico especializado</label>
+              </div>
+              
+              <div className="checkbox-group beneficio-item">
+                <input
+                  {...register('beneficio9')}
+                  type="checkbox"
+                  id="beneficio9"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio9">9. Economia imediata na primeira fatura</label>
               </div>
             </div>
             

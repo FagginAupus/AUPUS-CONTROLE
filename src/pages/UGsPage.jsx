@@ -296,6 +296,66 @@ const UGsPage = () => {
     }
   };
 
+  const baixarPDF = async (item) => {
+    try {
+      showNotification('📄 Gerando PDF da proposta...', 'info');
+      
+      // Buscar todas as UCs da mesma proposta
+      const todasUCs = dados.filter(p => p.numeroProposta === item.numeroProposta);
+      
+      // Reconstroir dados da proposta igual ao sistema original
+      const dadosProposta = {
+        numeroProposta: item.numeroProposta,
+        nomeCliente: item.nomeCliente,
+        data: item.data,
+        celular: item.telefone,
+        consultor: item.consultor,
+        recorrencia: item.recorrencia,
+        descontoTarifa: item.descontoTarifa,
+        descontoBandeira: item.descontoBandeira,
+        status: item.status,
+        ucs: todasUCs.map(uc => ({
+          distribuidora: 'Equatorial',
+          numeroUC: uc.numeroUC,
+          apelido: uc.apelido,
+          ligacao: uc.ligacao,
+          consumo: uc.media
+        })),
+        // Benefícios padrão como no sistema original
+        beneficios: [
+          { numero: 1, texto: `Economia de até ${Math.round((item.descontoTarifa || 0.2) * 100)}% na tarifa de energia elétrica, sem impostos` },
+          { numero: 2, texto: `Economia de até ${Math.round((item.descontoBandeira || 0.2) * 100)}% no valor referente à bandeira tarifária, sem impostos` },
+          { numero: 3, texto: 'Isenção de taxa de adesão' },
+          { numero: 4, texto: 'Não há cobrança de taxa de cancelamento' },
+          { numero: 5, texto: 'Não há fidelidade contratual' },
+          { numero: 6, texto: 'O cliente pode cancelar a qualquer momento' },
+          { numero: 7, texto: 'Atendimento personalizado' },
+          { numero: 8, texto: 'Suporte técnico especializado' },
+          { numero: 9, texto: 'Economia imediata na primeira fatura' }
+        ]
+      };
+      
+      // Tentar usar a função global como no sistema original
+      if (typeof window.gerarPDFProposta === 'function') {
+        await window.gerarPDFProposta(dadosProposta, true);
+      } else if (typeof window.baixarPDFProposta === 'function') {
+        await window.baixarPDFProposta(dadosProposta);
+      } else {
+        throw new Error('Gerador de PDF não disponível');
+      }
+      
+      showNotification('PDF baixado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      showNotification('Erro ao gerar PDF: ' + error.message, 'error');
+    }
+  };
+
+  const editarItem = (index) => {
+    // Implementar edição se necessário
+    showNotification('Função de edição em desenvolvimento', 'info');
+  };
+
   const calcularEstatisticas = () => {
     const total = ugs.length;
     const ativas = ugs.filter(ug => ug.clientesVinculados > 0).length;
