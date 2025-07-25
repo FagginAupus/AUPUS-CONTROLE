@@ -1,4 +1,4 @@
-// src/components/common/NotificationContainer.jsx
+// src/components/common/NotificationContainer.jsx - CORRIGIDO
 import React from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import './NotificationContainer.css';
@@ -10,47 +10,57 @@ const NotificationContainer = () => {
     return null;
   }
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return '✅';
-      case 'error':
-        return '❌';
-      case 'warning':
-        return '⚠️';
-      default:
-        return 'ℹ️';
-    }
-  };
-
-  const getNotificationClass = (type) => {
-    return `notification notification-${type}`;
-  };
-
   return (
     <div className="notification-container">
       {notifications.map((notification) => (
-        <div
+        <NotificationItem
           key={notification.id}
-          className={getNotificationClass(notification.type)}
-        >
-          <div className="notification-content">
-            <span className="notification-icon">
-              {getNotificationIcon(notification.type)}
-            </span>
-            <span className="notification-message">
-              {notification.message}
-            </span>
-          </div>
-          <button
-            className="notification-close"
-            onClick={() => removeNotification(notification.id)}
-            aria-label="Fechar notificação"
-          >
-            ×
-          </button>
-        </div>
+          notification={notification}
+          onRemove={removeNotification}
+        />
       ))}
+    </div>
+  );
+};
+
+const NotificationItem = ({ notification, onRemove }) => {
+  const getNotificationClass = (type) => {
+    switch (type) {
+      case 'success': return 'notification-success';
+      case 'error': return 'notification-error';
+      case 'warning': return 'notification-warning';
+      case 'info': return 'notification-info';
+      default: return 'notification-info';
+    }
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'success': return '✅';
+      case 'error': return '❌';
+      case 'warning': return '⚠️';
+      case 'info': return 'ℹ️';
+      default: return 'ℹ️';
+    }
+  };
+
+  return (
+    <div className={`notification ${getNotificationClass(notification.type)}`}>
+      <div className="notification-content">
+        <span className="notification-icon">
+          {getNotificationIcon(notification.type)}
+        </span>
+        <span className="notification-message">
+          {notification.message}
+        </span>
+      </div>
+      <button
+        className="notification-close"
+        onClick={() => onRemove(notification.id)}
+        aria-label="Fechar notificação"
+      >
+        ×
+      </button>
     </div>
   );
 };

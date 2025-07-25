@@ -1,4 +1,4 @@
-// src/pages/NovaPropostaPage.jsx - LAYOUT REORGANIZADO CONFORME SOLICITADO
+// src/pages/NovaPropostaPage.jsx - CORRIGIDO conforme solicitações
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -40,7 +40,7 @@ const NovaPropostaPage = () => {
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
       economia: 20,
-      bandeira: 20,
+      bandeira: 20, // Padrão 20% no campo superior
       recorrencia: '3%',
       semConsultor: false,
       // UC inicial
@@ -53,10 +53,10 @@ const NovaPropostaPage = () => {
           consumo: ''
         }
       ],
-      // Benefícios padrão marcados
+      // BENEFÍCIOS: 2 e 3 começam DESMARCADOS
       beneficio1: true,
-      beneficio2: true,
-      beneficio3: true,
+      beneficio2: false, // DESMARCADO
+      beneficio3: false, // DESMARCADO
       beneficio4: true,
       beneficio5: true,
       beneficio6: true,
@@ -75,10 +75,26 @@ const NovaPropostaPage = () => {
   const semConsultor = watch('semConsultor');
   const economiaValue = watch('economia');
   const bandeiraValue = watch('bandeira');
+  const beneficio2Checked = watch('beneficio2');
 
   useEffect(() => {
     gerarNumeroProposta();
   }, []);
+
+  // LÓGICA DE SINCRONIZAÇÃO BANDEIRA ↔ BENEFÍCIO 2
+  useEffect(() => {
+    // Se alterar campo bandeira para > 20%, marcar benefício 2
+    if (bandeiraValue > 20 && !beneficio2Checked) {
+      setValue('beneficio2', true);
+    }
+  }, [bandeiraValue, beneficio2Checked, setValue]);
+
+  useEffect(() => {
+    // Se marcar benefício 2, alterar bandeira para 50%
+    if (beneficio2Checked && bandeiraValue !== 50) {
+      setValue('bandeira', 50);
+    }
+  }, [beneficio2Checked, bandeiraValue, setValue]);
 
   useEffect(() => {
     if (semConsultor) {
@@ -170,64 +186,36 @@ const NovaPropostaPage = () => {
           ...(data.beneficio7 ? [{ numero: 7, texto: 'Atendimento personalizado' }] : []),
           ...(data.beneficio8 ? [{ numero: 8, texto: 'Suporte técnico especializado' }] : []),
           ...(data.beneficio9 ? [{ numero: 9, texto: 'Economia imediata na primeira fatura' }] : []),
-          ...(data.beneficioPersonalizado ? [{ numero: 10, texto: data.beneficioPersonalizado }] : [])
         ]
       };
-
-      // 1. Salvar dados no storage (PROSPEC)
-      showNotification('💾 Salvando proposta...', 'info');
       
-      // Aguardar storage
-      let tentativas = 0;
-      while (!window.aupusStorage && tentativas < 30) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        tentativas++;
-      }
-
-      if (window.aupusStorage) {
-        // Salvar cada UC como uma linha separada no PROSPEC
-        for (const uc of dadosCompletos.ucs) {
-          const proposta = {
-            nomeCliente: dadosCompletos.nomeCliente,
-            numeroProposta: dadosCompletos.numeroProposta,
-            data: dadosCompletos.data,
-            apelido: uc.apelido,
-            numeroUC: uc.numeroUC,
-            descontoTarifa: dadosCompletos.descontoTarifa,
-            descontoBandeira: dadosCompletos.descontoBandeira,
-            ligacao: uc.ligacao,
-            consultor: dadosCompletos.consultor,
-            recorrencia: dadosCompletos.recorrencia,
-            media: uc.consumo,
-            telefone: dadosCompletos.celular,
-            status: dadosCompletos.status
-          };
-          
-          await window.aupusStorage.adicionarProspec(proposta);
-        }
-      }
-
-      showNotification('✅ Proposta salva com sucesso!', 'success');
-
-      // 2. GERAR PDF AUTOMATICAMENTE
-      try {
-        console.log('📄 Gerando PDF da proposta automaticamente...');
-        showNotification('📄 Gerando PDF da proposta...', 'info');
+      // Salvar cada UC como entrada separada
+      let salvos = 0;
+      for (const uc of dadosCompletos.ucs) {
+        const dadosUC = {
+          ...dadosCompletos,
+          distribuidora: uc.distribuidora,
+          numeroUC: uc.numeroUC,
+          apelido: uc.apelido,
+          ligacao: uc.ligacao,
+          media: uc.consumo,
+          telefone: dadosCompletos.celular
+        };
         
-        // Usar serviço PDF reutilizável
-        const resultado = await PDFGenerator.baixarPDF(dadosCompletos, true); // true = auto download
-        showNotification(`📄✅ PDF baixado automaticamente: ${resultado.nomeArquivo}`, 'success');
-        
-      } catch (pdfError) {
-        console.error('❌ Erro ao gerar PDF automaticamente:', pdfError);
-        showNotification('⚠️ Proposta salva com sucesso, mas erro ao gerar PDF: ' + pdfError.message, 'warning');
-        showNotification('💡 Você pode baixar o PDF manualmente na página PROSPEC', 'info');
+        const sucesso = await window.aupusStorage.adicionarProspec(dadosUC);
+        if (sucesso) salvos++;
       }
       
-      // 3. Aguardar um pouco e redirecionar para PROSPEC
-      setTimeout(() => {
-        window.location.href = '/prospec';
-      }, 2000);
+      if (salvos === dadosCompletos.ucs.length) {
+        showNotification(`Proposta ${numeroProposta} salva com sucesso! (${salvos} UCs)`, 'success');
+        
+        // Reset do formulário
+        reset();
+        gerarNumeroProposta();
+        
+      } else {
+        showNotification(`Erro: apenas ${salvos} de ${dadosCompletos.ucs.length} UCs foram salvas`, 'warning');
+      }
       
     } catch (error) {
       console.error('❌ Erro ao salvar proposta:', error);
@@ -257,7 +245,8 @@ const NovaPropostaPage = () => {
         <Navigation />
 
         <form className="form-container" onSubmit={handleSubmit(onSubmit)}>
-          {/* Dados Básicos */}
+          
+          {/* DADOS BÁSICOS - INCLUINDO CONSULTOR E ECONOMIA */}
           <section className="form-section">
             <h2>Dados Básicos</h2>
             <div className="form-grid">
@@ -304,185 +293,160 @@ const NovaPropostaPage = () => {
                 />
                 {errors.celular && <span className="error-message">{errors.celular.message}</span>}
               </div>
+
+              {/* CONSULTOR E CHECKBOX "SEM CONSULTOR" */}
+              <div className="form-group">
+                <label htmlFor="consultor">Nome do Consultor *</label>
+                <input
+                  {...register('consultor')}
+                  type="text"
+                  id="consultor"
+                  className={errors.consultor ? 'error' : ''}
+                  readOnly={semConsultor}
+                  style={{ backgroundColor: semConsultor ? '#f0f0f0' : '#ffffff' }}
+                />
+                {errors.consultor && <span className="error-message">{errors.consultor.message}</span>}
+                
+                {/* CHECKBOX SEM CONSULTOR - PEQUENO E DISCRETO */}
+                <div className="checkbox-group sem-consultor" style={{ marginTop: '8px', fontSize: '0.85rem' }}>
+                  <input {...register('semConsultor')} type="checkbox" id="semConsultor" />
+                  <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="recorrencia">Recorrência do Consultor</label>
+                <select
+                  {...register('recorrencia')}
+                  id="recorrencia"
+                  disabled={semConsultor}
+                  style={{ backgroundColor: semConsultor ? '#f0f0f0' : '#ffffff' }}
+                >
+                  <option value="0%">0%</option>
+                  <option value="1%">1%</option>
+                  <option value="2%">2%</option>
+                  <option value="3%">3%</option>
+                  <option value="4%">4%</option>
+                  <option value="5%">5%</option>
+                  <option value="6%">6%</option>
+                  <option value="7%">7%</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="economia">Economia Tarifa (%)</label>
+                <input
+                  {...register('economia')}
+                  type="number"
+                  id="economia"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className={errors.economia ? 'error' : ''}
+                />
+                {errors.economia && <span className="error-message">{errors.economia.message}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="bandeira">Economia Bandeira (%)</label>
+                <input
+                  {...register('bandeira')}
+                  type="number"
+                  id="bandeira"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className={errors.bandeira ? 'error' : ''}
+                />
+                {errors.bandeira && <span className="error-message">{errors.bandeira.message}</span>}
+              </div>
             </div>
           </section>
 
-          {/* CONSULTOR E ECONOMIA EM UMA LINHA HORIZONTAL */}
+          {/* UCs */}
           <section className="form-section">
-            <h2>Consultor e Economia</h2>
-            
-            {/* Checkbox Sem Consultor */}
-            <div className="checkbox-group sem-consultor">
-              <input
-                {...register('semConsultor')}
-                type="checkbox"
-                id="semConsultor"
-              />
-              <label htmlFor="semConsultor">
-                Sem consultor (Recorrência automática: 0%)
-              </label>
-            </div>
-
-            {/* Grid horizontal para consultor e economia */}
-            <div className="form-grid horizontal-split">
-              {/* Coluna Consultor */}
-              <div className="form-column">
-                <h3>👤 Consultor</h3>
-                {!semConsultor && (
-                  <>
+            <h2>Unidades Consumidoras</h2>
+            <div className="uc-grid">
+              {fields.map((field, index) => (
+                <div key={field.id} className="uc-card">
+                  <div className="uc-header">
+                    <h3>🏢 UC {index + 1}</h3>
+                    {fields.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removerUC(index)}
+                        className="btn-remove-uc"
+                      >
+                        ❌ Remover
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="consultor">Nome do Consultor *</label>
-                      <input
-                        {...register('consultor')}
-                        type="text"
-                        id="consultor"
-                        className={errors.consultor ? 'error' : ''}
-                      />
-                      {errors.consultor && <span className="error-message">{errors.consultor.message}</span>}
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="recorrencia">Recorrência</label>
-                      <select {...register('recorrencia')} id="recorrencia">
-                        <option value="3%">3%</option>
-                        <option value="5%">5%</option>
-                        <option value="7%">7%</option>
-                        <option value="10%">10%</option>
+                      <label htmlFor={`ucs.${index}.distribuidora`}>Distribuidora</label>
+                      <select {...register(`ucs.${index}.distribuidora`)}>
+                        <option value="Equatorial">Equatorial</option>
+                        <option value="Enel">Enel</option>
+                        <option value="Cemig">Cemig</option>
+                        <option value="Copel">Copel</option>
                       </select>
                     </div>
-                  </>
-                )}
-                {semConsultor && (
-                  <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', textAlign: 'center', color: '#666' }}>
-                    Consultor: AUPUS<br/>
-                    Recorrência: 0%
+
+                    <div className="form-group">
+                      <label htmlFor={`ucs.${index}.numeroUC`}>Número da UC</label>
+                      <input
+                        {...register(`ucs.${index}.numeroUC`)}
+                        type="text"
+                        placeholder="Ex: 12345678"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`ucs.${index}.apelido`}>Apelido da UC</label>
+                      <input
+                        {...register(`ucs.${index}.apelido`)}
+                        type="text"
+                        placeholder="Ex: Loja Centro"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`ucs.${index}.ligacao`}>Tipo de Ligação</label>
+                      <select {...register(`ucs.${index}.ligacao`)}>
+                        <option value="Monofásica">Monofásica</option>
+                        <option value="Bifásica">Bifásica</option>
+                        <option value="Trifásica">Trifásica</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`ucs.${index}.consumo`}>Consumo Médio (kWh)</label>
+                      <input
+                        {...register(`ucs.${index}.consumo`)}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Ex: 850"
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* Coluna Economia */}
-              <div className="form-column">
-                <h3>💰 Economia</h3>
-                <div className="form-group">
-                  <label htmlFor="economia">Economia Tarifa (%) *</label>
-                  <input
-                    {...register('economia')}
-                    type="number"
-                    id="economia"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    className={errors.economia ? 'error' : ''}
-                  />
-                  {errors.economia && <span className="error-message">{errors.economia.message}</span>}
                 </div>
-                
-                <div className="form-group">
-                  <label htmlFor="bandeira">Economia Bandeira (%) *</label>
-                  <input
-                    {...register('bandeira')}
-                    type="number"
-                    id="bandeira"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    className={errors.bandeira ? 'error' : ''}
-                  />
-                  {errors.bandeira && <span className="error-message">{errors.bandeira.message}</span>}
-                </div>
-              </div>
+              ))}
             </div>
-          </section>
-
-          {/* UCs Dinâmicas */}
-          <section className="form-section uc-section">
-            <h2>Unidades Consumidoras</h2>
             
-            {fields.map((field, index) => (
-              <div key={field.id} className="uc-card">
-                <div className="uc-header">
-                  <h3>⚡ UC {index + 1}</h3>
-                  {fields.length > 1 && (
-                    <button
-                      type="button"
-                      className="btn-remove-uc"
-                      onClick={() => removerUC(index)}
-                      title="Remover UC"
-                    >
-                      ❌
-                    </button>
-                  )}
-                </div>
-                
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor={`ucs.${index}.distribuidora`}>Distribuidora</label>
-                    <select {...register(`ucs.${index}.distribuidora`)} id={`ucs.${index}.distribuidora`}>
-                      <option value="Equatorial">Equatorial</option>
-                      <option value="Enel">Enel</option>
-                      <option value="Cemig">Cemig</option>
-                      <option value="Copel">Copel</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor={`ucs.${index}.numeroUC`}>Número da UC</label>
-                    <input
-                      {...register(`ucs.${index}.numeroUC`)}
-                      type="text"
-                      id={`ucs.${index}.numeroUC`}
-                      placeholder="Ex: 12345678"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor={`ucs.${index}.apelido`}>Apelido da UC</label>
-                    <input
-                      {...register(`ucs.${index}.apelido`)}
-                      type="text"
-                      id={`ucs.${index}.apelido`}
-                      placeholder="Ex: Casa Principal"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor={`ucs.${index}.ligacao`}>Tipo de Ligação</label>
-                    <select {...register(`ucs.${index}.ligacao`)} id={`ucs.${index}.ligacao`}>
-                      <option value="Monofásica">Monofásica</option>
-                      <option value="Bifásica">Bifásica</option>
-                      <option value="Trifásica">Trifásica</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor={`ucs.${index}.consumo`}>Consumo Médio (kWh)</label>
-                    <input
-                      {...register(`ucs.${index}.consumo`)}
-                      type="number"
-                      id={`ucs.${index}.consumo`}
-                      min="0"
-                      step="0.01"
-                      placeholder="Ex: 350"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Botão Adicionar UC */}
-            <div className="add-uc-container">
-              <button
-                type="button"
-                className="btn btn-secondary add-uc-btn"
-                onClick={adicionarUC}
-              >
-                ➕ Adicionar UC
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={adicionarUC}
+              className="btn btn-secondary"
+              style={{ marginTop: '15px' }}
+            >
+              ➕ Adicionar UC
+            </button>
           </section>
 
-          {/* Benefícios */}
-          <section className="form-section beneficios-section">
+          {/* BENEFÍCIOS DA PROPOSTA */}
+          <section className="form-section">
             <h2>Benefícios da Proposta</h2>
             <div className="beneficios-grid">
               <div className="checkbox-group beneficio-item">
@@ -495,7 +459,8 @@ const NovaPropostaPage = () => {
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio2')} type="checkbox" id="beneficio2" />
                 <label htmlFor="beneficio2">
-                  2. Economia de até {bandeiraValue}% no valor referente à bandeira tarifária, sem impostos
+                  {/* TEXTO SEMPRE EM 50% OU VALOR DA BANDEIRA SE > 20 */}
+                  2. Economia de até {bandeiraValue > 20 ? bandeiraValue : 50}% no valor referente à bandeira tarifária, sem impostos
                 </label>
               </div>
 
@@ -533,17 +498,6 @@ const NovaPropostaPage = () => {
                 <input {...register('beneficio9')} type="checkbox" id="beneficio9" />
                 <label htmlFor="beneficio9">9. Economia imediata na primeira fatura</label>
               </div>
-            </div>
-
-            {/* Benefício Personalizado - ALINHADO À ESQUERDA */}
-            <div className="form-group beneficio-personalizado">
-              <label htmlFor="beneficioPersonalizado">Benefício Personalizado</label>
-              <textarea
-                {...register('beneficioPersonalizado')}
-                id="beneficioPersonalizado"
-                placeholder="Digite um benefício adicional..."
-                rows="3"
-              />
             </div>
           </section>
 

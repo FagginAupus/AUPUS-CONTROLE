@@ -1,4 +1,4 @@
-// src/pages/ProspecPage.jsx - USANDO SERVIÇO PDF
+// src/pages/ProspecPage.jsx - IMPLEMENTAÇÃO COMPLETA DA EDIÇÃO
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -10,6 +10,8 @@ const ProspecPage = () => {
   const [dados, setDados] = useState([]);
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
+  
   const [filtros, setFiltros] = useState({
     consultor: '',
     status: '',
@@ -22,6 +24,11 @@ const ProspecPage = () => {
   useEffect(() => {
     carregarDados();
   }, []);
+
+  // Aplicar filtros
+  useEffect(() => {
+    filtrarDados();
+  }, [filtros, dados]);
 
   const carregarDados = async () => {
     try {
@@ -44,7 +51,7 @@ const ProspecPage = () => {
       if (!window.aupusStorage || typeof window.aupusStorage.getProspec !== 'function') {
         console.warn('⚠️ aupusStorage não carregou, criando dados de demonstração');
         
-        // Criar dados mock com IDs únicos e timestamp diferente para cada
+        // Criar dados mock com IDs únicos
         const timestamp = Date.now();
         const dadosMock = [
           {
@@ -117,13 +124,135 @@ const ProspecPage = () => {
     }
   };
 
-  // FUNÇÃO PARA EDITAR ITEM
+  const filtrarDados = () => {
+    let dadosFiltrados = dados;
+
+    if (filtros.consultor) {
+      dadosFiltrados = dadosFiltrados.filter(item =>
+        item.consultor === filtros.consultor
+      );
+    }
+
+    if (filtros.status) {
+      dadosFiltrados = dadosFiltrados.filter(item =>
+        item.status === filtros.status
+      );
+    }
+
+    if (filtros.busca) {
+      const busca = filtros.busca.toLowerCase();
+      dadosFiltrados = dadosFiltrados.filter(item =>
+        item.nomeCliente?.toLowerCase().includes(busca) ||
+        item.numeroProposta?.toLowerCase().includes(busca) ||
+        item.numeroUC?.toLowerCase().includes(busca) ||
+        item.apelido?.toLowerCase().includes(busca)
+      );
+    }
+
+    setDadosFiltrados(dadosFiltrados);
+  };
+
+  const limparFiltros = () => {
+    setFiltros({
+      consultor: '',
+      status: '',
+      busca: ''
+    });
+  };
+
+  // FUNÇÃO PARA EDITAR ITEM - IMPLEMENTADA
   const editarItem = (index) => {
     const item = dadosFiltrados[index];
     if (!item) return;
 
-    showNotification('Função de edição em desenvolvimento', 'info');
-    console.log('Editando item:', item);
+    setModalEdicao({ show: true, item, index });
+  };
+
+  // FUNÇÃO PARA SALVAR EDIÇÃO
+  const salvarEdicao = async (dadosAtualizados) => {
+    try {
+      const { item, index } = modalEdicao;
+      
+      // Encontrar o índice real no array principal
+      const indexReal = dados.findIndex(p => p.id === item.id);
+      
+      if (indexReal === -1) {
+        showNotification('Item não encontrado para edição', 'error');
+        return;
+      }
+
+      if (window.aupusStorage && typeof window.aupusStorage.atualizarProspec === 'function') {
+        // Atualizar no storage
+        await window.aupusStorage.atualizarProspec(indexReal, dadosAtualizados);
+        
+        // Sincronizar com aba CONTROLE se status mudou
+        const statusAnterior = item.status;
+        const novoStatus = dadosAtualizados.status;
+        
+        if (statusAnterior !== novoStatus && window.aupusStorage.sincronizarStatusFechado) {
+          await window.aupusStorage.sincronizarStatusFechado(item.numeroProposta, novoStatus);
+        }
+        
+        // Recarregar dados
+        await carregarDados();
+        showNotification('Proposta atualizada com sucesso!', 'success');
+      } else {
+        // Fallback para modo demonstração
+        const novosDados = [...dados];
+        novosDados[indexReal] = { ...item, ...dadosAtualizados };
+        setDados(novosDados);
+        showNotification('Dados atualizados (modo demonstração)', 'success');
+      }
+      
+      setModalEdicao({ show: false, item: null, index: -1 });
+      
+    } catch (error) {
+      console.error('❌ Erro ao salvar edição:', error);
+      showNotification('Erro ao salvar: ' + error.message, 'error');
+    }
+  };
+
+  // FUNÇÃO EXCLUIR ITEM
+  const excluirItem = async (index) => {
+    const item = dadosFiltrados[index];
+    if (!item) return;
+
+    if (!window.confirm(`Deseja realmente excluir a proposta de ${item.nomeCliente} (${item.apelido})?`)) {
+      return;
+    }
+
+    try {
+      // Encontrar o índice real no array principal
+      const indexReal = dados.findIndex(p => p.id === item.id);
+      
+      if (indexReal === -1) {
+        showNotification('Item não encontrado para exclusão', 'error');
+        return;
+      }
+
+      if (window.aupusStorage && typeof window.aupusStorage.removerProspec === 'function') {
+        // Remover do controle se status for Fechado
+        if (item.status === 'Fechado' && window.aupusStorage.removerControle) {
+          await window.aupusStorage.removerControle(item.numeroProposta, item.numeroUC);
+        }
+        
+        // Remover do PROSPEC
+        await window.aupusStorage.removerProspec(indexReal);
+        
+        // Recarregar dados
+        await carregarDados();
+        showNotification('Proposta excluída com sucesso!', 'success');
+      } else {
+        // Fallback para modo demonstração
+        const novosDados = dados.filter(d => d.id !== item.id);
+        setDados(novosDados);
+        showNotification('Proposta excluída (modo demonstração)', 'success');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao excluir:', error);
+      showNotification('Erro ao excluir: ' + error.message, 'error');
+    }
   };
 
   // FUNÇÃO BAIXAR PDF - USANDO SERVIÇO PDF
@@ -149,15 +278,15 @@ const ProspecPage = () => {
         celular: item.telefone,
         consultor: item.consultor,
         recorrencia: item.recorrencia,
-        descontoTarifa: item.descontoTarifa || 0.2,
-        descontoBandeira: item.descontoBandeira || 0.2,
+        descontoTarifa: item.descontoTarifa,
+        descontoBandeira: item.descontoBandeira,
         status: item.status,
         ucs: todasUCs.map(uc => ({
           distribuidora: 'Equatorial',
           numeroUC: uc.numeroUC,
           apelido: uc.apelido,
-          ligacao: uc.ligacao || 'Monofásica',
-          consumo: uc.media || 0
+          ligacao: uc.ligacao,
+          consumo: uc.media
         })),
         beneficios: [
           { numero: 1, texto: `Economia de até ${Math.round((item.descontoTarifa || 0.2) * 100)}% na tarifa de energia elétrica, sem impostos` },
@@ -172,206 +301,148 @@ const ProspecPage = () => {
         ]
       };
 
-      console.log('📊 Dados estruturados para PDF:', dadosProposta);
-
-      // Usar serviço PDF
+      // Gerar PDF usando o serviço
       const resultado = await PDFGenerator.baixarPDF(dadosProposta, true);
-      showNotification(`✅ PDF baixado: ${resultado.nomeArquivo}`, 'success');
+      
+      if (resultado) {
+        showNotification('📄 PDF baixado com sucesso!', 'success');
+        console.log('✅ PDF gerado:', resultado.nomeArquivo);
+      }
 
     } catch (error) {
-      console.error('❌ Erro ao baixar PDF:', error);
+      console.error('❌ Erro ao gerar PDF:', error);
       showNotification('Erro ao gerar PDF: ' + error.message, 'error');
     }
   };
 
-  // Função para aplicar filtros
-  const aplicarFiltros = () => {
-    let dadosTemp = [...dados];
-
-    if (filtros.consultor) {
-      dadosTemp = dadosTemp.filter(item => 
-        item.consultor && item.consultor.toLowerCase().includes(filtros.consultor.toLowerCase())
-      );
-    }
-
-    if (filtros.status) {
-      dadosTemp = dadosTemp.filter(item => item.status === filtros.status);
-    }
-
-    if (filtros.busca) {
-      const busca = filtros.busca.toLowerCase();
-      dadosTemp = dadosTemp.filter(item =>
-        (item.nomeCliente && item.nomeCliente.toLowerCase().includes(busca)) ||
-        (item.numeroProposta && item.numeroProposta.toLowerCase().includes(busca)) ||
-        (item.numeroUC && item.numeroUC.toLowerCase().includes(busca))
-      );
-    }
-
-    setDadosFiltrados(dadosTemp);
-  };
-
-  // Aplicar filtros quando mudarem
-  useEffect(() => {
-    aplicarFiltros();
-  }, [filtros, dados]);
-
-  const limparFiltros = () => {
-    setFiltros({ consultor: '', status: '', busca: '' });
-  };
-
   const exportarCSV = async () => {
     try {
-      if (window.aupusStorage && window.aupusStorage.exportarParaCSV) {
+      if (window.aupusStorage && typeof window.aupusStorage.exportarParaCSV === 'function') {
         await window.aupusStorage.exportarParaCSV('prospec');
         showNotification('Dados exportados com sucesso!', 'success');
       } else {
         showNotification('Função de exportação não disponível', 'warning');
       }
     } catch (error) {
-      console.error('Erro ao exportar:', error);
-      showNotification('Erro ao exportar dados: ' + error.message, 'error');
+      console.error('❌ Erro ao exportar:', error);
+      showNotification('Erro ao exportar: ' + error.message, 'error');
     }
   };
-
-  const calcularEstatisticas = () => {
-    const total = dados.length;
-    const fechados = dados.filter(item => item.status === 'Fechado').length;
-    const aguardando = dados.filter(item => item.status === 'Aguardando').length;
-    const mediaConsumo = dados.length > 0 
-      ? (dados.reduce((acc, item) => acc + (parseFloat(item.media) || 0), 0) / dados.length).toFixed(0)
-      : 0;
-
-    return { total, fechados, aguardando, mediaConsumo };
-  };
-
-  const stats = calcularEstatisticas();
 
   const formatarData = (data) => {
-    if (!data) return '';
-    try {
-      const d = new Date(data);
-      return d.toLocaleDateString('pt-BR');
-    } catch {
-      return data;
-    }
+    return new Date(data).toLocaleDateString('pt-BR');
   };
 
   const formatarPercentual = (valor) => {
-    if (!valor && valor !== 0) return '';
-    try {
-      return (parseFloat(valor) * 100).toFixed(1) + '%';
-    } catch {
-      return '';
+    return ((valor || 0) * 100).toFixed(1) + '%';
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'Aguardando': return 'status-aguardando';
+      case 'Fechado': return 'status-fechado';
+      default: return 'status-default';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="page-container">
-        <div className="container">
-          <Header title="PROSPEC" subtitle="Carregando..." icon="📊" />
-          <div style={{ textAlign: 'center', padding: '50px', color: 'white' }}>
-            <div className="spinner" style={{ 
-              margin: '0 auto 20px',
-              width: '40px',
-              height: '40px',
-              border: '4px solid #f3f3f3',
-              borderTop: '4px solid #4CAF50',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }}></div>
-            Carregando dados...
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Aguardando': return '⏳';
+      case 'Fechado': return '✅';
+      default: return '❓';
+    }
+  };
 
   return (
     <div className="page-container">
       <div className="container">
         <Header 
           title="PROSPEC" 
-          subtitle="Gestão de Propostas" 
+          subtitle="Prospector de Energia" 
           icon="📊" 
         />
         
         <Navigation />
 
-        {/* Estatísticas Rápidas */}
-        <section className="quick-stats">
-          <div className="stat-card">
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total de Propostas</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.fechados}</div>
-            <div className="stat-label">Fechados</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.aguardando}</div>
-            <div className="stat-label">Aguardando</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.mediaConsumo}</div>
-            <div className="stat-label">Média kWh</div>
+        {/* Estatísticas */}
+        <section className="stats-section">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-value">{dadosFiltrados.length}</div>
+              <div className="stat-label">Total</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{dadosFiltrados.filter(item => item.status === 'Aguardando').length}</div>
+              <div className="stat-label">Aguardando</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{dadosFiltrados.filter(item => item.status === 'Fechado').length}</div>
+              <div className="stat-label">Fechadas</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">
+                {dadosFiltrados.length > 0 
+                  ? Math.round(dadosFiltrados.reduce((soma, item) => soma + (parseFloat(item.media) || 0), 0) / dadosFiltrados.length)
+                  : 0
+                } kWh
+              </div>
+              <div className="stat-label">Média Consumo</div>
+            </div>
           </div>
         </section>
 
         {/* Filtros */}
         <section className="filters-section">
-          <div className="filters-container">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label htmlFor="filtroConsultor">Consultor</label>
-                <select
-                  id="filtroConsultor"
-                  value={filtros.consultor}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
-                >
-                  <option value="">Todos os consultores</option>
-                  {[...new Set(dados.map(item => item.consultor).filter(Boolean))].map(consultor => (
-                    <option key={consultor} value={consultor}>{consultor}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label htmlFor="filtroStatus">Status</label>
-                <select
-                  id="filtroStatus"
-                  value={filtros.status}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-                >
-                  <option value="">Todos os status</option>
-                  <option value="Aguardando">Aguardando</option>
-                  <option value="Fechado">Fechado</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label htmlFor="filtroBusca">Buscar</label>
-                <input
-                  type="text"
-                  id="filtroBusca"
-                  placeholder="Nome, proposta ou UC..."
-                  value={filtros.busca}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                />
-              </div>
+          <div className="filters-grid">
+            <div className="filter-group">
+              <label htmlFor="filtroConsultor">Consultor</label>
+              <select
+                id="filtroConsultor"
+                value={filtros.consultor}
+                onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
+              >
+                <option value="">Todos os consultores</option>
+                {[...new Set(dados.map(item => item.consultor))].filter(Boolean).sort().map(consultor => (
+                  <option key={consultor} value={consultor}>{consultor}</option>
+                ))}
+              </select>
             </div>
 
-            <div className="actions-container">
-              <button className="btn btn-secondary" onClick={limparFiltros}>
-                🗑️ Limpar Filtros
-              </button>
-              <button className="btn btn-secondary" onClick={exportarCSV}>
-                📥 Exportar CSV
-              </button>
-              <button className="btn btn-primary" onClick={carregarDados}>
-                🔄 Atualizar
-              </button>
+            <div className="filter-group">
+              <label htmlFor="filtroStatus">Status</label>
+              <select
+                id="filtroStatus"
+                value={filtros.status}
+                onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
+              >
+                <option value="">Todos os status</option>
+                <option value="Aguardando">Aguardando</option>
+                <option value="Fechado">Fechado</option>
+              </select>
             </div>
+
+            <div className="filter-group">
+              <label htmlFor="filtroBusca">Buscar</label>
+              <input
+                type="text"
+                id="filtroBusca"
+                placeholder="Nome, proposta ou UC..."
+                value={filtros.busca}
+                onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="actions-container">
+            <button className="btn btn-secondary" onClick={limparFiltros}>
+              🗑️ Limpar Filtros
+            </button>
+            <button className="btn btn-secondary" onClick={exportarCSV}>
+              📥 Exportar CSV
+            </button>
+            <button className="btn btn-primary" onClick={carregarDados}>
+              🔄 Atualizar
+            </button>
           </div>
         </section>
 
@@ -381,7 +452,12 @@ const ProspecPage = () => {
             <h2>Propostas ({dadosFiltrados.length})</h2>
           </div>
 
-          {dadosFiltrados.length === 0 ? (
+          {loading ? (
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Carregando propostas...</p>
+            </div>
+          ) : dadosFiltrados.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📋</div>
               <h3>Nenhuma proposta encontrada</h3>
@@ -402,45 +478,54 @@ const ProspecPage = () => {
                     <th>Ligação</th>
                     <th>Consultor</th>
                     <th>Recorrência</th>
-                    <th>Média</th>
+                    <th>Média (kWh)</th>
+                    <th>Telefone</th>
                     <th>Status</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dadosFiltrados.map((item, index) => (
-                    <tr key={item.id || `row-${index}-${Date.now()}`}>
-                      <td>{item.nomeCliente}</td>
-                      <td style={{ fontFamily: 'Courier New, monospace' }}>{item.numeroProposta}</td>
-                      <td style={{ fontFamily: 'Courier New, monospace' }}>{formatarData(item.data)}</td>
-                      <td>{item.apelido}</td>
-                      <td style={{ fontFamily: 'Courier New, monospace' }}>{item.numeroUC}</td>
-                      <td style={{ textAlign: 'center' }}>{formatarPercentual(item.descontoTarifa)}</td>
-                      <td style={{ textAlign: 'center' }}>{formatarPercentual(item.descontoBandeira)}</td>
-                      <td>{item.ligacao}</td>
-                      <td>{item.consultor}</td>
-                      <td>{item.recorrencia}</td>
-                      <td style={{ textAlign: 'right' }}>{parseFloat(item.media || 0).toLocaleString('pt-BR')} kWh</td>
+                    <tr key={item.id}>
+                      <td><strong>{item.nomeCliente || '-'}</strong></td>
+                      <td>{item.numeroProposta || '-'}</td>
+                      <td className="data">{item.data ? formatarData(item.data) : '-'}</td>
+                      <td>{item.apelido || '-'}</td>
+                      <td>{item.numeroUC || '-'}</td>
+                      <td className="valor">{formatarPercentual(item.descontoTarifa)}</td>
+                      <td className="valor">{formatarPercentual(item.descontoBandeira)}</td>
+                      <td>{item.ligacao || '-'}</td>
+                      <td><strong>{item.consultor || '-'}</strong></td>
+                      <td className="valor">{item.recorrencia || '-'}</td>
+                      <td className="valor">{(item.media || 0).toLocaleString('pt-BR')} kWh</td>
+                      <td className="data">{item.telefone || '-'}</td>
                       <td>
-                        <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
-                          {item.status}
+                        <span className={`status ${getStatusClass(item.status)}`}>
+                          {getStatusIcon(item.status)} {item.status}
                         </span>
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button 
-                            className="action-btn edit" 
-                            title="Editar"
+                          <button
                             onClick={() => editarItem(index)}
+                            className="action-btn edit"
+                            title="Editar proposta"
                           >
                             ✏️
                           </button>
-                          <button 
-                            className="action-btn view" 
-                            title="Baixar PDF"
+                          <button
                             onClick={() => baixarPDFItem(index)}
+                            className="action-btn pdf"
+                            title="Baixar PDF"
                           >
                             📄
+                          </button>
+                          <button
+                            onClick={() => excluirItem(index)}
+                            className="action-btn delete"
+                            title="Excluir proposta"
+                          >
+                            🗑️
                           </button>
                         </div>
                       </td>
@@ -451,6 +536,226 @@ const ProspecPage = () => {
             </div>
           )}
         </section>
+      </div>
+
+      {/* Modal de Edição */}
+      {modalEdicao.show && (
+        <ModalEdicao
+          item={modalEdicao.item}
+          onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
+          onSave={salvarEdicao}
+        />
+      )}
+    </div>
+  );
+};
+
+// Componente Modal de Edição
+const ModalEdicao = ({ item, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    nomeCliente: item?.nomeCliente || '',
+    apelido: item?.apelido || '',
+    numeroUC: item?.numeroUC || '',
+    descontoTarifa: Math.round((item?.descontoTarifa || 0) * 100),
+    descontoBandeira: Math.round((item?.descontoBandeira || 0) * 100),
+    ligacao: item?.ligacao || 'Monofásica',
+    consultor: item?.consultor || '',
+    recorrencia: item?.recorrencia || '3%',
+    media: item?.media || 0,
+    telefone: item?.telefone || '',
+    status: item?.status || 'Aguardando'
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = () => {
+    // Converter percentuais para decimal
+    const dadosAtualizados = {
+      ...formData,
+      descontoTarifa: parseFloat(formData.descontoTarifa) / 100,
+      descontoBandeira: parseFloat(formData.descontoBandeira) / 100,
+      media: parseFloat(formData.media)
+    };
+    
+    onSave(dadosAtualizados);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Editar Proposta</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="form-grid">
+            <div className="form-group">
+              <label htmlFor="editNomeCliente">Nome Cliente</label>
+              <input
+                type="text"
+                id="editNomeCliente"
+                name="nomeCliente"
+                value={formData.nomeCliente}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editApelido">Apelido</label>
+              <input
+                type="text"
+                id="editApelido"
+                name="apelido"
+                value={formData.apelido}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editNumeroUC">Número UC</label>
+              <input
+                type="text"
+                id="editNumeroUC"
+                name="numeroUC"
+                value={formData.numeroUC}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editDescontoTarifa">Desconto Tarifa (%)</label>
+              <input
+                type="number"
+                id="editDescontoTarifa"
+                name="descontoTarifa"
+                min="0"
+                max="100"
+                step="0.1"
+                value={formData.descontoTarifa}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editDescontoBandeira">Desconto Bandeira (%)</label>
+              <input
+                type="number"
+                id="editDescontoBandeira"
+                name="descontoBandeira"
+                min="0"
+                max="100"
+                step="0.1"
+                value={formData.descontoBandeira}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editLigacao">Ligação</label>
+              <select
+                id="editLigacao"
+                name="ligacao"
+                value={formData.ligacao}
+                onChange={handleChange}
+                required
+              >
+                <option value="Monofásica">Monofásica</option>
+                <option value="Bifásica">Bifásica</option>
+                <option value="Trifásica">Trifásica</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editConsultor">Consultor</label>
+              <input
+                type="text"
+                id="editConsultor"
+                name="consultor"
+                value={formData.consultor}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editRecorrencia">Recorrência</label>
+              <select
+                id="editRecorrencia"
+                name="recorrencia"
+                value={formData.recorrencia}
+                onChange={handleChange}
+                required
+              >
+                <option value="0%">0%</option>
+                <option value="1%">1%</option>
+                <option value="2%">2%</option>
+                <option value="3%">3%</option>
+                <option value="4%">4%</option>
+                <option value="5%">5%</option>
+                <option value="6%">6%</option>
+                <option value="7%">7%</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editMedia">Média (kWh)</label>
+              <input
+                type="number"
+                id="editMedia"
+                name="media"
+                min="0"
+                step="0.01"
+                value={formData.media}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editTelefone">Telefone</label>
+              <input
+                type="tel"
+                id="editTelefone"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="editStatus">Status</label>
+              <select
+                id="editStatus"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                required
+              >
+                <option value="Aguardando">Aguardando</option>
+                <option value="Fechado">Fechado</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div className="modal-footer">
+          <button className="btn btn-primary" onClick={handleSave}>
+            💾 Salvar
+          </button>
+          <button className="btn btn-secondary" onClick={onClose}>
+            ❌ Cancelar
+          </button>
+        </div>
       </div>
     </div>
   );
