@@ -1,32 +1,4 @@
-async calcularMediaUG(nomeUG) {
-        try {
-            const controle = await this.getControle();
-            const ucsAtribuidas = controle.filter(uc => uc.ug === nomeUG);
-            
-            if (ucsAtribuidas.length === 0) {
-                return { media: 0, calibragem: 0, ucsCount: 0 };
-            }
-            
-            // Somar todas as médias das UCs atribuídas
-            const mediaTotal = ucsAtribuidas.reduce((acc, uc) => acc + (uc.media || 0), 0);
-            
-            // Buscar o valor de calibragem global (pode ser definido em algum lugar)
-            // Por enquanto, vamos usar 0 se não tiver calibragem aplicada
-            const calibragemPercent = 0; // Será atualizado quando aplicar calibragem
-            const calibragem = mediaTotal * (1 + calibragemPercent / 100);
-            
-            return {
-                media: mediaTotal,
-                calibragem: calibragem,
-                ucsCount: ucsAtribuidas.length
-            };
-        } catch (error) {
-            console.error('❌ Erro ao calcular média UG:', error);
-            return { media: 0, calibragem: 0, ucsCount: 0 };
-        }
-    }    // ========================================
-    // UTILITÁRIOS
-    // ========================================// src/services/storageService.js
+// src/services/storageService.js
 class StorageService {
     constructor() {
         this.ready = true;
@@ -125,21 +97,30 @@ class StorageService {
         console.log('💾 adicionarControle (localStorage):', proposta);
         const dados = await this.getControle();
         
-        const existe = dados.find(item => 
+        // Verificar se já existe essa UC na proposta
+        const jaExiste = dados.find(item => 
             item.numeroProposta === proposta.numeroProposta && 
             item.numeroUC === proposta.numeroUC
         );
         
-        if (!existe) {
-            // Garantir que tem campo UG vazio
-            const propostaControle = { ...proposta, ug: proposta.ug || '' };
-            dados.push(propostaControle);
+        if (!jaExiste) {
+            dados.push(proposta);
             await this.salvarControle(dados);
-            console.log(`✅ Proposta ${proposta.numeroProposta} (UC: ${proposta.numeroUC}) adicionada ao controle`);
             return true;
         }
         
-        console.log(`⚠️ Proposta ${proposta.numeroProposta} (UC: ${proposta.numeroUC}) já existe no controle`);
+        console.log('⚠️ UC já existe no controle');
+        return false;
+    }
+
+    async atualizarControle(index, dadosAtualizados) {
+        console.log(`🔄 atualizarControle (localStorage) - index ${index}`);
+        const dados = await this.getControle();
+        if (index >= 0 && index < dados.length) {
+            dados[index] = { ...dados[index], ...dadosAtualizados };
+            await this.salvarControle(dados);
+            return true;
+        }
         return false;
     }
 
@@ -165,13 +146,13 @@ class StorageService {
             !(item.numeroProposta === numeroProposta && item.numeroUC === numeroUC)
         );
         
-        if (dados.length !== novosDados.length) {
+        if (novosDados.length !== dados.length) {
             await this.salvarControle(novosDados);
-            console.log(`✅ Proposta ${numeroProposta} (UC: ${numeroUC}) removida do controle`);
+            console.log('✅ UC removida do controle');
             return true;
         }
         
-        console.log(`⚠️ Proposta ${numeroProposta} (UC: ${numeroUC}) não encontrada no controle`);
+        console.log('⚠️ UC não encontrada no controle');
         return false;
     }
 
@@ -221,108 +202,76 @@ class StorageService {
     async removerUG(index) {
         console.log(`🗑️ removerUG (localStorage) - index ${index}`);
         const dados = await this.getUGs();
+        
         if (index >= 0 && index < dados.length) {
+            const ug = dados[index];
+            
+            // Verificar se a UG tem UCs atribuídas
+            const controle = await this.getControle();
+            const ucsAtribuidas = controle.filter(uc => uc.ug === ug.nomeUsina);
+            
+            if (ucsAtribuidas.length > 0) {
+                console.log(`❌ Não é possível remover UG "${ug.nomeUsina}" - possui ${ucsAtribuidas.length} UCs atribuídas`);
+                throw new Error(`Não é possível remover a UG "${ug.nomeUsina}" pois ela possui ${ucsAtribuidas.length} UC(s) atribuída(s). Remova primeiro as atribuições.`);
+            }
+            
             dados.splice(index, 1);
             await this.salvarUGs(dados);
+            console.log(`✅ UG "${ug.nomeUsina}" removida com sucesso`);
             return true;
         }
         return false;
     }
 
     // ========================================
-    // SINCRONIZAÇÃO APRIMORADA
-    // ========================================
-
-    async sincronizarStatusFechado(numeroProposta, novoStatus) {
-        console.log(`🔄 sincronizarStatusFechado - Proposta: ${numeroProposta}, Status: ${novoStatus}`);
-        
-        try {
-            const prospec = await this.getProspec();
-            const propostas = prospec.filter(p => p.numeroProposta === numeroProposta);
-            
-            console.log(`📊 Encontradas ${propostas.length} UCs para a proposta ${numeroProposta}`);
-            
-            if (novoStatus === 'Fechado') {
-                // Adicionar todas as UCs da proposta ao controle
-                let adicionadas = 0;
-                for (const proposta of propostas) {
-                    const sucesso = await this.adicionarControle({
-                        ...proposta,
-                        ug: '' // UG vazia inicialmente
-                    });
-                    if (sucesso) adicionadas++;
-                }
-                console.log(`✅ ${adicionadas} UCs adicionadas ao controle`);
-                
-            } else {
-                // Remover todas as UCs da proposta do controle
-                let removidas = 0;
-                for (const proposta of propostas) {
-                    await this.removerControle(proposta.numeroProposta, proposta.numeroUC);
-                    removidas++;
-                }
-                console.log(`✅ ${removidas} UCs removidas do controle`);
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('❌ Erro na sincronização:', error);
-            return false;
-        }
-    }
-
-    // ========================================
-    // ESTATÍSTICAS
-    // ========================================
-
-    async getEstatisticas() {
-        const prospec = await this.getProspec();
-        const controle = await this.getControle();
-        const ugs = await this.getUGs();
-        
-        const total = prospec.length;
-        const aguardando = prospec.filter(p => p.status === 'Aguardando').length;
-        const fechadas = prospec.filter(p => p.status === 'Fechado').length;
-        
-        let ultimaProposta = '-';
-        if (prospec.length > 0) {
-            // Ordenar por número da proposta e pegar a última
-            const ordenadas = prospec.sort((a, b) => {
-                const numA = parseInt(a.numeroProposta.split('/')[1] || '0');
-                const numB = parseInt(b.numeroProposta.split('/')[1] || '0');
-                return numB - numA;
-            });
-            ultimaProposta = ordenadas[0].numeroProposta;
-        }
-        
-        return {
-            total,
-            aguardando,
-            fechadas,
-            ultimaProposta,
-            totalControle: controle.length,
-            totalUGs: ugs.length
-        };
-    }
-
-    // ========================================
     // CÁLCULO DE MÉDIA E CALIBRAGEM DAS UGs BASEADO NAS UCs ATRIBUÍDAS
     // ========================================
 
+    async calcularMediaUG(nomeUG) {
+        try {
+            const controle = await this.getControle();
+            const ucsAtribuidas = controle.filter(uc => uc.ug === nomeUG);
+            
+            if (ucsAtribuidas.length === 0) {
+                return { media: 0, calibragem: 0, ucsCount: 0 };
+            }
+            
+            // Somar todas as médias das UCs atribuídas (CORRIGIDO: números como números, não concatenados)
+            const mediaTotal = ucsAtribuidas.reduce((acc, uc) => {
+                const media = parseFloat(uc.media) || 0;
+                return acc + media;
+            }, 0);
+            
+            // Buscar o valor de calibragem global salvo no localStorage
+            const calibragemPercent = this.getCalibragemGlobal();
+            const calibragem = mediaTotal * (1 + calibragemPercent / 100);
+            
+            return {
+                media: mediaTotal,
+                calibragem: calibragem,
+                ucsCount: ucsAtribuidas.length
+            };
+        } catch (error) {
+            console.error('❌ Erro ao calcular média UG:', error);
+            return { media: 0, calibragem: 0, ucsCount: 0 };
+        }
+    }
+
     async aplicarCalibragemGlobal(percentual) {
         try {
+            // Salvar a calibragem global no localStorage
+            this.setCalibragemGlobal(percentual);
+            
             const ugs = await this.getUGs();
             const ugsAtualizadas = [];
             
             for (const ug of ugs) {
                 const calculo = await this.calcularMediaUG(ug.nomeUsina);
                 
-                const calibragem = calculo.media * (1 + percentual / 100);
-                
                 const ugAtualizada = {
                     ...ug,
                     media: calculo.media,
-                    calibragem: calibragem,
+                    calibragem: calculo.calibragem,
                     ucsAtribuidas: calculo.ucsCount,
                     calibrado: calculo.ucsCount > 0,
                     percentualCalibragem: percentual
@@ -370,6 +319,108 @@ class StorageService {
             return false;
         }
     }
+
+    // ========================================
+    // SINCRONIZAÇÃO APRIMORADA
+    // ========================================
+
+    async sincronizarStatusFechado(numeroProposta, numeroUC, novoStatus) {
+        console.log(`🔄 sincronizarStatusFechado - Proposta: ${numeroProposta}, UC: ${numeroUC}, Status: ${novoStatus}`);
+        
+        try {
+            const prospec = await this.getProspec();
+            const proposta = prospec.find(p => 
+                p.numeroProposta === numeroProposta && p.numeroUC === numeroUC
+            );
+            
+            if (!proposta) {
+                console.log('⚠️ Proposta não encontrada no prospec');
+                return false;
+            }
+            
+            if (novoStatus === 'Fechado') {
+                // Adicionar esta UC específica ao controle
+                const sucesso = await this.adicionarControle({
+                    ...proposta,
+                    ug: '' // UG vazia inicialmente
+                });
+                if (sucesso) {
+                    console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} adicionada ao controle`);
+                }
+                
+            } else {
+                // Remover esta UC específica do controle
+                await this.removerControle(numeroProposta, numeroUC);
+                console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} removida do controle`);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Erro na sincronização:', error);
+            return false;
+        }
+    }
+
+    // ========================================
+    // ESTATÍSTICAS
+    // ========================================
+
+    async getEstatisticas() {
+        const prospec = await this.getProspec();
+        const controle = await this.getControle();
+        const ugs = await this.getUGs();
+        
+        const total = prospec.length;
+        const aguardando = prospec.filter(p => p.status === 'Aguardando').length;
+        const fechadas = prospec.filter(p => p.status === 'Fechado').length;
+        
+        let ultimaProposta = '-';
+        if (prospec.length > 0) {
+            // Ordenar por número da proposta e pegar a última
+            const ordenadas = prospec.sort((a, b) => {
+                const numA = parseInt(a.numeroProposta.split('/')[1] || '0');
+                const numB = parseInt(b.numeroProposta.split('/')[1] || '0');
+                return numB - numA;
+            });
+            ultimaProposta = ordenadas[0].numeroProposta;
+        }
+        
+        return {
+            total,
+            aguardando,
+            fechadas,
+            ultimaProposta,
+            totalControle: controle.length,
+            totalUGs: ugs.length
+        };
+    }
+
+    // ========================================
+    // MÉTODOS DE CALIBRAGEM GLOBAL
+    // ========================================
+
+    getCalibragemGlobal() {
+        try {
+            const calibragem = localStorage.getItem('aupus_calibragem_global');
+            return calibragem ? parseFloat(calibragem) : 0;
+        } catch (error) {
+            console.error('❌ Erro ao obter calibragem global:', error);
+            return 0;
+        }
+    }
+
+    setCalibragemGlobal(percentual) {
+        try {
+            localStorage.setItem('aupus_calibragem_global', percentual.toString());
+            console.log(`💾 Calibragem global salva: ${percentual}%`);
+        } catch (error) {
+            console.error('❌ Erro ao salvar calibragem global:', error);
+        }
+    }
+
+    // ========================================
+    // UTILITÁRIOS
+    // ========================================
 
     async exportarParaCSV(tipo = 'prospec') {
         let dados;

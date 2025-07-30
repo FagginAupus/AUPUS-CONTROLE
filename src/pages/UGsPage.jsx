@@ -1,4 +1,4 @@
-// src/pages/UGsPage.jsx - COMPLETO COM CALIBRAGEM CORRIGIDA SEM STATUS
+// src/pages/UGsPage.jsx - CORRIGIDA COM PROTEÇÃO CONTRA EXCLUSÃO
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -30,9 +30,12 @@ const UGsPage = () => {
     try {
       setLoading(true);
       
-      console.log('📥 Carregando UGs do localStorage...');
+      console.log('📥 Carregando UGs...');
       
+      // Carregar UGs e recalcular médias baseadas nas UCs atribuídas
+      await storageService.atualizarMediasUGs();
       const dadosUGs = await storageService.getUGs();
+      
       setDados(dadosUGs);
       setDadosFiltrados(dadosUGs);
       
@@ -126,6 +129,8 @@ const UGsPage = () => {
         ...dadosUG,
         capacidade,
         media: 0,
+        calibragem: 0,
+        ucsAtribuidas: 0,
         calibrado: false,
         dataCadastro: new Date().toISOString(),
         id: Date.now().toString()
@@ -178,6 +183,7 @@ const UGsPage = () => {
     }
   };
 
+  // CORRIGIDO: Função de remoção com verificação de UCs atribuídas
   const removerUG = async (index) => {
     const item = dadosFiltrados[index];
     
@@ -193,6 +199,7 @@ const UGsPage = () => {
         return;
       }
 
+      // USAR MÉTODO CORRIGIDO DO STORAGE QUE VERIFICA UCs ATRIBUÍDAS
       await storageService.removerUG(indexReal);
       await carregarDados();
       
@@ -200,31 +207,8 @@ const UGsPage = () => {
       
     } catch (error) {
       console.error('❌ Erro ao remover:', error);
-      showNotification('Erro ao remover: ' + error.message, 'error');
-    }
-  };
-
-  const calibrarUG = async (index, novaMedia) => {
-    try {
-      const item = dadosFiltrados[index];
-      const indexReal = dados.findIndex(ug => ug.id === item.id);
-      
-      if (indexReal === -1) {
-        showNotification('UG não encontrada', 'error');
-        return;
-      }
-
-      await storageService.atualizarUG(indexReal, { 
-        media: novaMedia, 
-        calibrado: true 
-      });
-      
-      await carregarDados();
-      showNotification(`UG "${item.nomeUsina}" calibrada com sucesso!`, 'success');
-      
-    } catch (error) {
-      console.error('❌ Erro ao calibrar:', error);
-      showNotification('Erro ao calibrar: ' + error.message, 'error');
+      // MOSTRAR MENSAGEM ESPECÍFICA DO ERRO (que pode ser sobre UCs atribuídas)
+      showNotification(error.message, 'error');
     }
   };
 
@@ -265,11 +249,11 @@ const UGsPage = () => {
           </div>
           <div className="stat-card">
             <span className="stat-label">Potência Total</span>
-            <span className="stat-value">{estatisticas.potenciaTotal.toLocaleString()} kW</span>
+            <span className="stat-value">{estatisticas.potenciaTotal.toFixed(1)} MW</span>
           </div>
         </section>
 
-        {/* Filtros */}
+        {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
             <div className="filters-grid">
@@ -315,7 +299,7 @@ const UGsPage = () => {
           </div>
         </section>
 
-        {/* Tabela de dados - SEM STATUS + CALIBRAGEM CORRIGIDA */}
+        {/* Tabela de UGs */}
         <section className="table-section">
           <div className="table-header">
             <h2>🏭 Lista de Unidades Geradoras</h2>
@@ -323,11 +307,15 @@ const UGsPage = () => {
           </div>
           
           {loading ? (
-            <div className="loading">Carregando UGs...</div>
+            <div className="loading">Carregando unidades geradoras...</div>
           ) : dadosFiltrados.length === 0 ? (
-            <div className="no-data">
-              <p>📭 Nenhuma UG encontrada</p>
-              <p>Cadastre sua primeira Unidade Geradora clicando em "Nova UG"</p>
+            <div className="empty-state">
+              <div className="empty-icon">🏭</div>
+              <h3>Nenhuma UG encontrada</h3>
+              <p>Crie sua primeira Unidade Geradora ou ajuste os filtros.</p>
+              <button onClick={criarNovaUG} className="btn-primary">
+                ➕ Criar Primeira UG
+              </button>
             </div>
           ) : (
             <div className="table-responsive">
@@ -335,62 +323,63 @@ const UGsPage = () => {
                 <thead>
                   <tr>
                     <th>Nome da Usina</th>
-                    <th>Potência CA</th>
-                    <th>Potência CC</th>
-                    <th>Fator Cap.</th>
-                    <th>Capacidade</th>
+                    <th>Potência CA (kW)</th>
+                    <th>Potência CC (kW)</th>
+                    <th>Fator Capacidade (%)</th>
+                    <th>Capacidade (MWh/mês)</th>
                     <th>UCs Atribuídas</th>
-                    <th>Média</th>
-                    <th>Calibragem</th>
-                    <th>Data Cadastro</th>
+                    <th>Média Total (kWh)</th>
+                    <th>Calibragem (kWh)</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dadosFiltrados.map((item, index) => (
-                    <tr key={item.id || index}>
+                    <tr key={item.id}>
                       <td>
                         <strong>{item.nomeUsina}</strong>
                       </td>
-                      <td>{item.potenciaCA} kW</td>
-                      <td>{item.potenciaCC} kW</td>
-                      <td>{item.fatorCapacidade}%</td>
-                      <td>{item.capacidade?.toLocaleString()} kWh/mês</td>
+                      <td>{parseFloat(item.potenciaCA || 0).toFixed(1)} kW</td>
+                      <td>{parseFloat(item.potenciaCC || 0).toFixed(1)} kW</td>
+                      <td>{parseFloat(item.fatorCapacidade || 0).toFixed(1)}%</td>
+                      <td>{parseFloat(item.capacidade || 0).toFixed(2)} MWh</td>
                       <td>
                         <span className="ucs-atribuidas">
-                          {item.ucsAtribuidas || 0} UCs
+                          {item.ucsAtribuidas || 0} UC{(item.ucsAtribuidas || 0) !== 1 ? 's' : ''}
                         </span>
                       </td>
                       <td>
                         <span className="media-calculada">
-                          {item.media?.toLocaleString()} kWh
+                          {parseFloat(item.media || 0).toLocaleString()} kWh
                         </span>
                       </td>
                       <td>
-                        {item.ucsAtribuidas > 0 ? (
+                        {item.calibragem ? (
                           <span className="calibragem-calculada">
-                            {(item.calibragem || item.media)?.toLocaleString()} kWh
+                            {Math.round(item.calibragem).toLocaleString()} kWh
                           </span>
                         ) : (
                           <span className="sem-calibragem">-</span>
                         )}
                       </td>
                       <td>
-                        {new Date(item.dataCadastro).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td>
                         <div className="action-buttons">
                           <button 
                             onClick={() => editarUG(index)}
                             className="btn-icon edit"
-                            title="Editar"
+                            title="Editar UG"
                           >
                             ✏️
                           </button>
                           <button 
                             onClick={() => removerUG(index)}
                             className="btn-icon delete"
-                            title="Remover"
+                            title="Remover UG"
+                            // VISUAL: Desabilitar se tiver UCs atribuídas
+                            style={{
+                              opacity: (item.ucsAtribuidas || 0) > 0 ? 0.5 : 1,
+                              cursor: (item.ucsAtribuidas || 0) > 0 ? 'not-allowed' : 'pointer'
+                            }}
                           >
                             🗑️
                           </button>
@@ -422,40 +411,6 @@ const UGsPage = () => {
         )}
       </div>
     </div>
-  );
-};
-
-// Componente de Input para Calibragem
-const CalibragemInput = ({ onCalibrar }) => {
-  const [media, setMedia] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const mediaNum = parseInt(media);
-    
-    if (!mediaNum || mediaNum <= 0) {
-      alert('Digite um valor válido para a média');
-      return;
-    }
-
-    onCalibrar(mediaNum);
-    setMedia('');
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="calibragem-form">
-      <input
-        type="number"
-        placeholder="Valor calibragem"
-        value={media}
-        onChange={(e) => setMedia(e.target.value)}
-        className="calibragem-input"
-        required
-      />
-      <button type="submit" className="calibragem-btn" title="Calibrar">
-        🎯
-      </button>
-    </form>
   );
 };
 
@@ -577,6 +532,7 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
               type="text"
               value={dados.nomeUsina || ''}
               onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
+              required
             />
           </div>
           
@@ -588,6 +544,7 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
                 step="0.01"
                 value={dados.potenciaCA || 0}
                 onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                required
               />
             </div>
             <div className="form-group">
@@ -597,6 +554,7 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
                 step="0.01"
                 value={dados.potenciaCC || 0}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
+                required
               />
             </div>
           </div>
@@ -610,15 +568,6 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
               max="100"
               value={dados.fatorCapacidade || 0}
               onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Média Atual (kWh)</label>
-            <input
-              type="number"
-              value={dados.media || 0}
-              onChange={(e) => setDados({...dados, media: parseInt(e.target.value) || 0})}
             />
           </div>
           
