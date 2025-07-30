@@ -1,10 +1,9 @@
-// src/pages/RelatoriosPage.jsx
+// src/pages/RelatoriosPage.jsx - COM ESTILIZAÇÃO CORRETA
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import storageService from '../services/storageService';
-import './RelatoriosPage.css';
 
 const RelatoriosPage = () => {
   const [estatisticas, setEstatisticas] = useState({
@@ -104,7 +103,7 @@ const RelatoriosPage = () => {
   const capacidadeTotal = dados.ugs.reduce((acc, ug) => acc + (ug.capacidade || 0), 0);
 
   return (
-    <div className="relatorios-container">
+    <div className="page-container">
       <div className="container">
         <Header 
           title="RELATÓRIOS" 
@@ -115,43 +114,43 @@ const RelatoriosPage = () => {
         <Navigation />
 
         {loading ? (
-          <div className="loading">Carregando dados...</div>
+          <div className="loading-message">Carregando dados...</div>
         ) : (
           <>
             {/* Resumo Executivo */}
-            <section className="resumo-executivo">
-              <h2>📈 Resumo Executivo</h2>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <h3>Total de Propostas</h3>
-                  <div className="stat-number">{estatisticas.total}</div>
-                  <small>{consultoresUnicos.length} consultores ativos</small>
-                </div>
-                <div className="stat-card">
-                  <h3>Taxa de Fechamento</h3>
-                  <div className="stat-number">
-                    {estatisticas.total > 0 
-                      ? Math.round((estatisticas.fechadas / estatisticas.total) * 100) 
-                      : 0}%
-                  </div>
-                  <small>{estatisticas.fechadas} de {estatisticas.total}</small>
-                </div>
-                <div className="stat-card">
-                  <h3>Potência Total UGs</h3>
-                  <div className="stat-number">{potenciaTotal.toLocaleString()} kW</div>
-                  <small>{dados.ugs.length} unidades</small>
-                </div>
-                <div className="stat-card">
-                  <h3>Capacidade Total</h3>
-                  <div className="stat-number">{Math.round(capacidadeTotal / 1000).toLocaleString()} MWh</div>
-                  <small>por mês</small>
-                </div>
+            <section className="quick-stats">
+              <div className="stat-card">
+                <span className="stat-label">Total de Propostas</span>
+                <span className="stat-value">{estatisticas.total}</span>
+                <small>{consultoresUnicos.length} consultores ativos</small>
+              </div>
+              <div className="stat-card">
+                <span className="stat-label">Taxa de Fechamento</span>
+                <span className="stat-value">
+                  {estatisticas.total > 0 
+                    ? Math.round((estatisticas.fechadas / estatisticas.total) * 100) 
+                    : 0}%
+                </span>
+                <small>{estatisticas.fechadas} de {estatisticas.total}</small>
+              </div>
+              <div className="stat-card">
+                <span className="stat-label">Potência Total UGs</span>
+                <span className="stat-value">{potenciaTotal.toLocaleString()} kW</span>
+                <small>{dados.ugs.length} unidades</small>
+              </div>
+              <div className="stat-card">
+                <span className="stat-label">Capacidade Total</span>
+                <span className="stat-value">{Math.round(capacidadeTotal / 1000).toLocaleString()} MWh</span>
+                <small>por mês</small>
               </div>
             </section>
 
             {/* Análise por Consultor */}
-            <section className="analise-consultores">
-              <h2>👥 Análise por Consultor</h2>
+            <section className="table-section">
+              <div className="table-header">
+                <h2>👥 Análise por Consultor</h2>
+                <span className="table-count">{consultoresUnicos.length} consultores</span>
+              </div>
               <div className="table-responsive">
                 <table>
                   <thead>
@@ -176,7 +175,11 @@ const RelatoriosPage = () => {
                           <td><strong>{consultor}</strong></td>
                           <td>{propostas.length}</td>
                           <td>{fechadas.length}</td>
-                          <td>{taxa}%</td>
+                          <td>
+                            <span className={`status ${taxa >= 50 ? 'fechado' : 'aguardando'}`}>
+                              {taxa}%
+                            </span>
+                          </td>
                           <td>{mediaConsultor.toLocaleString()} kWh</td>
                         </tr>
                       );
@@ -187,74 +190,88 @@ const RelatoriosPage = () => {
             </section>
 
             {/* Status das UGs */}
-            <section className="status-ugs">
-              <h2>🏭 Status das Unidades Geradoras</h2>
-              <div className="ugs-summary">
-                <div className="ug-stat">
-                  <span className="ug-number">{dados.ugs.length}</span>
-                  <span className="ug-label">Total de UGs</span>
-                </div>
-                <div className="ug-stat">
-                  <span className="ug-number">{dados.ugs.filter(ug => ug.calibrado).length}</span>
-                  <span className="ug-label">Calibradas</span>
-                </div>
-                <div className="ug-stat">
-                  <span className="ug-number">{dados.ugs.filter(ug => !ug.calibrado).length}</span>
-                  <span className="ug-label">Pendentes</span>
+            <section className="filters-section">
+              <div className="filters-container">
+                <h2>🏭 Status das Unidades Geradoras</h2>
+                <div className="ugs-summary">
+                  <div className="ug-stat">
+                    <span className="ug-number">{dados.ugs.length}</span>
+                    <span className="ug-label">Total de UGs</span>
+                  </div>
+                  <div className="ug-stat">
+                    <span className="ug-number">{dados.ugs.filter(ug => ug.calibrado).length}</span>
+                    <span className="ug-label">Calibradas</span>
+                  </div>
+                  <div className="ug-stat">
+                    <span className="ug-number">{dados.ugs.filter(ug => !ug.calibrado).length}</span>
+                    <span className="ug-label">Pendentes</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* Exportações */}
-            <section className="exportacoes">
-              <h2>📤 Exportar Relatórios</h2>
-              <div className="export-grid">
-                <div className="export-card">
-                  <h3>Relatório de Prospecção</h3>
-                  <p>Lista completa de propostas com status, consultores e dados técnicos</p>
-                  <button onClick={exportarProspec} className="btn primary">
-                    📋 Exportar Prospecção
-                  </button>
-                </div>
-                
-                <div className="export-card">
-                  <h3>Relatório de Controle</h3>
-                  <p>Propostas fechadas com UGs definidas e status de calibragem</p>
-                  <button onClick={exportarControle} className="btn secondary">
-                    ⚙️ Exportar Controle
-                  </button>
-                </div>
-                
-                <div className="export-card">
-                  <h3>Relatório de UGs</h3>
-                  <p>Dados técnicos das Unidades Geradoras e capacidades</p>
-                  <button onClick={exportarUGs} className="btn tertiary">
-                    🏭 Exportar UGs
-                  </button>
+            <section className="filters-section">
+              <div className="filters-container">
+                <h2>📤 Exportar Relatórios</h2>
+                <div className="export-grid">
+                  <div className="export-card">
+                    <h3>Relatório de Prospecção</h3>
+                    <p>Lista completa de propostas com status, consultores e dados técnicos</p>
+                    <button onClick={exportarProspec} className="btn-primary">
+                      📋 Exportar Prospecção
+                    </button>
+                  </div>
+                  
+                  <div className="export-card">
+                    <h3>Relatório de Controle</h3>
+                    <p>Propostas fechadas com UGs definidas e status de calibragem</p>
+                    <button onClick={exportarControle} className="btn-primary">
+                      ⚙️ Exportar Controle
+                    </button>
+                  </div>
+                  
+                  <div className="export-card">
+                    <h3>Relatório de UGs</h3>
+                    <p>Dados técnicos das Unidades Geradoras e capacidades</p>
+                    <button onClick={exportarUGs} className="btn-primary">
+                      🏭 Exportar UGs
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* Ações do Sistema */}
-            <section className="acoes-sistema">
-              <h2>🔧 Ações do Sistema</h2>
-              <div className="system-actions">
-                <button onClick={carregarDados} className="btn info">
-                  🔄 Atualizar Dados
-                </button>
-                <button onClick={limparTodosDados} className="btn danger">
-                  🗑️ Limpar Todos os Dados
-                </button>
-              </div>
-              
-              <div className="system-info">
-                <h4>ℹ️ Informações do Sistema</h4>
-                <ul>
-                  <li><strong>Última Proposta:</strong> {estatisticas.ultimaProposta}</li>
-                  <li><strong>Total de Registros:</strong> {estatisticas.total + estatisticas.totalControle + estatisticas.totalUGs}</li>
-                  <li><strong>Storage:</strong> localStorage (local no navegador)</li>
-                  <li><strong>Status:</strong> ✅ Sistema Operacional</li>
-                </ul>
+            <section className="filters-section">
+              <div className="filters-container">
+                <h2>🔧 Ações do Sistema</h2>
+                <div className="actions-container">
+                  <button onClick={carregarDados} className="btn-secondary">
+                    🔄 Atualizar Dados
+                  </button>
+                  <button onClick={limparTodosDados} className="btn-danger">
+                    🗑️ Limpar Todos os Dados
+                  </button>
+                </div>
+                
+                <div className="system-info">
+                  <h4>ℹ️ Informações do Sistema</h4>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <strong>Última Proposta:</strong> {estatisticas.ultimaProposta}
+                    </div>
+                    <div className="info-item">
+                      <strong>Total de Registros:</strong> {estatisticas.total + estatisticas.totalControle + estatisticas.totalUGs}
+                    </div>
+                    <div className="info-item">
+                      <strong>Storage:</strong> localStorage (local no navegador)
+                    </div>
+                    <div className="info-item">
+                      <strong>Status:</strong> ✅ Sistema Operacional
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
           </>

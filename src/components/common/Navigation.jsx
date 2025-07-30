@@ -1,66 +1,71 @@
-// src/components/common/Navigation.jsx
+// src/components/common/Navigation.jsx - COM INÍCIO MARCADO DE VERDE
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './Navigation.css';
 
 const Navigation = () => {
   const location = useLocation();
-  const { hasPermission } = useAuth();
+  const navigate = useNavigate();
 
-  const navItems = [
+  const menuItems = [
     { 
-      path: '/', 
+      id: 'inicio', 
+      label: 'INÍCIO', 
       icon: '🏠', 
-      label: 'Início',
-      permission: null // Todos podem acessar
+      path: '/',
+      paths: ['/', '/dashboard'] // Múltiplos caminhos para o início
     },
     { 
-      path: '/nova-proposta', 
-      icon: '📝', 
-      label: 'Nova Proposta',
-      permission: 'nova-proposta'
+      id: 'prospec', 
+      label: 'PROSPEC', 
+      icon: '📋', 
+      path: '/prospec'
     },
     { 
-      path: '/prospec', 
+      id: 'controle', 
+      label: 'CONTROLE', 
+      icon: '⚙️', 
+      path: '/controle'
+    },
+    { 
+      id: 'ugs', 
+      label: 'UGs', 
+      icon: '🏭', 
+      path: '/ugs'
+    },
+    { 
+      id: 'relatorios', 
+      label: 'RELATÓRIOS', 
       icon: '📊', 
-      label: 'PROSPEC',
-      permission: 'prospec'
-    },
-    { 
-      path: '/controle', 
-      icon: '✅', 
-      label: 'CONTROLE',
-      permission: 'controle'
-    },
-    { 
-      path: '/ugs', 
-      icon: '🏢', 
-      label: 'Unidades Geradoras',
-      permission: 'ugs'
+      path: '/relatorios'
     }
   ];
 
-  // Filtrar itens baseado nas permissões
-  const visibleItems = navItems.filter(item => 
-    !item.permission || hasPermission(item.permission)
-  );
+  const isActive = (item) => {
+    if (item.paths) {
+      return item.paths.includes(location.pathname);
+    }
+    return location.pathname === item.path;
+  };
+
+  const handleNavigation = (path) => {
+    navigate(path);
+  };
 
   return (
-    <nav className="main-navigation">
-      <ul className="nav-menu">
-        {visibleItems.map(item => (
-          <li key={item.path}>
-            <Link 
-              to={item.path} 
-              className={location.pathname === item.path ? 'active' : ''}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          </li>
+    <nav className="navigation">
+      <div className="nav-container">
+        {menuItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => handleNavigation(item.path)}
+            className={`nav-item ${isActive(item) ? 'active' : ''}`}
+          >
+            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-label">{item.label}</span>
+          </button>
         ))}
-      </ul>
+      </div>
     </nav>
   );
 };

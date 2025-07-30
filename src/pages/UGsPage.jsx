@@ -1,10 +1,9 @@
-// src/pages/UGsPage.jsx - SEM DADOS SIMULADOS
-import React, { useState, useEffect } from 'react';
+// src/pages/UGsPage.jsx - COMPLETO COM CALIBRAGEM CORRIGIDA SEM STATUS
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import storageService from '../services/storageService';
-import './UGsPage.css';
 
 const UGsPage = () => {
   const [dados, setDados] = useState([]);
@@ -27,27 +26,13 @@ const UGsPage = () => {
 
   const { showNotification } = useNotification();
 
-  useEffect(() => {
-    carregarDados();
-  }, []);
-
-  useEffect(() => {
-    filtrarDados();
-  }, [filtros, dados]);
-
-  useEffect(() => {
-    atualizarEstatisticas();
-  }, [dadosFiltrados]);
-
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
       
       console.log('📥 Carregando UGs do localStorage...');
       
-      // Carregar dados reais do localStorage
       const dadosUGs = await storageService.getUGs();
-      
       setDados(dadosUGs);
       setDadosFiltrados(dadosUGs);
       
@@ -67,9 +52,9 @@ const UGsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
 
-  const filtrarDados = () => {
+  const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
 
     if (filtros.nome) {
@@ -85,9 +70,9 @@ const UGsPage = () => {
     }
 
     setDadosFiltrados(dadosFiltrados);
-  };
+  }, [dados, filtros]);
 
-  const atualizarEstatisticas = () => {
+  const atualizarEstatisticas = useCallback(() => {
     const total = dadosFiltrados.length;
     const calibradas = dadosFiltrados.filter(item => item.calibrado).length;
     const naoCalibradas = total - calibradas;
@@ -99,7 +84,19 @@ const UGsPage = () => {
       naoCalibradas,
       potenciaTotal
     });
-  };
+  }, [dadosFiltrados]);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  useEffect(() => {
+    filtrarDados();
+  }, [filtrarDados]);
+
+  useEffect(() => {
+    atualizarEstatisticas();
+  }, [atualizarEstatisticas]);
 
   const limparFiltros = () => {
     setFiltros({
@@ -108,15 +105,12 @@ const UGsPage = () => {
     });
   };
 
-  // FUNÇÃO PARA CRIAR NOVA UG
   const criarNovaUG = () => {
     setModalNovaUG({ show: true });
   };
 
-  // FUNÇÃO PARA SALVAR NOVA UG
   const salvarNovaUG = async (dadosUG) => {
     try {
-      // Verificar se já existe UG com mesmo nome
       const jaExiste = dados.find(ug => 
         ug.nomeUsina.toLowerCase() === dadosUG.nomeUsina.toLowerCase()
       );
@@ -126,14 +120,13 @@ const UGsPage = () => {
         return;
       }
 
-      // Calcular capacidade automaticamente
       const capacidade = 720 * dadosUG.potenciaCC * (dadosUG.fatorCapacidade / 100);
       
       const novaUG = {
         ...dadosUG,
         capacidade,
-        media: 0, // Será calculada posteriormente
-        calibrado: false, // Nova UG não está calibrada
+        media: 0,
+        calibrado: false,
         dataCadastro: new Date().toISOString(),
         id: Date.now().toString()
       };
@@ -150,20 +143,16 @@ const UGsPage = () => {
     }
   };
 
-  // FUNÇÃO PARA EDITAR UG
   const editarUG = (index) => {
     const item = dadosFiltrados[index];
     if (!item) return;
-
     setModalEdicao({ show: true, item, index });
   };
 
-  // FUNÇÃO PARA SALVAR EDIÇÃO
   const salvarEdicaoUG = async (dadosAtualizados) => {
     try {
       const { item } = modalEdicao;
       
-      // Encontrar o índice real no array principal
       const indexReal = dados.findIndex(ug => ug.id === item.id);
       
       if (indexReal === -1) {
@@ -171,7 +160,6 @@ const UGsPage = () => {
         return;
       }
 
-      // Recalcular capacidade se alterou potência ou fator
       if (dadosAtualizados.potenciaCC || dadosAtualizados.fatorCapacidade) {
         const potenciaCC = dadosAtualizados.potenciaCC || item.potenciaCC;
         const fatorCapacidade = dadosAtualizados.fatorCapacidade || item.fatorCapacidade;
@@ -190,7 +178,6 @@ const UGsPage = () => {
     }
   };
 
-  // FUNÇÃO PARA REMOVER UG
   const removerUG = async (index) => {
     const item = dadosFiltrados[index];
     
@@ -217,7 +204,6 @@ const UGsPage = () => {
     }
   };
 
-  // FUNÇÃO PARA CALIBRAR UG
   const calibrarUG = async (index, novaMedia) => {
     try {
       const item = dadosFiltrados[index];
@@ -242,7 +228,6 @@ const UGsPage = () => {
     }
   };
 
-  // FUNÇÃO PARA EXPORTAR DADOS
   const exportarDados = async () => {
     try {
       await storageService.exportarParaCSV('ugs');
@@ -254,7 +239,7 @@ const UGsPage = () => {
   };
 
   return (
-    <div className="ugs-container">
+    <div className="page-container">
       <div className="container">
         <Header 
           title="UNIDADES GERADORAS" 
@@ -265,69 +250,78 @@ const UGsPage = () => {
         <Navigation />
 
         {/* Estatísticas */}
-        <section className="stats">
-          <div className="stats-grid">
-            <div className="stat-card">
-              <h3>Total de UGs</h3>
-              <div className="stat-number">{estatisticas.total}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Calibradas</h3>
-              <div className="stat-number">{estatisticas.calibradas}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Não Calibradas</h3>
-              <div className="stat-number">{estatisticas.naoCalibradas}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Potência Total</h3>
-              <div className="stat-number">{estatisticas.potenciaTotal.toLocaleString()} kW</div>
-            </div>
+        <section className="quick-stats">
+          <div className="stat-card">
+            <span className="stat-label">Total de UGs</span>
+            <span className="stat-value">{estatisticas.total}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Calibradas</span>
+            <span className="stat-value">{estatisticas.calibradas}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Não Calibradas</span>
+            <span className="stat-value">{estatisticas.naoCalibradas}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Potência Total</span>
+            <span className="stat-value">{estatisticas.potenciaTotal.toLocaleString()} kW</span>
           </div>
         </section>
 
         {/* Filtros */}
-        <section className="filters">
-          <div className="filters-row">
-            <input
-              type="text"
-              placeholder="🔍 Buscar por nome da usina..."
-              value={filtros.nome}
-              onChange={(e) => setFiltros({...filtros, nome: e.target.value})}
-              className="filter-input"
-            />
-            
-            <select
-              value={filtros.calibrada}
-              onChange={(e) => setFiltros({...filtros, calibrada: e.target.value})}
-              className="filter-select"
-            >
-              <option value="">Todas as UGs</option>
-              <option value="true">Apenas Calibradas</option>
-              <option value="false">Apenas Não Calibradas</option>
-            </select>
-            
-            <button onClick={limparFiltros} className="clear-filters-btn">
-              🗑️ Limpar
+        <section className="filters-section">
+          <div className="filters-container">
+            <div className="filters-grid">
+              <div className="filter-group">
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar por nome da usina..."
+                  value={filtros.nome}
+                  onChange={(e) => setFiltros({...filtros, nome: e.target.value})}
+                />
+              </div>
+              
+              <div className="filter-group">
+                <select
+                  value={filtros.calibrada}
+                  onChange={(e) => setFiltros({...filtros, calibrada: e.target.value})}
+                >
+                  <option value="">Todas as UGs</option>
+                  <option value="true">Apenas Calibradas</option>
+                  <option value="false">Apenas Não Calibradas</option>
+                </select>
+              </div>
+              
+              <div className="filter-group">
+                <button onClick={limparFiltros} className="btn-secondary">
+                  🗑️ Limpar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Ações */}
+          <div className="actions-container">
+            <button onClick={criarNovaUG} className="btn-primary">
+              ➕ Nova UG
+            </button>
+            <button onClick={exportarDados} className="btn-secondary">
+              📊 Exportar CSV
+            </button>
+            <button onClick={carregarDados} className="btn-secondary">
+              🔄 Atualizar
             </button>
           </div>
         </section>
 
-        {/* Ações */}
-        <section className="actions">
-          <button onClick={criarNovaUG} className="btn primary">
-            ➕ Nova UG
-          </button>
-          <button onClick={exportarDados} className="btn secondary">
-            📊 Exportar CSV
-          </button>
-          <button onClick={carregarDados} className="btn tertiary">
-            🔄 Atualizar
-          </button>
-        </section>
-
-        {/* Tabela de dados */}
-        <section className="data-table">
+        {/* Tabela de dados - SEM STATUS + CALIBRAGEM CORRIGIDA */}
+        <section className="table-section">
+          <div className="table-header">
+            <h2>🏭 Lista de Unidades Geradoras</h2>
+            <span className="table-count">{dadosFiltrados.length} UGs</span>
+          </div>
+          
           {loading ? (
             <div className="loading">Carregando UGs...</div>
           ) : dadosFiltrados.length === 0 ? (
@@ -345,8 +339,7 @@ const UGsPage = () => {
                     <th>Potência CC</th>
                     <th>Fator Cap.</th>
                     <th>Capacidade</th>
-                    <th>Média Atual</th>
-                    <th>Status</th>
+                    <th>Calibragem</th>
                     <th>Data Cadastro</th>
                     <th>Ações</th>
                   </tr>
@@ -363,7 +356,7 @@ const UGsPage = () => {
                       <td>{item.capacidade?.toLocaleString()} kWh/mês</td>
                       <td>
                         {item.calibrado ? (
-                          <span className="media-calibrada">
+                          <span className="calibragem-definida">
                             {item.media?.toLocaleString()} kWh
                           </span>
                         ) : (
@@ -371,11 +364,6 @@ const UGsPage = () => {
                             onCalibrar={(media) => calibrarUG(index, media)}
                           />
                         )}
-                      </td>
-                      <td>
-                        <span className={`status ${item.calibrado ? 'calibrada' : 'pendente'}`}>
-                          {item.calibrado ? '✅ Calibrada' : '⏳ Pendente'}
-                        </span>
                       </td>
                       <td>
                         {new Date(item.dataCadastro).toLocaleDateString('pt-BR')}
@@ -448,7 +436,7 @@ const CalibragemInput = ({ onCalibrar }) => {
     <form onSubmit={handleSubmit} className="calibragem-form">
       <input
         type="number"
-        placeholder="Média kWh"
+        placeholder="Valor calibragem"
         value={media}
         onChange={(e) => setMedia(e.target.value)}
         className="calibragem-input"
@@ -473,7 +461,6 @@ const ModalNovaUG = ({ onSave, onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validações básicas
     if (!dados.nomeUsina || !dados.potenciaCA || !dados.potenciaCC) {
       alert('Preencha todos os campos obrigatórios');
       return;
@@ -482,12 +469,11 @@ const ModalNovaUG = ({ onSave, onClose }) => {
     onSave(dados);
   };
 
-  // Calcular capacidade em tempo real
   const capacidadeCalculada = 720 * dados.potenciaCC * (dados.fatorCapacidade / 100);
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>➕ Nova Unidade Geradora</h3>
           <button onClick={onClose} className="close-btn">❌</button>
@@ -543,10 +529,10 @@ const ModalNovaUG = ({ onSave, onClose }) => {
           </div>
           
           <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn secondary">
+            <button type="button" onClick={onClose} className="btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn primary">
+            <button type="submit" className="btn-primary">
               Salvar UG
             </button>
           </div>
@@ -565,12 +551,11 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
     onSave(dados);
   };
 
-  // Calcular capacidade em tempo real
   const capacidadeCalculada = 720 * dados.potenciaCC * (dados.fatorCapacidade / 100);
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>✏️ Editar Unidade Geradora</h3>
           <button onClick={onClose} className="close-btn">❌</button>
@@ -627,26 +612,15 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
             />
           </div>
           
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={dados.calibrado || false}
-                onChange={(e) => setDados({...dados, calibrado: e.target.checked})}
-              />
-              UG Calibrada
-            </label>
-          </div>
-          
           <div className="capacidade-preview">
             <strong>Capacidade Calculada: {capacidadeCalculada.toLocaleString()} kWh/mês</strong>
           </div>
           
           <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn secondary">
+            <button type="button" onClick={onClose} className="btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn primary">
+            <button type="submit" className="btn-primary">
               Salvar Alterações
             </button>
           </div>

@@ -1,4 +1,4 @@
-// src/App.js - SEM WARNINGS DE ESLINT
+// src/App.js - COM ROTA PARA SUA PÁGINA NOVA PROPOSTA
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -12,6 +12,7 @@ import './services/storageService';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ProspecPage from './pages/ProspecPage';
+import NovaPropostaPage from './pages/NovaPropostaPage'; // SUA PÁGINA ORIGINAL
 import ControlePage from './pages/ControlePage';
 import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
@@ -45,6 +46,13 @@ function App() {
               <Route path="/prospec" element={
                 <ProtectedRoute>
                   <ProspecPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* SUA PÁGINA ORIGINAL DE NOVA PROPOSTA */}
+              <Route path="/nova-proposta" element={
+                <ProtectedRoute>
+                  <NovaPropostaPage />
                 </ProtectedRoute>
               } />
               

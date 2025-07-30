@@ -1,18 +1,17 @@
-// src/pages/ProspecPage.jsx - SEM DADOS SIMULADOS
-import React, { useState, useEffect } from 'react';
+// src/pages/ProspecPage.jsx - USANDO SUA PÁGINA NOVA PROPOSTA ORIGINAL
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import storageService from '../services/storageService';
-import PDFGenerator from '../services/pdfGenerator';
-import './ProspecPage.css';
 
 const ProspecPage = () => {
+  const navigate = useNavigate();
   const [dados, setDados] = useState([]);
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
-  const [modalNovaProposta, setModalNovaProposta] = useState({ show: false });
   
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -22,17 +21,7 @@ const ProspecPage = () => {
 
   const { showNotification } = useNotification();
 
-  // Carregamento inicial
-  useEffect(() => {
-    carregarDados();
-  }, []);
-
-  // Aplicar filtros
-  useEffect(() => {
-    filtrarDados();
-  }, [filtros, dados]);
-
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -66,9 +55,9 @@ const ProspecPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
 
-  const filtrarDados = () => {
+  const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
 
     if (filtros.consultor) {
@@ -94,7 +83,17 @@ const ProspecPage = () => {
     }
 
     setDadosFiltrados(dadosFiltrados);
-  };
+  }, [dados, filtros]);
+
+  // Carregamento inicial
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  // Aplicar filtros
+  useEffect(() => {
+    filtrarDados();
+  }, [filtrarDados]);
 
   const limparFiltros = () => {
     setFiltros({
@@ -168,56 +167,9 @@ const ProspecPage = () => {
     }
   };
 
-  // FUNÇÃO PARA CRIAR NOVA PROPOSTA
+  // NAVEGAR PARA SUA PÁGINA ORIGINAL DE NOVA PROPOSTA
   const criarNovaProposta = () => {
-    setModalNovaProposta({ show: true });
-  };
-
-  // FUNÇÃO PARA SALVAR NOVA PROPOSTA
-  const salvarNovaProposta = async (dadosProposta) => {
-    try {
-      // Gerar número da proposta automaticamente
-      const propostas = await storageService.getProspec();
-      const ultimoNumero = propostas.length > 0 
-        ? Math.max(...propostas.map(p => {
-            const num = parseInt(p.numeroProposta.split('/')[1] || '0');
-            return isNaN(num) ? 0 : num;
-          }))
-        : 0;
-      
-      const novoNumero = ultimoNumero + 1;
-      const numeroProposta = `2025/${novoNumero.toString().padStart(4, '0')}`;
-      
-      const novaProposta = {
-        ...dadosProposta,
-        numeroProposta,
-        data: new Date().toISOString().split('T')[0],
-        status: 'Aguardando',
-        id: `${numeroProposta}-${dadosProposta.numeroUC}-${Date.now()}`
-      };
-
-      await storageService.adicionarProspec(novaProposta);
-      await carregarDados();
-      
-      setModalNovaProposta({ show: false });
-      showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
-      
-    } catch (error) {
-      console.error('❌ Erro ao criar proposta:', error);
-      showNotification('Erro ao criar proposta: ' + error.message, 'error');
-    }
-  };
-
-  // FUNÇÃO PARA GERAR PDF
-  const gerarPDF = async (item) => {
-    try {
-      showNotification('Gerando PDF...', 'info');
-      await PDFGenerator.gerarPDFProposta(item);
-      showNotification('PDF gerado com sucesso!', 'success');
-    } catch (error) {
-      console.error('❌ Erro ao gerar PDF:', error);
-      showNotification('Erro ao gerar PDF: ' + error.message, 'error');
-    }
+    navigate('/nova-proposta');
   };
 
   // FUNÇÃO PARA EXPORTAR DADOS
@@ -235,7 +187,7 @@ const ProspecPage = () => {
   const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
 
   return (
-    <div className="prospec-container">
+    <div className="page-container">
       <div className="container">
         <Header 
           title="PROSPECÇÃO" 
@@ -245,59 +197,91 @@ const ProspecPage = () => {
         
         <Navigation />
 
+        {/* Estatísticas Rápidas */}
+        <section className="quick-stats">
+          <div className="stat-card">
+            <span className="stat-label">Total</span>
+            <span className="stat-value">{dadosFiltrados.length}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Aguardando</span>
+            <span className="stat-value">{dadosFiltrados.filter(p => p.status === 'Aguardando').length}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Fechadas</span>
+            <span className="stat-value">{dadosFiltrados.filter(p => p.status === 'Fechado').length}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Consultores</span>
+            <span className="stat-value">{consultoresUnicos.length}</span>
+          </div>
+        </section>
+
         {/* Filtros */}
-        <section className="filters">
-          <div className="filters-row">
-            <input
-              type="text"
-              placeholder="🔍 Buscar por nome, proposta, UC..."
-              value={filtros.busca}
-              onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
-              className="filter-input"
-            />
-            
-            <select
-              value={filtros.consultor}
-              onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
-              className="filter-select"
-            >
-              <option value="">Todos os Consultores</option>
-              {consultoresUnicos.map(consultor => (
-                <option key={consultor} value={consultor}>{consultor}</option>
-              ))}
-            </select>
-            
-            <select
-              value={filtros.status}
-              onChange={(e) => setFiltros({...filtros, status: e.target.value})}
-              className="filter-select"
-            >
-              <option value="">Todos os Status</option>
-              <option value="Aguardando">Aguardando</option>
-              <option value="Fechado">Fechado</option>
-            </select>
-            
-            <button onClick={limparFiltros} className="clear-filters-btn">
-              🗑️ Limpar
+        <section className="filters-section">
+          <div className="filters-container">
+            <div className="filters-grid">
+              <div className="filter-group">
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar por nome, proposta, UC..."
+                  value={filtros.busca}
+                  onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
+                />
+              </div>
+              
+              <div className="filter-group">
+                <select
+                  value={filtros.consultor}
+                  onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
+                >
+                  <option value="">Todos os Consultores</option>
+                  {consultoresUnicos.map(consultor => (
+                    <option key={consultor} value={consultor}>{consultor}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="filter-group">
+                <select
+                  value={filtros.status}
+                  onChange={(e) => setFiltros({...filtros, status: e.target.value})}
+                >
+                  <option value="">Todos os Status</option>
+                  <option value="Aguardando">Aguardando</option>
+                  <option value="Fechado">Fechado</option>
+                </select>
+              </div>
+              
+              <div className="filter-group">
+                <button onClick={limparFiltros} className="btn-secondary">
+                  🗑️ Limpar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Ações */}
+          <div className="actions-container">
+            <button onClick={criarNovaProposta} className="btn-primary">
+              ➕ Nova Proposta
+            </button>
+            <button onClick={exportarDados} className="btn-secondary">
+              📊 Exportar CSV
+            </button>
+            <button onClick={carregarDados} className="btn-secondary">
+              🔄 Atualizar
             </button>
           </div>
         </section>
 
-        {/* Ações */}
-        <section className="actions">
-          <button onClick={criarNovaProposta} className="btn primary">
-            ➕ Nova Proposta
-          </button>
-          <button onClick={exportarDados} className="btn secondary">
-            📊 Exportar CSV
-          </button>
-          <button onClick={carregarDados} className="btn tertiary">
-            🔄 Atualizar
-          </button>
-        </section>
-
         {/* Tabela de dados */}
-        <section className="data-table">
+        <section className="table-section">
+          <div className="table-header">
+            <h2>📋 Lista de Propostas</h2>
+            <span className="table-count">{dadosFiltrados.length} propostas</span>
+          </div>
+          
           {loading ? (
             <div className="loading">Carregando propostas...</div>
           ) : dadosFiltrados.length === 0 ? (
@@ -348,13 +332,6 @@ const ProspecPage = () => {
                             ✏️
                           </button>
                           <button 
-                            onClick={() => gerarPDF(item)}
-                            className="btn-icon pdf"
-                            title="Gerar PDF"
-                          >
-                            📄
-                          </button>
-                          <button 
                             onClick={() => removerItem(index)}
                             className="btn-icon delete"
                             title="Remover"
@@ -371,14 +348,6 @@ const ProspecPage = () => {
           )}
         </section>
 
-        {/* Modal de Nova Proposta */}
-        {modalNovaProposta.show && (
-          <ModalNovaProposta 
-            onSave={salvarNovaProposta}
-            onClose={() => setModalNovaProposta({ show: false })}
-          />
-        )}
-
         {/* Modal de Edição */}
         {modalEdicao.show && (
           <ModalEdicao 
@@ -392,155 +361,28 @@ const ProspecPage = () => {
   );
 };
 
-// Componente Modal de Nova Proposta
-const ModalNovaProposta = ({ onSave, onClose }) => {
-  const [dados, setDados] = useState({
-    nomeCliente: '',
-    apelido: '',
-    numeroUC: '',
-    descontoTarifa: 0.20,
-    descontoBandeira: 0.15,
-    ligacao: 'Trifásica',
-    consultor: '',
-    recorrencia: '3%',
-    media: 0,
-    telefone: ''
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Validações básicas
-    if (!dados.nomeCliente || !dados.numeroUC || !dados.consultor) {
-      alert('Preencha os campos obrigatórios: Cliente, UC e Consultor');
-      return;
-    }
-
-    onSave(dados);
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <div className="modal-header">
-          <h3>➕ Nova Proposta</h3>
-          <button onClick={onClose} className="close-btn">❌</button>
-        </div>
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Nome do Cliente *</label>
-              <input
-                type="text"
-                value={dados.nomeCliente}
-                onChange={(e) => setDados({...dados, nomeCliente: e.target.value})}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Apelido</label>
-              <input
-                type="text"
-                value={dados.apelido}
-                onChange={(e) => setDados({...dados, apelido: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>Número UC *</label>
-              <input
-                type="text"
-                value={dados.numeroUC}
-                onChange={(e) => setDados({...dados, numeroUC: e.target.value})}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Consultor *</label>
-              <input
-                type="text"
-                value={dados.consultor}
-                onChange={(e) => setDados({...dados, consultor: e.target.value})}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>Média (kWh)</label>
-              <input
-                type="number"
-                value={dados.media}
-                onChange={(e) => setDados({...dados, media: parseInt(e.target.value) || 0})}
-              />
-            </div>
-            <div className="form-group">
-              <label>Telefone</label>
-              <input
-                type="tel"
-                value={dados.telefone}
-                onChange={(e) => setDados({...dados, telefone: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>Desconto Tarifa</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={dados.descontoTarifa}
-                onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) || 0})}
-              />
-            </div>
-            <div className="form-group">
-              <label>Ligação</label>
-              <select
-                value={dados.ligacao}
-                onChange={(e) => setDados({...dados, ligacao: e.target.value})}
-              >
-                <option value="Monofásica">Monofásica</option>
-                <option value="Bifásica">Bifásica</option>
-                <option value="Trifásica">Trifásica</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn secondary">
-              Cancelar
-            </button>
-            <button type="submit" className="btn primary">
-              Salvar Proposta
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 // Componente Modal de Edição
 const ModalEdicao = ({ item, onSave, onClose }) => {
   const [dados, setDados] = useState({ ...item });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     onSave(dados);
   };
 
+  const handleClose = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
+  };
+
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>✏️ Editar Proposta</h3>
-          <button onClick={onClose} className="close-btn">❌</button>
+          <button onClick={handleClose} className="close-btn">❌</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-row">
@@ -584,10 +426,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
           </div>
           
           <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn secondary">
+            <button type="button" onClick={handleClose} className="btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn primary">
+            <button type="submit" className="btn-primary">
               Salvar Alterações
             </button>
           </div>

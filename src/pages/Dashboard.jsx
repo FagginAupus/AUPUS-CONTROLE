@@ -1,15 +1,12 @@
-// src/pages/Dashboard.jsx - SEM WARNINGS DE ESLINT
+// src/pages/Dashboard.jsx - APENAS ESTATÍSTICAS
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import storageService from '../services/storageService';
-import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth(); // Removido hasPermission não usado
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState({
     total: 0,
     aguardando: 0,
@@ -58,12 +55,8 @@ const Dashboard = () => {
     logout();
   };
 
-  const navigateTo = (path) => {
-    navigate(path);
-  };
-
   return (
-    <div className="dashboard-container">
+    <div className="page-container">
       <div className="container">
         <Header 
           title="AUPUS ENERGIA" 
@@ -73,108 +66,40 @@ const Dashboard = () => {
         
         <Navigation />
 
-        {/* Estatísticas Gerais - DADOS REAIS DO LOCALSTORAGE */}
-        <section className="stats">
-          <h2>📈 Resumo Geral</h2>
+        {/* APENAS ESTATÍSTICAS GERAIS */}
+        <section className="quick-stats">
           {loading ? (
-            <div className="loading-stats">
-              <p>Carregando estatísticas...</p>
+            <div className="loading-message">
+              <p>📊 Carregando estatísticas...</p>
             </div>
           ) : (
-            <div className="stats-grid">
+            <>
               <div className="stat-card">
-                <h3>Total de Propostas</h3>
-                <div className="stat-number">{stats.total}</div>
-                <small>Todas as propostas criadas</small>
+                <span className="stat-label">Total de Propostas</span>
+                <span className="stat-value">{stats.total}</span>
               </div>
               <div className="stat-card">
-                <h3>Aguardando</h3>
-                <div className="stat-number">{stats.aguardando}</div>
-                <small>Propostas em andamento</small>
+                <span className="stat-label">Aguardando</span>
+                <span className="stat-value">{stats.aguardando}</span>
               </div>
               <div className="stat-card">
-                <h3>Fechadas</h3>
-                <div className="stat-number">{stats.fechadas}</div>
-                <small>Propostas finalizadas</small>
+                <span className="stat-label">Fechadas</span>
+                <span className="stat-value">{stats.fechadas}</span>
               </div>
               <div className="stat-card">
-                <h3>Última Proposta</h3>
-                <div className="stat-number">{stats.ultimaProposta}</div>
-                <small>Proposta mais recente</small>
+                <span className="stat-label">Última Proposta</span>
+                <span className="stat-value">{stats.ultimaProposta}</span>
               </div>
               <div className="stat-card">
-                <h3>Em Controle</h3>
-                <div className="stat-number">{stats.totalControle}</div>
-                <small>Propostas fechadas em controle</small>
+                <span className="stat-label">Em Controle</span>
+                <span className="stat-value">{stats.totalControle}</span>
               </div>
               <div className="stat-card">
-                <h3>UGs Cadastradas</h3>
-                <div className="stat-number">{stats.totalUGs}</div>
-                <small>Unidades Geradoras</small>
+                <span className="stat-label">UGs Cadastradas</span>
+                <span className="stat-value">{stats.totalUGs}</span>
               </div>
-            </div>
+            </>
           )}
-        </section>
-
-        {/* Ações Rápidas */}
-        <section className="quick-actions">
-          <h2>🚀 Ações Rápidas</h2>
-          <div className="actions-grid">
-            <button 
-              className="action-card primary"
-              onClick={() => navigateTo('/prospec')}
-            >
-              <span className="action-icon">📋</span>
-              <h3>Prospecção</h3>
-              <p>Gerenciar propostas e leads</p>
-            </button>
-            
-            <button 
-              className="action-card secondary"
-              onClick={() => navigateTo('/controle')}
-            >
-              <span className="action-icon">⚙️</span>
-              <h3>Controle</h3>
-              <p>Controlar propostas fechadas</p>
-            </button>
-            
-            <button 
-              className="action-card tertiary"
-              onClick={() => navigateTo('/ugs')}
-            >
-              <span className="action-icon">🏭</span>
-              <h3>UGs</h3>
-              <p>Gerenciar Unidades Geradoras</p>
-            </button>
-            
-            <button 
-              className="action-card quaternary"
-              onClick={() => navigateTo('/relatorios')}
-            >
-              <span className="action-icon">📊</span>
-              <h3>Relatórios</h3>
-              <p>Gerar relatórios e análises</p>
-            </button>
-          </div>
-        </section>
-
-        {/* Status do Sistema */}
-        <section className="system-status">
-          <h2>🔧 Status do Sistema</h2>
-          <div className="status-grid">
-            <div className="status-item">
-              <span className="status-indicator online"></span>
-              <span>Storage Local: Ativo</span>
-            </div>
-            <div className="status-item">
-              <span className="status-indicator online"></span>
-              <span>Sistema: Operacional</span>
-            </div>
-            <div className="status-item">
-              <span className="status-indicator">📱</span>
-              <span>Usuário: {user?.nome || 'Admin'}</span>
-            </div>
-          </div>
         </section>
 
         {/* Botão de Logout */}

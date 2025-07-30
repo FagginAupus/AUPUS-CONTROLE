@@ -1,4 +1,4 @@
-/* src/pages/NovaPropostaPage.css - ESTILOS CORRIGIDOS */
+/* src/pages/NovaPropostaPage.css - 5 INPUTS EM LINHA + UCs SEPARADAS */
 
 .page-container {
   min-height: 100vh;
@@ -48,12 +48,7 @@
   gap: 10px;
 }
 
-.form-section h2::before {
-  content: "📋";
-  font-size: 1.2rem;
-}
-
-/* Grid de formulário */
+/* Grid de formulário padrão */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -62,17 +57,6 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-@media (min-width: 1200px) {
-  .container {
-    max-width: 1200px;
-  }
-  
-  .form-grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    max-width: 100%;
-  }
 }
 
 /* =======================================================
@@ -94,7 +78,6 @@
   font-size: 0.9rem;
 }
 
-/* Inputs e campos */
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -118,105 +101,158 @@
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
+/* Campos de erro */
 .form-group input.error {
   border-color: #e74c3c;
 }
 
-.form-group input.error:focus {
-  border-color: #e74c3c;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-}
-
 .error-message {
-  color: #dc3545;
+  color: #e74c3c;
   font-size: 0.8rem;
   margin-top: 5px;
 }
 
-/* Campos readonly */
-.form-group input[readonly] {
-  background: #f8f9fa;
-  color: #666;
-  cursor: not-allowed;
-}
-
-/* Campos desabilitados */
-.form-group input:disabled,
-.form-group select:disabled {
-  background: #f0f0f0;
-  color: #999;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* Textarea */
-.form-group textarea {
-  min-height: 80px;
-  resize: vertical;
-  font-family: inherit;
-}
-
-/* =======================================================
-   CHECKBOX INLINE - DISCRETO E PEQUENO
-   ======================================================= */
-
+/* Checkbox inline */
 .checkbox-group-inline {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
-  font-size: 0.85rem; /* MENOR */
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e1e1e1;
 }
 
 .checkbox-group-inline input[type="checkbox"] {
-  width: 16px; /* MENOR */
-  height: 16px; /* MENOR */
+  width: 18px;
+  height: 18px;
   margin: 0;
   cursor: pointer;
-  flex-shrink: 0;
 }
 
 .checkbox-group-inline label {
-  margin: 0 !important;
+  margin: 0;
   cursor: pointer;
-  font-weight: 400 !important; /* MENOS DESTAQUE */
-  font-size: 0.85rem !important; /* MENOR */
-  color: #6c757d !important; /* COR MAIS DISCRETA */
+  font-weight: 400;
+  color: #333;
 }
 
 /* =======================================================
-   CHECKBOXES DE BENEFÍCIOS - ALINHADOS À ESQUERDA
+   UNIDADES CONSUMIDORAS - 5 INPUTS EM UMA LINHA + LINHAS SEPARADAS
+   ======================================================= */
+
+.ucs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Cada UC em uma linha separada */
+.uc-row {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  border: 2px solid #e1e1e1;
+  transition: border-color 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.uc-row:hover {
+  border-color: #4CAF50;
+}
+
+/* Header da UC com título e botão remover */
+.uc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e1e1e1;
+  padding-bottom: 10px;
+}
+
+.uc-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uc-header h3::before {
+  content: "🏢";
+}
+
+.btn-remove-uc {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-remove-uc:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+/* 5 INPUTS EM UMA LINHA */
+.uc-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr; /* 5 colunas iguais */
+  gap: 15px;
+  width: 100%;
+}
+
+/* Botão adicionar UC */
+.btn-add-uc {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+  align-self: flex-start;
+}
+
+.btn-add-uc:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+/* =======================================================
+   BENEFÍCIOS
    ======================================================= */
 
 .beneficios-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 15px;
+  gap: 10px;
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
 }
 
 .checkbox-group.beneficio-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   padding: 12px;
   background: white;
   border-radius: 8px;
   border: 1px solid #e1e1e1;
   width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
-  
-  /* IMPORTANTE: ALINHADO À ESQUERDA */
-  justify-content: flex-start;
-  text-align: left;
 }
 
 .checkbox-group.beneficio-item input[type="checkbox"] {
@@ -235,47 +271,11 @@
   line-height: 1.4;
   color: #333;
   width: 100%;
-  word-wrap: break-word;
-  
-  /* IMPORTANTE: TEXTO ALINHADO À ESQUERDA */
-  text-align: left;
 }
 
 .checkbox-group.beneficio-item:hover {
   background: #f8f9fa;
   border-color: #4CAF50;
-}
-
-/* =======================================================
-   SEÇÃO DE UCs
-   ======================================================= */
-
-.uc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.uc-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  border-left: 4px solid #4CAF50;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.uc-card h3 {
-  color: #333;
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* =======================================================
@@ -286,54 +286,47 @@
   display: flex;
   gap: 15px;
   justify-content: flex-start;
+  align-items: center;
   margin-top: 30px;
-  padding: 20px 0;
+  padding-top: 20px;
+  border-top: 2px solid #e1e1e1;
   flex-wrap: wrap;
 }
 
-.form-actions .btn {
+.btn {
   padding: 12px 24px;
-  font-size: 0.95rem;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.3s ease;
   border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  text-decoration: none;
 }
 
 .btn-primary {
-  background: #4CAF50;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #45a049;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #5a6268;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
-}
-
-.btn-danger {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #c82333;
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
 }
 
 .btn:disabled {
@@ -362,6 +355,15 @@
    RESPONSIVIDADE
    ======================================================= */
 
+/* Tablets */
+@media (max-width: 1024px) {
+  .uc-inputs-row {
+    grid-template-columns: 1fr 1fr 1fr; /* 3 colunas em tablets */
+    gap: 12px;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .container {
     padding: 15px;
@@ -376,13 +378,20 @@
     gap: 15px;
   }
   
-  .uc-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  .uc-inputs-row {
+    grid-template-columns: 1fr; /* 1 coluna em mobile */
+    gap: 10px;
+  }
+  
+  .uc-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
   
   .form-actions {
     flex-direction: column;
+    align-items: stretch;
   }
   
   .form-actions .btn {
@@ -391,6 +400,7 @@
   }
 }
 
+/* Mobile pequeno */
 @media (max-width: 480px) {
   .container {
     padding: 10px;
@@ -405,15 +415,18 @@
   }
   
   .form-group input,
-  .form-group select,
-  .form-group textarea {
+  .form-group select {
     padding: 10px 12px;
     font-size: 0.9rem;
   }
   
-  .checkbox-group-inline {
-    padding: 6px 10px;
-    font-size: 0.8rem;
+  .uc-row {
+    padding: 15px;
+  }
+  
+  .btn-remove-uc {
+    padding: 4px 8px;
+    font-size: 0.7rem;
   }
   
   .checkbox-group.beneficio-item {
@@ -421,11 +434,6 @@
   }
   
   .checkbox-group.beneficio-item label {
-    font-size: 0.9rem;
-  }
-  
-  .form-actions .btn {
-    padding: 10px 20px;
     font-size: 0.9rem;
   }
 }
@@ -447,11 +455,4 @@ html, body {
   content: "";
   display: table;
   clear: both;
-}
-
-/* Forçar nova linha entre seções */
-.section-break {
-  clear: both;
-  height: 20px;
-  width: 100%;
 }
