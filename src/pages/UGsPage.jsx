@@ -1,572 +1,398 @@
-// src/pages/UGsPage.jsx
+// src/pages/UGsPage.jsx - SEM DADOS SIMULADOS
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
+import storageService from '../services/storageService';
 import './UGsPage.css';
 
 const UGsPage = () => {
-  const [ugs, setUGs] = useState([]);
-  const [ugsFiltradas, setUGsFiltradas] = useState([]);
+  const [dados, setDados] = useState([]);
+  const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [ugEditando, setUGEditando] = useState(null);
+  const [modalNovaUG, setModalNovaUG] = useState({ show: false });
+  const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
+  
   const [filtros, setFiltros] = useState({
     nome: '',
-    status: '',
-    capacidadeMin: '',
-    capacidadeMax: ''
+    calibrada: ''
   });
-  const [formData, setFormData] = useState({
-    nomeUsina: '',
-    potenciaCA: '',
-    potenciaCC: '',
-    fatorCapacidade: '',
-    capacidadeCalculada: ''
+
+  const [estatisticas, setEstatisticas] = useState({
+    total: 0,
+    calibradas: 0,
+    naoCalibradas: 0,
+    potenciaTotal: 0
   });
 
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    carregarUGs();
+    carregarDados();
   }, []);
 
   useEffect(() => {
-    aplicarFiltros();
-  }, [ugs, filtros]);
+    filtrarDados();
+  }, [filtros, dados]);
 
-  const carregarUGs = async () => {
+  useEffect(() => {
+    atualizarEstatisticas();
+  }, [dadosFiltrados]);
+
+  const carregarDados = async () => {
     try {
       setLoading(true);
       
-      // Simular carregamento
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('📥 Carregando UGs do localStorage...');
       
-      // Dados mock de UGs com campos originais
-      const ugsMock = [
-        {
-          id: 1,
-          nomeUsina: 'Usina Solar Goiânia I',
-          potenciaCA: 4.8,
-          potenciaCC: 5.2,
-          fatorCapacidade: 35.0,
-          capacidade: 1310.4,
-          media: 1250,
-          calibrado: 1350,
-          clientesVinculados: 25
-        },
-        {
-          id: 2,
-          nomeUsina: 'Usina Solar Brasília II',
-          potenciaCA: 3.6,
-          potenciaCC: 4.0,
-          fatorCapacidade: 32.5,
-          capacidade: 936.0,
-          media: 890,
-          calibrado: 920,
-          clientesVinculados: 18
-        },
-        {
-          id: 3,
-          nomeUsina: 'Usina Solar Anápolis III',
-          potenciaCA: 6.0,
-          potenciaCC: 6.5,
-          fatorCapacidade: 38.0,
-          capacidade: 1774.8,
-          media: 0,
-          calibrado: 0,
-          clientesVinculados: 0
-        }
-      ];
-
-      setUGs(ugsMock);
-      showNotification(`${ugsMock.length} UGs carregadas com sucesso!`, 'success');
+      // Carregar dados reais do localStorage
+      const dadosUGs = await storageService.getUGs();
+      
+      setDados(dadosUGs);
+      setDadosFiltrados(dadosUGs);
+      
+      console.log(`✅ ${dadosUGs.length} UGs carregadas`);
+      
+      if (dadosUGs.length === 0) {
+        showNotification('Nenhuma UG encontrada. Cadastre sua primeira Unidade Geradora!', 'info');
+      } else {
+        showNotification(`${dadosUGs.length} UGs carregadas com sucesso!`, 'success');
+      }
+      
     } catch (error) {
-      console.error('Erro ao carregar UGs:', error);
-      showNotification('Erro ao carregar UGs', 'error');
+      console.error('❌ Erro ao carregar UGs:', error);
+      showNotification('Erro ao carregar UGs: ' + error.message, 'error');
+      setDados([]);
+      setDadosFiltrados([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const aplicarFiltros = () => {
-    let resultado = [...ugs];
+  const filtrarDados = () => {
+    let dadosFiltrados = dados;
 
     if (filtros.nome) {
-      resultado = resultado.filter(ug => 
-        ug.nomeUsina.toLowerCase().includes(filtros.nome.toLowerCase())
+      const busca = filtros.nome.toLowerCase();
+      dadosFiltrados = dadosFiltrados.filter(item =>
+        item.nomeUsina?.toLowerCase().includes(busca)
       );
     }
 
-    if (filtros.status) {
-      resultado = resultado.filter(ug => ug.status === filtros.status);
+    if (filtros.calibrada) {
+      const isCalibrada = filtros.calibrada === 'true';
+      dadosFiltrados = dadosFiltrados.filter(item => item.calibrado === isCalibrada);
     }
 
-    if (filtros.capacidadeMin) {
-      resultado = resultado.filter(ug => ug.capacidade >= parseFloat(filtros.capacidadeMin));
-    }
-
-    if (filtros.capacidadeMax) {
-      resultado = resultado.filter(ug => ug.capacidade <= parseFloat(filtros.capacidadeMax));
-    }
-
-    setUGsFiltradas(resultado);
+    setDadosFiltrados(dadosFiltrados);
   };
 
-  const handleFiltroChange = (campo, valor) => {
-    setFiltros(prev => ({
-      ...prev,
-      [campo]: valor
-    }));
+  const atualizarEstatisticas = () => {
+    const total = dadosFiltrados.length;
+    const calibradas = dadosFiltrados.filter(item => item.calibrado).length;
+    const naoCalibradas = total - calibradas;
+    const potenciaTotal = dadosFiltrados.reduce((acc, item) => acc + (item.potenciaCA || 0), 0);
+
+    setEstatisticas({
+      total,
+      calibradas,
+      naoCalibradas,
+      potenciaTotal
+    });
   };
 
   const limparFiltros = () => {
     setFiltros({
       nome: '',
-      status: '',
-      capacidadeMin: '',
-      capacidadeMax: ''
+      calibrada: ''
     });
   };
 
-  const calcularCapacidade = () => {
-    const potenciaCC = parseFloat(formData.potenciaCC) || 0;
-    const fatorCapacidade = parseFloat(formData.fatorCapacidade) || 0;
-    
-    if (potenciaCC > 0 && fatorCapacidade > 0) {
-      const capacidade = 720 * potenciaCC * (fatorCapacidade / 100);
-      setFormData(prev => ({
-        ...prev,
-        capacidadeCalculada: capacidade.toFixed(2) + ' MWh'
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        capacidadeCalculada: ''
-      }));
-    }
+  // FUNÇÃO PARA CRIAR NOVA UG
+  const criarNovaUG = () => {
+    setModalNovaUG({ show: true });
   };
 
-  const abrirModal = (ug = null) => {
-    if (ug) {
-      setUGEditando(ug);
-      setFormData({
-        nomeUsina: ug.nomeUsina,
-        potenciaCA: ug.potenciaCA.toString(),
-        potenciaCC: ug.potenciaCC.toString(),
-        fatorCapacidade: ug.fatorCapacidade.toString(),
-        capacidadeCalculada: ug.capacidade.toFixed(2) + ' MWh'
-      });
-    } else {
-      setUGEditando(null);
-      setFormData({
-        nomeUsina: '',
-        potenciaCA: '',
-        potenciaCC: '',
-        fatorCapacidade: '',
-        capacidadeCalculada: ''
-      });
-    }
-    setShowModal(true);
-  };
-
-  const fecharModal = () => {
-    setShowModal(false);
-    setUGEditando(null);
-  };
-
-  const handleFormChange = (campo, valor) => {
-    setFormData(prev => ({
-      ...prev,
-      [campo]: valor
-    }));
-  };
-
-  const salvarUG = async () => {
+  // FUNÇÃO PARA SALVAR NOVA UG
+  const salvarNovaUG = async (dadosUG) => {
     try {
-      if (!formData.nomeUsina || !formData.potenciaCA || !formData.potenciaCC || !formData.fatorCapacidade) {
-        showNotification('Preencha todos os campos obrigatórios!', 'error');
-        return;
-      }
-
-      const potenciaCA = parseFloat(formData.potenciaCA);
-      const potenciaCC = parseFloat(formData.potenciaCC);
-      const fatorCapacidade = parseFloat(formData.fatorCapacidade);
+      // Verificar se já existe UG com mesmo nome
+      const jaExiste = dados.find(ug => 
+        ug.nomeUsina.toLowerCase() === dadosUG.nomeUsina.toLowerCase()
+      );
       
-      if (isNaN(potenciaCA) || potenciaCA <= 0) {
-        showNotification('Potência CA deve ser um número válido!', 'error');
+      if (jaExiste) {
+        showNotification('Já existe uma UG com este nome!', 'error');
         return;
       }
+
+      // Calcular capacidade automaticamente
+      const capacidade = 720 * dadosUG.potenciaCC * (dadosUG.fatorCapacidade / 100);
       
-      if (isNaN(potenciaCC) || potenciaCC <= 0) {
-        showNotification('Potência CC deve ser um número válido!', 'error');
-        return;
-      }
+      const novaUG = {
+        ...dadosUG,
+        capacidade,
+        media: 0, // Será calculada posteriormente
+        calibrado: false, // Nova UG não está calibrada
+        dataCadastro: new Date().toISOString(),
+        id: Date.now().toString()
+      };
+
+      await storageService.adicionarUG(novaUG);
+      await carregarDados();
       
-      if (isNaN(fatorCapacidade) || fatorCapacidade <= 0 || fatorCapacidade > 100) {
-        showNotification('Fator de Capacidade deve ser entre 0 e 100!', 'error');
-        return;
-      }
-
-      // Calcular capacidade
-      const capacidade = 720 * potenciaCC * (fatorCapacidade / 100);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      if (ugEditando) {
-        const novasUGs = ugs.map(ug => 
-          ug.id === ugEditando.id 
-            ? { 
-                ...ug, 
-                nomeUsina: formData.nomeUsina,
-                potenciaCA,
-                potenciaCC,
-                fatorCapacidade,
-                capacidade
-              }
-            : ug
-        );
-        setUGs(novasUGs);
-        showNotification('UG atualizada com sucesso!', 'success');
-      } else {
-        const novaUG = {
-          id: Date.now(),
-          nomeUsina: formData.nomeUsina,
-          potenciaCA,
-          potenciaCC,
-          fatorCapacidade,
-          capacidade,
-          media: 0,
-          calibrado: 0,
-          clientesVinculados: 0
-        };
-        setUGs(prev => [...prev, novaUG]);
-        showNotification('UG criada com sucesso!', 'success');
-      }
-
-      fecharModal();
+      setModalNovaUG({ show: false });
+      showNotification(`UG "${dadosUG.nomeUsina}" criada com sucesso!`, 'success');
+      
     } catch (error) {
-      console.error('Erro ao salvar UG:', error);
-      showNotification('Erro ao salvar UG', 'error');
+      console.error('❌ Erro ao criar UG:', error);
+      showNotification('Erro ao criar UG: ' + error.message, 'error');
     }
   };
 
-  const excluirUG = async (ug) => {
-    if (!window.confirm(`Tem certeza que deseja excluir a UG "${ug.nomeUsina}"?`)) {
+  // FUNÇÃO PARA EDITAR UG
+  const editarUG = (index) => {
+    const item = dadosFiltrados[index];
+    if (!item) return;
+
+    setModalEdicao({ show: true, item, index });
+  };
+
+  // FUNÇÃO PARA SALVAR EDIÇÃO
+  const salvarEdicaoUG = async (dadosAtualizados) => {
+    try {
+      const { item } = modalEdicao;
+      
+      // Encontrar o índice real no array principal
+      const indexReal = dados.findIndex(ug => ug.id === item.id);
+      
+      if (indexReal === -1) {
+        showNotification('UG não encontrada para edição', 'error');
+        return;
+      }
+
+      // Recalcular capacidade se alterou potência ou fator
+      if (dadosAtualizados.potenciaCC || dadosAtualizados.fatorCapacidade) {
+        const potenciaCC = dadosAtualizados.potenciaCC || item.potenciaCC;
+        const fatorCapacidade = dadosAtualizados.fatorCapacidade || item.fatorCapacidade;
+        dadosAtualizados.capacidade = 720 * potenciaCC * (fatorCapacidade / 100);
+      }
+
+      await storageService.atualizarUG(indexReal, dadosAtualizados);
+      await carregarDados();
+      
+      setModalEdicao({ show: false, item: null, index: -1 });
+      showNotification('UG atualizada com sucesso!', 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro ao salvar edição:', error);
+      showNotification('Erro ao salvar: ' + error.message, 'error');
+    }
+  };
+
+  // FUNÇÃO PARA REMOVER UG
+  const removerUG = async (index) => {
+    const item = dadosFiltrados[index];
+    
+    if (!window.confirm(`Tem certeza que deseja remover a UG "${item.nomeUsina}"?`)) {
       return;
     }
 
     try {
-      if (ug.clientesVinculados > 0) {
-        showNotification(
-          `Não é possível excluir. Esta UG possui ${ug.clientesVinculados} clientes vinculados.`, 
-          'error'
-        );
+      const indexReal = dados.findIndex(ug => ug.id === item.id);
+      
+      if (indexReal === -1) {
+        showNotification('UG não encontrada para remoção', 'error');
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const novasUGs = ugs.filter(u => u.id !== ug.id);
-      setUGs(novasUGs);
-      showNotification('UG excluída com sucesso!', 'success');
+      await storageService.removerUG(indexReal);
+      await carregarDados();
+      
+      showNotification(`UG "${item.nomeUsina}" removida com sucesso!`, 'success');
+      
     } catch (error) {
-      console.error('Erro ao excluir UG:', error);
-      showNotification('Erro ao excluir UG', 'error');
+      console.error('❌ Erro ao remover:', error);
+      showNotification('Erro ao remover: ' + error.message, 'error');
     }
   };
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'Ativa': return 'status-ativa';
-      case 'Em Construção': return 'status-construcao';
-      case 'Planejada': return 'status-planejada';
-      case 'Inativa': return 'status-inativa';
-      default: return 'status-default';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Ativa': return '🟢';
-      case 'Em Construção': return '🟡';
-      case 'Planejada': return '🔵';
-      case 'Inativa': return '🔴';
-      default: return '⚪';
-    }
-  };
-
-  const baixarPDF = async (item) => {
+  // FUNÇÃO PARA CALIBRAR UG
+  const calibrarUG = async (index, novaMedia) => {
     try {
-      showNotification('📄 Gerando PDF da proposta...', 'info');
+      const item = dadosFiltrados[index];
+      const indexReal = dados.findIndex(ug => ug.id === item.id);
       
-      // Buscar todas as UCs da mesma proposta
-      const todasUCs = dados.filter(p => p.numeroProposta === item.numeroProposta);
-      
-      // Reconstroir dados da proposta igual ao sistema original
-      const dadosProposta = {
-        numeroProposta: item.numeroProposta,
-        nomeCliente: item.nomeCliente,
-        data: item.data,
-        celular: item.telefone,
-        consultor: item.consultor,
-        recorrencia: item.recorrencia,
-        descontoTarifa: item.descontoTarifa,
-        descontoBandeira: item.descontoBandeira,
-        status: item.status,
-        ucs: todasUCs.map(uc => ({
-          distribuidora: 'Equatorial',
-          numeroUC: uc.numeroUC,
-          apelido: uc.apelido,
-          ligacao: uc.ligacao,
-          consumo: uc.media
-        })),
-        // Benefícios padrão como no sistema original
-        beneficios: [
-          { numero: 1, texto: `Economia de até ${Math.round((item.descontoTarifa || 0.2) * 100)}% na tarifa de energia elétrica, sem impostos` },
-          { numero: 2, texto: `Economia de até ${Math.round((item.descontoBandeira || 0.2) * 100)}% no valor referente à bandeira tarifária, sem impostos` },
-          { numero: 3, texto: 'Isenção de taxa de adesão' },
-          { numero: 4, texto: 'Não há cobrança de taxa de cancelamento' },
-          { numero: 5, texto: 'Não há fidelidade contratual' },
-          { numero: 6, texto: 'O cliente pode cancelar a qualquer momento' },
-          { numero: 7, texto: 'Atendimento personalizado' },
-          { numero: 8, texto: 'Suporte técnico especializado' },
-          { numero: 9, texto: 'Economia imediata na primeira fatura' }
-        ]
-      };
-      
-      // Tentar usar a função global como no sistema original
-      if (typeof window.gerarPDFProposta === 'function') {
-        await window.gerarPDFProposta(dadosProposta, true);
-      } else if (typeof window.baixarPDFProposta === 'function') {
-        await window.baixarPDFProposta(dadosProposta);
-      } else {
-        throw new Error('Gerador de PDF não disponível');
+      if (indexReal === -1) {
+        showNotification('UG não encontrada', 'error');
+        return;
       }
+
+      await storageService.atualizarUG(indexReal, { 
+        media: novaMedia, 
+        calibrado: true 
+      });
       
-      showNotification('PDF baixado com sucesso!', 'success');
+      await carregarDados();
+      showNotification(`UG "${item.nomeUsina}" calibrada com sucesso!`, 'success');
+      
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      showNotification('Erro ao gerar PDF: ' + error.message, 'error');
+      console.error('❌ Erro ao calibrar:', error);
+      showNotification('Erro ao calibrar: ' + error.message, 'error');
     }
   };
 
-  const editarItem = (index) => {
-    // Implementar edição se necessário
-    showNotification('Função de edição em desenvolvimento', 'info');
+  // FUNÇÃO PARA EXPORTAR DADOS
+  const exportarDados = async () => {
+    try {
+      await storageService.exportarParaCSV('ugs');
+      showNotification('UGs exportadas com sucesso!', 'success');
+    } catch (error) {
+      console.error('❌ Erro ao exportar:', error);
+      showNotification('Erro ao exportar: ' + error.message, 'error');
+    }
   };
-
-  const calcularEstatisticas = () => {
-    const total = ugs.length;
-    const ativas = ugs.filter(ug => ug.clientesVinculados > 0).length;
-    const capacidadeTotal = ugs.reduce((acc, ug) => acc + ug.capacidade, 0);
-    const potenciaCATotalUG = ugs.reduce((acc, ug) => acc + ug.potenciaCA, 0);
-    
-    return { total, ativas, capacidadeTotal, potenciaCATotalUG };
-  };
-
-  const stats = calcularEstatisticas();
 
   return (
-    <div className="page-container">
+    <div className="ugs-container">
       <div className="container">
         <Header 
           title="UNIDADES GERADORAS" 
-          subtitle="Gestão de Usinas Solares" 
-          icon="🏢" 
+          subtitle="Gerenciamento de UGs" 
+          icon="🏭" 
         />
         
         <Navigation />
 
-        {/* Estatísticas Rápidas */}
-        <section className="quick-stats">
-          <div className="stat-card">
-            <div className="stat-icon">🏢</div>
-            <div className="stat-info">
-              <div className="stat-value">{stats.total}</div>
-              <div className="stat-label">Total de UGs</div>
+        {/* Estatísticas */}
+        <section className="stats">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Total de UGs</h3>
+              <div className="stat-number">{estatisticas.total}</div>
             </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🟢</div>
-            <div className="stat-info">
-              <div className="stat-value">{stats.ativas}</div>
-              <div className="stat-label">UGs Ativas</div>
+            <div className="stat-card">
+              <h3>Calibradas</h3>
+              <div className="stat-number">{estatisticas.calibradas}</div>
             </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">⚡</div>
-            <div className="stat-info">
-              <div className="stat-value">{stats.capacidadeTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
-              <div className="stat-label">Capacidade Total</div>
+            <div className="stat-card">
+              <h3>Não Calibradas</h3>
+              <div className="stat-number">{estatisticas.naoCalibradas}</div>
             </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🔌</div>
-            <div className="stat-info">
-              <div className="stat-value">{stats.potenciaCATotalUG.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
-              <div className="stat-label">Potência CA Total</div>
+            <div className="stat-card">
+              <h3>Potência Total</h3>
+              <div className="stat-number">{estatisticas.potenciaTotal.toLocaleString()} kW</div>
             </div>
           </div>
         </section>
 
         {/* Filtros */}
-        <section className="filters-section">
-          <div className="section-header">
-            <h2>🔍 Filtros</h2>
-            <div className="section-actions">
-              <button className="btn btn-secondary" onClick={limparFiltros}>
-                🧹 Limpar
-              </button>
-              <button className="btn btn-primary" onClick={() => abrirModal()}>
-                ➕ Nova UG
-              </button>
-            </div>
-          </div>
-          
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label>Nome da Usina:</label>
-              <input
-                type="text"
-                value={filtros.nome}
-                onChange={(e) => handleFiltroChange('nome', e.target.value)}
-                placeholder="Digite o nome..."
-              />
-            </div>
+        <section className="filters">
+          <div className="filters-row">
+            <input
+              type="text"
+              placeholder="🔍 Buscar por nome da usina..."
+              value={filtros.nome}
+              onChange={(e) => setFiltros({...filtros, nome: e.target.value})}
+              className="filter-input"
+            />
             
-            <div className="filter-group">
-              <label>Status:</label>
-              <select
-                value={filtros.status}
-                onChange={(e) => handleFiltroChange('status', e.target.value)}
-              >
-                <option value="">Todos</option>
-                <option value="Ativa">Ativa</option>
-                <option value="Em Construção">Em Construção</option>
-                <option value="Planejada">Planejada</option>
-                <option value="Inativa">Inativa</option>
-              </select>
-            </div>
+            <select
+              value={filtros.calibrada}
+              onChange={(e) => setFiltros({...filtros, calibrada: e.target.value})}
+              className="filter-select"
+            >
+              <option value="">Todas as UGs</option>
+              <option value="true">Apenas Calibradas</option>
+              <option value="false">Apenas Não Calibradas</option>
+            </select>
             
-            <div className="filter-group">
-              <label>Potência CA Mín (MW):</label>
-              <input
-                type="number"
-                value={filtros.capacidadeMin}
-                onChange={(e) => handleFiltroChange('capacidadeMin', e.target.value)}
-                placeholder="0"
-                min="0"
-                step="0.1"
-              />
-            </div>
-            
-            <div className="filter-group">
-              <label>Potência CA Máx (MW):</label>
-              <input
-                type="number"
-                value={filtros.capacidadeMax}
-                onChange={(e) => handleFiltroChange('capacidadeMax', e.target.value)}
-                placeholder="9999"
-                min="0"
-                step="0.1"
-              />
-            </div>
+            <button onClick={limparFiltros} className="clear-filters-btn">
+              🗑️ Limpar
+            </button>
           </div>
         </section>
 
-        {/* Tabela de UGs */}
-        <section className="data-section">
-          <div className="table-header">
-            <h2>📋 Lista de UGs ({ugsFiltradas.length})</h2>
-          </div>
+        {/* Ações */}
+        <section className="actions">
+          <button onClick={criarNovaUG} className="btn primary">
+            ➕ Nova UG
+          </button>
+          <button onClick={exportarDados} className="btn secondary">
+            📊 Exportar CSV
+          </button>
+          <button onClick={carregarDados} className="btn tertiary">
+            🔄 Atualizar
+          </button>
+        </section>
 
+        {/* Tabela de dados */}
+        <section className="data-table">
           {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Carregando UGs...</p>
-            </div>
-          ) : ugsFiltradas.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🏢</div>
-              <h3>Nenhuma UG encontrada</h3>
-              <p>Não há UGs cadastradas ou que atendam aos filtros aplicados.</p>
-              <button className="btn btn-primary" onClick={() => abrirModal()}>
-                ➕ Cadastrar primeira UG
-              </button>
+            <div className="loading">Carregando UGs...</div>
+          ) : dadosFiltrados.length === 0 ? (
+            <div className="no-data">
+              <p>📭 Nenhuma UG encontrada</p>
+              <p>Cadastre sua primeira Unidade Geradora clicando em "Nova UG"</p>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table className="table">
+            <div className="table-responsive">
+              <table>
                 <thead>
                   <tr>
-                    <th>Usina</th>
-                    <th>Potência CA (MW)</th>
-                    <th>Potência CC (MW)</th>
-                    <th>Fator Capacidade</th>
-                    <th>Capacidade (MWh)</th>
-                    <th>Média (kWh)</th>
-                    <th>Calibragem (kWh)</th>
+                    <th>Nome da Usina</th>
+                    <th>Potência CA</th>
+                    <th>Potência CC</th>
+                    <th>Fator Cap.</th>
+                    <th>Capacidade</th>
+                    <th>Média Atual</th>
+                    <th>Status</th>
+                    <th>Data Cadastro</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ugsFiltradas.map(ug => (
-                    <tr key={ug.id}>
+                  {dadosFiltrados.map((item, index) => (
+                    <tr key={item.id || index}>
                       <td>
-                        <div className="ug-name">
-                          <strong>{ug.nomeUsina}</strong>
-                          {ug.clientesVinculados > 0 && (
-                            <small className="clients-indicator" title={`${ug.clientesVinculados} clientes`}>
-                              👥 {ug.clientesVinculados}
-                            </small>
-                          )}
-                        </div>
+                        <strong>{item.nomeUsina}</strong>
+                      </td>
+                      <td>{item.potenciaCA} kW</td>
+                      <td>{item.potenciaCC} kW</td>
+                      <td>{item.fatorCapacidade}%</td>
+                      <td>{item.capacidade?.toLocaleString()} kWh/mês</td>
+                      <td>
+                        {item.calibrado ? (
+                          <span className="media-calibrada">
+                            {item.media?.toLocaleString()} kWh
+                          </span>
+                        ) : (
+                          <CalibragemInput 
+                            onCalibrar={(media) => calibrarUG(index, media)}
+                          />
+                        )}
                       </td>
                       <td>
-                        <span className="power-value">
-                          {ug.potenciaCA.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+                        <span className={`status ${item.calibrado ? 'calibrada' : 'pendente'}`}>
+                          {item.calibrado ? '✅ Calibrada' : '⏳ Pendente'}
                         </span>
                       </td>
                       <td>
-                        <span className="power-value">
-                          {ug.potenciaCC.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
-                        </span>
+                        {new Date(item.dataCadastro).toLocaleDateString('pt-BR')}
                       </td>
                       <td>
-                        <span className="factor-value">
-                          {ug.fatorCapacidade.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td>
-                        <span className="capacity-value">
-                          {ug.capacidade.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`media-value ${ug.media > 0 ? 'has-data' : 'no-data'}`}>
-                          {ug.media > 0 ? ug.media.toLocaleString('pt-BR') : '-'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`calibragem-value ${ug.calibrado > 0 ? 'has-data' : 'no-data'}`}>
-                          {ug.calibrado > 0 ? ug.calibrado.toLocaleString('pt-BR') : '-'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-actions">
+                        <div className="action-buttons">
                           <button 
-                            className="action-btn edit" 
-                            onClick={() => abrirModal(ug)}
-                            title="Editar UG"
+                            onClick={() => editarUG(index)}
+                            className="btn-icon edit"
+                            title="Editar"
                           >
                             ✏️
                           </button>
                           <button 
-                            className="action-btn delete" 
-                            onClick={() => excluirUG(ug)}
-                            title="Excluir UG"
-                            disabled={ug.clientesVinculados > 0}
+                            onClick={() => removerUG(index)}
+                            className="btn-icon delete"
+                            title="Remover"
                           >
                             🗑️
                           </button>
@@ -579,100 +405,253 @@ const UGsPage = () => {
             </div>
           )}
         </section>
-      </div>
 
-      {/* Modal de UG */}
-      {showModal && (
-        <div className="modal-overlay" onClick={fecharModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{ugEditando ? '✏️ Editar UG' : '➕ Nova UG'}</h3>
-              <button className="modal-close" onClick={fecharModal}>×</button>
+        {/* Modal de Nova UG */}
+        {modalNovaUG.show && (
+          <ModalNovaUG 
+            onSave={salvarNovaUG}
+            onClose={() => setModalNovaUG({ show: false })}
+          />
+        )}
+
+        {/* Modal de Edição */}
+        {modalEdicao.show && (
+          <ModalEdicaoUG 
+            item={modalEdicao.item}
+            onSave={salvarEdicaoUG}
+            onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Componente de Input para Calibragem
+const CalibragemInput = ({ onCalibrar }) => {
+  const [media, setMedia] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const mediaNum = parseInt(media);
+    
+    if (!mediaNum || mediaNum <= 0) {
+      alert('Digite um valor válido para a média');
+      return;
+    }
+
+    onCalibrar(mediaNum);
+    setMedia('');
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="calibragem-form">
+      <input
+        type="number"
+        placeholder="Média kWh"
+        value={media}
+        onChange={(e) => setMedia(e.target.value)}
+        className="calibragem-input"
+        required
+      />
+      <button type="submit" className="calibragem-btn" title="Calibrar">
+        🎯
+      </button>
+    </form>
+  );
+};
+
+// Componente Modal de Nova UG
+const ModalNovaUG = ({ onSave, onClose }) => {
+  const [dados, setDados] = useState({
+    nomeUsina: '',
+    potenciaCA: 0,
+    potenciaCC: 0,
+    fatorCapacidade: 85
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validações básicas
+    if (!dados.nomeUsina || !dados.potenciaCA || !dados.potenciaCC) {
+      alert('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    onSave(dados);
+  };
+
+  // Calcular capacidade em tempo real
+  const capacidadeCalculada = 720 * dados.potenciaCC * (dados.fatorCapacidade / 100);
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>➕ Nova Unidade Geradora</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="form-group">
+            <label>Nome da Usina *</label>
+            <input
+              type="text"
+              value={dados.nomeUsina}
+              onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
+              required
+            />
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>Potência CA (kW) *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={dados.potenciaCA}
+                onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                required
+              />
             </div>
-            
-            <div className="modal-body">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Nome da Usina *</label>
-                  <input
-                    type="text"
-                    value={formData.nomeUsina}
-                    onChange={(e) => handleFormChange('nomeUsina', e.target.value)}
-                    placeholder="Ex: Usina Solar Goiânia I"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Potência CA (MW) *</label>
-                  <input
-                    type="number"
-                    value={formData.potenciaCA}
-                    onChange={(e) => handleFormChange('potenciaCA', e.target.value)}
-                    placeholder="Ex: 4.8"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Potência CC (MW) *</label>
-                  <input
-                    type="number"
-                    value={formData.potenciaCC}
-                    onChange={(e) => {
-                      handleFormChange('potenciaCC', e.target.value);
-                      calcularCapacidade();
-                    }}
-                    placeholder="Ex: 5.2"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Fator de Capacidade (%) *</label>
-                  <input
-                    type="number"
-                    value={formData.fatorCapacidade}
-                    onChange={(e) => {
-                      handleFormChange('fatorCapacidade', e.target.value);
-                      calcularCapacidade();
-                    }}
-                    placeholder="Ex: 35"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Capacidade (MWh) - Calculada Automaticamente</label>
-                  <input
-                    type="text"
-                    value={formData.capacidadeCalculada}
-                    readOnly
-                    style={{
-                      background: '#f8f9fa',
-                      color: '#666',
-                      fontWeight: '600'
-                    }}
-                    placeholder="Será calculada automaticamente"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={fecharModal}>
-                Cancelar
-              </button>
-              <button className="btn btn-primary" onClick={salvarUG}>
-                {ugEditando ? 'Atualizar' : 'Criar'} UG
-              </button>
+            <div className="form-group">
+              <label>Potência CC (kW) *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={dados.potenciaCC}
+                onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
+                required
+              />
             </div>
           </div>
+          
+          <div className="form-group">
+            <label>Fator de Capacidade (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={dados.fatorCapacidade}
+              onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
+            />
+          </div>
+          
+          <div className="capacidade-preview">
+            <strong>Capacidade Calculada: {capacidadeCalculada.toLocaleString()} kWh/mês</strong>
+          </div>
+          
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn secondary">
+              Cancelar
+            </button>
+            <button type="submit" className="btn primary">
+              Salvar UG
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Componente Modal de Edição
+const ModalEdicaoUG = ({ item, onSave, onClose }) => {
+  const [dados, setDados] = useState({ ...item });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(dados);
+  };
+
+  // Calcular capacidade em tempo real
+  const capacidadeCalculada = 720 * dados.potenciaCC * (dados.fatorCapacidade / 100);
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>✏️ Editar Unidade Geradora</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
         </div>
-      )}
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="form-group">
+            <label>Nome da Usina</label>
+            <input
+              type="text"
+              value={dados.nomeUsina || ''}
+              onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
+            />
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>Potência CA (kW)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={dados.potenciaCA || 0}
+                onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Potência CC (kW)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={dados.potenciaCC || 0}
+                onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
+              />
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label>Fator de Capacidade (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={dados.fatorCapacidade || 0}
+              onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
+            />
+          </div>
+          
+          <div className="form-group">
+            <label>Média Atual (kWh)</label>
+            <input
+              type="number"
+              value={dados.media || 0}
+              onChange={(e) => setDados({...dados, media: parseInt(e.target.value) || 0})}
+            />
+          </div>
+          
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={dados.calibrado || false}
+                onChange={(e) => setDados({...dados, calibrado: e.target.checked})}
+              />
+              UG Calibrada
+            </label>
+          </div>
+          
+          <div className="capacidade-preview">
+            <strong>Capacidade Calculada: {capacidadeCalculada.toLocaleString()} kWh/mês</strong>
+          </div>
+          
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn secondary">
+              Cancelar
+            </button>
+            <button type="submit" className="btn primary">
+              Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

@@ -1,20 +1,50 @@
-// src/pages/Dashboard.jsx
-import React, { useState, useEffect } from 'react';
+// src/pages/Dashboard.jsx - SEM WARNINGS DE ESLINT
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
+import storageService from '../services/storageService';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout } = useAuth(); // Removido hasPermission não usado
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     total: 0,
     aguardando: 0,
     fechadas: 0,
-    ultimaProposta: '-'
+    ultimaProposta: '-',
+    totalControle: 0,
+    totalUGs: 0
   });
+  const [loading, setLoading] = useState(true);
+
+  const carregarEstatisticas = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Carregar estatísticas reais do localStorage
+      const estatisticas = await storageService.getEstatisticas();
+      setStats(estatisticas);
+      
+      console.log('📊 Estatísticas carregadas:', estatisticas);
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar estatísticas:', error);
+      // Em caso de erro, manter valores zerados
+      setStats({
+        total: 0,
+        aguardando: 0,
+        fechadas: 0,
+        ultimaProposta: '-',
+        totalControle: 0,
+        totalUGs: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     carregarEstatisticas();
@@ -22,24 +52,7 @@ const Dashboard = () => {
     // Atualizar a cada 30 segundos como no original
     const interval = setInterval(carregarEstatisticas, 30000);
     return () => clearInterval(interval);
-  }, []);
-
-  const carregarEstatisticas = async () => {
-    try {
-      // Simular carregamento de dados (depois conectar com o storage real)
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Dados mock que simulam as estatísticas do sistema original
-      setStats({
-        total: 25,
-        aguardando: 18,
-        fechadas: 7,
-        ultimaProposta: '2025/0025'
-      });
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
-    }
-  };
+  }, [carregarEstatisticas]);
 
   const handleLogout = () => {
     logout();
@@ -60,76 +73,119 @@ const Dashboard = () => {
         
         <Navigation />
 
-        {/* Estatísticas Gerais - IGUAIS AO ORIGINAL */}
+        {/* Estatísticas Gerais - DADOS REAIS DO LOCALSTORAGE */}
         <section className="stats">
           <h2>📈 Resumo Geral</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <h3>Total de Propostas</h3>
-              <div className="stat-number">{stats.total}</div>
+          {loading ? (
+            <div className="loading-stats">
+              <p>Carregando estatísticas...</p>
             </div>
-            <div className="stat-card">
-              <h3>Aguardando</h3>
-              <div className="stat-number">{stats.aguardando}</div>
+          ) : (
+            <div className="stats-grid">
+              <div className="stat-card">
+                <h3>Total de Propostas</h3>
+                <div className="stat-number">{stats.total}</div>
+                <small>Todas as propostas criadas</small>
+              </div>
+              <div className="stat-card">
+                <h3>Aguardando</h3>
+                <div className="stat-number">{stats.aguardando}</div>
+                <small>Propostas em andamento</small>
+              </div>
+              <div className="stat-card">
+                <h3>Fechadas</h3>
+                <div className="stat-number">{stats.fechadas}</div>
+                <small>Propostas finalizadas</small>
+              </div>
+              <div className="stat-card">
+                <h3>Última Proposta</h3>
+                <div className="stat-number">{stats.ultimaProposta}</div>
+                <small>Proposta mais recente</small>
+              </div>
+              <div className="stat-card">
+                <h3>Em Controle</h3>
+                <div className="stat-number">{stats.totalControle}</div>
+                <small>Propostas fechadas em controle</small>
+              </div>
+              <div className="stat-card">
+                <h3>UGs Cadastradas</h3>
+                <div className="stat-number">{stats.totalUGs}</div>
+                <small>Unidades Geradoras</small>
+              </div>
             </div>
-            <div className="stat-card">
-              <h3>Fechadas</h3>
-              <div className="stat-number">{stats.fechadas}</div>
+          )}
+        </section>
+
+        {/* Ações Rápidas */}
+        <section className="quick-actions">
+          <h2>🚀 Ações Rápidas</h2>
+          <div className="actions-grid">
+            <button 
+              className="action-card primary"
+              onClick={() => navigateTo('/prospec')}
+            >
+              <span className="action-icon">📋</span>
+              <h3>Prospecção</h3>
+              <p>Gerenciar propostas e leads</p>
+            </button>
+            
+            <button 
+              className="action-card secondary"
+              onClick={() => navigateTo('/controle')}
+            >
+              <span className="action-icon">⚙️</span>
+              <h3>Controle</h3>
+              <p>Controlar propostas fechadas</p>
+            </button>
+            
+            <button 
+              className="action-card tertiary"
+              onClick={() => navigateTo('/ugs')}
+            >
+              <span className="action-icon">🏭</span>
+              <h3>UGs</h3>
+              <p>Gerenciar Unidades Geradoras</p>
+            </button>
+            
+            <button 
+              className="action-card quaternary"
+              onClick={() => navigateTo('/relatorios')}
+            >
+              <span className="action-icon">📊</span>
+              <h3>Relatórios</h3>
+              <p>Gerar relatórios e análises</p>
+            </button>
+          </div>
+        </section>
+
+        {/* Status do Sistema */}
+        <section className="system-status">
+          <h2>🔧 Status do Sistema</h2>
+          <div className="status-grid">
+            <div className="status-item">
+              <span className="status-indicator online"></span>
+              <span>Storage Local: Ativo</span>
             </div>
-            <div className="stat-card">
-              <h3>Última Proposta</h3>
-              <div className="stat-number">{stats.ultimaProposta}</div>
+            <div className="status-item">
+              <span className="status-indicator online"></span>
+              <span>Sistema: Operacional</span>
+            </div>
+            <div className="status-item">
+              <span className="status-indicator">📱</span>
+              <span>Usuário: {user?.nome || 'Admin'}</span>
             </div>
           </div>
         </section>
 
-        {/* Informações do Usuário - Compacto */}
-        <section className="user-section">
-          <div className="user-card">
-            <div className="user-header">
-              <div className="user-avatar">
-                {user?.role === 'admin' && '👑'}
-                {user?.role === 'consultor' && '👤'}
-                {user?.role === 'operador' && '⚙️'}
-              </div>
-              <div className="user-info">
-                <h3>{user?.name}</h3>
-                <p className="user-role">
-                  {user?.role === 'admin' && 'Administrador'}
-                  {user?.role === 'consultor' && 'Consultor'}
-                  {user?.role === 'operador' && 'Operador'}
-                </p>
-              </div>
-              <button className="logout-btn" onClick={handleLogout}>
-                🚪 Sair
-              </button>
-            </div>
-            
-            <div className="permissions-info">
-              <h4>🔐 Permissões:</h4>
-              <div className="permissions-list">
-                {user?.permissions?.includes('all') ? (
-                  <span className="permission-badge admin">✅ Acesso Total</span>
-                ) : (
-                  <div className="permissions-grid">
-                    {user?.permissions?.includes('nova-proposta') && (
-                      <span className="permission-badge">📝 Nova Proposta</span>
-                    )}
-                    {user?.permissions?.includes('prospec') && (
-                      <span className="permission-badge">📊 PROSPEC</span>
-                    )}
-                    {user?.permissions?.includes('controle') && (
-                      <span className="permission-badge">✅ Controle</span>
-                    )}
-                    {user?.permissions?.includes('ugs') && (
-                      <span className="permission-badge">🏢 UGs</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Botão de Logout */}
+        <div className="logout-section">
+          <button 
+            className="logout-btn"
+            onClick={handleLogout}
+          >
+            🚪 Sair do Sistema
+          </button>
+        </div>
       </div>
     </div>
   );

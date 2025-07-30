@@ -1,8 +1,9 @@
-// src/pages/ProspecPage.jsx - IMPLEMENTAÇÃO COMPLETA DA EDIÇÃO
+// src/pages/ProspecPage.jsx - SEM DADOS SIMULADOS
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
+import storageService from '../services/storageService';
 import PDFGenerator from '../services/pdfGenerator';
 import './ProspecPage.css';
 
@@ -11,6 +12,7 @@ const ProspecPage = () => {
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
+  const [modalNovaProposta, setModalNovaProposta] = useState({ show: false });
   
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -34,73 +36,13 @@ const ProspecPage = () => {
     try {
       setLoading(true);
       
-      console.log('🔍 Verificando scripts necessários...');
+      console.log('📥 Carregando dados do localStorage...');
       
-      // Aguardar scripts do sistema serem carregados
-      let tentativas = 0;
-      const maxTentativas = 30; // 3 segundos máximo
-      
-      while (tentativas < maxTentativas) {
-        if (window.aupusStorage && typeof window.aupusStorage.getProspec === 'function') {
-          break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-        tentativas++;
-      }
-
-      if (!window.aupusStorage || typeof window.aupusStorage.getProspec !== 'function') {
-        console.warn('⚠️ aupusStorage não carregou, criando dados de demonstração');
-        
-        // Criar dados mock com IDs únicos
-        const timestamp = Date.now();
-        const dadosMock = [
-          {
-            id: `demo-1-${timestamp}`,
-            nomeCliente: 'João Silva',
-            numeroProposta: '2025/0001',
-            data: '2025-07-20',
-            apelido: 'Loja Centro',
-            numeroUC: '12345678',
-            descontoTarifa: 0.20,
-            descontoBandeira: 0.15,
-            ligacao: 'Trifásica',
-            consultor: 'Maria Santos',
-            recorrencia: '3%',
-            media: 850,
-            telefone: '(62) 99999-9999',
-            status: 'Aguardando'
-          },
-          {
-            id: `demo-2-${timestamp + 1000}`,
-            nomeCliente: 'Empresa ABC',
-            numeroProposta: '2025/0002',
-            data: '2025-07-21',
-            apelido: 'Matriz',
-            numeroUC: '87654321',
-            descontoTarifa: 0.25,
-            descontoBandeira: 0.20,
-            ligacao: 'Trifásica',
-            consultor: 'João Silva',
-            recorrencia: '5%',
-            media: 1200,
-            telefone: '(62) 88888-8888',
-            status: 'Fechado'
-          }
-        ];
-        
-        setDados(dadosMock);
-        setDadosFiltrados(dadosMock);
-        showNotification('Modo demonstração ativo. Crie propostas para ver dados reais.', 'info');
-        return;
-      }
-
-      // Se storage disponível, carregar dados reais
-      console.log('✅ aupusStorage disponível, carregando dados reais...');
-      const dadosProspec = await window.aupusStorage.getProspec();
-      const dadosArray = Array.isArray(dadosProspec) ? dadosProspec : [];
+      // Carregar dados reais do localStorage
+      const dadosProspec = await storageService.getProspec();
       
       // Garantir IDs únicos para cada item
-      const dadosComIds = dadosArray.map((item, index) => ({
+      const dadosComIds = dadosProspec.map((item, index) => ({
         ...item,
         id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
       }));
@@ -113,6 +55,8 @@ const ProspecPage = () => {
       } else {
         showNotification(`${dadosComIds.length} propostas carregadas com sucesso!`, 'success');
       }
+      
+      console.log(`✅ ${dadosComIds.length} propostas carregadas`);
       
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
@@ -160,7 +104,7 @@ const ProspecPage = () => {
     });
   };
 
-  // FUNÇÃO PARA EDITAR ITEM - IMPLEMENTADA
+  // FUNÇÃO PARA EDITAR ITEM
   const editarItem = (index) => {
     const item = dadosFiltrados[index];
     if (!item) return;
@@ -171,7 +115,7 @@ const ProspecPage = () => {
   // FUNÇÃO PARA SALVAR EDIÇÃO
   const salvarEdicao = async (dadosAtualizados) => {
     try {
-      const { item, index } = modalEdicao;
+      const { item } = modalEdicao;
       
       // Encontrar o índice real no array principal
       const indexReal = dados.findIndex(p => p.id === item.id);
@@ -181,30 +125,16 @@ const ProspecPage = () => {
         return;
       }
 
-      if (window.aupusStorage && typeof window.aupusStorage.atualizarProspec === 'function') {
-        // Atualizar no storage
-        await window.aupusStorage.atualizarProspec(indexReal, dadosAtualizados);
-        
-        // Sincronizar com aba CONTROLE se status mudou
-        const statusAnterior = item.status;
-        const novoStatus = dadosAtualizados.status;
-        
-        if (statusAnterior !== novoStatus && window.aupusStorage.sincronizarStatusFechado) {
-          await window.aupusStorage.sincronizarStatusFechado(item.numeroProposta, novoStatus);
-        }
-        
-        // Recarregar dados
-        await carregarDados();
-        showNotification('Proposta atualizada com sucesso!', 'success');
-      } else {
-        // Fallback para modo demonstração
-        const novosDados = [...dados];
-        novosDados[indexReal] = { ...item, ...dadosAtualizados };
-        setDados(novosDados);
-        showNotification('Dados atualizados (modo demonstração)', 'success');
-      }
+      // Atualizar no storage
+      await storageService.atualizarProspec(indexReal, dadosAtualizados);
       
+      // Recarregar dados
+      await carregarDados();
+      
+      // Fechar modal
       setModalEdicao({ show: false, item: null, index: -1 });
+      
+      showNotification('Proposta atualizada com sucesso!', 'success');
       
     } catch (error) {
       console.error('❌ Erro ao salvar edição:', error);
@@ -212,318 +142,222 @@ const ProspecPage = () => {
     }
   };
 
-  // FUNÇÃO EXCLUIR ITEM
-  const excluirItem = async (index) => {
-    const item = dadosFiltrados[index];
-    if (!item) return;
-
-    if (!window.confirm(`Deseja realmente excluir a proposta de ${item.nomeCliente} (${item.apelido})?`)) {
+  // FUNÇÃO PARA REMOVER ITEM
+  const removerItem = async (index) => {
+    if (!window.confirm('Tem certeza que deseja remover esta proposta?')) {
       return;
     }
 
     try {
-      // Encontrar o índice real no array principal
+      const item = dadosFiltrados[index];
       const indexReal = dados.findIndex(p => p.id === item.id);
       
       if (indexReal === -1) {
-        showNotification('Item não encontrado para exclusão', 'error');
+        showNotification('Item não encontrado para remoção', 'error');
         return;
       }
 
-      if (window.aupusStorage && typeof window.aupusStorage.removerProspec === 'function') {
-        // Remover do controle se status for Fechado
-        if (item.status === 'Fechado' && window.aupusStorage.removerControle) {
-          await window.aupusStorage.removerControle(item.numeroProposta, item.numeroUC);
-        }
-        
-        // Remover do PROSPEC
-        await window.aupusStorage.removerProspec(indexReal);
-        
-        // Recarregar dados
-        await carregarDados();
-        showNotification('Proposta excluída com sucesso!', 'success');
-      } else {
-        // Fallback para modo demonstração
-        const novosDados = dados.filter(d => d.id !== item.id);
-        setDados(novosDados);
-        showNotification('Proposta excluída (modo demonstração)', 'success');
-      }
+      await storageService.removerProspec(indexReal);
+      await carregarDados();
+      
+      showNotification('Proposta removida com sucesso!', 'success');
       
     } catch (error) {
-      console.error('❌ Erro ao excluir:', error);
-      showNotification('Erro ao excluir: ' + error.message, 'error');
+      console.error('❌ Erro ao remover:', error);
+      showNotification('Erro ao remover: ' + error.message, 'error');
     }
   };
 
-  // FUNÇÃO BAIXAR PDF - USANDO SERVIÇO PDF
-  const baixarPDFItem = async (index) => {
-    const item = dadosFiltrados[index];
-    if (!item) {
-      showNotification('Item não encontrado', 'error');
-      return;
-    }
+  // FUNÇÃO PARA CRIAR NOVA PROPOSTA
+  const criarNovaProposta = () => {
+    setModalNovaProposta({ show: true });
+  };
 
+  // FUNÇÃO PARA SALVAR NOVA PROPOSTA
+  const salvarNovaProposta = async (dadosProposta) => {
     try {
-      console.log('📄 Iniciando download do PDF para:', item.nomeCliente);
-      showNotification('📄 Gerando PDF da proposta...', 'info');
-
-      // Buscar todas as UCs da mesma proposta
-      const todasUCs = dados.filter(p => p.numeroProposta === item.numeroProposta);
-
-      // Reconstruir dados da proposta para o PDF
-      const dadosProposta = {
-        numeroProposta: item.numeroProposta,
-        nomeCliente: item.nomeCliente,
-        data: item.data,
-        celular: item.telefone,
-        consultor: item.consultor,
-        recorrencia: item.recorrencia,
-        descontoTarifa: item.descontoTarifa,
-        descontoBandeira: item.descontoBandeira,
-        status: item.status,
-        ucs: todasUCs.map(uc => ({
-          distribuidora: 'Equatorial',
-          numeroUC: uc.numeroUC,
-          apelido: uc.apelido,
-          ligacao: uc.ligacao,
-          consumo: uc.media
-        })),
-        beneficios: [
-          { numero: 1, texto: `Economia de até ${Math.round((item.descontoTarifa || 0.2) * 100)}% na tarifa de energia elétrica, sem impostos` },
-          { numero: 2, texto: `Economia de até ${Math.round((item.descontoBandeira || 0.2) * 100)}% no valor referente à bandeira tarifária, sem impostos` },
-          { numero: 3, texto: 'Isenção de taxa de adesão' },
-          { numero: 4, texto: 'Não há cobrança de taxa de cancelamento' },
-          { numero: 5, texto: 'Não há fidelidade contratual' },
-          { numero: 6, texto: 'O cliente pode cancelar a qualquer momento' },
-          { numero: 7, texto: 'Atendimento personalizado' },
-          { numero: 8, texto: 'Suporte técnico especializado' },
-          { numero: 9, texto: 'Economia imediata na primeira fatura' }
-        ]
+      // Gerar número da proposta automaticamente
+      const propostas = await storageService.getProspec();
+      const ultimoNumero = propostas.length > 0 
+        ? Math.max(...propostas.map(p => {
+            const num = parseInt(p.numeroProposta.split('/')[1] || '0');
+            return isNaN(num) ? 0 : num;
+          }))
+        : 0;
+      
+      const novoNumero = ultimoNumero + 1;
+      const numeroProposta = `2025/${novoNumero.toString().padStart(4, '0')}`;
+      
+      const novaProposta = {
+        ...dadosProposta,
+        numeroProposta,
+        data: new Date().toISOString().split('T')[0],
+        status: 'Aguardando',
+        id: `${numeroProposta}-${dadosProposta.numeroUC}-${Date.now()}`
       };
 
-      // Gerar PDF usando o serviço
-      const resultado = await PDFGenerator.baixarPDF(dadosProposta, true);
+      await storageService.adicionarProspec(novaProposta);
+      await carregarDados();
       
-      if (resultado) {
-        showNotification('📄 PDF baixado com sucesso!', 'success');
-        console.log('✅ PDF gerado:', resultado.nomeArquivo);
-      }
+      setModalNovaProposta({ show: false });
+      showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar proposta:', error);
+      showNotification('Erro ao criar proposta: ' + error.message, 'error');
+    }
+  };
 
+  // FUNÇÃO PARA GERAR PDF
+  const gerarPDF = async (item) => {
+    try {
+      showNotification('Gerando PDF...', 'info');
+      await PDFGenerator.gerarPDFProposta(item);
+      showNotification('PDF gerado com sucesso!', 'success');
     } catch (error) {
       console.error('❌ Erro ao gerar PDF:', error);
       showNotification('Erro ao gerar PDF: ' + error.message, 'error');
     }
   };
 
-  const exportarCSV = async () => {
+  // FUNÇÃO PARA EXPORTAR DADOS
+  const exportarDados = async () => {
     try {
-      if (window.aupusStorage && typeof window.aupusStorage.exportarParaCSV === 'function') {
-        await window.aupusStorage.exportarParaCSV('prospec');
-        showNotification('Dados exportados com sucesso!', 'success');
-      } else {
-        showNotification('Função de exportação não disponível', 'warning');
-      }
+      await storageService.exportarParaCSV('prospec');
+      showNotification('Dados exportados com sucesso!', 'success');
     } catch (error) {
       console.error('❌ Erro ao exportar:', error);
       showNotification('Erro ao exportar: ' + error.message, 'error');
     }
   };
 
-  const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR');
-  };
-
-  const formatarPercentual = (valor) => {
-    return ((valor || 0) * 100).toFixed(1) + '%';
-  };
-
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'Aguardando': return 'status-aguardando';
-      case 'Fechado': return 'status-fechado';
-      default: return 'status-default';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Aguardando': return '⏳';
-      case 'Fechado': return '✅';
-      default: return '❓';
-    }
-  };
+  // Obter lista única de consultores para filtro
+  const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
 
   return (
-    <div className="page-container">
+    <div className="prospec-container">
       <div className="container">
         <Header 
-          title="PROSPEC" 
-          subtitle="Prospector de Energia" 
-          icon="📊" 
+          title="PROSPECÇÃO" 
+          subtitle="Gerenciamento de Propostas" 
+          icon="📋" 
         />
         
         <Navigation />
 
-        {/* Estatísticas */}
-        <section className="stats-section">
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-value">{dadosFiltrados.length}</div>
-              <div className="stat-label">Total</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">{dadosFiltrados.filter(item => item.status === 'Aguardando').length}</div>
-              <div className="stat-label">Aguardando</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">{dadosFiltrados.filter(item => item.status === 'Fechado').length}</div>
-              <div className="stat-label">Fechadas</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">
-                {dadosFiltrados.length > 0 
-                  ? Math.round(dadosFiltrados.reduce((soma, item) => soma + (parseFloat(item.media) || 0), 0) / dadosFiltrados.length)
-                  : 0
-                } kWh
-              </div>
-              <div className="stat-label">Média Consumo</div>
-            </div>
-          </div>
-        </section>
-
         {/* Filtros */}
-        <section className="filters-section">
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label htmlFor="filtroConsultor">Consultor</label>
-              <select
-                id="filtroConsultor"
-                value={filtros.consultor}
-                onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
-              >
-                <option value="">Todos os consultores</option>
-                {[...new Set(dados.map(item => item.consultor))].filter(Boolean).sort().map(consultor => (
-                  <option key={consultor} value={consultor}>{consultor}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="filtroStatus">Status</label>
-              <select
-                id="filtroStatus"
-                value={filtros.status}
-                onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-              >
-                <option value="">Todos os status</option>
-                <option value="Aguardando">Aguardando</option>
-                <option value="Fechado">Fechado</option>
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="filtroBusca">Buscar</label>
-              <input
-                type="text"
-                id="filtroBusca"
-                placeholder="Nome, proposta ou UC..."
-                value={filtros.busca}
-                onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="actions-container">
-            <button className="btn btn-secondary" onClick={limparFiltros}>
-              🗑️ Limpar Filtros
-            </button>
-            <button className="btn btn-secondary" onClick={exportarCSV}>
-              📥 Exportar CSV
-            </button>
-            <button className="btn btn-primary" onClick={carregarDados}>
-              🔄 Atualizar
+        <section className="filters">
+          <div className="filters-row">
+            <input
+              type="text"
+              placeholder="🔍 Buscar por nome, proposta, UC..."
+              value={filtros.busca}
+              onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
+              className="filter-input"
+            />
+            
+            <select
+              value={filtros.consultor}
+              onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
+              className="filter-select"
+            >
+              <option value="">Todos os Consultores</option>
+              {consultoresUnicos.map(consultor => (
+                <option key={consultor} value={consultor}>{consultor}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filtros.status}
+              onChange={(e) => setFiltros({...filtros, status: e.target.value})}
+              className="filter-select"
+            >
+              <option value="">Todos os Status</option>
+              <option value="Aguardando">Aguardando</option>
+              <option value="Fechado">Fechado</option>
+            </select>
+            
+            <button onClick={limparFiltros} className="clear-filters-btn">
+              🗑️ Limpar
             </button>
           </div>
         </section>
 
-        {/* Tabela */}
-        <section className="data-section">
-          <div className="table-header">
-            <h2>Propostas ({dadosFiltrados.length})</h2>
-          </div>
+        {/* Ações */}
+        <section className="actions">
+          <button onClick={criarNovaProposta} className="btn primary">
+            ➕ Nova Proposta
+          </button>
+          <button onClick={exportarDados} className="btn secondary">
+            📊 Exportar CSV
+          </button>
+          <button onClick={carregarDados} className="btn tertiary">
+            🔄 Atualizar
+          </button>
+        </section>
 
+        {/* Tabela de dados */}
+        <section className="data-table">
           {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Carregando propostas...</p>
-            </div>
+            <div className="loading">Carregando propostas...</div>
           ) : dadosFiltrados.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <h3>Nenhuma proposta encontrada</h3>
-              <p>Ajuste os filtros ou crie uma nova proposta</p>
+            <div className="no-data">
+              <p>📭 Nenhuma proposta encontrada</p>
+              <p>Crie sua primeira proposta clicando em "Nova Proposta"</p>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table className="table">
+            <div className="table-responsive">
+              <table>
                 <thead>
                   <tr>
                     <th>Cliente</th>
-                    <th>Nº Proposta</th>
-                    <th>Data</th>
-                    <th>Apelido</th>
+                    <th>Proposta</th>
                     <th>UC</th>
-                    <th>Desc. Tarifa</th>
-                    <th>Desc. Bandeira</th>
-                    <th>Ligação</th>
                     <th>Consultor</th>
-                    <th>Recorrência</th>
-                    <th>Média (kWh)</th>
-                    <th>Telefone</th>
                     <th>Status</th>
+                    <th>Média (kWh)</th>
+                    <th>Data</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dadosFiltrados.map((item, index) => (
-                    <tr key={item.id}>
-                      <td><strong>{item.nomeCliente || '-'}</strong></td>
-                      <td>{item.numeroProposta || '-'}</td>
-                      <td className="data">{item.data ? formatarData(item.data) : '-'}</td>
-                      <td>{item.apelido || '-'}</td>
-                      <td>{item.numeroUC || '-'}</td>
-                      <td className="valor">{formatarPercentual(item.descontoTarifa)}</td>
-                      <td className="valor">{formatarPercentual(item.descontoBandeira)}</td>
-                      <td>{item.ligacao || '-'}</td>
-                      <td><strong>{item.consultor || '-'}</strong></td>
-                      <td className="valor">{item.recorrencia || '-'}</td>
-                      <td className="valor">{(item.media || 0).toLocaleString('pt-BR')} kWh</td>
-                      <td className="data">{item.telefone || '-'}</td>
+                    <tr key={item.id || index}>
                       <td>
-                        <span className={`status ${getStatusClass(item.status)}`}>
-                          {getStatusIcon(item.status)} {item.status}
+                        <strong>{item.nomeCliente}</strong>
+                        <br />
+                        <small>{item.apelido}</small>
+                      </td>
+                      <td>{item.numeroProposta}</td>
+                      <td>{item.numeroUC}</td>
+                      <td>{item.consultor}</td>
+                      <td>
+                        <span className={`status ${item.status?.toLowerCase()}`}>
+                          {item.status}
                         </span>
                       </td>
+                      <td>{item.media?.toLocaleString()} kWh</td>
+                      <td>{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                       <td>
-                        <div className="table-actions">
-                          <button
+                        <div className="action-buttons">
+                          <button 
                             onClick={() => editarItem(index)}
-                            className="action-btn edit"
-                            title="Editar proposta"
+                            className="btn-icon edit"
+                            title="Editar"
                           >
                             ✏️
                           </button>
-                          <button
-                            onClick={() => baixarPDFItem(index)}
-                            className="action-btn pdf"
-                            title="Baixar PDF"
+                          <button 
+                            onClick={() => gerarPDF(item)}
+                            className="btn-icon pdf"
+                            title="Gerar PDF"
                           >
                             📄
                           </button>
-                          <button
-                            onClick={() => excluirItem(index)}
-                            className="action-btn delete"
-                            title="Excluir proposta"
+                          <button 
+                            onClick={() => removerItem(index)}
+                            className="btn-icon delete"
+                            title="Remover"
                           >
                             🗑️
                           </button>
@@ -536,226 +370,228 @@ const ProspecPage = () => {
             </div>
           )}
         </section>
-      </div>
 
-      {/* Modal de Edição */}
-      {modalEdicao.show && (
-        <ModalEdicao
-          item={modalEdicao.item}
-          onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
-          onSave={salvarEdicao}
-        />
-      )}
+        {/* Modal de Nova Proposta */}
+        {modalNovaProposta.show && (
+          <ModalNovaProposta 
+            onSave={salvarNovaProposta}
+            onClose={() => setModalNovaProposta({ show: false })}
+          />
+        )}
+
+        {/* Modal de Edição */}
+        {modalEdicao.show && (
+          <ModalEdicao 
+            item={modalEdicao.item}
+            onSave={salvarEdicao}
+            onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
+          />
+        )}
+      </div>
     </div>
   );
 };
 
-// Componente Modal de Edição
-const ModalEdicao = ({ item, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
-    nomeCliente: item?.nomeCliente || '',
-    apelido: item?.apelido || '',
-    numeroUC: item?.numeroUC || '',
-    descontoTarifa: Math.round((item?.descontoTarifa || 0) * 100),
-    descontoBandeira: Math.round((item?.descontoBandeira || 0) * 100),
-    ligacao: item?.ligacao || 'Monofásica',
-    consultor: item?.consultor || '',
-    recorrencia: item?.recorrencia || '3%',
-    media: item?.media || 0,
-    telefone: item?.telefone || '',
-    status: item?.status || 'Aguardando'
+// Componente Modal de Nova Proposta
+const ModalNovaProposta = ({ onSave, onClose }) => {
+  const [dados, setDados] = useState({
+    nomeCliente: '',
+    apelido: '',
+    numeroUC: '',
+    descontoTarifa: 0.20,
+    descontoBandeira: 0.15,
+    ligacao: 'Trifásica',
+    consultor: '',
+    recorrencia: '3%',
+    media: 0,
+    telefone: ''
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = () => {
-    // Converter percentuais para decimal
-    const dadosAtualizados = {
-      ...formData,
-      descontoTarifa: parseFloat(formData.descontoTarifa) / 100,
-      descontoBandeira: parseFloat(formData.descontoBandeira) / 100,
-      media: parseFloat(formData.media)
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
     
-    onSave(dadosAtualizados);
+    // Validações básicas
+    if (!dados.nomeCliente || !dados.numeroUC || !dados.consultor) {
+      alert('Preencha os campos obrigatórios: Cliente, UC e Consultor');
+      return;
+    }
+
+    onSave(dados);
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal">
         <div className="modal-header">
-          <h2>Editar Proposta</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <h3>➕ Nova Proposta</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
         </div>
-        
-        <div className="modal-body">
-          <div className="form-grid">
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="form-row">
             <div className="form-group">
-              <label htmlFor="editNomeCliente">Nome Cliente</label>
+              <label>Nome do Cliente *</label>
               <input
                 type="text"
-                id="editNomeCliente"
-                name="nomeCliente"
-                value={formData.nomeCliente}
-                onChange={handleChange}
+                value={dados.nomeCliente}
+                onChange={(e) => setDados({...dados, nomeCliente: e.target.value})}
                 required
               />
             </div>
-            
             <div className="form-group">
-              <label htmlFor="editApelido">Apelido</label>
+              <label>Apelido</label>
               <input
                 type="text"
-                id="editApelido"
-                name="apelido"
-                value={formData.apelido}
-                onChange={handleChange}
+                value={dados.apelido}
+                onChange={(e) => setDados({...dados, apelido: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>Número UC *</label>
+              <input
+                type="text"
+                value={dados.numeroUC}
+                onChange={(e) => setDados({...dados, numeroUC: e.target.value})}
                 required
               />
             </div>
-            
             <div className="form-group">
-              <label htmlFor="editNumeroUC">Número UC</label>
+              <label>Consultor *</label>
               <input
                 type="text"
-                id="editNumeroUC"
-                name="numeroUC"
-                value={formData.numeroUC}
-                onChange={handleChange}
+                value={dados.consultor}
+                onChange={(e) => setDados({...dados, consultor: e.target.value})}
                 required
               />
             </div>
-            
+          </div>
+          
+          <div className="form-row">
             <div className="form-group">
-              <label htmlFor="editDescontoTarifa">Desconto Tarifa (%)</label>
+              <label>Média (kWh)</label>
               <input
                 type="number"
-                id="editDescontoTarifa"
-                name="descontoTarifa"
-                min="0"
-                max="100"
-                step="0.1"
-                value={formData.descontoTarifa}
-                onChange={handleChange}
-                required
+                value={dados.media}
+                onChange={(e) => setDados({...dados, media: parseInt(e.target.value) || 0})}
               />
             </div>
-            
             <div className="form-group">
-              <label htmlFor="editDescontoBandeira">Desconto Bandeira (%)</label>
+              <label>Telefone</label>
+              <input
+                type="tel"
+                value={dados.telefone}
+                onChange={(e) => setDados({...dados, telefone: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>Desconto Tarifa</label>
               <input
                 type="number"
-                id="editDescontoBandeira"
-                name="descontoBandeira"
+                step="0.01"
                 min="0"
-                max="100"
-                step="0.1"
-                value={formData.descontoBandeira}
-                onChange={handleChange}
-                required
+                max="1"
+                value={dados.descontoTarifa}
+                onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) || 0})}
               />
             </div>
-            
             <div className="form-group">
-              <label htmlFor="editLigacao">Ligação</label>
+              <label>Ligação</label>
               <select
-                id="editLigacao"
-                name="ligacao"
-                value={formData.ligacao}
-                onChange={handleChange}
-                required
+                value={dados.ligacao}
+                onChange={(e) => setDados({...dados, ligacao: e.target.value})}
               >
                 <option value="Monofásica">Monofásica</option>
                 <option value="Bifásica">Bifásica</option>
                 <option value="Trifásica">Trifásica</option>
               </select>
             </div>
-            
+          </div>
+          
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn secondary">
+              Cancelar
+            </button>
+            <button type="submit" className="btn primary">
+              Salvar Proposta
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Componente Modal de Edição
+const ModalEdicao = ({ item, onSave, onClose }) => {
+  const [dados, setDados] = useState({ ...item });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(dados);
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>✏️ Editar Proposta</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="form-row">
             <div className="form-group">
-              <label htmlFor="editConsultor">Consultor</label>
+              <label>Nome do Cliente</label>
               <input
                 type="text"
-                id="editConsultor"
-                name="consultor"
-                value={formData.consultor}
-                onChange={handleChange}
-                required
+                value={dados.nomeCliente || ''}
+                onChange={(e) => setDados({...dados, nomeCliente: e.target.value})}
               />
             </div>
-            
             <div className="form-group">
-              <label htmlFor="editRecorrencia">Recorrência</label>
+              <label>Status</label>
               <select
-                id="editRecorrencia"
-                name="recorrencia"
-                value={formData.recorrencia}
-                onChange={handleChange}
-                required
-              >
-                <option value="0%">0%</option>
-                <option value="1%">1%</option>
-                <option value="2%">2%</option>
-                <option value="3%">3%</option>
-                <option value="4%">4%</option>
-                <option value="5%">5%</option>
-                <option value="6%">6%</option>
-                <option value="7%">7%</option>
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="editMedia">Média (kWh)</label>
-              <input
-                type="number"
-                id="editMedia"
-                name="media"
-                min="0"
-                step="0.01"
-                value={formData.media}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="editTelefone">Telefone</label>
-              <input
-                type="tel"
-                id="editTelefone"
-                name="telefone"
-                value={formData.telefone}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="editStatus">Status</label>
-              <select
-                id="editStatus"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                required
+                value={dados.status || 'Aguardando'}
+                onChange={(e) => setDados({...dados, status: e.target.value})}
               >
                 <option value="Aguardando">Aguardando</option>
                 <option value="Fechado">Fechado</option>
               </select>
             </div>
           </div>
-        </div>
-        
-        <div className="modal-footer">
-          <button className="btn btn-primary" onClick={handleSave}>
-            💾 Salvar
-          </button>
-          <button className="btn btn-secondary" onClick={onClose}>
-            ❌ Cancelar
-          </button>
-        </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>Consultor</label>
+              <input
+                type="text"
+                value={dados.consultor || ''}
+                onChange={(e) => setDados({...dados, consultor: e.target.value})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Média (kWh)</label>
+              <input
+                type="number"
+                value={dados.media || 0}
+                onChange={(e) => setDados({...dados, media: parseInt(e.target.value) || 0})}
+              />
+            </div>
+          </div>
+          
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn secondary">
+              Cancelar
+            </button>
+            <button type="submit" className="btn primary">
+              Salvar Alterações
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

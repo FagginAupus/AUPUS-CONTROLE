@@ -1,8 +1,9 @@
-// src/pages/ControlePage.jsx - ARQUIVO COMPLETO CORRIGIDO
+// src/pages/ControlePage.jsx - SEM DADOS SIMULADOS
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
+import storageService from '../services/storageService';
 import './ControlePage.css';
 
 const ControlePage = () => {
@@ -43,36 +44,23 @@ const ControlePage = () => {
     try {
       setLoading(true);
       
-      let tentativas = 0;
-      while (!window.aupusStorage && tentativas < 30) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        tentativas++;
-      }
-
-      if (!window.aupusStorage || typeof window.aupusStorage.getControle !== 'function') {
-        console.warn('⚠️ aupusStorage não disponível');
-        setDados([]);
-        setDadosFiltrados([]);
-        showNotification('Sistema não disponível. Feche algumas propostas no PROSPEC!', 'info');
-        return;
-      }
-
-      const dadosControle = await window.aupusStorage.getControle();
-      const dadosArray = Array.isArray(dadosControle) ? dadosControle : [];
+      console.log('📥 Carregando dados de controle do localStorage...');
       
-      setDados(dadosArray);
-      setDadosFiltrados(dadosArray);
+      // Carregar dados reais do localStorage
+      const dadosControle = await storageService.getControle();
+      
+      setDados(dadosControle);
+      setDadosFiltrados(dadosControle);
       
       // Carregar UGs disponíveis
       await carregarUGsDisponiveis();
       
-      console.log(`✅ ${dadosArray.length} propostas de controle carregadas`);
+      console.log(`✅ ${dadosControle.length} propostas de controle carregadas`);
       
-      // NOTIFICAÇÃO ÚNICA - evitar logs duplicados
-      if (dadosArray.length === 0) {
+      if (dadosControle.length === 0) {
         showNotification('Nenhuma proposta fechada encontrada. Feche algumas propostas no PROSPEC!', 'info');
       } else {
-        showNotification(`${dadosArray.length} propostas fechadas carregadas!`, 'success');
+        showNotification(`${dadosControle.length} propostas fechadas carregadas!`, 'success');
       }
       
     } catch (error) {
@@ -87,12 +75,9 @@ const ControlePage = () => {
 
   const carregarUGsDisponiveis = async () => {
     try {
-      if (window.aupusStorage && typeof window.aupusStorage.getUGs === 'function') {
-        const ugs = await window.aupusStorage.getUGs();
-        setUgsDisponiveis(Array.isArray(ugs) ? ugs : []);
-      } else {
-        setUgsDisponiveis([]);
-      }
+      const ugs = await storageService.getUGs();
+      setUgsDisponiveis(ugs);
+      console.log(`✅ ${ugs.length} UGs disponíveis carregadas`);
     } catch (error) {
       console.error('❌ Erro ao carregar UGs:', error);
       setUgsDisponiveis([]);
@@ -103,8 +88,11 @@ const ControlePage = () => {
     let dadosFiltrados = dados;
 
     if (filtros.nome) {
+      const busca = filtros.nome.toLowerCase();
       dadosFiltrados = dadosFiltrados.filter(item =>
-        item.nomeCliente?.toLowerCase().includes(filtros.nome.toLowerCase())
+        item.nomeCliente?.toLowerCase().includes(busca) ||
+        item.numeroProposta?.toLowerCase().includes(busca) ||
+        item.numeroUC?.toLowerCase().includes(busca)
       );
     }
 
@@ -114,10 +102,12 @@ const ControlePage = () => {
       );
     }
 
-    if (filtros.ug === 'definido') {
-      dadosFiltrados = dadosFiltrados.filter(item => item.ug && item.ug.trim() !== '');
-    } else if (filtros.ug === 'vazio') {
-      dadosFiltrados = dadosFiltrados.filter(item => !item.ug || item.ug.trim() === '');
+    if (filtros.ug) {
+      if (filtros.ug === 'sem-ug') {
+        dadosFiltrados = dadosFiltrados.filter(item => !item.ug);
+      } else {
+        dadosFiltrados = dadosFiltrados.filter(item => item.ug === filtros.ug);
+      }
     }
 
     setDadosFiltrados(dadosFiltrados);
@@ -125,9 +115,9 @@ const ControlePage = () => {
 
   const atualizarEstatisticas = () => {
     const total = dadosFiltrados.length;
-    const ugsDefinidas = dadosFiltrados.filter(item => item.ug && item.ug.trim() !== '').length;
+    const ugsDefinidas = dadosFiltrados.filter(item => item.ug).length;
     const ugsPendentes = total - ugsDefinidas;
-    
+
     setEstatisticas({
       total,
       ugsDefinidas,
@@ -143,373 +133,371 @@ const ControlePage = () => {
     });
   };
 
-  const editarUG = (item, index) => {
+  // FUNÇÃO PARA DEFINIR UG
+  const definirUG = (index) => {
+    const item = dadosFiltrados[index];
+    if (!item) return;
+
     setModalUG({ show: true, item, index });
   };
 
-  const salvarUG = async (novaUG) => {
+  // FUNÇÃO PARA SALVAR UG
+  const salvarUG = async (ugSelecionada) => {
     try {
-      const { item, index } = modalUG;
+      const { item } = modalUG;
       
-      if (window.aupusStorage && typeof window.aupusStorage.atualizarControle === 'function') {
-        await window.aupusStorage.atualizarControle(index, { ug: novaUG });
-        await carregarDados(); // Recarregar dados
-        showNotification('UG atualizada com sucesso!', 'success');
-      } else {
-        // Fallback local
-        const novosDados = [...dados];
-        novosDados[index] = { ...novosDados[index], ug: novaUG };
-        setDados(novosDados);
-        showNotification('UG atualizada localmente', 'info');
+      // Encontrar o índice real no array principal
+      const indexReal = dados.findIndex(p => 
+        p.numeroProposta === item.numeroProposta && p.numeroUC === item.numeroUC
+      );
+      
+      if (indexReal === -1) {
+        showNotification('Item não encontrado', 'error');
+        return;
       }
+
+      // Atualizar UG no storage
+      await storageService.atualizarUGControle(indexReal, ugSelecionada);
       
+      // Recarregar dados
+      await carregarDados();
+      
+      // Fechar modal
       setModalUG({ show: false, item: null, index: -1 });
+      
+      showNotification(`UG "${ugSelecionada}" definida com sucesso!`, 'success');
+      
     } catch (error) {
       console.error('❌ Erro ao salvar UG:', error);
       showNotification('Erro ao salvar UG: ' + error.message, 'error');
     }
   };
 
+  // FUNÇÃO PARA APLICAR CALIBRAGEM GLOBAL
   const aplicarCalibragemGlobal = async () => {
-    if (!calibragemGlobal || calibragemGlobal === 0) {
-      showNotification('Informe um valor válido para calibragem', 'warning');
+    if (calibragemGlobal === 0) {
+      showNotification('Digite um valor de calibragem diferente de zero', 'warning');
+      return;
+    }
+
+    if (!window.confirm(`Aplicar calibragem de ${calibragemGlobal}% em todas as propostas filtradas?`)) {
       return;
     }
 
     try {
-      const itensVazios = dados.filter(item => !item.ug || item.ug.trim() === '');
+      let processadas = 0;
       
-      if (itensVazios.length === 0) {
-        showNotification('Não há propostas sem UG para calibrar', 'info');
-        return;
-      }
-
-      for (let i = 0; i < dados.length; i++) {
-        const item = dados[i];
-        if (!item.ug || item.ug.trim() === '') {
-          if (window.aupusStorage && typeof window.aupusStorage.atualizarControle === 'function') {
-            await window.aupusStorage.atualizarControle(i, { ug: calibragemGlobal.toString() });
+      for (const item of dadosFiltrados) {
+        if (item.ug) {
+          // Encontrar UG e aplicar calibragem
+          const ugIndex = ugsDisponiveis.findIndex(ug => ug.nomeUsina === item.ug);
+          if (ugIndex !== -1) {
+            const ug = ugsDisponiveis[ugIndex];
+            const novaMedia = ug.media * (1 + calibragemGlobal / 100);
+            
+            await storageService.atualizarUG(ugIndex, { 
+              ...ug, 
+              media: novaMedia,
+              calibrado: true 
+            });
+            processadas++;
           }
         }
       }
-
-      await carregarDados();
-      showNotification(`Calibragem aplicada a ${itensVazios.length} propostas!`, 'success');
+      
+      await carregarUGsDisponiveis(); // Recarregar UGs
+      await carregarDados(); // Recarregar dados
+      
+      showNotification(`Calibragem aplicada em ${processadas} UGs!`, 'success');
       setCalibragemGlobal(0);
+      
     } catch (error) {
       console.error('❌ Erro na calibragem global:', error);
-      showNotification('Erro na calibragem global: ' + error.message, 'error');
+      showNotification('Erro na calibragem: ' + error.message, 'error');
     }
   };
 
-  // Obter consultores únicos para o filtro
-  const consultoresUnicos = [...new Set(dados.map(item => item.consultor))].filter(Boolean).sort();
+  // FUNÇÃO PARA EXPORTAR DADOS
+  const exportarDados = async () => {
+    try {
+      await storageService.exportarParaCSV('controle');
+      showNotification('Dados de controle exportados com sucesso!', 'success');
+    } catch (error) {
+      console.error('❌ Erro ao exportar:', error);
+      showNotification('Erro ao exportar: ' + error.message, 'error');
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="page-container">
-        <div className="container">
-          <Header title="CONTROLE" subtitle="Gestão de Propostas Fechadas" icon="✅" />
-          <Navigation />
-          
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Carregando dados...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Obter lista única de consultores para filtro
+  const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
+  const ugsUnicas = [...new Set(dados.map(item => item.ug).filter(Boolean))];
 
   return (
-    <div className="page-container">
+    <div className="controle-container">
       <div className="container">
-        <Header title="CONTROLE" subtitle="Gestão de Propostas Fechadas" icon="✅" />
+        <Header 
+          title="CONTROLE" 
+          subtitle="Controle de Propostas Fechadas" 
+          icon="⚙️" 
+        />
+        
         <Navigation />
 
-        {/* ESTATÍSTICAS RÁPIDAS */}
-        <section className="quick-stats">
-          <div className="stat-card">
-            <span className="stat-label">Total de Propostas</span>
-            <span className="stat-value">{estatisticas.total}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">UGs Definidas</span>
-            <span className="stat-value">{estatisticas.ugsDefinidas}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">UGs Pendentes</span>
-            <span className="stat-value">{estatisticas.ugsPendentes}</span>
+        {/* Estatísticas */}
+        <section className="stats">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Total</h3>
+              <div className="stat-number">{estatisticas.total}</div>
+            </div>
+            <div className="stat-card">
+              <h3>UGs Definidas</h3>
+              <div className="stat-number">{estatisticas.ugsDefinidas}</div>
+            </div>
+            <div className="stat-card">
+              <h3>UGs Pendentes</h3>
+              <div className="stat-number">{estatisticas.ugsPendentes}</div>
+            </div>
           </div>
         </section>
 
-        {/* SEÇÃO DE FILTROS - ESPAÇAMENTO CORRIGIDO */}
-        <section className="filters-section">
-          <h2>🔍 Filtros</h2>
-          
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label htmlFor="filtroNome">Nome do Cliente</label>
-              <input
-                type="text"
-                id="filtroNome"
-                placeholder="Buscar por nome..."
-                value={filtros.nome}
-                onChange={(e) => setFiltros(prev => ({ ...prev, nome: e.target.value }))}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="filtroConsultor">Consultor</label>
-              <select
-                id="filtroConsultor"
-                value={filtros.consultor}
-                onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
-              >
-                <option value="">Todos</option>
-                {consultoresUnicos.map(consultor => (
-                  <option key={consultor} value={consultor}>{consultor}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="filtroUG">Status UG</label>
-              <select
-                id="filtroUG"
-                value={filtros.ug}
-                onChange={(e) => setFiltros(prev => ({ ...prev, ug: e.target.value }))}
-              >
-                <option value="">Todos</option>
-                <option value="definido">UG Definida</option>
-                <option value="vazio">UG Vazia</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="filter-actions">
-            <button className="btn btn-secondary" onClick={limparFiltros}>
-              🗑️ Limpar Filtros
+        {/* Filtros */}
+        <section className="filters">
+          <div className="filters-row">
+            <input
+              type="text"
+              placeholder="🔍 Buscar por nome, proposta, UC..."
+              value={filtros.nome}
+              onChange={(e) => setFiltros({...filtros, nome: e.target.value})}
+              className="filter-input"
+            />
+            
+            <select
+              value={filtros.consultor}
+              onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
+              className="filter-select"
+            >
+              <option value="">Todos os Consultores</option>
+              {consultoresUnicos.map(consultor => (
+                <option key={consultor} value={consultor}>{consultor}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filtros.ug}
+              onChange={(e) => setFiltros({...filtros, ug: e.target.value})}
+              className="filter-select"
+            >
+              <option value="">Todas as UGs</option>
+              <option value="sem-ug">Sem UG Definida</option>
+              {ugsUnicas.map(ug => (
+                <option key={ug} value={ug}>{ug}</option>
+              ))}
+            </select>
+            
+            <button onClick={limparFiltros} className="clear-filters-btn">
+              🗑️ Limpar
             </button>
           </div>
         </section>
 
-        {/* CALIBRAGEM GLOBAL */}
-        {estatisticas.ugsPendentes > 0 && (
-          <section className="filters-section calibragem-card">
-            <h2>⚙️ Calibragem Global</h2>
-            <p>Aplicar UG para todas as {estatisticas.ugsPendentes} propostas sem definição:</p>
-            
-            <div className="calibragem-container">
-              <input
-                type="number"
-                className="calibragem-input"
-                placeholder="UG"
-                value={calibragemGlobal || ''}
-                onChange={(e) => setCalibragemGlobal(parseInt(e.target.value) || 0)}
-              />
-              <button
-                className="calibragem-apply btn btn-primary"
-                onClick={aplicarCalibragemGlobal}
-              >
-                ⚡ Aplicar
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* SEÇÃO DA TABELA - POSICIONAMENTO CORRETO */}
-        <section className="data-section">
-          <div className="table-header">
-            <h2>📋 Dados de Controle</h2>
-            <span className="table-count">{dadosFiltrados.length} registros</span>
+        {/* Calibragem Global */}
+        <section className="calibragem-global">
+          <div className="calibragem-row">
+            <label>Calibragem Global (%):</label>
+            <input
+              type="number"
+              step="0.1"
+              value={calibragemGlobal}
+              onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
+              className="calibragem-input"
+            />
+            <button 
+              onClick={aplicarCalibragemGlobal}
+              className="btn primary"
+              disabled={calibragemGlobal === 0}
+            >
+              🎯 Aplicar Calibragem
+            </button>
           </div>
+        </section>
 
-          {dadosFiltrados.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📭</div>
-              <h3>Nenhuma proposta encontrada</h3>
-              <p>Não há propostas fechadas que correspondam aos filtros aplicados.</p>
+        {/* Ações */}
+        <section className="actions">
+          <button onClick={exportarDados} className="btn secondary">
+            📊 Exportar CSV
+          </button>
+          <button onClick={carregarDados} className="btn tertiary">
+            🔄 Atualizar
+          </button>
+        </section>
+
+        {/* Tabela de dados */}
+        <section className="data-table">
+          {loading ? (
+            <div className="loading">Carregando propostas de controle...</div>
+          ) : dadosFiltrados.length === 0 ? (
+            <div className="no-data">
+              <p>📭 Nenhuma proposta fechada encontrada</p>
+              <p>Vá para o PROSPEC e feche algumas propostas para vê-las aqui</p>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table className="table">
+            <div className="table-responsive">
+              <table>
                 <thead>
                   <tr>
-                    <th>UG</th>
-                    <th>Nome Cliente</th>
-                    <th>Nº Proposta</th>
-                    <th>Data</th>
-                    <th>Apelido</th>
+                    <th>Cliente</th>
+                    <th>Proposta</th>
                     <th>UC</th>
-                    <th>Desc. Tarifa</th>
-                    <th>Desc. Bandeira</th>
-                    <th>Ligação</th>
                     <th>Consultor</th>
+                    <th>Média</th>
+                    <th>UG Definida</th>
+                    <th>Status UG</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {dadosFiltrados.map((item, index) => (
-                    <tr key={`${item.numeroProposta}-${item.numeroUC}-${index}`}>
-                      <td>
-                        <span className={item.ug && item.ug.trim() !== '' ? 'ug-definido' : 'ug-vazio'}>
-                          {item.ug && item.ug.trim() !== '' ? item.ug : 'Não definido'}
-                        </span>
-                      </td>
-                      <td>{item.nomeCliente}</td>
-                      <td className="numero-proposta">{item.numeroProposta}</td>
-                      <td className="data">{item.data}</td>
-                      <td>{item.apelido}</td>
-                      <td className="numero-proposta">{item.numeroUC}</td>
-                      <td className="valor">{((item.descontoTarifa || 0) * 100).toFixed(1)}%</td>
-                      <td className="valor">{((item.descontoBandeira || 0) * 100).toFixed(1)}%</td>
-                      <td>{item.ligacao}</td>
-                      <td>{item.consultor}</td>
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            className="action-btn edit"
-                            onClick={() => editarUG(item, index)}
-                            title="Editar UG"
-                          >
-                            ✏️ UG
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {dadosFiltrados.map((item, index) => {
+                    const ugInfo = ugsDisponiveis.find(ug => ug.nomeUsina === item.ug);
+                    
+                    return (
+                      <tr key={`${item.numeroProposta}-${item.numeroUC}`}>
+                        <td>
+                          <strong>{item.nomeCliente}</strong>
+                          <br />
+                          <small>{item.apelido}</small>
+                        </td>
+                        <td>{item.numeroProposta}</td>
+                        <td>{item.numeroUC}</td>
+                        <td>{item.consultor}</td>
+                        <td>{item.media?.toLocaleString()} kWh</td>
+                        <td>
+                          {item.ug ? (
+                            <span className="ug-definida">{item.ug}</span>
+                          ) : (
+                            <span className="ug-pendente">Não definida</span>
+                          )}
+                        </td>
+                        <td>
+                          {ugInfo && (
+                            <span className={`calibragem-status ${ugInfo.calibrado ? 'calibrada' : 'pendente'}`}>
+                              {ugInfo.calibrado ? '✅ Calibrada' : '⏳ Pendente'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            <button 
+                              onClick={() => definirUG(index)}
+                              className="btn-icon define-ug"
+                              title="Definir UG"
+                            >
+                              🏭
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </section>
 
-        {/* MODAL EDIÇÃO UG */}
+        {/* Modal de Definir UG */}
         {modalUG.show && (
-          <div className="modal-overlay" onClick={() => setModalUG({ show: false, item: null, index: -1 })}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>Definir UG</h3>
-                <button
-                  className="modal-close"
-                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="modal-body">
-                <p><strong>Cliente:</strong> {modalUG.item?.nomeCliente}</p>
-                <p><strong>Proposta:</strong> {modalUG.item?.numeroProposta}</p>
-                <p><strong>UC:</strong> {modalUG.item?.numeroUC}</p>
-                
-                <div className="form-group">
-                  <label htmlFor="modalUGInput">Unidade Geradora:</label>
-                  <input
-                    type="text"
-                    id="modalUGInput"
-                    placeholder="Digite a UG"
-                    defaultValue={modalUG.item?.ug || ''}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        salvarUG(e.target.value);
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div className="modal-footer">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => {
-                    const input = document.getElementById('modalUGInput');
-                    salvarUG(input.value);
-                  }}
-                >
-                  💾 Salvar
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
-                >
-                  ❌ Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
+          <ModalDefinirUG 
+            item={modalUG.item}
+            ugsDisponiveis={ugsDisponiveis}
+            onSave={salvarUG}
+            onClose={() => setModalUG({ show: false, item: null, index: -1 })}
+          />
         )}
       </div>
+    </div>
+  );
+};
 
-      {/* ESTILOS DO MODAL */}
-      <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
+// Componente Modal de Definir UG
+const ModalDefinirUG = ({ item, ugsDisponiveis, onSave, onClose }) => {
+  const [ugSelecionada, setUgSelecionada] = useState(item.ug || '');
 
-        .modal-content {
-          background: white;
-          border-radius: 12px;
-          padding: 0;
-          max-width: 500px;
-          width: 90%;
-          max-height: 80vh;
-          overflow: auto;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!ugSelecionada) {
+      alert('Selecione uma UG');
+      return;
+    }
 
-        .modal-header {
-          padding: 20px;
-          border-bottom: 1px solid #e1e1e1;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+    onSave(ugSelecionada);
+  };
 
-        .modal-header h3 {
-          margin: 0;
-          color: #333;
-        }
-
-        .modal-close {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #999;
-        }
-
-        .modal-close:hover {
-          color: #333;
-        }
-
-        .modal-body {
-          padding: 20px;
-        }
-
-        .modal-body p {
-          margin: 10px 0;
-          color: #666;
-        }
-
-        .modal-footer {
-          padding: 20px;
-          border-top: 1px solid #e1e1e1;
-          display: flex;
-          gap: 10px;
-          justify-content: flex-end;
-        }
-      `}</style>
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>🏭 Definir Unidade Geradora</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="proposta-info">
+            <h4>Proposta: {item.numeroProposta}</h4>
+            <p><strong>Cliente:</strong> {item.nomeCliente}</p>
+            <p><strong>UC:</strong> {item.numeroUC}</p>
+            <p><strong>Média:</strong> {item.media?.toLocaleString()} kWh</p>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Selecionar UG:</label>
+              <select
+                value={ugSelecionada}
+                onChange={(e) => setUgSelecionada(e.target.value)}
+                className="ug-select"
+                required
+              >
+                <option value="">Selecione uma UG...</option>
+                {ugsDisponiveis.map(ug => (
+                  <option key={ug.id} value={ug.nomeUsina}>
+                    {ug.nomeUsina} - {ug.potenciaCA}kW 
+                    ({ug.calibrado ? 'Calibrada' : 'Não calibrada'})
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {ugSelecionada && (
+              <div className="ug-preview">
+                {(() => {
+                  const ug = ugsDisponiveis.find(u => u.nomeUsina === ugSelecionada);
+                  return ug ? (
+                    <div className="ug-details">
+                      <h5>Detalhes da UG:</h5>
+                      <p><strong>Potência CA:</strong> {ug.potenciaCA} kW</p>
+                      <p><strong>Potência CC:</strong> {ug.potenciaCC} kW</p>
+                      <p><strong>Capacidade:</strong> {ug.capacidade?.toLocaleString()} kWh/mês</p>
+                      <p><strong>Média Atual:</strong> {ug.media?.toLocaleString()} kWh</p>
+                      <p><strong>Status:</strong> {ug.calibrado ? '✅ Calibrada' : '⏳ Não calibrada'}</p>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            )}
+            
+            <div className="modal-footer">
+              <button type="button" onClick={onClose} className="btn secondary">
+                Cancelar
+              </button>
+              <button type="submit" className="btn primary">
+                Definir UG
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
