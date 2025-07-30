@@ -111,7 +111,7 @@ const ProspecPage = () => {
     setModalEdicao({ show: true, item, index });
   };
 
-  // FUNÇÃO PARA SALVAR EDIÇÃO
+  // FUNÇÃO PARA SALVAR EDIÇÃO - CORRIGIDA PARA SINCRONIZAR UC INDIVIDUAL
   const salvarEdicao = async (dadosAtualizados) => {
     try {
       const { item } = modalEdicao;
@@ -124,7 +124,7 @@ const ProspecPage = () => {
         return;
       }
 
-      // Atualizar no storage
+      // Atualizar no storage (o storage já cuida da sincronização UC específica)
       await storageService.atualizarProspec(indexReal, dadosAtualizados);
       
       // Recarregar dados

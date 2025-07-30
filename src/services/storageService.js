@@ -1,4 +1,32 @@
-// src/services/storageService.js
+async calcularMediaUG(nomeUG) {
+        try {
+            const controle = await this.getControle();
+            const ucsAtribuidas = controle.filter(uc => uc.ug === nomeUG);
+            
+            if (ucsAtribuidas.length === 0) {
+                return { media: 0, calibragem: 0, ucsCount: 0 };
+            }
+            
+            // Somar todas as médias das UCs atribuídas
+            const mediaTotal = ucsAtribuidas.reduce((acc, uc) => acc + (uc.media || 0), 0);
+            
+            // Buscar o valor de calibragem global (pode ser definido em algum lugar)
+            // Por enquanto, vamos usar 0 se não tiver calibragem aplicada
+            const calibragemPercent = 0; // Será atualizado quando aplicar calibragem
+            const calibragem = mediaTotal * (1 + calibragemPercent / 100);
+            
+            return {
+                media: mediaTotal,
+                calibragem: calibragem,
+                ucsCount: ucsAtribuidas.length
+            };
+        } catch (error) {
+            console.error('❌ Erro ao calcular média UG:', error);
+            return { media: 0, calibragem: 0, ucsCount: 0 };
+        }
+    }    // ========================================
+    // UTILITÁRIOS
+    // ========================================// src/services/storageService.js
 class StorageService {
     constructor() {
         this.ready = true;
@@ -42,13 +70,16 @@ class StorageService {
         const dados = await this.getProspec();
         if (index >= 0 && index < dados.length) {
             const statusAnterior = dados[index].status;
+            const numeroUCAtual = dados[index].numeroUC;
+            const numeroPropostaAtual = dados[index].numeroProposta;
+            
             dados[index] = { ...dados[index], ...dadosAtualizados };
             await this.salvarProspec(dados);
             
-            // Se mudou status, sincronizar controle
+            // Se mudou status, sincronizar controle APENAS para esta UC específica
             if (statusAnterior !== dadosAtualizados.status) {
                 console.log(`🔄 Status mudou de '${statusAnterior}' para '${dadosAtualizados.status}', sincronizando controle...`);
-                await this.sincronizarStatusFechado(dados[index].numeroProposta, dadosAtualizados.status);
+                await this.sincronizarStatusFechado(numeroPropostaAtual, numeroUCAtual, dadosAtualizados.status);
             }
             
             return true;
@@ -62,7 +93,7 @@ class StorageService {
         if (index >= 0 && index < dados.length) {
             const proposta = dados[index];
             
-            // Se era fechado, remover do controle também
+            // Se era fechado, remover do controle também (UC específica)
             if (proposta.status === 'Fechado') {
                 await this.removerControle(proposta.numeroProposta, proposta.numeroUC);
             }
@@ -118,6 +149,10 @@ class StorageService {
         if (index >= 0 && index < dados.length) {
             dados[index].ug = ug;
             await this.salvarControle(dados);
+            
+            // Atualizar médias das UGs após atribuição
+            await this.atualizarMediasUGs();
+            
             return true;
         }
         return false;
@@ -271,8 +306,70 @@ class StorageService {
     }
 
     // ========================================
-    // UTILITÁRIOS
+    // CÁLCULO DE MÉDIA E CALIBRAGEM DAS UGs BASEADO NAS UCs ATRIBUÍDAS
     // ========================================
+
+    async aplicarCalibragemGlobal(percentual) {
+        try {
+            const ugs = await this.getUGs();
+            const ugsAtualizadas = [];
+            
+            for (const ug of ugs) {
+                const calculo = await this.calcularMediaUG(ug.nomeUsina);
+                
+                const calibragem = calculo.media * (1 + percentual / 100);
+                
+                const ugAtualizada = {
+                    ...ug,
+                    media: calculo.media,
+                    calibragem: calibragem,
+                    ucsAtribuidas: calculo.ucsCount,
+                    calibrado: calculo.ucsCount > 0,
+                    percentualCalibragem: percentual
+                };
+                
+                ugsAtualizadas.push(ugAtualizada);
+            }
+            
+            await this.salvarUGs(ugsAtualizadas);
+            console.log(`✅ Calibragem de ${percentual}% aplicada em todas as UGs`);
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao aplicar calibragem global:', error);
+            return false;
+        }
+    }
+
+    async atualizarMediasUGs() {
+        try {
+            const ugs = await this.getUGs();
+            const ugsAtualizadas = [];
+            
+            for (const ug of ugs) {
+                const calculo = await this.calcularMediaUG(ug.nomeUsina);
+                
+                const ugAtualizada = {
+                    ...ug,
+                    media: calculo.media,
+                    calibragem: calculo.calibragem,
+                    ucsAtribuidas: calculo.ucsCount,
+                    // Manter o status de calibrado baseado se tem UCs atribuídas
+                    calibrado: calculo.ucsCount > 0
+                };
+                
+                ugsAtualizadas.push(ugAtualizada);
+            }
+            
+            await this.salvarUGs(ugsAtualizadas);
+            console.log('✅ Médias das UGs atualizadas baseadas nas UCs atribuídas');
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao atualizar médias UGs:', error);
+            return false;
+        }
+    }
 
     async exportarParaCSV(tipo = 'prospec') {
         let dados;

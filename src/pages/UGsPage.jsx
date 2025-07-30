@@ -339,6 +339,8 @@ const UGsPage = () => {
                     <th>Potência CC</th>
                     <th>Fator Cap.</th>
                     <th>Capacidade</th>
+                    <th>UCs Atribuídas</th>
+                    <th>Média</th>
                     <th>Calibragem</th>
                     <th>Data Cadastro</th>
                     <th>Ações</th>
@@ -355,14 +357,22 @@ const UGsPage = () => {
                       <td>{item.fatorCapacidade}%</td>
                       <td>{item.capacidade?.toLocaleString()} kWh/mês</td>
                       <td>
-                        {item.calibrado ? (
-                          <span className="calibragem-definida">
-                            {item.media?.toLocaleString()} kWh
+                        <span className="ucs-atribuidas">
+                          {item.ucsAtribuidas || 0} UCs
+                        </span>
+                      </td>
+                      <td>
+                        <span className="media-calculada">
+                          {item.media?.toLocaleString()} kWh
+                        </span>
+                      </td>
+                      <td>
+                        {item.ucsAtribuidas > 0 ? (
+                          <span className="calibragem-calculada">
+                            {(item.calibragem || item.media)?.toLocaleString()} kWh
                           </span>
                         ) : (
-                          <CalibragemInput 
-                            onCalibrar={(media) => calibrarUG(index, media)}
-                          />
+                          <span className="sem-calibragem">-</span>
                         )}
                       </td>
                       <td>

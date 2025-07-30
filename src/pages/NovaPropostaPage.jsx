@@ -232,19 +232,8 @@ const NovaPropostaPage = () => {
               </div>
             </div>
 
-            {/* Consultor */}
+            {/* Consultor - SEM CONSULTOR EMBAIXO DO CAMPO CONSULTOR */}
             <div className="form-grid" style={{ marginTop: '20px' }}>
-              <div className="form-group">
-                <div className="checkbox-group-inline">
-                  <input
-                    {...register('semConsultor')}
-                    type="checkbox"
-                    id="semConsultor"
-                  />
-                  <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
-                </div>
-              </div>
-
               <div className="form-group">
                 <label>Nome do Consultor *</label>
                 <input
@@ -257,6 +246,16 @@ const NovaPropostaPage = () => {
                 {errors.consultor && (
                   <span className="error-message">{errors.consultor.message}</span>
                 )}
+                
+                {/* SEM CONSULTOR EMBAIXO DO CAMPO */}
+                <div className="checkbox-group-inline" style={{ marginTop: '10px' }}>
+                  <input
+                    {...register('semConsultor')}
+                    type="checkbox"
+                    id="semConsultor"
+                  />
+                  <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
+                </div>
               </div>
 
               <div className="form-group">
@@ -391,10 +390,10 @@ const NovaPropostaPage = () => {
             </button>
           </section>
 
-          {/* BENEFÍCIOS DA PROPOSTA */}
+          {/* BENEFÍCIOS DA PROPOSTA - ALINHADOS À ESQUERDA */}
           <section className="form-section">
             <h2>🎯 Benefícios da Proposta</h2>
-            <div className="beneficios-grid">
+            <div className="beneficios-container">
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio1')} type="checkbox" id="beneficio1" />
                 <label htmlFor="beneficio1">1. Economia na energia elétrica, sem impostos</label>

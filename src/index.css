@@ -934,3 +934,73 @@ button[class*="btn"] {
   border-radius: 4px;
   font-size: 0.9rem;
 }
+
+/* Adicionar ao final do src/index.css - CSS PARA CALIBRAGEM CORRIGIDA */
+
+/* Calibragem no Controle - APENAS RESULTADO */
+.calibragem-resultado {
+  color: #4CAF50;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sem-calibragem {
+  color: #999;
+  font-style: italic;
+}
+
+/* Calibragem definida nas UGs */
+.calibragem-definida {
+  color: #4CAF50;
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Adicionar ao final do src/index.css - CSS PARA CALIBRAGEM CORRIGIDA */
+
+/* Calibragem no Controle - APENAS RESULTADO */
+.calibragem-resultado {
+  color: #4CAF50;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sem-calibragem {
+  color: #999;
+  font-style: italic;
+}
+
+/* Calibragem definida nas UGs */
+.calibragem-definida {
+  color: #4CAF50;
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* UGs com UCs atribuídas */
+.ucs-atribuidas {
+  color: #2196F3;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.media-calculada {
+  color: #333;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.calibragem-calculada {
+  color: #4CAF50;
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}

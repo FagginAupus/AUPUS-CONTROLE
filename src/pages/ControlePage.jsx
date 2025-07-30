@@ -10,6 +10,7 @@ const ControlePage = () => {
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [calibragemGlobal, setCalibragemGlobal] = useState(0);
+  const [calibragemAplicada, setCalibragemAplicada] = useState(false);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   
@@ -166,35 +167,21 @@ const ControlePage = () => {
       return;
     }
 
-    if (!window.confirm(`Aplicar calibragem de ${calibragemGlobal}% em todas as propostas filtradas?`)) {
+    if (!window.confirm(`Aplicar calibragem de ${calibragemGlobal}% em todas as UGs?`)) {
       return;
     }
 
     try {
-      let processadas = 0;
-      
-      for (const item of dadosFiltrados) {
-        if (item.ug) {
-          const ugIndex = ugsDisponiveis.findIndex(ug => ug.nomeUsina === item.ug);
-          if (ugIndex !== -1) {
-            const ug = ugsDisponiveis[ugIndex];
-            const novaMedia = ug.media * (1 + calibragemGlobal / 100);
-            
-            await storageService.atualizarUG(ugIndex, { 
-              ...ug, 
-              media: novaMedia,
-              calibrado: true 
-            });
-            processadas++;
-          }
-        }
-      }
+      // Aplicar calibragem global usando a nova função do storage
+      await storageService.aplicarCalibragemGlobal(calibragemGlobal);
       
       await carregarUGsDisponiveis();
       await carregarDados();
       
-      showNotification(`Calibragem aplicada em ${processadas} UGs!`, 'success');
-      setCalibragemGlobal(0);
+      // Marcar calibragem como aplicada
+      setCalibragemAplicada(true);
+      
+      showNotification(`Calibragem de ${calibragemGlobal}% aplicada em todas as UGs!`, 'success');
       
     } catch (error) {
       console.error('❌ Erro na calibragem global:', error);
@@ -212,22 +199,12 @@ const ControlePage = () => {
     }
   };
 
-  // Função para calcular calibragem
+  // Função para calcular calibragem - APENAS RESULTADO FINAL E APÓS APLICAR
   const calcularCalibragem = (item) => {
-    if (!item.ug) return null;
+    if (!item.ug || !calibragemAplicada || calibragemGlobal === 0) return null;
     
-    const ugInfo = ugsDisponiveis.find(ug => ug.nomeUsina === item.ug);
-    if (!ugInfo) return null;
-    
-    // Mostrar: média original * 1,XX (calibragem)
-    const calibragem = calibragemGlobal || 0;
-    const mediaCalibrada = item.media * (1 + calibragem / 100);
-    
-    return {
-      original: item.media,
-      calibrada: mediaCalibrada,
-      fator: (1 + calibragem / 100).toFixed(2)
-    };
+    const mediaCalibrada = item.media * (1 + calibragemGlobal / 100);
+    return mediaCalibrada;
   };
 
   const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
@@ -314,7 +291,10 @@ const ControlePage = () => {
                 type="number"
                 step="0.1"
                 value={calibragemGlobal}
-                onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  setCalibragemGlobal(parseFloat(e.target.value) || 0);
+                  setCalibragemAplicada(false); // Reset aplicação quando valor muda
+                }}
                 className="calibragem-input"
               />
               <button 
@@ -384,12 +364,8 @@ const ControlePage = () => {
                         <td>{item.media?.toLocaleString()} kWh</td>
                         <td>
                           {calibragem ? (
-                            <span className="calibragem-info">
-                              {calibragem.original?.toLocaleString()} × {calibragem.fator}
-                              <br />
-                              <small className="calibragem-resultado">
-                                = {calibragem.calibrada?.toLocaleString()} kWh
-                              </small>
+                            <span className="calibragem-resultado">
+                              {calibragem.toLocaleString()} kWh
                             </span>
                           ) : (
                             <span className="sem-calibragem">-</span>
