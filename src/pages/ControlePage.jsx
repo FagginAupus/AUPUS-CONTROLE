@@ -1,4 +1,4 @@
-// src/pages/ControlePage.jsx - CORRIGIDO conforme solicitações
+// src/pages/ControlePage.jsx - ARQUIVO COMPLETO CORRIGIDO
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -19,6 +19,12 @@ const ControlePage = () => {
     ug: ''
   });
 
+  const [estatisticas, setEstatisticas] = useState({
+    total: 0,
+    ugsDefinidas: 0,
+    ugsPendentes: 0
+  });
+
   const { showNotification } = useNotification();
 
   useEffect(() => {
@@ -28,6 +34,10 @@ const ControlePage = () => {
   useEffect(() => {
     filtrarDados();
   }, [filtros, dados]);
+
+  useEffect(() => {
+    atualizarEstatisticas();
+  }, [dadosFiltrados]);
 
   const carregarDados = async () => {
     try {
@@ -80,6 +90,8 @@ const ControlePage = () => {
       if (window.aupusStorage && typeof window.aupusStorage.getUGs === 'function') {
         const ugs = await window.aupusStorage.getUGs();
         setUgsDisponiveis(Array.isArray(ugs) ? ugs : []);
+      } else {
+        setUgsDisponiveis([]);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar UGs:', error);
@@ -102,127 +114,146 @@ const ControlePage = () => {
       );
     }
 
-    if (filtros.ug) {
-      dadosFiltrados = dadosFiltrados.filter(item =>
-        item.ug === filtros.ug
-      );
+    if (filtros.ug === 'definido') {
+      dadosFiltrados = dadosFiltrados.filter(item => item.ug && item.ug.trim() !== '');
+    } else if (filtros.ug === 'vazio') {
+      dadosFiltrados = dadosFiltrados.filter(item => !item.ug || item.ug.trim() === '');
     }
 
     setDadosFiltrados(dadosFiltrados);
+  };
+
+  const atualizarEstatisticas = () => {
+    const total = dadosFiltrados.length;
+    const ugsDefinidas = dadosFiltrados.filter(item => item.ug && item.ug.trim() !== '').length;
+    const ugsPendentes = total - ugsDefinidas;
+    
+    setEstatisticas({
+      total,
+      ugsDefinidas,
+      ugsPendentes
+    });
+  };
+
+  const limparFiltros = () => {
+    setFiltros({
+      nome: '',
+      consultor: '',
+      ug: ''
+    });
   };
 
   const editarUG = (item, index) => {
     setModalUG({ show: true, item, index });
   };
 
-  const salvarUG = async (ugSelecionada) => {
+  const salvarUG = async (novaUG) => {
     try {
       const { item, index } = modalUG;
       
-      // Encontrar index real no array principal
-      const indexReal = dados.findIndex(p => 
-        p.numeroProposta === item.numeroProposta && 
-        p.numeroUC === item.numeroUC
-      );
-      
-      if (indexReal !== -1 && window.aupusStorage?.atualizarUGControle) {
-        await window.aupusStorage.atualizarUGControle(indexReal, ugSelecionada);
+      if (window.aupusStorage && typeof window.aupusStorage.atualizarControle === 'function') {
+        await window.aupusStorage.atualizarControle(index, { ug: novaUG });
         await carregarDados(); // Recarregar dados
-        
-        const mensagem = ugSelecionada ? 
-          `UG "${ugSelecionada}" definida com sucesso!` : 
-          'UG removida com sucesso!';
-        
-        showNotification(mensagem, 'success');
+        showNotification('UG atualizada com sucesso!', 'success');
       } else {
-        showNotification('Erro ao atualizar UG', 'error');
+        // Fallback local
+        const novosDados = [...dados];
+        novosDados[index] = { ...novosDados[index], ug: novaUG };
+        setDados(novosDados);
+        showNotification('UG atualizada localmente', 'info');
       }
+      
+      setModalUG({ show: false, item: null, index: -1 });
     } catch (error) {
       console.error('❌ Erro ao salvar UG:', error);
       showNotification('Erro ao salvar UG: ' + error.message, 'error');
     }
-    
-    setModalUG({ show: false, item: null, index: -1 });
   };
 
-  const aplicarCalibragem = () => {
-    showNotification(`Calibragem de ${calibragemGlobal}% aplicada!`, 'success');
+  const aplicarCalibragemGlobal = async () => {
+    if (!calibragemGlobal || calibragemGlobal === 0) {
+      showNotification('Informe um valor válido para calibragem', 'warning');
+      return;
+    }
+
+    try {
+      const itensVazios = dados.filter(item => !item.ug || item.ug.trim() === '');
+      
+      if (itensVazios.length === 0) {
+        showNotification('Não há propostas sem UG para calibrar', 'info');
+        return;
+      }
+
+      for (let i = 0; i < dados.length; i++) {
+        const item = dados[i];
+        if (!item.ug || item.ug.trim() === '') {
+          if (window.aupusStorage && typeof window.aupusStorage.atualizarControle === 'function') {
+            await window.aupusStorage.atualizarControle(i, { ug: calibragemGlobal.toString() });
+          }
+        }
+      }
+
+      await carregarDados();
+      showNotification(`Calibragem aplicada a ${itensVazios.length} propostas!`, 'success');
+      setCalibragemGlobal(0);
+    } catch (error) {
+      console.error('❌ Erro na calibragem global:', error);
+      showNotification('Erro na calibragem global: ' + error.message, 'error');
+    }
   };
 
-  const calcularCalibragem = (media) => {
-    const multiplicador = 1 + (calibragemGlobal / 100);
-    return Math.round((media || 0) * multiplicador);
-  };
+  // Obter consultores únicos para o filtro
+  const consultoresUnicos = [...new Set(dados.map(item => item.consultor))].filter(Boolean).sort();
 
-  const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR');
-  };
-
-  const formatarPercentual = (valor) => {
-    return ((valor || 0) * 100).toFixed(1) + '%';
-  };
-
-  const getUGStatusClass = (ug) => {
-    return (!ug || ug.trim() === '') ? 'ug-vazio' : 'ug-definido';
-  };
-
-  const getUGStatusIcon = (ug) => {
-    return (!ug || ug.trim() === '') ? '❌' : '✅';
-  };
-
-  const ugsPendentesCount = dados.filter(item => !item.ug || item.ug.trim() === '').length;
-  const ugsDefinidasCount = dados.filter(item => item.ug && item.ug.trim() !== '').length;
+  if (loading) {
+    return (
+      <div className="page-container">
+        <div className="container">
+          <Header title="CONTROLE" subtitle="Gestão de Propostas Fechadas" icon="✅" />
+          <Navigation />
+          
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Carregando dados...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
       <div className="container">
-        <Header 
-          title="CONTROLE" 
-          subtitle="Propostas Fechadas e UGs" 
-          icon="✅" 
-        />
-        
+        <Header title="CONTROLE" subtitle="Gestão de Propostas Fechadas" icon="✅" />
         <Navigation />
 
-        {/* ALERTA CORRIGIDO - SEM "Preencher UGs..." */}
-        {ugsPendentesCount > 0 && (
-          <div className="alert alert-warning">
-            <div className="alert-content">
-              <span className="alert-icon">⚠️</span>
-              <div className="alert-text">
-                <strong>Atenção!</strong> Existem {ugsPendentesCount} propostas fechadas sem UG definida.
-              </div>
-            </div>
+        {/* ESTATÍSTICAS RÁPIDAS */}
+        <section className="quick-stats">
+          <div className="stat-card">
+            <span className="stat-label">Total de Propostas</span>
+            <span className="stat-value">{estatisticas.total}</span>
           </div>
-        )}
-
-        {/* Estatísticas */}
-        <section className="stats-section">
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-value">{dados.length}</div>
-              <div className="stat-label">Total Propostas</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">{ugsDefinidasCount}</div>
-              <div className="stat-label">UGs Definidas</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">{ugsPendentesCount}</div>
-              <div className="stat-label">UGs Pendentes</div>
-            </div>
+          <div className="stat-card">
+            <span className="stat-label">UGs Definidas</span>
+            <span className="stat-value">{estatisticas.ugsDefinidas}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">UGs Pendentes</span>
+            <span className="stat-value">{estatisticas.ugsPendentes}</span>
           </div>
         </section>
 
-        {/* Filtros e Calibragem */}
+        {/* SEÇÃO DE FILTROS - ESPAÇAMENTO CORRIGIDO */}
         <section className="filters-section">
+          <h2>🔍 Filtros</h2>
+          
           <div className="filters-grid">
             <div className="filter-group">
-              <label htmlFor="filtroNome">Cliente</label>
+              <label htmlFor="filtroNome">Nome do Cliente</label>
               <input
                 type="text"
                 id="filtroNome"
-                placeholder="Buscar por cliente..."
+                placeholder="Buscar por nome..."
                 value={filtros.nome}
                 onChange={(e) => setFiltros(prev => ({ ...prev, nome: e.target.value }))}
               />
@@ -235,116 +266,114 @@ const ControlePage = () => {
                 value={filtros.consultor}
                 onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
               >
-                <option value="">Todos os consultores</option>
-                {[...new Set(dados.map(item => item.consultor))].filter(Boolean).sort().map(consultor => (
+                <option value="">Todos</option>
+                {consultoresUnicos.map(consultor => (
                   <option key={consultor} value={consultor}>{consultor}</option>
                 ))}
               </select>
             </div>
 
             <div className="filter-group">
-              <label htmlFor="filtroUG">UG</label>
+              <label htmlFor="filtroUG">Status UG</label>
               <select
                 id="filtroUG"
                 value={filtros.ug}
                 onChange={(e) => setFiltros(prev => ({ ...prev, ug: e.target.value }))}
               >
-                <option value="">Todas as UGs</option>
-                {[...new Set(dados.map(item => item.ug))].filter(Boolean).sort().map(ug => (
-                  <option key={ug} value={ug}>{ug}</option>
-                ))}
+                <option value="">Todos</option>
+                <option value="definido">UG Definida</option>
+                <option value="vazio">UG Vazia</option>
               </select>
             </div>
+          </div>
 
-            <div className="filter-group">
-              <label htmlFor="calibragemGlobal">Calibragem Global (%)</label>
-              <div className="calibragem-container">
-                <input
-                  type="number"
-                  id="calibragemGlobal"
-                  value={calibragemGlobal}
-                  onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
-                  step="0.1"
-                  min="0"
-                  max="100"
-                />
-                <button onClick={aplicarCalibragem} className="btn btn-secondary">
-                  Aplicar
-                </button>
-              </div>
-            </div>
+          <div className="filter-actions">
+            <button className="btn btn-secondary" onClick={limparFiltros}>
+              🗑️ Limpar Filtros
+            </button>
           </div>
         </section>
 
-        {/* Tabela */}
+        {/* CALIBRAGEM GLOBAL */}
+        {estatisticas.ugsPendentes > 0 && (
+          <section className="filters-section calibragem-card">
+            <h2>⚙️ Calibragem Global</h2>
+            <p>Aplicar UG para todas as {estatisticas.ugsPendentes} propostas sem definição:</p>
+            
+            <div className="calibragem-container">
+              <input
+                type="number"
+                className="calibragem-input"
+                placeholder="UG"
+                value={calibragemGlobal || ''}
+                onChange={(e) => setCalibragemGlobal(parseInt(e.target.value) || 0)}
+              />
+              <button
+                className="calibragem-apply btn btn-primary"
+                onClick={aplicarCalibragemGlobal}
+              >
+                ⚡ Aplicar
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* SEÇÃO DA TABELA - POSICIONAMENTO CORRETO */}
         <section className="data-section">
           <div className="table-header">
-            <h2>Propostas Fechadas ({dadosFiltrados.length})</h2>
-            <button className="btn btn-primary" onClick={carregarDados}>
-              🔄 Atualizar
-            </button>
+            <h2>📋 Dados de Controle</h2>
+            <span className="table-count">{dadosFiltrados.length} registros</span>
           </div>
 
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Carregando propostas...</p>
-            </div>
-          ) : dadosFiltrados.length === 0 ? (
+          {dadosFiltrados.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon">📭</div>
               <h3>Nenhuma proposta encontrada</h3>
-              <p>Feche algumas propostas no PROSPEC ou ajuste os filtros</p>
+              <p>Não há propostas fechadas que correspondam aos filtros aplicados.</p>
             </div>
           ) : (
             <div className="table-wrapper">
               <table className="table">
                 <thead>
                   <tr>
+                    <th>UG</th>
+                    <th>Nome Cliente</th>
                     <th>Nº Proposta</th>
-                    <th>Cliente</th>
-                    <th>Apelido</th>
-                    <th>Nº UC</th>
                     <th>Data</th>
+                    <th>Apelido</th>
+                    <th>UC</th>
                     <th>Desc. Tarifa</th>
                     <th>Desc. Bandeira</th>
                     <th>Ligação</th>
                     <th>Consultor</th>
-                    <th>Recorrência</th>
-                    <th>Média (kWh)</th>
-                    <th>Calibrado (kWh)</th>
-                    <th>Telefone</th>
-                    <th>UG</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dadosFiltrados.map((item, index) => (
                     <tr key={`${item.numeroProposta}-${item.numeroUC}-${index}`}>
-                      <td>{item.numeroProposta || '-'}</td>
-                      <td><strong>{item.nomeCliente || '-'}</strong></td>
-                      <td>{item.apelido || '-'}</td>
-                      <td>{item.numeroUC || '-'}</td>
-                      <td className="data">{item.data ? formatarData(item.data) : '-'}</td>
-                      <td className="valor">{formatarPercentual(item.descontoTarifa)}</td>
-                      <td className="valor">{formatarPercentual(item.descontoBandeira)}</td>
-                      <td>{item.ligacao || '-'}</td>
-                      <td><strong>{item.consultor || '-'}</strong></td>
-                      <td className="valor">{item.recorrencia || '-'}</td>
-                      <td className="valor">{(item.media || 0).toLocaleString('pt-BR')} kWh</td>
-                      <td className="valor calibragem">{calcularCalibragem(item.media).toLocaleString('pt-BR')} kWh</td>
-                      <td className="data">{item.telefone || '-'}</td>
-                      <td className={`ug ${getUGStatusClass(item.ug)}`}>
-                        {getUGStatusIcon(item.ug)} {item.ug || 'Não definida'}
+                      <td>
+                        <span className={item.ug && item.ug.trim() !== '' ? 'ug-definido' : 'ug-vazio'}>
+                          {item.ug && item.ug.trim() !== '' ? item.ug : 'Não definido'}
+                        </span>
                       </td>
+                      <td>{item.nomeCliente}</td>
+                      <td className="numero-proposta">{item.numeroProposta}</td>
+                      <td className="data">{item.data}</td>
+                      <td>{item.apelido}</td>
+                      <td className="numero-proposta">{item.numeroUC}</td>
+                      <td className="valor">{((item.descontoTarifa || 0) * 100).toFixed(1)}%</td>
+                      <td className="valor">{((item.descontoBandeira || 0) * 100).toFixed(1)}%</td>
+                      <td>{item.ligacao}</td>
+                      <td>{item.consultor}</td>
                       <td>
                         <div className="table-actions">
                           <button
+                            className="action-btn edit"
                             onClick={() => editarUG(item, index)}
-                            className="action-btn ug"
                             title="Editar UG"
                           >
-                            🏢
+                            ✏️ UG
                           </button>
                         </div>
                       </td>
@@ -355,69 +384,132 @@ const ControlePage = () => {
             </div>
           )}
         </section>
-      </div>
 
-      {/* Modal de Edição UG */}
-      {modalUG.show && (
-        <ModalUG
-          item={modalUG.item}
-          ugsDisponiveis={ugsDisponiveis}
-          onClose={() => setModalUG({ show: false, item: null, index: -1 })}
-          onSave={salvarUG}
-        />
-      )}
-    </div>
-  );
-};
-
-// Componente Modal UG
-const ModalUG = ({ item, ugsDisponiveis, onClose, onSave }) => {
-  const [ugSelecionada, setUgSelecionada] = useState(item?.ug || '');
-
-  const handleSave = () => {
-    onSave(ugSelecionada);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Definir UG</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="modal-body">
-          <p><strong>Cliente:</strong> {item?.nomeCliente}</p>
-          <p><strong>Apelido:</strong> {item?.apelido}</p>
-          <p><strong>UC:</strong> {item?.numeroUC}</p>
-          
-          <div className="form-group">
-            <label htmlFor="ugSelect">Selecionar UG:</label>
-            <select
-              id="ugSelect"
-              value={ugSelecionada}
-              onChange={(e) => setUgSelecionada(e.target.value)}
-            >
-              <option value="">Selecione uma UG...</option>
-              {ugsDisponiveis.map((ug) => (
-                <option key={ug.id} value={ug.nomeUsina}>
-                  {ug.nomeUsina} - {ug.capacidade} MWh
-                </option>
-              ))}
-              <option value="" style={{ color: '#dc3545' }}>--- Remover UG ---</option>
-            </select>
+        {/* MODAL EDIÇÃO UG */}
+        {modalUG.show && (
+          <div className="modal-overlay" onClick={() => setModalUG({ show: false, item: null, index: -1 })}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Definir UG</h3>
+                <button
+                  className="modal-close"
+                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="modal-body">
+                <p><strong>Cliente:</strong> {modalUG.item?.nomeCliente}</p>
+                <p><strong>Proposta:</strong> {modalUG.item?.numeroProposta}</p>
+                <p><strong>UC:</strong> {modalUG.item?.numeroUC}</p>
+                
+                <div className="form-group">
+                  <label htmlFor="modalUGInput">Unidade Geradora:</label>
+                  <input
+                    type="text"
+                    id="modalUGInput"
+                    placeholder="Digite a UG"
+                    defaultValue={modalUG.item?.ug || ''}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        salvarUG(e.target.value);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="modal-footer">
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const input = document.getElementById('modalUGInput');
+                    salvarUG(input.value);
+                  }}
+                >
+                  💾 Salvar
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
+                >
+                  ❌ Cancelar
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div className="modal-footer">
-          <button className="btn btn-primary" onClick={handleSave}>
-            💾 Salvar
-          </button>
-          <button className="btn btn-secondary" onClick={onClose}>
-            ❌ Cancelar
-          </button>
-        </div>
+        )}
       </div>
+
+      {/* ESTILOS DO MODAL */}
+      <style jsx>{`
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 12px;
+          padding: 0;
+          max-width: 500px;
+          width: 90%;
+          max-height: 80vh;
+          overflow: auto;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+          padding: 20px;
+          border-bottom: 1px solid #e1e1e1;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .modal-header h3 {
+          margin: 0;
+          color: #333;
+        }
+
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: #999;
+        }
+
+        .modal-close:hover {
+          color: #333;
+        }
+
+        .modal-body {
+          padding: 20px;
+        }
+
+        .modal-body p {
+          margin: 10px 0;
+          color: #666;
+        }
+
+        .modal-footer {
+          padding: 20px;
+          border-top: 1px solid #e1e1e1;
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,15 +1,15 @@
-/* src/pages/NovaPropostaPage.css - VERSÃO CORRIGIDA */
+/* src/pages/NovaPropostaPage.css - ESTILOS CORRIGIDOS */
 
 .page-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   background-attachment: fixed;
   width: 100%;
-  overflow-x: hidden; /* PREVINE SCROLL HORIZONTAL */
+  overflow-x: hidden;
 }
 
 .container {
-  max-width: 1400px; /* VOLTA À LARGURA FIXA */
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
   padding: 20px;
@@ -19,11 +19,14 @@
 .form-container {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden; /* PREVINE OVERFLOW */
+  overflow-x: hidden;
   box-sizing: border-box;
 }
 
-/* Seções do formulário */
+/* =======================================================
+   SEÇÕES DO FORMULÁRIO
+   ======================================================= */
+
 .form-section {
   background: #f8f9fa;
   border-radius: 12px;
@@ -33,7 +36,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden; /* PREVINE OVERFLOW */
+  overflow-x: hidden;
 }
 
 .form-section h2 {
@@ -50,7 +53,7 @@
   font-size: 1.2rem;
 }
 
-/* Grid de formulário - CORRIGIDO */
+/* Grid de formulário */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -61,10 +64,9 @@
   box-sizing: border-box;
 }
 
-/* REMOVE GRID ESPECÍFICO PARA TELAS GRANDES */
 @media (min-width: 1200px) {
   .container {
-    max-width: 1200px; /* REDUZ LARGURA MÁXIMA */
+    max-width: 1200px;
   }
   
   .form-grid {
@@ -72,6 +74,10 @@
     max-width: 100%;
   }
 }
+
+/* =======================================================
+   GRUPOS DE FORMULÁRIO
+   ======================================================= */
 
 .form-group {
   display: flex;
@@ -88,7 +94,7 @@
   font-size: 0.9rem;
 }
 
-/* Inputs - CORRIGIDOS */
+/* Inputs e campos */
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -101,7 +107,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  min-width: 0; /* PERMITE ENCOLHER */
+  min-width: 0;
 }
 
 .form-group input:focus,
@@ -119,6 +125,12 @@
 .form-group input.error:focus {
   border-color: #e74c3c;
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 5px;
 }
 
 /* Campos readonly */
@@ -144,8 +156,52 @@
   font-family: inherit;
 }
 
-/* Checkboxes - LAYOUT CORRIGIDO */
-.checkbox-group {
+/* =======================================================
+   CHECKBOX INLINE - DISCRETO E PEQUENO
+   ======================================================= */
+
+.checkbox-group-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  font-size: 0.85rem; /* MENOR */
+}
+
+.checkbox-group-inline input[type="checkbox"] {
+  width: 16px; /* MENOR */
+  height: 16px; /* MENOR */
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-group-inline label {
+  margin: 0 !important;
+  cursor: pointer;
+  font-weight: 400 !important; /* MENOS DESTAQUE */
+  font-size: 0.85rem !important; /* MENOR */
+  color: #6c757d !important; /* COR MAIS DISCRETA */
+}
+
+/* =======================================================
+   CHECKBOXES DE BENEFÍCIOS - ALINHADOS À ESQUERDA
+   ======================================================= */
+
+.beneficios-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.checkbox-group.beneficio-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -157,9 +213,13 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  
+  /* IMPORTANTE: ALINHADO À ESQUERDA */
+  justify-content: flex-start;
+  text-align: left;
 }
 
-.checkbox-group input[type="checkbox"] {
+.checkbox-group.beneficio-item input[type="checkbox"] {
   width: 18px;
   height: 18px;
   margin: 0;
@@ -168,7 +228,7 @@
   margin-top: 2px;
 }
 
-.checkbox-group label {
+.checkbox-group.beneficio-item label {
   margin: 0;
   cursor: pointer;
   font-weight: 400;
@@ -176,219 +236,23 @@
   color: #333;
   width: 100%;
   word-wrap: break-word;
+  
+  /* IMPORTANTE: TEXTO ALINHADO À ESQUERDA */
+  text-align: left;
 }
 
-.checkbox-group:hover {
+.checkbox-group.beneficio-item:hover {
   background: #f8f9fa;
   border-color: #4CAF50;
 }
 
-/* BOTÃO SEM CONSULTOR - CORRIGIDO */
-.checkbox-group.sem-consultor {
-  justify-content: flex-start;
-  text-align: left;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  padding: 15px 20px;
-  margin: 15px 0;
-  max-width: 100%;
-  box-shadow: none;
-  box-sizing: border-box;
-}
-
-.checkbox-group.sem-consultor input[type="checkbox"] {
-  margin-right: 10px;
-  transform: scale(1);
-}
-
-.checkbox-group.sem-consultor label {
-  font-weight: 500;
-  color: #495057;
-  font-size: 1rem;
-  text-align: left;
-}
-
-/* BENEFÍCIOS - CORRIGIDOS */
-.checkbox-group.beneficio-item {
-  justify-content: flex-start;
-  text-align: left;
-  margin: 10px 0;
-  max-width: 100%;
-  padding: 12px 15px;
-  box-sizing: border-box;
-}
-
-/* Botões - CORRIGIDOS */
-.btn {
-  padding: 15px 25px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 140px;
-  box-sizing: border-box;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-2px);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* Spinner */
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Mensagens de erro */
-.error-message {
-  color: #e74c3c;
-  font-size: 0.8rem;
-  margin-top: 5px;
-  font-weight: 500;
-}
-
-/* Ações do formulário - CORRIGIDAS */
-.form-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  padding-top: 20px;
-  border-top: 2px solid #e1e1e1;
-  margin-top: 30px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.form-actions .btn {
-  padding: 15px 30px;
-  font-size: 1rem;
-  min-width: 180px;
-  flex: 1;
-  max-width: 300px;
-}
-
-/* Responsivo - MELHORADO */
-@media (max-width: 1200px) {
-  .container {
-    max-width: 95vw;
-    padding: 15px;
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 15px;
-  }
-  
-  .form-section {
-    padding: 20px 15px;
-    margin-bottom: 20px;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .checkbox-group.sem-consultor,
-  .checkbox-group.beneficio-item {
-    max-width: 100%;
-    margin: 10px 0;
-    padding: 15px 15px; /* REDUZ PADDING LATERAL */
-  }
-  
-  .checkbox-group.sem-consultor label,
-  .checkbox-group.beneficio-item label {
-    font-size: 0.95rem;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .form-actions .btn {
-    width: 100%;
-    min-width: auto;
-    max-width: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 10px;
-  }
-  
-  .form-section {
-    padding: 15px 10px;
-  }
-  
-  .checkbox-group.sem-consultor,
-  .checkbox-group.beneficio-item {
-    padding: 12px 10px; /* AINDA MAIS REDUZIDO */
-  }
-  
-  .checkbox-group.sem-consultor label,
-  .checkbox-group.beneficio-item label {
-    font-size: 0.9rem;
-  }
-  
-  .form-actions .btn {
-    padding: 12px 20px;
-    font-size: 0.9rem;
-  }
-}
-
-/* SEÇÃO DE UCs - CORRIGIDA */
-.uc-section {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
+/* =======================================================
+   SEÇÃO DE UCs
+   ======================================================= */
 
 .uc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px;
   width: 100%;
   max-width: 100%;
@@ -414,216 +278,180 @@
   gap: 8px;
 }
 
-/* SELETOR DE NÚMERO DE UCs - CORRIGIDO */
-.numero-ucs-selector {
+/* =======================================================
+   BOTÕES DE AÇÃO
+   ======================================================= */
+
+.form-actions {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.uc-btn {
-  padding: 8px 16px;
-  border: 2px solid #4CAF50;
-  background: white;
-  color: #4CAF50;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  min-width: 40px;
-}
-
-.uc-btn.active {
-  background: #4CAF50;
-  color: white;
-}
-
-.uc-btn:hover {
-  background: #4CAF50;
-  color: white;
-  transform: translateY(-1px);
-}
-
-/* SEÇÃO DE BENEFÍCIOS - CORRIGIDA */
-.beneficios-section {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-.beneficios-grid {
-  display: grid;
-  grid-template-columns: 1fr;
   gap: 15px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
+  justify-content: flex-start;
+  margin-top: 30px;
+  padding: 20px 0;
+  flex-wrap: wrap;
 }
 
-/* CORREÇÃO GLOBAL PARA TODOS OS ELEMENTOS */
-* {
-  box-sizing: border-box;
-}
-
-/* REMOVE QUALQUER SCROLL HORIZONTAL FORÇADO */
-html, body {
-  overflow-x: hidden;
-}
-
-/* CSS ADICIONAL para NovaPropostaPage.css - LAYOUT REORGANIZADO */
-
-/* Grid horizontal para consultor e economia */
-.horizontal-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  align-items: start;
-}
-
-.form-column {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  border-left: 4px solid #4CAF50;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.form-column h3 {
-  margin: 0 0 15px 0;
-  color: #333;
-  font-size: 1.1rem;
+.form-actions .btn {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* UCs Dinâmicas */
-.uc-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-left: 4px solid #4CAF50;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  position: relative;
+.btn-primary {
+  background: #4CAF50;
+  color: white;
 }
 
-.uc-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+.btn-primary:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
-.uc-header h3 {
-  margin: 0;
-  color: #333;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.btn-secondary {
+  background: #6c757d;
+  color: white;
 }
 
-.btn-remove-uc {
+.btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-danger {
   background: #dc3545;
   color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
 }
 
-.btn-remove-uc:hover {
+.btn-danger:hover:not(:disabled) {
   background: #c82333;
   transform: translateY(-1px);
 }
 
-/* Botão Adicionar UC */
-.add-uc-container {
-  text-align: center;
-  margin: 20px 0;
+.btn:disabled {
+  background: #bdc3c7 !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-.add-uc-btn {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  color: white;
-  border: none;
-  padding: 12px 25px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* Spinner para loading */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.add-uc-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Benefício Personalizado - ALINHADO À ESQUERDA */
-.beneficio-personalizado {
-  margin-top: 20px;
-  text-align: left !important;
-}
+/* =======================================================
+   RESPONSIVIDADE
+   ======================================================= */
 
-.beneficio-personalizado label {
-  text-align: left !important;
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
-}
-
-.beneficio-personalizado textarea {
-  width: 100%;
-  max-width: 600px; /* Limitar largura */
-  text-align: left !important;
-}
-
-/* Responsivo para layout horizontal */
 @media (max-width: 768px) {
-  .horizontal-split {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .form-column {
+  .container {
     padding: 15px;
   }
   
-  .uc-header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
+  .form-section {
+    padding: 20px;
   }
   
-  .btn-remove-uc {
-    align-self: flex-end;
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .uc-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
 @media (max-width: 480px) {
-  .form-column {
-    padding: 12px;
+  .container {
+    padding: 10px;
   }
   
-  .form-column h3 {
-    font-size: 1rem;
+  .form-section {
+    padding: 15px;
   }
   
-  .add-uc-btn {
+  .form-section h2 {
+    font-size: 1.2rem;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .checkbox-group-inline {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .checkbox-group.beneficio-item {
+    padding: 10px;
+  }
+  
+  .checkbox-group.beneficio-item label {
+    font-size: 0.9rem;
+  }
+  
+  .form-actions .btn {
     padding: 10px 20px;
     font-size: 0.9rem;
   }
+}
+
+/* =======================================================
+   CORREÇÕES GLOBAIS
+   ======================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+/* Garantir que elementos flutuantes não interfiram */
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Forçar nova linha entre seções */
+.section-break {
+  clear: both;
+  height: 20px;
+  width: 100%;
 }

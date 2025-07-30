@@ -1,4 +1,4 @@
-/* src/pages/ProspecPage.css */
+/* src/pages/ProspecPage.css - ESPAÇAMENTO DEFINITIVAMENTE CORRIGIDO */
 
 .page-container {
   min-height: 100vh;
@@ -12,13 +12,74 @@
   padding: 20px;
 }
 
-/* Seção de Filtros */
+/* =======================================================
+   ESTATÍSTICAS RÁPIDAS - BEM SEPARADAS DOS FILTROS
+   ======================================================= */
+
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px; /* AUMENTADO MUITO - espaço generoso antes dos filtros */
+  margin-top: 20px;
+  
+  /* IMPORTANTE: Garantir que não interfira com filtros */
+  position: relative;
+  z-index: 0;
+  clear: both;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  border-left: 4px solid #4CAF50;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #333;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* =======================================================
+   SEÇÃO DE FILTROS - POSICIONAMENTO ABSOLUTO CORRETO
+   ======================================================= */
+
 .filters-section {
   background: white;
   border-radius: 15px;
   padding: 25px;
-  margin-bottom: 25px;
+  margin-top: 20px; /* ESPAÇO CONTROLADO após stats */
+  margin-bottom: 40px; /* ESPAÇO GENEROSO antes da tabela */
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  
+  /* IMPORTANTE: Posicionamento que evita sobreposição */
+  position: relative;
+  z-index: 2;
+  clear: both;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .filters-container {
@@ -30,13 +91,19 @@
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
+  gap: 20px;
   align-items: end;
+  margin-bottom: 20px;
+  
+  /* Garantir que os campos não flutuem */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
+  position: relative; /* Evitar float issues */
 }
 
 .filter-group label {
@@ -48,17 +115,23 @@
 
 .filter-group input,
 .filter-group select {
-  padding: 10px 12px;
+  padding: 12px 15px;
   border: 2px solid #e1e1e1;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: border-color 0.3s ease;
+  background: white;
+  
+  /* Garantir que não interfiram com outros elementos */
+  position: relative;
+  z-index: 1;
 }
 
 .filter-group input:focus,
 .filter-group select:focus {
   outline: none;
   border-color: #4CAF50;
+  z-index: 3; /* Prioridade no foco */
 }
 
 .actions-container {
@@ -66,6 +139,13 @@
   gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-start;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e1e1;
+  
+  /* Garantir posicionamento correto */
+  position: relative;
+  clear: both;
 }
 
 .btn {
@@ -106,53 +186,42 @@
   box-shadow: none !important;
 }
 
-/* Estatísticas Rápidas */
-.quick-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 25px;
-}
+/* =======================================================
+   SEÇÃO DA TABELA - BEM SEPARADA DOS FILTROS
+   ======================================================= */
 
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  border-left: 4px solid #4CAF50;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 2rem;
-  font-weight: 800;
-  color: #333;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-/* Seção da Tabela */
 .table-section {
   background: white;
   border-radius: 15px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  
+  /* IMPORTANTE: Espaço MUITO generoso dos filtros */
+  margin-top: 50px;
+  
+  /* Garantir posicionamento independente */
+  position: relative;
+  z-index: 1;
+  clear: both;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.data-section {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  
+  /* IMPORTANTE: Espaço MUITO generoso dos filtros */
+  margin-top: 50px;
+  
+  /* Garantir posicionamento independente */
+  position: relative;
+  z-index: 1;
+  clear: both;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .table-header {
@@ -359,7 +428,44 @@
   margin-bottom: 20px;
 }
 
-/* Responsivo */
+/* =======================================================
+   CORREÇÕES ESPECÍFICAS ANTI-SOBREPOSIÇÃO
+   ======================================================= */
+
+/* Separador visual entre seções */
+.section-separator {
+  height: 30px;
+  width: 100%;
+  clear: both;
+  background: transparent;
+}
+
+/* Garantir que stats não interfiram */
+.quick-stats::after {
+  content: "";
+  display: block;
+  clear: both;
+  height: 20px;
+}
+
+/* Garantir que filtros não interfiram */
+.filters-section::after {
+  content: "";
+  display: block;
+  clear: both;
+  height: 20px;
+}
+
+/* Forçar espaçamento em casos extremos */
+.force-spacing {
+  margin-top: 50px !important;
+  clear: both !important;
+}
+
+/* =======================================================
+   RESPONSIVIDADE
+   ======================================================= */
+
 @media (max-width: 1200px) {
   .container {
     max-width: 98vw;
@@ -369,11 +475,17 @@
   .filters-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .quick-stats {
+    margin-bottom: 35px; /* Reduzido em telas menores */
+  }
 }
 
 @media (max-width: 768px) {
   .filters-section {
     padding: 20px 15px;
+    margin-bottom: 30px;
+    margin-top: 15px;
   }
   
   .filters-grid {
@@ -415,6 +527,7 @@
   .quick-stats {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
+    margin-bottom: 25px;
   }
   
   .stat-card {
@@ -424,11 +537,17 @@
   .stat-value {
     font-size: 1.5rem;
   }
+  
+  .table-section,
+  .data-section {
+    margin-top: 30px; /* Reduzido em mobile */
+  }
 }
 
 @media (max-width: 480px) {
   .quick-stats {
     grid-template-columns: 1fr;
+    margin-bottom: 20px;
   }
   
   .table th,
@@ -445,5 +564,10 @@
   .status-badge {
     padding: 3px 6px;
     font-size: 0.6rem;
+  }
+  
+  .table-section,
+  .data-section {
+    margin-top: 25px;
   }
 }
