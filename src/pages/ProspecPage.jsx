@@ -1,14 +1,16 @@
-// src/pages/ProspecPage.jsx - COM CLASSES CSS CORRETAS PARA FORMATAÇÃO DE TABELA
+// src/pages/ProspecPage.jsx - Com filtros por equipe e controle de ações
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import './ProspecPage.css';
 
 const ProspecPage = () => {
   const navigate = useNavigate();
+  const { user, getMyTeam, getConsultorName } = useAuth();
   const [dados, setDados] = useState([]);
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +33,24 @@ const ProspecPage = () => {
       // Carregar dados reais do localStorage
       const dadosProspec = await storageService.getProspec();
       
+      let dadosFiltradosPorEquipe = [];
+
+      if (user?.role === 'admin') {
+        // Admin vê todos os dados, mas com consultor responsável
+        dadosFiltradosPorEquipe = dadosProspec.map(item => ({
+          ...item,
+          consultor: getConsultorName(item.consultor) // Mostrar consultor responsável
+        }));
+      } else {
+        // Outros usuários veem apenas dados da sua equipe
+        const teamNames = getMyTeam().map(member => member.name);
+        dadosFiltradosPorEquipe = dadosProspec.filter(item => 
+          teamNames.includes(item.consultor)
+        );
+      }
+      
       // Garantir IDs únicos para cada item
-      const dadosComIds = dadosProspec.map((item, index) => ({
+      const dadosComIds = dadosFiltradosPorEquipe.map((item, index) => ({
         ...item,
         id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
       }));
@@ -41,7 +59,7 @@ const ProspecPage = () => {
       setDadosFiltrados(dadosComIds);
       
       if (dadosComIds.length === 0) {
-        showNotification('Nenhuma proposta encontrada. Crie sua primeira proposta!', 'info');
+        showNotification('Nenhuma proposta encontrada para sua equipe.', 'info');
       } else {
         showNotification(`${dadosComIds.length} propostas carregadas com sucesso!`, 'success');
       }
@@ -54,7 +72,7 @@ const ProspecPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, [showNotification, user, getMyTeam, getConsultorName]);
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
@@ -167,6 +185,9 @@ const ProspecPage = () => {
 
   // Obter lista única de consultores para filtro
   const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
+
+  // Verificar se é admin para mostrar ações
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="page-container">
@@ -292,7 +313,8 @@ const ProspecPage = () => {
                     <th>Consultor</th>
                     <th>Média (kWh)</th>
                     <th>Status</th>
-                    <th>Ações</th>
+                    {/* Só mostrar coluna de ações para admin */}
+                    {isAdmin && <th>Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -324,24 +346,27 @@ const ProspecPage = () => {
                           {item.status || 'Aguardando'}
                         </span>
                       </td>
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            onClick={() => editarItem(index)}
-                            className="btn-icon edit"
-                            title="Editar"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            onClick={() => removerItem(index)}
-                            className="btn-icon delete"
-                            title="Remover"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
+                      {/* Só mostrar ações para admin */}
+                      {isAdmin && (
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              onClick={() => editarItem(index)}
+                              className="btn-icon edit"
+                              title="Editar"
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              onClick={() => removerItem(index)}
+                              className="btn-icon delete"
+                              title="Remover"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -350,8 +375,8 @@ const ProspecPage = () => {
           )}
         </section>
 
-        {/* Modal de Edição */}
-        {modalEdicao.show && (
+        {/* Modal de Edição - apenas para admin */}
+        {modalEdicao.show && isAdmin && (
           <ModalEdicao 
             item={modalEdicao.item}
             onSave={salvarEdicao}

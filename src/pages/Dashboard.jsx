@@ -1,116 +1,399 @@
-// src/pages/Dashboard.jsx - APENAS ESTATÍSTICAS
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+// src/pages/Dashboard.jsx - Dashboard corrigido
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import storageService from '../services/storageService';
+import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const [stats, setStats] = useState({
-    total: 0,
+  const navigate = useNavigate();
+  const { user, createUser, canCreateUser, getMyTeam } = useAuth();
+  const { showNotification } = useNotification();
+  
+  const [estadisticas, setEstatisticas] = useState({
+    totalPropostas: 0,
     aguardando: 0,
     fechadas: 0,
-    ultimaProposta: '-',
+    totalUCs: 0,
     totalControle: 0,
     totalUGs: 0
   });
+  
+  const [modalCadastro, setModalCadastro] = useState({ show: false, type: '' });
+  const [equipe, setEquipe] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const carregarEstatisticas = useCallback(async () => {
+  // Carregar dados do dashboard
+  useEffect(() => {
+    carregarDados();
+    carregarEquipe();
+  }, [user]);
+
+  const carregarDados = async () => {
     try {
       setLoading(true);
       
-      // Carregar estatísticas reais do localStorage
-      const estatisticas = await storageService.getEstatisticas();
-      setStats(estatisticas);
-      
-      console.log('📊 Estatísticas carregadas:', estatisticas);
+      let dadosProspec = [];
+      let dadosControle = [];
+      let dadosUGs = [];
+
+      if (user?.role === 'admin') {
+        // Admin vê todos os dados
+        dadosProspec = await storageService.getProspec();
+        dadosControle = await storageService.getControle();
+        dadosUGs = await storageService.getUGs();
+      } else {
+        // Outros usuários veem apenas dados da sua equipe
+        const teamIds = getMyTeam().map(member => member.name);
+        
+        const allProspec = await storageService.getProspec();
+        const allControle = await storageService.getControle();
+        
+        dadosProspec = allProspec.filter(item => 
+          teamIds.includes(item.consultor) || teamIds.includes(item.nomeCliente)
+        );
+        
+        dadosControle = allControle.filter(item => 
+          teamIds.includes(item.consultor) || teamIds.includes(item.nomeCliente)
+        );
+
+        // UGs apenas para admin
+        dadosUGs = user?.role === 'admin' ? await storageService.getUGs() : [];
+      }
+
+      setEstatisticas({
+        totalPropostas: dadosProspec.length,
+        aguardando: dadosProspec.filter(p => p.status === 'Aguardando').length,
+        fechadas: dadosProspec.filter(p => p.status === 'Fechado').length,
+        totalUCs: new Set(dadosProspec.map(p => p.numeroUC)).size,
+        totalControle: dadosControle.length,
+        totalUGs: dadosUGs.length
+      });
       
     } catch (error) {
-      console.error('❌ Erro ao carregar estatísticas:', error);
-      // Em caso de erro, manter valores zerados
-      setStats({
-        total: 0,
-        aguardando: 0,
-        fechadas: 0,
-        ultimaProposta: '-',
-        totalControle: 0,
-        totalUGs: 0
-      });
+      console.error('Erro ao carregar dados:', error);
+      showNotification('Erro ao carregar estatísticas', 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    carregarEstatisticas();
-    
-    // Atualizar a cada 30 segundos como no original
-    const interval = setInterval(carregarEstatisticas, 30000);
-    return () => clearInterval(interval);
-  }, [carregarEstatisticas]);
+  const carregarEquipe = () => {
+    try {
+      const team = getMyTeam();
+      setEquipe(team.filter(member => member.id !== user?.id)); // Excluir o próprio usuário
+    } catch (error) {
+      console.error('Erro ao carregar equipe:', error);
+    }
+  };
 
-  const handleLogout = () => {
-    logout();
+  const abrirModalCadastro = (type) => {
+    if (!canCreateUser(type)) {
+      showNotification('Você não tem permissão para criar este tipo de usuário', 'warning');
+      return;
+    }
+    setModalCadastro({ show: true, type });
+  };
+
+  const fecharModalCadastro = () => {
+    setModalCadastro({ show: false, type: '' });
+  };
+
+  const handleCriarUsuario = async (dadosUsuario) => {
+    try {
+      const result = await createUser({
+        ...dadosUsuario,
+        role: modalCadastro.type
+      });
+
+      if (result.success) {
+        showNotification(`${getTipoLabel(modalCadastro.type)} criado(a) com sucesso!`, 'success');
+        fecharModalCadastro();
+        carregarEquipe();
+      } else {
+        showNotification(result.message || 'Erro ao criar usuário', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      showNotification('Erro interno ao criar usuário', 'error');
+    }
+  };
+
+  const getTipoLabel = (type) => {
+    const labels = {
+      consultor: 'Consultor',
+      gerente: 'Gerente', 
+      vendedor: 'Vendedor'
+    };
+    return labels[type] || type;
+  };
+
+  const getRoleIcon = (role) => {
+    const icons = {
+      admin: '👑',
+      consultor: '👔',
+      gerente: '👨‍💼',
+      vendedor: '👨‍💻'
+    };
+    return icons[role] || '👤';
+  };
+
+  const formatarData = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  // Obter gerentes disponíveis para atribuir vendedores
+  const getGerentesDisponiveis = () => {
+    return equipe.filter(member => member.role === 'gerente');
   };
 
   return (
     <div className="page-container">
       <div className="container">
         <Header 
-          title="AUPUS ENERGIA" 
-          subtitle="Sistema de Gestão de Propostas" 
-          icon="⚡" 
+          title="DASHBOARD" 
+          subtitle={`Bem-vindo(a), ${user?.name}!`}
+          icon="🏠" 
         />
         
         <Navigation />
 
-        {/* APENAS ESTATÍSTICAS GERAIS */}
+        {/* Estatísticas Rápidas */}
         <section className="quick-stats">
-          {loading ? (
-            <div className="loading-message">
-              <p>📊 Carregando estatísticas...</p>
+          <div className="stat-card">
+            <div className="stat-icon">📋</div>
+            <div className="stat-content">
+              <span className="stat-label">Total Propostas</span>
+              <span className="stat-value">{estadisticas.totalPropostas}</span>
             </div>
-          ) : (
-            <>
-              <div className="stat-card">
-                <span className="stat-label">Total de Propostas</span>
-                <span className="stat-value">{stats.total}</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Aguardando</span>
-                <span className="stat-value">{stats.aguardando}</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Fechadas</span>
-                <span className="stat-value">{stats.fechadas}</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Última Proposta</span>
-                <span className="stat-value">{stats.ultimaProposta}</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Em Controle</span>
-                <span className="stat-value">{stats.totalControle}</span>
-              </div>
-              <div className="stat-card">
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon">⏳</div>
+            <div className="stat-content">
+              <span className="stat-label">Aguardando</span>
+              <span className="stat-value">{estadisticas.aguardando}</span>
+            </div>
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon">✅</div>
+            <div className="stat-content">
+              <span className="stat-label">Fechadas</span>
+              <span className="stat-value">{estadisticas.fechadas}</span>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">🏢</div>
+            <div className="stat-content">
+              <span className="stat-label">Total UCs</span>
+              <span className="stat-value">{estadisticas.totalUCs}</span>
+            </div>
+          </div>
+
+          {user?.role === 'admin' && (
+            <div className="stat-card">
+              <div className="stat-icon">🏭</div>
+              <div className="stat-content">
                 <span className="stat-label">UGs Cadastradas</span>
-                <span className="stat-value">{stats.totalUGs}</span>
+                <span className="stat-value">{estadisticas.totalUGs}</span>
               </div>
-            </>
+            </div>
           )}
         </section>
 
-        {/* Botão de Logout */}
-        <div className="logout-section">
-          <button 
-            className="logout-btn"
-            onClick={handleLogout}
-          >
-            🚪 Sair do Sistema
-          </button>
+        {/* Cadastro de Usuários */}
+        {(canCreateUser('consultor') || canCreateUser('gerente') || canCreateUser('vendedor')) && (
+          <section className="user-management">
+            <h2>👥 Gerenciar Equipe</h2>
+            
+            <div className="management-actions">
+              {canCreateUser('consultor') && (
+                <button 
+                  onClick={() => abrirModalCadastro('consultor')}
+                  className="create-user-btn consultor"
+                >
+                  <span className="btn-icon">👔</span>
+                  <span className="btn-label">Cadastrar Consultor</span>
+                </button>
+              )}
+
+              {canCreateUser('gerente') && (
+                <button 
+                  onClick={() => abrirModalCadastro('gerente')}
+                  className="create-user-btn gerente"
+                >
+                  <span className="btn-icon">👨‍💼</span>
+                  <span className="btn-label">Cadastrar Gerente</span>
+                </button>
+              )}
+
+              {canCreateUser('vendedor') && (
+                <button 
+                  onClick={() => abrirModalCadastro('vendedor')}
+                  className="create-user-btn vendedor"
+                >
+                  <span className="btn-icon">👨‍💻</span>
+                  <span className="btn-label">Cadastrar Vendedor</span>
+                </button>
+              )}
+            </div>
+
+            {/* Lista da Equipe */}
+            {equipe.length > 0 && (
+              <div className="team-list">
+                <h3>Sua Equipe ({equipe.length})</h3>
+                <div className="team-grid">
+                  {equipe.map(member => (
+                    <div key={member.id} className="team-member">
+                      <div className="member-avatar">
+                        <span className="member-icon">{getRoleIcon(member.role)}</span>
+                      </div>
+                      <div className="member-info">
+                        <h4>{member.name}</h4>
+                        <p className="member-role">{getTipoLabel(member.role)}</p>
+                        <p className="member-username">@{member.username}</p>
+                        <p className="member-date">Criado em {formatarData(member.createdAt)}</p>
+                        {member.managerId && (
+                          <p className="member-manager">
+                            Gerente: {equipe.find(g => g.id === member.managerId)?.name || 'N/A'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Modal de Cadastro */}
+        {modalCadastro.show && (
+          <ModalCadastroUsuario
+            tipo={modalCadastro.type}
+            gerentes={getGerentesDisponiveis()}
+            onSave={handleCriarUsuario}
+            onClose={fecharModalCadastro}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Componente Modal de Cadastro de Usuário
+const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
+  const [dados, setDados] = useState({
+    name: '',
+    username: '',
+    password: '',
+    managerId: '' // ID do gerente para vendedores
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!dados.name || !dados.username || !dados.password) {
+      alert('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (dados.password.length < 3) {
+      alert('Senha deve ter pelo menos 3 caracteres');
+      return;
+    }
+
+    setLoading(true);
+    await onSave(dados);
+    setLoading(false);
+  };
+
+  const getTipoLabel = (type) => {
+    const labels = {
+      consultor: 'Consultor',
+      gerente: 'Gerente', 
+      vendedor: 'Vendedor'
+    };
+    return labels[type] || type;
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>➕ Cadastrar {getTipoLabel(tipo)}</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
         </div>
+        
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="form-group">
+            <label>Nome Completo *</label>
+            <input
+              type="text"
+              value={dados.name}
+              onChange={(e) => setDados({...dados, name: e.target.value})}
+              placeholder="Ex: João Silva"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Nome de Usuário *</label>
+            <input
+              type="text"
+              value={dados.username}
+              onChange={(e) => setDados({...dados, username: e.target.value.toLowerCase()})}
+              placeholder="Ex: joao.silva"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Senha *</label>
+            <input
+              type="password"
+              value={dados.password}
+              onChange={(e) => setDados({...dados, password: e.target.value})}
+              placeholder="Mínimo 3 caracteres"
+              minLength="3"
+              required
+            />
+          </div>
+
+          {/* Campo para atribuir gerente apenas para vendedores */}
+          {tipo === 'vendedor' && gerentes.length > 0 && (
+            <div className="form-group">
+              <label>Atribuir a um Gerente (Opcional)</label>
+              <select
+                value={dados.managerId}
+                onChange={(e) => setDados({...dados, managerId: e.target.value})}
+              >
+                <option value="">Nenhum gerente</option>
+                {gerentes.map(gerente => (
+                  <option key={gerente.id} value={gerente.id}>
+                    {gerente.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Criando...' : `Criar ${getTipoLabel(tipo)}`}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

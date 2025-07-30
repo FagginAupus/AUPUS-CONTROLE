@@ -1,19 +1,21 @@
-// src/services/storageService.js
+// src/services/storageService.js - Sistema de armazenamento local completo
+
 class StorageService {
     constructor() {
-        this.ready = true;
-        this.MODO_LOCAL_FORCADO = true;
+        console.log('🗄️ StorageService inicializado (localStorage)');
+        this.calibragemGlobal = 0;
+        this.carregarCalibragemGlobal();
     }
 
     // ========================================
-    // MÉTODOS PARA PROSPEC
+    // MÉTODOS PARA PROSPECÇÃO
     // ========================================
 
     async getProspec() {
         console.log('📥 getProspec (localStorage)');
         const dados = localStorage.getItem('aupus_prospec');
         const resultado = dados ? JSON.parse(dados) : [];
-        console.log(`✅ Carregados ${resultado.length} registros do localStorage`);
+        console.log(`✅ Carregadas ${resultado.length} propostas do localStorage`);
         return resultado;
     }
 
@@ -26,12 +28,6 @@ class StorageService {
     async adicionarProspec(proposta) {
         console.log('💾 adicionarProspec (localStorage):', proposta);
         const dados = await this.getProspec();
-        
-        // Adicionar ID único se não existir
-        if (!proposta.id) {
-            proposta.id = `${proposta.numeroProposta}-${proposta.numeroUC}-${Date.now()}`;
-        }
-        
         dados.push(proposta);
         await this.salvarProspec(dados);
         return true;
@@ -41,19 +37,8 @@ class StorageService {
         console.log(`🔄 atualizarProspec (localStorage) - index ${index}`);
         const dados = await this.getProspec();
         if (index >= 0 && index < dados.length) {
-            const statusAnterior = dados[index].status;
-            const numeroUCAtual = dados[index].numeroUC;
-            const numeroPropostaAtual = dados[index].numeroProposta;
-            
             dados[index] = { ...dados[index], ...dadosAtualizados };
             await this.salvarProspec(dados);
-            
-            // Se mudou status, sincronizar controle APENAS para esta UC específica
-            if (statusAnterior !== dadosAtualizados.status) {
-                console.log(`🔄 Status mudou de '${statusAnterior}' para '${dadosAtualizados.status}', sincronizando controle...`);
-                await this.sincronizarStatusFechado(numeroPropostaAtual, numeroUCAtual, dadosAtualizados.status);
-            }
-            
             return true;
         }
         return false;
@@ -63,18 +48,45 @@ class StorageService {
         console.log(`🗑️ removerProspec (localStorage) - index ${index}`);
         const dados = await this.getProspec();
         if (index >= 0 && index < dados.length) {
-            const proposta = dados[index];
-            
-            // Se era fechado, remover do controle também (UC específica)
-            if (proposta.status === 'Fechado') {
-                await this.removerControle(proposta.numeroProposta, proposta.numeroUC);
-            }
-            
             dados.splice(index, 1);
             await this.salvarProspec(dados);
             return true;
         }
         return false;
+    }
+
+    async gerarNumeroProposta() {
+        try {
+            const propostas = await this.getProspec();
+            const ano = new Date().getFullYear();
+            
+            // Encontrar o maior número do ano atual
+            const propostasAno = propostas.filter(p => 
+                p.numeroProposta && p.numeroProposta.startsWith(ano.toString())
+            );
+            
+            let maiorNumero = 0;
+            propostasAno.forEach(p => {
+                const match = p.numeroProposta.match(/(\d{4})\/(\d+)/);
+                if (match) {
+                    const numero = parseInt(match[2]);
+                    if (numero > maiorNumero) {
+                        maiorNumero = numero;
+                    }
+                }
+            });
+            
+            const proximoNumero = maiorNumero + 1;
+            const numeroProposta = `${ano}/${proximoNumero.toString().padStart(3, '0')}`;
+            
+            console.log(`📋 Número da proposta gerado: ${numeroProposta}`);
+            return numeroProposta;
+            
+        } catch (error) {
+            console.error('❌ Erro ao gerar número da proposta:', error);
+            const fallback = `${new Date().getFullYear()}/${Date.now().toString().slice(-3)}`;
+            return fallback;
+        }
     }
 
     // ========================================
@@ -84,7 +96,9 @@ class StorageService {
     async getControle() {
         console.log('📥 getControle (localStorage)');
         const dados = localStorage.getItem('aupus_controle');
-        return dados ? JSON.parse(dados) : [];
+        const resultado = dados ? JSON.parse(dados) : [];
+        console.log(`✅ Carregadas ${resultado.length} do controle do localStorage`);
+        return resultado;
     }
 
     async salvarControle(dados) {
@@ -236,7 +250,7 @@ class StorageService {
                 return { media: 0, calibragem: 0, ucsCount: 0 };
             }
             
-            // Somar todas as médias das UCs atribuídas (CORRIGIDO: números como números, não concatenados)
+            // Somar todas as médias das UCs atribuídas
             const mediaTotal = ucsAtribuidas.reduce((acc, uc) => {
                 const media = parseFloat(uc.media) || 0;
                 return acc + media;
@@ -321,6 +335,26 @@ class StorageService {
     }
 
     // ========================================
+    // CALIBRAGEM GLOBAL
+    // ========================================
+
+    setCalibragemGlobal(percentual) {
+        this.calibragemGlobal = percentual;
+        localStorage.setItem('aupus_calibragem_global', percentual.toString());
+        console.log(`💾 Calibragem global salva: ${percentual}%`);
+    }
+
+    getCalibragemGlobal() {
+        return this.calibragemGlobal;
+    }
+
+    carregarCalibragemGlobal() {
+        const calibragem = localStorage.getItem('aupus_calibragem_global');
+        this.calibragemGlobal = calibragem ? parseFloat(calibragem) : 0;
+        console.log(`📥 Calibragem global carregada: ${this.calibragemGlobal}%`);
+    }
+
+    // ========================================
     // SINCRONIZAÇÃO APRIMORADA
     // ========================================
 
@@ -362,119 +396,311 @@ class StorageService {
     }
 
     // ========================================
-    // ESTATÍSTICAS
+    // EXPORTAÇÃO CSV
     // ========================================
 
-    async getEstatisticas() {
-        const prospec = await this.getProspec();
-        const controle = await this.getControle();
-        const ugs = await this.getUGs();
-        
-        const total = prospec.length;
-        const aguardando = prospec.filter(p => p.status === 'Aguardando').length;
-        const fechadas = prospec.filter(p => p.status === 'Fechado').length;
-        
-        let ultimaProposta = '-';
-        if (prospec.length > 0) {
-            // Ordenar por número da proposta e pegar a última
-            const ordenadas = prospec.sort((a, b) => {
-                const numA = parseInt(a.numeroProposta.split('/')[1] || '0');
-                const numB = parseInt(b.numeroProposta.split('/')[1] || '0');
-                return numB - numA;
-            });
-            ultimaProposta = ordenadas[0].numeroProposta;
-        }
-        
-        return {
-            total,
-            aguardando,
-            fechadas,
-            ultimaProposta,
-            totalControle: controle.length,
-            totalUGs: ugs.length
-        };
-    }
-
-    // ========================================
-    // MÉTODOS DE CALIBRAGEM GLOBAL
-    // ========================================
-
-    getCalibragemGlobal() {
+    async exportarParaCSV(tipo) {
         try {
-            const calibragem = localStorage.getItem('aupus_calibragem_global');
-            return calibragem ? parseFloat(calibragem) : 0;
+            console.log(`📊 exportarParaCSV (${tipo})`);
+            
+            let dados = [];
+            let csvContent = '';
+            let nomeArquivo = '';
+
+            switch (tipo) {
+                case 'prospec':
+                    dados = await this.getProspec();
+                    
+                    if (dados.length === 0) {
+                        throw new Error('Nenhuma proposta disponível para exportação');
+                    }
+
+                    // Cabeçalhos
+                    const headersProspec = [
+                        'Número Proposta',
+                        'Data',
+                        'Nome Cliente',
+                        'Celular',
+                        'Consultor',
+                        'Recorrência',
+                        'Desconto Tarifa',
+                        'Desconto Bandeira',
+                        'Distribuidora',
+                        'Número UC',
+                        'Apelido UC',
+                        'Ligação',
+                        'Média (kWh)',
+                        'Status'
+                    ];
+                    
+                    csvContent = headersProspec.join(',') + '\n';
+                    
+                    dados.forEach(item => {
+                        const linha = [
+                            `"${item.numeroProposta || ''}"`,
+                            `"${item.data || ''}"`,
+                            `"${item.nomeCliente || ''}"`,
+                            `"${item.celular || item.telefone || ''}"`,
+                            `"${item.consultor || ''}"`,
+                            `"${item.recorrencia || ''}"`,
+                            `"${((item.descontoTarifa || 0) * 100).toFixed(1)}%"`,
+                            `"${((item.descontoBandeira || 0) * 100).toFixed(1)}%"`,
+                            `"${item.distribuidora || ''}"`,
+                            `"${item.numeroUC || ''}"`,
+                            `"${item.apelido || ''}"`,
+                            `"${item.ligacao || ''}"`,
+                            `"${item.media || 0}"`,
+                            `"${item.status || 'Aguardando'}"`
+                        ];
+                        csvContent += linha.join(',') + '\n';
+                    });
+                    
+                    nomeArquivo = `aupus_prospec_${new Date().toISOString().slice(0, 10)}.csv`;
+                    break;
+
+                case 'controle':
+                    dados = await this.getControle();
+                    
+                    if (dados.length === 0) {
+                        throw new Error('Nenhum dado de controle disponível para exportação');
+                    }
+
+                    // Cabeçalhos
+                    const headersControle = [
+                        'Número Proposta',
+                        'Data',
+                        'Nome Cliente',
+                        'Celular',
+                        'Consultor',
+                        'Número UC',
+                        'Apelido UC',
+                        'Média (kWh)',
+                        'UG Atribuída',
+                        'Calibragem (kWh)',
+                        'Status Calibragem'
+                    ];
+                    
+                    csvContent = headersControle.join(',') + '\n';
+                    
+                    dados.forEach(item => {
+                        const linha = [
+                            `"${item.numeroProposta || ''}"`,
+                            `"${item.data || ''}"`,
+                            `"${item.nomeCliente || ''}"`,
+                            `"${item.celular || item.telefone || ''}"`,
+                            `"${item.consultor || ''}"`,
+                            `"${item.numeroUC || ''}"`,
+                            `"${item.apelido || ''}"`,
+                            `"${item.media || 0}"`,
+                            `"${item.ug || 'Sem UG'}"`,
+                            `"${item.calibragem || 0}"`,
+                            `"${item.calibrado ? 'Calibrada' : 'Não Calibrada'}"`
+                        ];
+                        csvContent += linha.join(',') + '\n';
+                    });
+                    
+                    nomeArquivo = `aupus_controle_${new Date().toISOString().slice(0, 10)}.csv`;
+                    break;
+
+                case 'ugs':
+                    dados = await this.getUGs();
+                    
+                    if (dados.length === 0) {
+                        throw new Error('Nenhuma UG disponível para exportação');
+                    }
+
+                    // Cabeçalhos
+                    const headersUGs = [
+                        'Nome Usina',
+                        'Potência CA (kW)',
+                        'Potência CC (kW)',
+                        'Fator Capacidade (%)',
+                        'Capacidade (kWh)',
+                        'Média Total (kWh)',
+                        'Calibragem (kWh)',
+                        'UCs Atribuídas',
+                        'Status Calibragem',
+                        'Data Cadastro'
+                    ];
+                    
+                    csvContent = headersUGs.join(',') + '\n';
+                    
+                    dados.forEach(item => {
+                        const linha = [
+                            `"${item.nomeUsina || ''}"`,
+                            `"${item.potenciaCA || 0}"`,
+                            `"${item.potenciaCC || 0}"`,
+                            `"${item.fatorCapacidade || 0}"`,
+                            `"${item.capacidade || 0}"`,
+                            `"${item.media || 0}"`,
+                            `"${item.calibragem || 0}"`,
+                            `"${item.ucsAtribuidas || 0}"`,
+                            `"${item.calibrado ? 'Calibrada' : 'Não Calibrada'}"`,
+                            `"${item.dataCadastro || ''}"`
+                        ];
+                        csvContent += linha.join(',') + '\n';
+                    });
+                    
+                    nomeArquivo = `aupus_ugs_${new Date().toISOString().slice(0, 10)}.csv`;
+                    break;
+
+                default:
+                    throw new Error('Tipo de exportação não suportado');
+            }
+
+            // Criar e baixar arquivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', nomeArquivo);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } else {
+                throw new Error('Seu navegador não suporta download de arquivos');
+            }
+
+            console.log(`✅ Arquivo ${nomeArquivo} exportado com sucesso`);
+            return true;
+
         } catch (error) {
-            console.error('❌ Erro ao obter calibragem global:', error);
-            return 0;
+            console.error(`❌ Erro ao exportar CSV (${tipo}):`, error);
+            throw error;
         }
     }
 
-    setCalibragemGlobal(percentual) {
+    // Método para exportar dados filtrados (para relatórios por equipe)
+    async exportarDadosFiltrados(tipo, dadosFiltrados) {
         try {
-            localStorage.setItem('aupus_calibragem_global', percentual.toString());
-            console.log(`💾 Calibragem global salva: ${percentual}%`);
+            console.log(`📊 exportarDadosFiltrados (${tipo}) - ${dadosFiltrados.length} registros`);
+            
+            if (!dadosFiltrados || dadosFiltrados.length === 0) {
+                throw new Error('Nenhum dado disponível para exportação');
+            }
+
+            let csvContent = '';
+            let nomeArquivo = '';
+
+            switch (tipo) {
+                case 'prospec':
+                    // Cabeçalhos para prospecção
+                    const headersProspec = [
+                        'Número Proposta',
+                        'Data',
+                        'Nome Cliente',
+                        'Celular',
+                        'Consultor',
+                        'Recorrência',
+                        'Desconto Tarifa',
+                        'Desconto Bandeira',
+                        'Distribuidora',
+                        'Número UC',
+                        'Apelido UC',
+                        'Ligação',
+                        'Média (kWh)',
+                        'Status'
+                    ];
+                    
+                    csvContent = headersProspec.join(',') + '\n';
+                    
+                    dadosFiltrados.forEach(item => {
+                        const linha = [
+                            `"${item.numeroProposta || ''}"`,
+                            `"${item.data || ''}"`,
+                            `"${item.nomeCliente || ''}"`,
+                            `"${item.celular || item.telefone || ''}"`,
+                            `"${item.consultor || ''}"`,
+                            `"${item.recorrencia || ''}"`,
+                            `"${((item.descontoTarifa || 0) * 100).toFixed(1)}%"`,
+                            `"${((item.descontoBandeira || 0) * 100).toFixed(1)}%"`,
+                            `"${item.distribuidora || ''}"`,
+                            `"${item.numeroUC || ''}"`,
+                            `"${item.apelido || ''}"`,
+                            `"${item.ligacao || ''}"`,
+                            `"${item.media || 0}"`,
+                            `"${item.status || 'Aguardando'}"`
+                        ];
+                        csvContent += linha.join(',') + '\n';
+                    });
+                    
+                    nomeArquivo = `aupus_prospec_filtrado_${new Date().toISOString().slice(0, 10)}.csv`;
+                    break;
+
+                case 'controle':
+                    // Cabeçalhos para controle
+                    const headersControle = [
+                        'Número Proposta',
+                        'Data',
+                        'Nome Cliente',
+                        'Celular',
+                        'Consultor',
+                        'Número UC',
+                        'Apelido UC',
+                        'Média (kWh)',
+                        'UG Atribuída',
+                        'Calibragem (kWh)',
+                        'Status Calibragem'
+                    ];
+                    
+                    csvContent = headersControle.join(',') + '\n';
+                    
+                    dadosFiltrados.forEach(item => {
+                        const linha = [
+                            `"${item.numeroProposta || ''}"`,
+                            `"${item.data || ''}"`,
+                            `"${item.nomeCliente || ''}"`,
+                            `"${item.celular || item.telefone || ''}"`,
+                            `"${item.consultor || ''}"`,
+                            `"${item.numeroUC || ''}"`,
+                            `"${item.apelido || ''}"`,
+                            `"${item.media || 0}"`,
+                            `"${item.ug || 'Sem UG'}"`,
+                            `"${item.calibragem || 0}"`,
+                            `"${item.calibrado ? 'Calibrada' : 'Não Calibrada'}"`
+                        ];
+                        csvContent += linha.join(',') + '\n';
+                    });
+                    
+                    nomeArquivo = `aupus_controle_filtrado_${new Date().toISOString().slice(0, 10)}.csv`;
+                    break;
+
+                default:
+                    throw new Error('Tipo de exportação não suportado');
+            }
+
+            // Criar e baixar arquivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', nomeArquivo);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } else {
+                throw new Error('Seu navegador não suporta download de arquivos');
+            }
+
+            console.log(`✅ Arquivo ${nomeArquivo} exportado com sucesso`);
+            return true;
+
         } catch (error) {
-            console.error('❌ Erro ao salvar calibragem global:', error);
+            console.error(`❌ Erro ao exportar dados filtrados (${tipo}):`, error);
+            throw error;
         }
-    }
-
-    // ========================================
-    // UTILITÁRIOS
-    // ========================================
-
-    async exportarParaCSV(tipo = 'prospec') {
-        let dados;
-        
-        switch (tipo) {
-            case 'prospec':
-                dados = await this.getProspec();
-                break;
-            case 'controle':
-                dados = await this.getControle();
-                break;
-            case 'ugs':
-                dados = await this.getUGs();
-                break;
-            default:
-                dados = await this.getProspec();
-        }
-        
-        if (dados.length === 0) {
-            alert('Nenhum dado para exportar');
-            return;
-        }
-        
-        const headers = Object.keys(dados[0]);
-        const csvContent = [
-            headers.join(','),
-            ...dados.map(row => 
-                headers.map(header => `"${row[header] || ''}"`).join(',')
-            )
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `aupus_${tipo}_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    async limparTodosDados() {
-        localStorage.removeItem('aupus_prospec');
-        localStorage.removeItem('aupus_controle');
-        localStorage.removeItem('aupus_ugs');
-        console.log('🗑️ Dados locais limpos');
     }
 }
 
-// Criar instância global
+// Instância única do serviço
 const storageService = new StorageService();
-
-// Disponibilizar globalmente (compatibilidade com projeto antigo)
-window.aupusStorage = storageService;
 
 export default storageService;

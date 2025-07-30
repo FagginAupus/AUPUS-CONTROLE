@@ -1,4 +1,4 @@
-// src/App.js - COM ROTA PARA SUA PÁGINA NOVA PROPOSTA
+// src/App.js - Roteamento com controle de acesso hierárquico
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -12,7 +12,7 @@ import './services/storageService';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ProspecPage from './pages/ProspecPage';
-import NovaPropostaPage from './pages/NovaPropostaPage'; // SUA PÁGINA ORIGINAL
+import NovaPropostaPage from './pages/NovaPropostaPage';
 import ControlePage from './pages/ControlePage';
 import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
@@ -32,44 +32,44 @@ function App() {
               
               {/* Rotas Protegidas */}
               <Route path="/" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="dashboard">
                   <Dashboard />
                 </ProtectedRoute>
               } />
               
               <Route path="/dashboard" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="dashboard">
                   <Dashboard />
                 </ProtectedRoute>
               } />
               
               <Route path="/prospec" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="prospec">
                   <ProspecPage />
                 </ProtectedRoute>
               } />
               
-              {/* SUA PÁGINA ORIGINAL DE NOVA PROPOSTA */}
               <Route path="/nova-proposta" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="prospec">
                   <NovaPropostaPage />
                 </ProtectedRoute>
               } />
               
               <Route path="/controle" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="controle">
                   <ControlePage />
                 </ProtectedRoute>
               } />
               
+              {/* UGs apenas para admin */}
               <Route path="/ugs" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="ugs">
                   <UGsPage />
                 </ProtectedRoute>
               } />
               
               <Route path="/relatorios" element={
-                <ProtectedRoute>
+                <ProtectedRoute requirePage="relatorios">
                   <RelatoriosPage />
                 </ProtectedRoute>
               } />

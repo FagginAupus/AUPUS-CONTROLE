@@ -1,11 +1,13 @@
-// src/components/common/Navigation.jsx - COM INÍCIO MARCADO DE VERDE
+// src/components/common/Navigation.jsx - Navegação com controle de acesso por role
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './Navigation.css';
 
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, canAccessPage, logout } = useAuth();
 
   const menuItems = [
     { 
@@ -13,33 +15,44 @@ const Navigation = () => {
       label: 'INÍCIO', 
       icon: '🏠', 
       path: '/',
-      paths: ['/', '/dashboard'] // Múltiplos caminhos para o início
+      paths: ['/', '/dashboard'],
+      requiredPage: 'dashboard'
     },
     { 
       id: 'prospec', 
       label: 'PROSPEC', 
       icon: '📋', 
-      path: '/prospec'
+      path: '/prospec',
+      requiredPage: 'prospec'
     },
     { 
       id: 'controle', 
       label: 'CONTROLE', 
       icon: '⚙️', 
-      path: '/controle'
+      path: '/controle',
+      requiredPage: 'controle'
     },
     { 
       id: 'ugs', 
       label: 'UGs', 
       icon: '🏭', 
-      path: '/ugs'
+      path: '/ugs',
+      requiredPage: 'ugs'
     },
     { 
       id: 'relatorios', 
       label: 'RELATÓRIOS', 
       icon: '📊', 
-      path: '/relatorios'
+      path: '/relatorios',
+      requiredPage: 'relatorios'
     }
   ];
+
+  // Filtrar itens baseado nas permissões do usuário
+  const visibleMenuItems = menuItems.filter(item => {
+    if (!item.requiredPage) return true;
+    return canAccessPage(item.requiredPage);
+  });
 
   const isActive = (item) => {
     if (item.paths) {
@@ -52,19 +65,57 @@ const Navigation = () => {
     navigate(path);
   };
 
+  const handleLogout = () => {
+    if (window.confirm('Deseja realmente sair do sistema?')) {
+      logout();
+      navigate('/login');
+    }
+  };
+
+  const getRoleIcon = (role) => {
+    const icons = {
+      admin: '👑',
+      consultor: '👔',
+      gerente: '👨‍💼',
+      vendedor: '👨‍💻'
+    };
+    return icons[role] || '👤';
+  };
+
+  const getRoleLabel = (role) => {
+    const labels = {
+      admin: 'Administrador',
+      consultor: 'Consultor',
+      gerente: 'Gerente',
+      vendedor: 'Vendedor'
+    };
+    return labels[role] || role;
+  };
+
   return (
     <nav className="navigation">
       <div className="nav-container">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => handleNavigation(item.path)}
-            className={`nav-item ${isActive(item) ? 'active' : ''}`}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
+        {/* Menu Items */}
+        <div className="nav-menu">
+          {visibleMenuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleNavigation(item.path)}
+              className={`nav-item ${isActive(item) ? 'active' : ''}`}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Apenas Logout */}
+        <div className="nav-user">
+          <button onClick={handleLogout} className="logout-btn" title="Sair do sistema">
+            <span className="logout-icon">🚪</span>
+            <span className="logout-label">Sair</span>
           </button>
-        ))}
+        </div>
       </div>
     </nav>
   );

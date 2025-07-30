@@ -1,57 +1,76 @@
-// src/pages/ControlePage.jsx - CORRIGIDA COM CALIBRAGEM PERSISTENTE
+// src/pages/ControlePage.jsx - Com filtros por equipe e controle de funcionalidades
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 
 const ControlePage = () => {
+  const { user, getMyTeam, getConsultorName } = useAuth();
   const [dados, setDados] = useState([]);
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [calibragemGlobal, setCalibragemGlobal] = useState(0);
-  const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
+  const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
+  const [calibragemGlobal, setCalibragemGlobal] = useState(0);
   
   const [filtros, setFiltros] = useState({
-    nome: '',
     consultor: '',
-    ug: ''
+    ug: '',
+    busca: ''
   });
 
   const [estatisticas, setEstatisticas] = useState({
     total: 0,
-    ugsDefinidas: 0,
-    ugsPendentes: 0
+    comUG: 0,
+    semUG: 0,
+    calibradas: 0
   });
 
   const { showNotification } = useNotification();
-
-  // Carregar calibragem do localStorage na inicialização
-  useEffect(() => {
-    const calibragemSalva = storageService.getCalibragemGlobal();
-    setCalibragemGlobal(calibragemSalva);
-    console.log(`📊 Calibragem carregada do localStorage: ${calibragemSalva}%`);
-  }, []);
 
   const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
       
-      console.log('📥 Carregando dados de controle...');
+      console.log('📥 Carregando dados do controle...');
       
+      // Carregar dados do controle
       const dadosControle = await storageService.getControle();
-      setDados(dadosControle);
-      setDadosFiltrados(dadosControle);
       
-      await carregarUGsDisponiveis();
-      
-      console.log(`✅ ${dadosControle.length} propostas de controle carregadas`);
-      
-      if (dadosControle.length === 0) {
-        showNotification('Nenhuma proposta fechada encontrada. Feche algumas propostas no PROSPEC!', 'info');
+      let dadosFiltradosPorEquipe = [];
+
+      if (user?.role === 'admin') {
+        // Admin vê todos os dados, mas com consultor responsável
+        dadosFiltradosPorEquipe = dadosControle.map(item => ({
+          ...item,
+          consultor: getConsultorName(item.consultor) // Mostrar consultor responsável
+        }));
       } else {
-        showNotification(`${dadosControle.length} propostas fechadas carregadas!`, 'success');
+        // Outros usuários veem apenas dados da sua equipe
+        const teamNames = getMyTeam().map(member => member.name);
+        dadosFiltradosPorEquipe = dadosControle.filter(item => 
+          teamNames.includes(item.consultor)
+        );
+      }
+      
+      // Garantir IDs únicos
+      const dadosComIds = dadosFiltradosPorEquipe.map((item, index) => ({
+        ...item,
+        id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
+      }));
+      
+      setDados(dadosComIds);
+      setDadosFiltrados(dadosComIds);
+      
+      // Atualizar estatísticas
+      atualizarEstatisticas(dadosComIds);
+      
+      if (dadosComIds.length === 0) {
+        showNotification('Nenhuma proposta no controle para sua equipe.', 'info');
+      } else {
+        showNotification(`${dadosComIds.length} propostas carregadas no controle!`, 'success');
       }
       
     } catch (error) {
@@ -62,24 +81,43 @@ const ControlePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, [showNotification, user, getMyTeam, getConsultorName]);
 
-  const carregarUGsDisponiveis = async () => {
+  const carregarUGsDisponiveis = useCallback(async () => {
+    if (user?.role !== 'admin') return; // Apenas admin pode gerenciar UGs
+    
     try {
       const ugs = await storageService.getUGs();
       setUgsDisponiveis(ugs);
-      console.log(`✅ ${ugs.length} UGs disponíveis carregadas`);
+      
+      // Carregar calibragem global salva
+      const calibragemSalva = storageService.getCalibragemGlobal();
+      setCalibragemGlobal(calibragemSalva);
+      
     } catch (error) {
       console.error('❌ Erro ao carregar UGs:', error);
-      setUgsDisponiveis([]);
     }
-  };
+  }, [user]);
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
 
-    if (filtros.nome) {
-      const busca = filtros.nome.toLowerCase();
+    if (filtros.consultor) {
+      dadosFiltrados = dadosFiltrados.filter(item =>
+        item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
+      );
+    }
+
+    if (filtros.ug) {
+      if (filtros.ug === 'sem-ug') {
+        dadosFiltrados = dadosFiltrados.filter(item => !item.ug || item.ug.trim() === '');
+      } else {
+        dadosFiltrados = dadosFiltrados.filter(item => item.ug === filtros.ug);
+      }
+    }
+
+    if (filtros.busca) {
+      const busca = filtros.busca.toLowerCase();
       dadosFiltrados = dadosFiltrados.filter(item =>
         item.nomeCliente?.toLowerCase().includes(busca) ||
         item.numeroProposta?.toLowerCase().includes(busca) ||
@@ -87,79 +125,73 @@ const ControlePage = () => {
       );
     }
 
-    if (filtros.consultor) {
-      dadosFiltrados = dadosFiltrados.filter(item =>
-        item.consultor === filtros.consultor
-      );
-    }
-
-    if (filtros.ug) {
-      if (filtros.ug === 'sem-ug') {
-        dadosFiltrados = dadosFiltrados.filter(item => !item.ug);
-      } else {
-        dadosFiltrados = dadosFiltrados.filter(item => item.ug === filtros.ug);
-      }
-    }
-
     setDadosFiltrados(dadosFiltrados);
+    atualizarEstatisticas(dadosFiltrados);
   }, [dados, filtros]);
 
-  const atualizarEstatisticas = useCallback(() => {
+  const atualizarEstatisticas = (dadosFiltrados) => {
     const total = dadosFiltrados.length;
-    const ugsDefinidas = dadosFiltrados.filter(item => item.ug).length;
-    const ugsPendentes = total - ugsDefinidas;
+    const comUG = dadosFiltrados.filter(item => item.ug && item.ug.trim() !== '').length;
+    const semUG = total - comUG;
+    const calibradas = dadosFiltrados.filter(item => item.calibrado).length;
 
     setEstatisticas({
       total,
-      ugsDefinidas,
-      ugsPendentes
+      comUG,
+      semUG,
+      calibradas
     });
-  }, [dadosFiltrados]);
+  };
 
   useEffect(() => {
     carregarDados();
-  }, [carregarDados]);
+    carregarUGsDisponiveis();
+  }, [carregarDados, carregarUGsDisponiveis]);
 
   useEffect(() => {
     filtrarDados();
   }, [filtrarDados]);
 
-  useEffect(() => {
-    atualizarEstatisticas();
-  }, [atualizarEstatisticas]);
-
   const limparFiltros = () => {
     setFiltros({
-      nome: '',
       consultor: '',
-      ug: ''
+      ug: '',
+      busca: ''
     });
   };
 
-  const definirUG = (index) => {
+  // Funções apenas para admin
+  const editarUG = (index) => {
+    if (user?.role !== 'admin') return;
+    
     const item = dadosFiltrados[index];
     if (!item) return;
     setModalUG({ show: true, item, index });
   };
 
-  const salvarUG = async (ugSelecionada) => {
+  const salvarUG = async (novaUG) => {
+    if (user?.role !== 'admin') return;
+    
     try {
       const { item } = modalUG;
       
-      const indexReal = dados.findIndex(p => 
-        p.numeroProposta === item.numeroProposta && p.numeroUC === item.numeroUC
-      );
+      const indexReal = dados.findIndex(p => p.id === item.id);
       
       if (indexReal === -1) {
-        showNotification('Item não encontrado', 'error');
+        showNotification('Item não encontrado para edição', 'error');
         return;
       }
 
-      await storageService.atualizarUGControle(indexReal, ugSelecionada);
+      await storageService.atualizarUGControle(indexReal, novaUG);
       await carregarDados();
       
       setModalUG({ show: false, item: null, index: -1 });
-      showNotification(`UG "${ugSelecionada}" definida com sucesso!`, 'success');
+      
+      const mensagem = novaUG ? 
+        `UG "${novaUG}" definida com sucesso!` : 
+        'UG removida com sucesso!';
+      
+      showNotification(mensagem, 'success');
       
     } catch (error) {
       console.error('❌ Erro ao salvar UG:', error);
@@ -167,25 +199,19 @@ const ControlePage = () => {
     }
   };
 
-  // CORRIGIDO: Não salvar automaticamente, apenas quando clica em aplicar
-  const handleCalibragemChange = (e) => {
-    const novoValor = parseFloat(e.target.value) || 0;
-    setCalibragemGlobal(novoValor);
-    // NÃO salvar automaticamente aqui
-  };
-
-  // CORRIGIDO: Aplicar calibragem SEM popup de confirmação
   const aplicarCalibragemGlobal = async () => {
+    if (user?.role !== 'admin') return;
+    
     if (calibragemGlobal === 0) {
       showNotification('Digite um valor de calibragem diferente de zero', 'warning');
       return;
     }
 
     try {
-      // SALVAR a calibragem apenas quando aplicar
+      // Salvar a calibragem
       storageService.setCalibragemGlobal(calibragemGlobal);
       
-      // Aplicar calibragem global usando a nova função do storage
+      // Aplicar calibragem global
       await storageService.aplicarCalibragemGlobal(calibragemGlobal);
       
       await carregarUGsDisponiveis();
@@ -209,26 +235,19 @@ const ControlePage = () => {
     }
   };
 
-  // CORRIGIDO: Calcular calibragem usando apenas o percentual atual (SEM salvar automaticamente)
-  const calcularCalibragem = (item) => {
-    // Buscar calibragem salva do localStorage para cálculo
-    const calibragemSalva = storageService.getCalibragemGlobal();
-    
-    if (!item.ug || calibragemSalva === 0) return null;
-    
-    const mediaCalibrada = parseFloat(item.media || 0) * (1 + calibragemSalva / 100);
-    return mediaCalibrada;
-  };
-
+  // Obter listas únicas para filtros
   const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
   const ugsUnicas = [...new Set(dados.map(item => item.ug).filter(Boolean))];
+
+  // Verificar se é admin
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="page-container">
       <div className="container">
         <Header 
           title="CONTROLE" 
-          subtitle="Controle de Propostas Fechadas" 
+          subtitle="Propostas Fechadas e UGs" 
           icon="⚙️" 
         />
         
@@ -241,187 +260,210 @@ const ControlePage = () => {
             <span className="stat-value">{estatisticas.total}</span>
           </div>
           <div className="stat-card">
-            <span className="stat-label">UGs Definidas</span>
-            <span className="stat-value">{estatisticas.ugsDefinidas}</span>
+            <span className="stat-label">Com UG</span>
+            <span className="stat-value">{estatisticas.comUG}</span>
           </div>
           <div className="stat-card">
-            <span className="stat-label">UGs Pendentes</span>
-            <span className="stat-value">{estatisticas.ugsPendentes}</span>
+            <span className="stat-label">Sem UG</span>
+            <span className="stat-value">{estatisticas.semUG}</span>
           </div>
+          {isAdmin && (
+            <div className="stat-card">
+              <span className="stat-label">Calibradas</span>
+              <span className="stat-value">{estatisticas.calibradas}</span>
+            </div>
+          )}
         </section>
+
+        {/* Calibragem Global - apenas para admin */}
+        {isAdmin && (
+          <section className="calibragem-section">
+            <div className="calibragem-container">
+              <h3>🎯 Calibragem Global</h3>
+              <div className="calibragem-controls">
+                <div className="calibragem-input">
+                  <label>Percentual de Calibragem (%)</label>
+                  <input
+                    type="number"
+                    value={calibragemGlobal}
+                    onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    max="200"
+                    step="0.1"
+                    placeholder="Ex: 15"
+                  />
+                </div>
+                <button 
+                  onClick={aplicarCalibragemGlobal}
+                  className="btn btn-primary"
+                  disabled={calibragemGlobal === 0}
+                >
+                  Aplicar Calibragem
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
             <div className="filters-grid">
               <div className="filter-group">
+                <label>Buscar</label>
                 <input
                   type="text"
-                  placeholder="🔍 Buscar por cliente, proposta ou UC..."
-                  value={filtros.nome}
-                  onChange={(e) => setFiltros({...filtros, nome: e.target.value})}
+                  placeholder="🔍 Cliente, proposta ou UC..."
+                  value={filtros.busca}
+                  onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
               </div>
-
+              
               <div className="filter-group">
+                <label>Consultor</label>
                 <select
                   value={filtros.consultor}
                   onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
                 >
-                  <option value="">Todos consultores</option>
+                  <option value="">Todos os consultores</option>
                   {consultoresUnicos.map(consultor => (
                     <option key={consultor} value={consultor}>{consultor}</option>
                   ))}
                 </select>
               </div>
-
+              
               <div className="filter-group">
+                <label>UG</label>
                 <select
                   value={filtros.ug}
                   onChange={(e) => setFiltros({...filtros, ug: e.target.value})}
                 >
-                  <option value="">Todas UGs</option>
-                  <option value="sem-ug">❌ Sem UG</option>
+                  <option value="">Todas as UGs</option>
+                  <option value="sem-ug">Sem UG</option>
                   {ugsUnicas.map(ug => (
-                    <option key={ug} value={ug}>✅ {ug}</option>
+                    <option key={ug} value={ug}>{ug}</option>
                   ))}
                 </select>
               </div>
-
+              
               <div className="filter-group">
-                <button onClick={limparFiltros} className="btn-secondary">
+                <label>&nbsp;</label>
+                <button onClick={limparFiltros} className="btn btn-secondary">
                   🗑️ Limpar
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Calibragem Global - CORRIGIDA COM PERSISTÊNCIA */}
-          <div className="calibragem-section">
-            <div className="calibragem-container">
-              <label>Calibragem Global (%):</label>
-              <input
-                type="number"
-                step="0.1"
-                value={calibragemGlobal}
-                onChange={handleCalibragemChange}
-                className="calibragem-input"
-              />
-              <button 
-                onClick={aplicarCalibragemGlobal}
-                className="btn-primary"
-                disabled={calibragemGlobal === 0}
-              >
-                🎯 Aplicar Calibragem
-              </button>
-            </div>
-          </div>
-
           {/* Ações */}
           <div className="actions-container">
-            <button onClick={exportarDados} className="btn-secondary">
+            <button onClick={exportarDados} className="btn btn-secondary">
               📊 Exportar CSV
             </button>
-            <button onClick={carregarDados} className="btn-secondary">
+            <button onClick={carregarDados} className="btn btn-secondary">
               🔄 Atualizar
             </button>
           </div>
         </section>
 
-        {/* Tabela de dados */}
+        {/* Tabela de Controle */}
         <section className="table-section">
           <div className="table-header">
-            <h2>⚙️ Propostas em Controle</h2>
+            <h2>⚙️ Propostas no Controle</h2>
             <span className="table-count">{dadosFiltrados.length} propostas</span>
           </div>
           
           {loading ? (
-            <div className="loading">Carregando propostas de controle...</div>
+            <div className="loading">Carregando dados de controle...</div>
           ) : dadosFiltrados.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">⚙️</div>
-              <h3>Nenhuma proposta em controle</h3>
-              <p>Feche algumas propostas no PROSPEC para vê-las aqui.</p>
+              <h3>Nenhuma proposta no controle</h3>
+              <p>As propostas fechadas aparecerão aqui automaticamente</p>
             </div>
           ) : (
-            <div className="table-responsive">
-              <table>
+            <div className="table-container">
+              <table className="table">
                 <thead>
                   <tr>
-                    <th>Cliente</th>
                     <th>Proposta</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
                     <th>UC</th>
-                    <th>Apelido</th>
                     <th>Consultor</th>
                     <th>Média (kWh)</th>
-                    <th>Calibragem (kWh)</th>
                     <th>UG Atribuída</th>
-                    <th>Ações</th>
+                    {/* Mostrar calibragem apenas para admin */}
+                    {isAdmin && <th>Calibragem</th>}
+                    {/* Mostrar ações apenas para admin */}
+                    {isAdmin && <th>Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {dadosFiltrados.map((item, index) => {
-                    const calibragem = calcularCalibragem(item);
-                    
-                    return (
-                      <tr key={`${item.numeroProposta}-${item.numeroUC}`}>
+                  {dadosFiltrados.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td>
+                        <span className="numero-proposta">{item.numeroProposta}</span>
+                      </td>
+                      <td>
+                        <span className="data">
+                          {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{item.nomeCliente}</strong>
+                        <br />
+                        <span className="telefone">{item.celular || item.telefone}</span>
+                      </td>
+                      <td>
+                        <span className="numero-proposta">{item.numeroUC}</span>
+                        <br />
+                        <small>{item.apelido}</small>
+                      </td>
+                      <td>{item.consultor}</td>
+                      <td>
+                        <span className="valor">{(item.media || 0).toLocaleString()}</span>
+                      </td>
+                      <td>
+                        {item.ug ? (
+                          <span className="ug-badge">{item.ug}</span>
+                        ) : (
+                          <span className="sem-ug">Sem UG</span>
+                        )}
+                      </td>
+                      {/* Mostrar calibragem apenas para admin */}
+                      {isAdmin && (
                         <td>
-                          <strong>{item.nomeCliente}</strong>
+                          <span className="valor">{(item.calibragem || 0).toLocaleString()}</span>
                         </td>
+                      )}
+                      {/* Mostrar ações apenas para admin */}
+                      {isAdmin && (
                         <td>
-                          <span className="proposta-numero">{item.numeroProposta}</span>
-                        </td>
-                        <td>
-                          <span className="uc-numero">{item.numeroUC}</span>
-                        </td>
-                        <td>{item.apelido || '-'}</td>
-                        <td>{item.consultor || '-'}</td>
-                        <td>
-                          <span className="media-valor">
-                            {parseFloat(item.media || 0).toLocaleString()} kWh
-                          </span>
-                        </td>
-                        <td>
-                          {calibragem ? (
-                            <span className="calibragem-resultado">
-                              {Math.round(calibragem).toLocaleString()} kWh
-                            </span>
-                          ) : (
-                            <span className="sem-calibragem">-</span>
-                          )}
-                        </td>
-                        <td>
-                          {item.ug ? (
-                            <span className="ug-definida">{item.ug}</span>
-                          ) : (
-                            <span className="ug-pendente">Não definida</span>
-                          )}
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button 
-                              onClick={() => definirUG(index)}
-                              className="btn-icon define-ug"
+                          <div className="table-actions">
+                            <button
+                              onClick={() => editarUG(index)}
+                              className="btn-icon edit"
                               title="Definir UG"
                             >
                               🏭
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    );
-                  })}
+                      )}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
         </section>
 
-        {/* Modal de Definir UG */}
-        {modalUG.show && (
-          <ModalDefinirUG 
+        {/* Modal de UG - apenas para admin */}
+        {modalUG.show && isAdmin && (
+          <ModalUG 
             item={modalUG.item}
-            ugsDisponiveis={ugsDisponiveis}
+            ugs={ugsDisponiveis}
             onSave={salvarUG}
             onClose={() => setModalUG({ show: false, item: null, index: -1 })}
           />
@@ -431,18 +473,12 @@ const ControlePage = () => {
   );
 };
 
-// Modal de Definir UG
-const ModalDefinirUG = ({ item, ugsDisponiveis, onSave, onClose }) => {
+// Componente Modal de UG
+const ModalUG = ({ item, ugs, onSave, onClose }) => {
   const [ugSelecionada, setUgSelecionada] = useState(item.ug || '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    if (!ugSelecionada) {
-      alert('Selecione uma UG');
-      return;
-    }
-
     onSave(ugSelecionada);
   };
 
@@ -450,58 +486,40 @@ const ModalDefinirUG = ({ item, ugsDisponiveis, onSave, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>🏭 Definir Unidade Geradora</h3>
+          <h3>🏭 Definir UG</h3>
           <button onClick={onClose} className="close-btn">❌</button>
         </div>
         
         <div className="modal-body">
-          <div className="proposta-info">
-            <h4>Proposta: {item.numeroProposta}</h4>
-            <p><strong>Cliente:</strong> {item.nomeCliente}</p>
-            <p><strong>UC:</strong> {item.numeroUC}</p>
-            <p><strong>Média:</strong> {item.media?.toLocaleString()} kWh</p>
+          <div className="cliente-info">
+            <h4>{item.nomeCliente}</h4>
+            <p>Proposta: {item.numeroProposta}</p>
+            <p>UC: {item.numeroUC} ({item.apelido})</p>
           </div>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Selecionar UG:</label>
+              <label>Selecionar UG</label>
               <select
                 value={ugSelecionada}
                 onChange={(e) => setUgSelecionada(e.target.value)}
-                className="ug-select"
-                required
               >
                 <option value="">Selecione uma UG...</option>
-                {ugsDisponiveis.map(ug => (
+                {ugs.map(ug => (
                   <option key={ug.id} value={ug.nomeUsina}>
-                    {ug.nomeUsina} - {ug.potenciaCA}kW
+                    {ug.nomeUsina} - {(ug.capacidade || 0).toFixed(2)} MWh
                   </option>
                 ))}
+                <option value="">--- Remover UG ---</option>
               </select>
             </div>
-            
-            {ugSelecionada && (
-              <div className="ug-preview">
-                {(() => {
-                  const ug = ugsDisponiveis.find(u => u.nomeUsina === ugSelecionada);
-                  return ug ? (
-                    <div className="ug-details">
-                      <h5>Detalhes da UG:</h5>
-                      <p><strong>Potência CA:</strong> {ug.potenciaCA} kW</p>
-                      <p><strong>Potência CC:</strong> {ug.potenciaCC} kW</p>
-                      <p><strong>Capacidade:</strong> {ug.capacidade?.toLocaleString()} kWh/mês</p>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            )}
-            
+
             <div className="modal-footer">
-              <button type="button" onClick={onClose} className="btn-secondary">
+              <button type="button" onClick={onClose} className="btn btn-secondary">
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary">
-                Definir UG
+              <button type="submit" className="btn btn-primary">
+                Salvar UG
               </button>
             </div>
           </form>
