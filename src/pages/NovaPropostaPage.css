@@ -1,4 +1,4 @@
-/* src/pages/NovaPropostaPage.css - 5 INPUTS EM LINHA + UCs SEPARADAS */
+/* src/pages/NovaPropostaPage.css - 5 INPUTS EM LINHA + UCs SEPARADAS + BENEFÍCIOS CORRIGIDOS */
 
 .page-container {
   min-height: 100vh;
@@ -232,14 +232,35 @@
 }
 
 /* =======================================================
-   BENEFÍCIOS
+   BENEFÍCIOS - CORRIGIDOS PARA ALINHAMENTO À ESQUERDA
    ======================================================= */
+
+.beneficios-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0; /* Remover padding que centralizava */
+}
 
 .beneficios-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
   width: 100%;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: flex-start; /* Alinhar ao topo */
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e1e1e1;
+  text-align: left; /* FORÇAR ALINHAMENTO À ESQUERDA */
+  justify-content: flex-start; /* ALINHAR CONTEÚDO À ESQUERDA */
+  transition: border-color 0.3s ease;
 }
 
 .checkbox-group.beneficio-item {
@@ -253,17 +274,21 @@
   border: 1px solid #e1e1e1;
   width: 100%;
   box-sizing: border-box;
+  text-align: left; /* GARANTIR ALINHAMENTO À ESQUERDA */
+  justify-content: flex-start; /* GARANTIR CONTEÚDO À ESQUERDA */
 }
 
+.checkbox-group input[type="checkbox"],
 .checkbox-group.beneficio-item input[type="checkbox"] {
   width: 18px;
   height: 18px;
   margin: 0;
   cursor: pointer;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Não permitir que o checkbox encolha */
   margin-top: 2px;
 }
 
+.checkbox-group label,
 .checkbox-group.beneficio-item label {
   margin: 0;
   cursor: pointer;
@@ -271,8 +296,11 @@
   line-height: 1.4;
   color: #333;
   width: 100%;
+  text-align: left; /* GARANTIR TEXTO À ESQUERDA */
+  flex: 1; /* Ocupar espaço restante */
 }
 
+.checkbox-group:hover,
 .checkbox-group.beneficio-item:hover {
   background: #f8f9fa;
   border-color: #4CAF50;
@@ -330,62 +358,23 @@
 }
 
 .btn:disabled {
-  background: #bdc3c7 !important;
+  opacity: 0.6;
   cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* Spinner para loading */
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  transform: none;
+  box-shadow: none;
 }
 
 /* =======================================================
-   RESPONSIVIDADE
+   RESPONSIVE DESIGN
    ======================================================= */
 
-/* Tablets */
-@media (max-width: 1024px) {
-  .uc-inputs-row {
-    grid-template-columns: 1fr 1fr 1fr; /* 3 colunas em tablets */
-    gap: 12px;
-  }
-}
-
-/* Mobile */
 @media (max-width: 768px) {
-  .container {
-    padding: 15px;
-  }
-  
-  .form-section {
-    padding: 20px;
-  }
-  
   .form-grid {
     grid-template-columns: 1fr;
-    gap: 15px;
   }
   
   .uc-inputs-row {
-    grid-template-columns: 1fr; /* 1 coluna em mobile */
-    gap: 10px;
-  }
-  
-  .uc-header {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
     gap: 10px;
   }
   
@@ -394,65 +383,14 @@
     align-items: stretch;
   }
   
-  .form-actions .btn {
-    width: 100%;
+  .btn {
     justify-content: center;
   }
 }
 
-/* Mobile pequeno */
-@media (max-width: 480px) {
-  .container {
-    padding: 10px;
+@media (max-width: 1200px) {
+  .uc-inputs-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
-  
-  .form-section {
-    padding: 15px;
-  }
-  
-  .form-section h2 {
-    font-size: 1.2rem;
-  }
-  
-  .form-group input,
-  .form-group select {
-    padding: 10px 12px;
-    font-size: 0.9rem;
-  }
-  
-  .uc-row {
-    padding: 15px;
-  }
-  
-  .btn-remove-uc {
-    padding: 4px 8px;
-    font-size: 0.7rem;
-  }
-  
-  .checkbox-group.beneficio-item {
-    padding: 10px;
-  }
-  
-  .checkbox-group.beneficio-item label {
-    font-size: 0.9rem;
-  }
-}
-
-/* =======================================================
-   CORREÇÕES GLOBAIS
-   ======================================================= */
-
-* {
-  box-sizing: border-box;
-}
-
-html, body {
-  overflow-x: hidden;
-}
-
-/* Garantir que elementos flutuantes não interfiram */
-.clearfix::after {
-  content: "";
-  display: table;
-  clear: both;
 }

@@ -1,10 +1,11 @@
-// src/pages/ProspecPage.jsx - USANDO SUA PÁGINA NOVA PROPOSTA ORIGINAL
+// src/pages/ProspecPage.jsx - COM CLASSES CSS CORRETAS PARA FORMATAÇÃO DE TABELA
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import storageService from '../services/storageService';
+import './ProspecPage.css';
 
 const ProspecPage = () => {
   const navigate = useNavigate();
@@ -45,8 +46,6 @@ const ProspecPage = () => {
         showNotification(`${dadosComIds.length} propostas carregadas com sucesso!`, 'success');
       }
       
-      console.log(`✅ ${dadosComIds.length} propostas carregadas`);
-      
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
       showNotification('Erro ao carregar dados: ' + error.message, 'error');
@@ -62,14 +61,12 @@ const ProspecPage = () => {
 
     if (filtros.consultor) {
       dadosFiltrados = dadosFiltrados.filter(item =>
-        item.consultor === filtros.consultor
+        item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
       );
     }
 
     if (filtros.status) {
-      dadosFiltrados = dadosFiltrados.filter(item =>
-        item.status === filtros.status
-      );
+      dadosFiltrados = dadosFiltrados.filter(item => item.status === filtros.status);
     }
 
     if (filtros.busca) {
@@ -77,20 +74,17 @@ const ProspecPage = () => {
       dadosFiltrados = dadosFiltrados.filter(item =>
         item.nomeCliente?.toLowerCase().includes(busca) ||
         item.numeroProposta?.toLowerCase().includes(busca) ||
-        item.numeroUC?.toLowerCase().includes(busca) ||
-        item.apelido?.toLowerCase().includes(busca)
+        item.numeroUC?.toLowerCase().includes(busca)
       );
     }
 
     setDadosFiltrados(dadosFiltrados);
   }, [dados, filtros]);
 
-  // Carregamento inicial
   useEffect(() => {
     carregarDados();
   }, [carregarDados]);
 
-  // Aplicar filtros
   useEffect(() => {
     filtrarDados();
   }, [filtrarDados]);
@@ -103,20 +97,16 @@ const ProspecPage = () => {
     });
   };
 
-  // FUNÇÃO PARA EDITAR ITEM
   const editarItem = (index) => {
     const item = dadosFiltrados[index];
     if (!item) return;
-
     setModalEdicao({ show: true, item, index });
   };
 
-  // FUNÇÃO PARA SALVAR EDIÇÃO - CORRIGIDA PARA SINCRONIZAR UC INDIVIDUAL
   const salvarEdicao = async (dadosAtualizados) => {
     try {
       const { item } = modalEdicao;
       
-      // Encontrar o índice real no array principal
       const indexReal = dados.findIndex(p => p.id === item.id);
       
       if (indexReal === -1) {
@@ -124,15 +114,10 @@ const ProspecPage = () => {
         return;
       }
 
-      // Atualizar no storage (o storage já cuida da sincronização UC específica)
       await storageService.atualizarProspec(indexReal, dadosAtualizados);
-      
-      // Recarregar dados
       await carregarDados();
       
-      // Fechar modal
       setModalEdicao({ show: false, item: null, index: -1 });
-      
       showNotification('Proposta atualizada com sucesso!', 'success');
       
     } catch (error) {
@@ -141,7 +126,6 @@ const ProspecPage = () => {
     }
   };
 
-  // FUNÇÃO PARA REMOVER ITEM
   const removerItem = async (index) => {
     if (!window.confirm('Tem certeza que deseja remover esta proposta?')) {
       return;
@@ -167,12 +151,10 @@ const ProspecPage = () => {
     }
   };
 
-  // NAVEGAR PARA SUA PÁGINA ORIGINAL DE NOVA PROPOSTA
   const criarNovaProposta = () => {
     navigate('/nova-proposta');
   };
 
-  // FUNÇÃO PARA EXPORTAR DADOS
   const exportarDados = async () => {
     try {
       await storageService.exportarParaCSV('prospec');
@@ -217,25 +199,27 @@ const ProspecPage = () => {
           </div>
         </section>
 
-        {/* Filtros */}
+        {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
             <div className="filters-grid">
               <div className="filter-group">
+                <label>Buscar Proposta</label>
                 <input
                   type="text"
-                  placeholder="🔍 Buscar por nome, proposta, UC..."
+                  placeholder="🔍 Cliente, proposta ou UC..."
                   value={filtros.busca}
                   onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
               </div>
               
               <div className="filter-group">
+                <label>Consultor</label>
                 <select
                   value={filtros.consultor}
                   onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
                 >
-                  <option value="">Todos os Consultores</option>
+                  <option value="">Todos os consultores</option>
                   {consultoresUnicos.map(consultor => (
                     <option key={consultor} value={consultor}>{consultor}</option>
                   ))}
@@ -243,39 +227,41 @@ const ProspecPage = () => {
               </div>
               
               <div className="filter-group">
+                <label>Status</label>
                 <select
                   value={filtros.status}
                   onChange={(e) => setFiltros({...filtros, status: e.target.value})}
                 >
-                  <option value="">Todos os Status</option>
+                  <option value="">Todos os status</option>
                   <option value="Aguardando">Aguardando</option>
                   <option value="Fechado">Fechado</option>
                 </select>
               </div>
               
               <div className="filter-group">
-                <button onClick={limparFiltros} className="btn-secondary">
-                  🗑️ Limpar Filtros
+                <label>&nbsp;</label>
+                <button onClick={limparFiltros} className="btn btn-secondary">
+                  🗑️ Limpar
                 </button>
               </div>
             </div>
           </div>
-          
+
           {/* Ações */}
           <div className="actions-container">
-            <button onClick={criarNovaProposta} className="btn-primary">
+            <button onClick={criarNovaProposta} className="btn btn-primary">
               ➕ Nova Proposta
             </button>
-            <button onClick={exportarDados} className="btn-secondary">
+            <button onClick={exportarDados} className="btn btn-secondary">
               📊 Exportar CSV
             </button>
-            <button onClick={carregarDados} className="btn-secondary">
+            <button onClick={carregarDados} className="btn btn-secondary">
               🔄 Atualizar
             </button>
           </div>
         </section>
 
-        {/* Tabela de dados */}
+        {/* Tabela de Propostas */}
         <section className="table-section">
           <div className="table-header">
             <h2>📋 Lista de Propostas</h2>
@@ -285,22 +271,27 @@ const ProspecPage = () => {
           {loading ? (
             <div className="loading">Carregando propostas...</div>
           ) : dadosFiltrados.length === 0 ? (
-            <div className="no-data">
-              <p>📭 Nenhuma proposta encontrada</p>
-              <p>Crie sua primeira proposta clicando em "Nova Proposta"</p>
+            <div className="empty-state">
+              <div className="empty-icon">📋</div>
+              <h3>Nenhuma proposta encontrada</h3>
+              <p>Crie sua primeira proposta para começar</p>
+              <button onClick={criarNovaProposta} className="btn btn-primary">
+                ➕ Criar primeira proposta
+              </button>
             </div>
           ) : (
-            <div className="table-responsive">
-              <table>
+            <div className="table-container">
+              <table className="table">
                 <thead>
                   <tr>
-                    <th>Cliente</th>
                     <th>Proposta</th>
-                    <th>UC</th>
-                    <th>Consultor</th>
-                    <th>Status</th>
-                    <th>Média (kWh)</th>
                     <th>Data</th>
+                    <th>Cliente</th>
+                    <th>UC</th>
+                    <th>Apelido</th>
+                    <th>Consultor</th>
+                    <th>Média (kWh)</th>
+                    <th>Status</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -308,23 +299,34 @@ const ProspecPage = () => {
                   {dadosFiltrados.map((item, index) => (
                     <tr key={item.id || index}>
                       <td>
-                        <strong>{item.nomeCliente}</strong>
-                        <br />
-                        <small>{item.apelido}</small>
+                        <span className="numero-proposta">{item.numeroProposta}</span>
                       </td>
-                      <td>{item.numeroProposta}</td>
-                      <td>{item.numeroUC}</td>
-                      <td>{item.consultor}</td>
                       <td>
-                        <span className={`status ${item.status?.toLowerCase()}`}>
-                          {item.status}
+                        <span className="data">
+                          {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
                         </span>
                       </td>
-                      <td>{item.media?.toLocaleString()} kWh</td>
-                      <td>{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                       <td>
-                        <div className="action-buttons">
-                          <button 
+                        <strong>{item.nomeCliente}</strong>
+                        <br />
+                        <span className="telefone">{item.celular || item.telefone}</span>
+                      </td>
+                      <td>
+                        <span className="numero-proposta">{item.numeroUC}</span>
+                      </td>
+                      <td>{item.apelido || '-'}</td>
+                      <td>{item.consultor}</td>
+                      <td>
+                        <span className="valor">{(item.media || 0).toLocaleString()}</span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
+                          {item.status || 'Aguardando'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="table-actions">
+                          <button
                             onClick={() => editarItem(index)}
                             className="btn-icon edit"
                             title="Editar"
@@ -426,10 +428,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
           </div>
           
           <div className="modal-footer">
-            <button type="button" onClick={handleClose} className="btn-secondary">
+            <button type="button" onClick={handleClose} className="btn btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn btn-primary">
               Salvar Alterações
             </button>
           </div>

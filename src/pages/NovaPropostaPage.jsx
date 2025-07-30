@@ -1,4 +1,4 @@
-// src/pages/NovaPropostaPage.jsx - 5 INPUTS UC EM UMA LINHA + UCs EM LINHAS SEPARADAS
+// src/pages/NovaPropostaPage.jsx - 5 INPUTS UC EM UMA LINHA + UCs EM LINHAS SEPARADAS + BENEFÍCIOS CORRIGIDOS
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -42,85 +42,74 @@ const NovaPropostaPage = () => {
       economia: 20,
       bandeira: 20,
       recorrencia: '3%',
-      semConsultor: false,
-      ucs: [{
-        distribuidora: 'Equatorial',
-        numeroUC: '',
-        apelido: '',
-        ligacao: 'Monofásica',
-        consumo: ''
-      }],
+      ucs: [
+        {
+          distribuidora: 'Equatorial',
+          numeroUC: '',
+          apelido: '',
+          ligacao: 'Trifásica',
+          consumo: 0
+        }
+      ],
+      // Benefícios padrão marcados
       beneficio1: true,
-      beneficio2: false,
-      beneficio3: false,
       beneficio4: true,
       beneficio5: true,
       beneficio6: true,
       beneficio7: true,
-      beneficio8: true,
       beneficio9: true
     }
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "ucs"
+    name: 'ucs'
   });
 
-  const semConsultor = watch('semConsultor');
+  // Gerar número da proposta
+  const gerarNumeroProposta = async () => {
+    try {
+      const numero = await storageService.gerarNumeroProposta();
+      setNumeroProposta(numero);
+    } catch (error) {
+      console.error('Erro ao gerar número:', error);
+      const fallback = `${new Date().getFullYear()}/${Date.now().toString().slice(-4)}`;
+      setNumeroProposta(fallback);
+    }
+  };
 
   useEffect(() => {
     gerarNumeroProposta();
   }, []);
-
-  useEffect(() => {
-    if (semConsultor) {
-      setValue('consultor', 'AUPUS');
-      setValue('recorrencia', '0%');
-    } else {
-      setValue('consultor', '');
-      setValue('recorrencia', '3%');
-    }
-  }, [semConsultor, setValue]);
-
-  const gerarNumeroProposta = async () => {
-    try {
-      const propostas = await storageService.getProspec();
-      const ultimoNumero = propostas.length > 0 
-        ? Math.max(...propostas.map(p => {
-            const num = parseInt(p.numeroProposta.split('/')[1] || '0');
-            return isNaN(num) ? 0 : num;
-          }))
-        : 0;
-      
-      const novoNumero = ultimoNumero + 1;
-      setNumeroProposta(`2025/${novoNumero.toString().padStart(4, '0')}`);
-    } catch (error) {
-      console.error('Erro ao gerar número:', error);
-      setNumeroProposta('2025/0001');
-    }
-  };
 
   const adicionarUC = () => {
     append({
       distribuidora: 'Equatorial',
       numeroUC: '',
       apelido: '',
-      ligacao: 'Monofásica',
-      consumo: ''
+      ligacao: 'Trifásica',
+      consumo: 0
     });
   };
 
   const removerUC = (index) => {
     if (fields.length > 1) {
       remove(index);
+    } else {
+      showNotification('É necessário pelo menos uma UC', 'warning');
     }
   };
 
+  const voltar = () => {
+    navigate('/prospec');
+  };
+
   const limparFormulario = () => {
-    reset();
-    gerarNumeroProposta();
-    showNotification('Formulário limpo!', 'info');
+    if (window.confirm('Deseja realmente limpar o formulário?')) {
+      reset();
+      gerarNumeroProposta();
+      showNotification('Formulário limpo com sucesso!', 'info');
+    }
   };
 
   const onSubmit = async (data) => {
@@ -231,36 +220,28 @@ const NovaPropostaPage = () => {
                 )}
               </div>
             </div>
+          </section>
 
-            {/* Consultor - SEM CONSULTOR EMBAIXO DO CAMPO CONSULTOR */}
-            <div className="form-grid" style={{ marginTop: '20px' }}>
+          {/* CONSULTOR E ECONOMIA */}
+          <section className="form-section">
+            <h2>💼 Consultor e Economia</h2>
+            <div className="form-grid">
               <div className="form-group">
                 <label>Nome do Consultor *</label>
                 <input
                   {...register('consultor')}
                   type="text"
-                  placeholder="Nome do consultor"
-                  disabled={semConsultor}
+                  placeholder="Nome do consultor responsável"
                   className={errors.consultor ? 'error' : ''}
                 />
                 {errors.consultor && (
                   <span className="error-message">{errors.consultor.message}</span>
                 )}
-                
-                {/* SEM CONSULTOR EMBAIXO DO CAMPO */}
-                <div className="checkbox-group-inline" style={{ marginTop: '10px' }}>
-                  <input
-                    {...register('semConsultor')}
-                    type="checkbox"
-                    id="semConsultor"
-                  />
-                  <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
-                </div>
               </div>
 
               <div className="form-group">
                 <label>Recorrência do Consultor</label>
-                <select {...register('recorrencia')} disabled={semConsultor}>
+                <select {...register('recorrencia')}>
                   <option value="0%">0%</option>
                   <option value="1%">1%</option>
                   <option value="2%">2%</option>
@@ -280,12 +261,8 @@ const NovaPropostaPage = () => {
                   min="0"
                   max="100"
                   step="0.1"
-                  placeholder="Ex: 20"
-                  className={errors.economia ? 'error' : ''}
+                  placeholder="20"
                 />
-                {errors.economia && (
-                  <span className="error-message">{errors.economia.message}</span>
-                )}
               </div>
 
               <div className="form-group">
@@ -296,21 +273,15 @@ const NovaPropostaPage = () => {
                   min="0"
                   max="100"
                   step="0.1"
-                  placeholder="Ex: 20"
-                  className={errors.bandeira ? 'error' : ''}
+                  placeholder="20"
                 />
-                {errors.bandeira && (
-                  <span className="error-message">{errors.bandeira.message}</span>
-                )}
               </div>
             </div>
           </section>
 
-          {/* UNIDADES CONSUMIDORAS - 5 INPUTS EM UMA LINHA + LINHAS SEPARADAS */}
+          {/* UNIDADES CONSUMIDORAS */}
           <section className="form-section">
             <h2>🏢 Unidades Consumidoras</h2>
-            
-            {/* UCs EM LINHAS SEPARADAS */}
             <div className="ucs-list">
               {fields.map((field, index) => (
                 <div key={field.id} className="uc-row">
@@ -326,8 +297,7 @@ const NovaPropostaPage = () => {
                       </button>
                     )}
                   </div>
-
-                  {/* 5 INPUTS EM UMA LINHA */}
+                  
                   <div className="uc-inputs-row">
                     <div className="form-group">
                       <label>Distribuidora</label>
@@ -390,18 +360,18 @@ const NovaPropostaPage = () => {
             </button>
           </section>
 
-          {/* BENEFÍCIOS DA PROPOSTA - ALINHADOS À ESQUERDA */}
+          {/* BENEFÍCIOS DA PROPOSTA - ALINHADOS À ESQUERDA COM TEXTOS CORRETOS */}
           <section className="form-section">
             <h2>🎯 Benefícios da Proposta</h2>
             <div className="beneficios-container">
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio1')} type="checkbox" id="beneficio1" />
-                <label htmlFor="beneficio1">1. Economia na energia elétrica, sem impostos</label>
+                <label htmlFor="beneficio1">1. A Aupus Energia irá oferecer uma economia de até 20% no valor da energia elétrica, sem impostos</label>
               </div>
 
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio2')} type="checkbox" id="beneficio2" />
-                <label htmlFor="beneficio2">2. Economia na bandeira tarifária, sem impostos</label>
+                <label htmlFor="beneficio2">2. A Aupus Energia irá oferecer uma economia de até 50% nos valor referente a bandeira tarifária, sem impostos</label>
               </div>
 
               <div className="checkbox-group beneficio-item">
@@ -416,12 +386,12 @@ const NovaPropostaPage = () => {
 
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio5')} type="checkbox" id="beneficio5" />
-                <label htmlFor="beneficio5">5. Economia desde a primeira fatura</label>
+                <label htmlFor="beneficio5">5. Não há fidelidade contratual</label>
               </div>
 
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio6')} type="checkbox" id="beneficio6" />
-                <label htmlFor="beneficio6">6. Energia 100% renovável</label>
+                <label htmlFor="beneficio6">6. O cliente pode cancelar a qualquer momento</label>
               </div>
 
               <div className="checkbox-group beneficio-item">
@@ -431,7 +401,7 @@ const NovaPropostaPage = () => {
 
               <div className="checkbox-group beneficio-item">
                 <input {...register('beneficio8')} type="checkbox" id="beneficio8" />
-                <label htmlFor="beneficio8">8. Suporte técnico especializado</label>
+                <label htmlFor="beneficio8">8. Energia 100% renovável</label>
               </div>
 
               <div className="checkbox-group beneficio-item">
@@ -444,29 +414,14 @@ const NovaPropostaPage = () => {
           {/* Botões de ação */}
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  Salvando...
-                </>
-              ) : (
-                <>💾 Salvar Proposta</>
-              )}
+              {loading ? '⏳ Salvando...' : '💾 Salvar Proposta'}
             </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              onClick={() => navigate(-1)}
-              disabled={loading}
-            >
-              ↩️ Voltar
+            
+            <button type="button" onClick={voltar} className="btn btn-secondary">
+              ← Voltar
             </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              onClick={limparFormulario}
-              disabled={loading}
-            >
+            
+            <button type="button" onClick={limparFormulario} className="btn btn-secondary">
               🗑️ Limpar
             </button>
           </div>

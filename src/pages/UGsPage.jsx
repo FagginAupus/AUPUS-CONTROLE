@@ -1,4 +1,4 @@
-// src/pages/UGsPage.jsx - CORRIGIDA COM PROTEÇÃO CONTRA EXCLUSÃO
+// src/pages/UGsPage.jsx - CORRIGIDA COM PROTEÇÃO CONTRA EXCLUSÃO (SEM POPUP DESNECESSÁRIO)
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -183,10 +183,21 @@ const UGsPage = () => {
     }
   };
 
-  // CORRIGIDO: Função de remoção com verificação de UCs atribuídas
+  // CORRIGIDO: Função de remoção com verificação de UCs atribuídas SEM POPUP DESNECESSÁRIO
   const removerUG = async (index) => {
     const item = dadosFiltrados[index];
     
+    // VERIFICAR SE A UG TEM UCs ATRIBUÍDAS ANTES DE MOSTRAR O POPUP
+    if ((item.ucsAtribuidas || 0) > 0) {
+      // NÃO MOSTRAR POPUP - APENAS MOSTRAR NOTIFICAÇÃO DE ERRO
+      showNotification(
+        `Não é possível excluir a UG "${item.nomeUsina}" pois ela possui ${item.ucsAtribuidas} UC(s) atribuída(s). Remova primeiro as atribuições.`, 
+        'error'
+      );
+      return; // SAIR SEM MOSTRAR POPUP
+    }
+
+    // APENAS MOSTRAR POPUP SE A UG NÃO TIVER UCs ATRIBUÍDAS
     if (!window.confirm(`Tem certeza que deseja remover a UG "${item.nomeUsina}"?`)) {
       return;
     }
@@ -199,7 +210,7 @@ const UGsPage = () => {
         return;
       }
 
-      // USAR MÉTODO CORRIGIDO DO STORAGE QUE VERIFICA UCs ATRIBUÍDAS
+      // USAR MÉTODO DO STORAGE QUE JÁ FAZ A VERIFICAÇÃO ADICIONAL
       await storageService.removerUG(indexReal);
       await carregarDados();
       
@@ -207,7 +218,7 @@ const UGsPage = () => {
       
     } catch (error) {
       console.error('❌ Erro ao remover:', error);
-      // MOSTRAR MENSAGEM ESPECÍFICA DO ERRO (que pode ser sobre UCs atribuídas)
+      // MOSTRAR MENSAGEM ESPECÍFICA DO ERRO (sobre UCs atribuídas)
       showNotification(error.message, 'error');
     }
   };
@@ -311,71 +322,69 @@ const UGsPage = () => {
           ) : dadosFiltrados.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🏭</div>
-              <h3>Nenhuma UG encontrada</h3>
-              <p>Crie sua primeira Unidade Geradora ou ajuste os filtros.</p>
+              <h3>Nenhuma Unidade Geradora encontrada</h3>
+              <p>Cadastre sua primeira UG para começar</p>
               <button onClick={criarNovaUG} className="btn-primary">
-                ➕ Criar Primeira UG
+                ➕ Criar primeira UG
               </button>
             </div>
           ) : (
-            <div className="table-responsive">
-              <table>
+            <div className="table-container">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>Nome da Usina</th>
-                    <th>Potência CA (kW)</th>
-                    <th>Potência CC (kW)</th>
-                    <th>Fator Capacidade (%)</th>
-                    <th>Capacidade (MWh/mês)</th>
+                    <th>Potência CA</th>
+                    <th>Potência CC</th>
+                    <th>Fator Capacidade</th>
+                    <th>Capacidade</th>
                     <th>UCs Atribuídas</th>
-                    <th>Média Total (kWh)</th>
-                    <th>Calibragem (kWh)</th>
+                    <th>Média Total</th>
+                    <th>Calibragem</th>
+                    <th>Status</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dadosFiltrados.map((item, index) => (
-                    <tr key={item.id}>
+                    <tr key={item.id || index}>
                       <td>
                         <strong>{item.nomeUsina}</strong>
                       </td>
-                      <td>{parseFloat(item.potenciaCA || 0).toFixed(1)} kW</td>
-                      <td>{parseFloat(item.potenciaCC || 0).toFixed(1)} kW</td>
-                      <td>{parseFloat(item.fatorCapacidade || 0).toFixed(1)}%</td>
-                      <td>{parseFloat(item.capacidade || 0).toFixed(2)} MWh</td>
+                      <td>{(item.potenciaCA || 0).toFixed(1)} kW</td>
+                      <td>{(item.potenciaCC || 0).toFixed(1)} kW</td>
+                      <td>{(item.fatorCapacidade || 0).toFixed(0)}%</td>
+                      <td>{(item.capacidade || 0).toLocaleString()} kWh</td>
                       <td>
-                        <span className="ucs-atribuidas">
-                          {item.ucsAtribuidas || 0} UC{(item.ucsAtribuidas || 0) !== 1 ? 's' : ''}
+                        <span className={`badge ${(item.ucsAtribuidas || 0) > 0 ? 'badge-success' : 'badge-warning'}`}>
+                          {item.ucsAtribuidas || 0}
+                        </span>
+                      </td>
+                      <td>{(item.media || 0).toLocaleString()} kWh</td>
+                      <td>{(item.calibragem || 0).toLocaleString()} kWh</td>
+                      <td>
+                        <span className={`status-badge ${item.calibrado ? 'status-calibrada' : 'status-nao-calibrada'}`}>
+                          {item.calibrado ? '✅ Calibrada' : '⚠️ Não Calibrada'}
                         </span>
                       </td>
                       <td>
-                        <span className="media-calculada">
-                          {parseFloat(item.media || 0).toLocaleString()} kWh
-                        </span>
-                      </td>
-                      <td>
-                        {item.calibragem ? (
-                          <span className="calibragem-calculada">
-                            {Math.round(item.calibragem).toLocaleString()} kWh
-                          </span>
-                        ) : (
-                          <span className="sem-calibragem">-</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          <button 
+                        <div className="table-actions">
+                          <button
                             onClick={() => editarUG(index)}
-                            className="btn-icon edit"
+                            className="btn-action edit"
                             title="Editar UG"
                           >
                             ✏️
                           </button>
-                          <button 
+                          {/* BOTÃO CORRIGIDO COM VERIFICAÇÃO VISUAL E FUNCIONAL */}
+                          <button
                             onClick={() => removerUG(index)}
-                            className="btn-icon delete"
-                            title="Remover UG"
-                            // VISUAL: Desabilitar se tiver UCs atribuídas
+                            disabled={(item.ucsAtribuidas || 0) > 0} // DESABILITAR SE TEM UCs ATRIBUÍDAS
+                            className="btn-action delete"
+                            title={(item.ucsAtribuidas || 0) > 0 ? 
+                              `Não é possível excluir - ${item.ucsAtribuidas} UC(s) atribuída(s)` : 
+                              'Excluir UG'
+                            }
                             style={{
                               opacity: (item.ucsAtribuidas || 0) > 0 ? 0.5 : 1,
                               cursor: (item.ucsAtribuidas || 0) > 0 ? 'not-allowed' : 'pointer'
@@ -450,6 +459,7 @@ const ModalNovaUG = ({ onSave, onClose }) => {
               type="text"
               value={dados.nomeUsina}
               onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
+              placeholder="Ex: Usina Solar ABC"
               required
             />
           </div>
@@ -459,19 +469,22 @@ const ModalNovaUG = ({ onSave, onClose }) => {
               <label>Potência CA (kW) *</label>
               <input
                 type="number"
-                step="0.01"
                 value={dados.potenciaCA}
                 onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                min="0"
+                step="0.1"
                 required
               />
             </div>
+            
             <div className="form-group">
               <label>Potência CC (kW) *</label>
               <input
                 type="number"
-                step="0.01"
                 value={dados.potenciaCC}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
+                min="0"
+                step="0.1"
                 required
               />
             </div>
@@ -481,11 +494,11 @@ const ModalNovaUG = ({ onSave, onClose }) => {
             <label>Fator de Capacidade (%)</label>
             <input
               type="number"
-              step="0.1"
+              value={dados.fatorCapacidade}
+              onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 85})}
               min="0"
               max="100"
-              value={dados.fatorCapacidade}
-              onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
+              step="0.1"
             />
           </div>
           
@@ -541,20 +554,21 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
               <label>Potência CA (kW)</label>
               <input
                 type="number"
-                step="0.01"
                 value={dados.potenciaCA || 0}
                 onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
-                required
+                min="0"
+                step="0.1"
               />
             </div>
+            
             <div className="form-group">
               <label>Potência CC (kW)</label>
               <input
                 type="number"
-                step="0.01"
                 value={dados.potenciaCC || 0}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
-                required
+                min="0"
+                step="0.1"
               />
             </div>
           </div>
@@ -563,11 +577,11 @@ const ModalEdicaoUG = ({ item, onSave, onClose }) => {
             <label>Fator de Capacidade (%)</label>
             <input
               type="number"
-              step="0.1"
+              value={dados.fatorCapacidade || 85}
+              onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 85})}
               min="0"
               max="100"
-              value={dados.fatorCapacidade || 0}
-              onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
+              step="0.1"
             />
           </div>
           
