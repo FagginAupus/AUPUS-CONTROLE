@@ -1,4 +1,4 @@
-// src/pages/ControlePage.jsx - Com filtros por equipe e controle de funcionalidades
+// src/pages/ControlePage.jsx - Com funcionalidade de calibragem corrigida
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -14,6 +14,7 @@ const ControlePage = () => {
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [calibragemGlobal, setCalibragemGlobal] = useState(0);
+  const [calibragemAplicada, setCalibragemAplicada] = useState(0); // Valor realmente aplicado na tabela
   
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -93,6 +94,7 @@ const ControlePage = () => {
       // Carregar calibragem global salva
       const calibragemSalva = storageService.getCalibragemGlobal();
       setCalibragemGlobal(calibragemSalva);
+      setCalibragemAplicada(calibragemSalva); // Também definir como aplicada
       
     } catch (error) {
       console.error('❌ Erro ao carregar UGs:', error);
@@ -214,6 +216,9 @@ const ControlePage = () => {
       // Aplicar calibragem global
       await storageService.aplicarCalibragemGlobal(calibragemGlobal);
       
+      // Atualizar o valor aplicado para refletir na tabela
+      setCalibragemAplicada(calibragemGlobal);
+      
       await carregarUGsDisponiveis();
       await carregarDados();
       
@@ -233,6 +238,15 @@ const ControlePage = () => {
       console.error('❌ Erro ao exportar:', error);
       showNotification('Erro ao exportar: ' + error.message, 'error');
     }
+  };
+
+  // Função para calcular valor calibrado usando o valor APLICADO
+  const calcularValorCalibrado = (media, calibragem) => {
+    if (!media || media === 0) return 0;
+    if (!calibragem || calibragem === 0) return parseFloat(media);
+    
+    const multiplicador = 1 + (calibragem / 100);
+    return Math.round(parseFloat(media) * multiplicador);
   };
 
   // Obter listas únicas para filtros
@@ -275,36 +289,6 @@ const ControlePage = () => {
           )}
         </section>
 
-        {/* Calibragem Global - apenas para admin */}
-        {isAdmin && (
-          <section className="calibragem-section">
-            <div className="calibragem-container">
-              <h3>🎯 Calibragem Global</h3>
-              <div className="calibragem-controls">
-                <div className="calibragem-input">
-                  <label>Percentual de Calibragem (%)</label>
-                  <input
-                    type="number"
-                    value={calibragemGlobal}
-                    onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
-                    min="0"
-                    max="200"
-                    step="0.1"
-                    placeholder="Ex: 15"
-                  />
-                </div>
-                <button 
-                  onClick={aplicarCalibragemGlobal}
-                  className="btn btn-primary"
-                  disabled={calibragemGlobal === 0}
-                >
-                  Aplicar Calibragem
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
@@ -325,205 +309,227 @@ const ControlePage = () => {
                   value={filtros.consultor}
                   onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
                 >
-                  <option value="">Todos os consultores</option>
+                  <option value="">Todos</option>
                   {consultoresUnicos.map(consultor => (
                     <option key={consultor} value={consultor}>{consultor}</option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="filter-group">
                 <label>UG</label>
                 <select
                   value={filtros.ug}
                   onChange={(e) => setFiltros({...filtros, ug: e.target.value})}
                 >
-                  <option value="">Todas as UGs</option>
-                  <option value="sem-ug">Sem UG</option>
+                  <option value="">Todas</option>
+                  <option value="sem-ug">Sem UG definida</option>
                   {ugsUnicas.map(ug => (
                     <option key={ug} value={ug}>{ug}</option>
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="actions-container">
+              <button onClick={limparFiltros} className="btn btn-secondary">
+                Limpar Filtros
+              </button>
+              <button onClick={exportarDados} className="btn btn-primary">
+                📊 Exportar CSV
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Tabela */}
+        <section className="table-section">
+          <div className="table-container">
+            <div className="table-header">
+              <h2>Propostas Fechadas</h2>
+              <div className="table-header-right">
+                <span className="table-count">{dadosFiltrados.length} registros</span>
+                {isAdmin && (
+                  <div className="calibragem-controls-compact">
+                    <input
+                      id="calibragemGlobal"
+                      type="number"
+                      value={calibragemGlobal}
+                      onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      max="200"
+                      step="0.1"
+                      placeholder="0"
+                      className="calibragem-input-compact"
+                      title="Percentual de calibragem"
+                    />
+                    <span className="calibragem-percent-compact">%</span>
+                    <button 
+                      onClick={aplicarCalibragemGlobal}
+                      className="calibragem-apply-compact"
+                      disabled={calibragemGlobal === 0}
+                      title="Aplicar calibragem"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Carregando dados...</p>
+              </div>
+            ) : dadosFiltrados.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">⚙️</div>
+                <h3>Nenhuma proposta encontrada</h3>
+                <p>Não há propostas no controle que correspondam aos filtros aplicados.</p>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>UG</th>
+                      <th>Cliente</th>
+                      <th>Nº Proposta</th>
+                      <th>Data</th>
+                      <th>UC</th>
+                      <th>Média</th>
+                      <th>Calibragem</th>
+                      {isAdmin && <th>Ações</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dadosFiltrados.map((item, index) => {
+                      const valorCalibrado = calcularValorCalibrado(item.media, calibragemAplicada);
+                      
+                      return (
+                        <tr key={item.id}>
+                          <td>
+                            {item.ug ? (
+                              <span className="ug-definida">{item.ug}</span>
+                            ) : (
+                              <span className="ug-pendente">Pendente</span>
+                            )}
+                          </td>
+                          <td>{item.nomeCliente || '-'}</td>
+                          <td>{item.numeroProposta || '-'}</td>
+                          <td>
+                            {item.data ? (() => {
+                              try {
+                                const dataObj = new Date(item.data);
+                                return dataObj.toLocaleDateString('pt-BR');
+                              } catch {
+                                return item.data;
+                              }
+                            })() : '-'}
+                          </td>
+                          <td>{item.numeroUC || '-'}</td>
+                          <td>
+                            <span className="media-calculada">
+                              {item.media ? parseFloat(item.media).toFixed(0) : '0'}
+                            </span>
+                          </td>
+                          <td>
+                            {calibragemAplicada > 0 && item.media ? (
+                              <div className="calibragem-info">
+                                <span className="calibragem-resultado">
+                                  {valorCalibrado.toFixed(0)}
+                                </span>
+                                <small style={{color: '#666', fontSize: '0.8rem'}}>
+                                  (+{calibragemAplicada}%)
+                                </small>
+                              </div>
+                            ) : (
+                              <span className="sem-calibragem">Sem calibragem</span>
+                            )}
+                          </td>
+                          {isAdmin && (
+                            <td>
+                              <button
+                                onClick={() => editarUG(index)}
+                                className="btn btn-small btn-secondary"
+                                title="Editar UG"
+                              >
+                                ✏️ UG
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Modal UG */}
+        {modalUG.show && (
+          <div className="modal-overlay" onClick={() => setModalUG({ show: false, item: null, index: -1 })}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Editar UG</h3>
+                <button 
+                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
+                  className="btn btn-close"
+                >
+                  ✕
+                </button>
+              </div>
               
-              <div className="filter-group">
-                <label>&nbsp;</label>
-                <button onClick={limparFiltros} className="btn btn-secondary">
-                  🗑️ Limpar
+              <div className="modal-body">
+                <div className="proposta-info">
+                  <h4>{modalUG.item?.nomeCliente}</h4>
+                  <p><strong>Proposta:</strong> {modalUG.item?.numeroProposta}</p>
+                  <p><strong>UC:</strong> {modalUG.item?.numeroUC}</p>
+                  <p><strong>Média:</strong> {modalUG.item?.media}</p>
+                </div>
+
+                <div className="form-group">
+                  <label>UG Responsável</label>
+                  <select 
+                    defaultValue={modalUG.item?.ug || ''}
+                    onChange={(e) => {
+                      const novaUG = e.target.value;
+                      setModalUG(prev => ({
+                        ...prev,
+                        item: { ...prev.item, ug: novaUG }
+                      }));
+                    }}
+                  >
+                    <option value="">Selecione uma UG</option>
+                    {ugsDisponiveis.map(ug => (
+                      <option key={ug.nomeUsina} value={ug.nomeUsina}>
+                        {ug.nomeUsina}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  onClick={() => salvarUG(modalUG.item?.ug)}
+                  className="btn btn-primary"
+                >
+                  Salvar
+                </button>
+                <button 
+                  onClick={() => salvarUG('')}
+                  className="btn btn-danger"
+                >
+                  Remover UG
                 </button>
               </div>
             </div>
           </div>
-
-          {/* Ações */}
-          <div className="actions-container">
-            <button onClick={exportarDados} className="btn btn-secondary">
-              📊 Exportar CSV
-            </button>
-            <button onClick={carregarDados} className="btn btn-secondary">
-              🔄 Atualizar
-            </button>
-          </div>
-        </section>
-
-        {/* Tabela de Controle */}
-        <section className="table-section">
-          <div className="table-header">
-            <h2>⚙️ Propostas no Controle</h2>
-            <span className="table-count">{dadosFiltrados.length} propostas</span>
-          </div>
-          
-          {loading ? (
-            <div className="loading">Carregando dados de controle...</div>
-          ) : dadosFiltrados.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">⚙️</div>
-              <h3>Nenhuma proposta no controle</h3>
-              <p>As propostas fechadas aparecerão aqui automaticamente</p>
-            </div>
-          ) : (
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Proposta</th>
-                    <th>Data</th>
-                    <th>Cliente</th>
-                    <th>UC</th>
-                    <th>Consultor</th>
-                    <th>Média (kWh)</th>
-                    <th>UG Atribuída</th>
-                    {/* Mostrar calibragem apenas para admin */}
-                    {isAdmin && <th>Calibragem</th>}
-                    {/* Mostrar ações apenas para admin */}
-                    {isAdmin && <th>Ações</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {dadosFiltrados.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td>
-                        <span className="numero-proposta">{item.numeroProposta}</span>
-                      </td>
-                      <td>
-                        <span className="data">
-                          {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
-                        </span>
-                      </td>
-                      <td>
-                        <strong>{item.nomeCliente}</strong>
-                        <br />
-                        <span className="telefone">{item.celular || item.telefone}</span>
-                      </td>
-                      <td>
-                        <span className="numero-proposta">{item.numeroUC}</span>
-                        <br />
-                        <small>{item.apelido}</small>
-                      </td>
-                      <td>{item.consultor}</td>
-                      <td>
-                        <span className="valor">{(item.media || 0).toLocaleString()}</span>
-                      </td>
-                      <td>
-                        {item.ug ? (
-                          <span className="ug-badge">{item.ug}</span>
-                        ) : (
-                          <span className="sem-ug">Sem UG</span>
-                        )}
-                      </td>
-                      {/* Mostrar calibragem apenas para admin */}
-                      {isAdmin && (
-                        <td>
-                          <span className="valor">{(item.calibragem || 0).toLocaleString()}</span>
-                        </td>
-                      )}
-                      {/* Mostrar ações apenas para admin */}
-                      {isAdmin && (
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              onClick={() => editarUG(index)}
-                              className="btn-icon edit"
-                              title="Definir UG"
-                            >
-                              🏭
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        {/* Modal de UG - apenas para admin */}
-        {modalUG.show && isAdmin && (
-          <ModalUG 
-            item={modalUG.item}
-            ugs={ugsDisponiveis}
-            onSave={salvarUG}
-            onClose={() => setModalUG({ show: false, item: null, index: -1 })}
-          />
         )}
-      </div>
-    </div>
-  );
-};
-
-// Componente Modal de UG
-const ModalUG = ({ item, ugs, onSave, onClose }) => {
-  const [ugSelecionada, setUgSelecionada] = useState(item.ug || '');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(ugSelecionada);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>🏭 Definir UG</h3>
-          <button onClick={onClose} className="close-btn">❌</button>
-        </div>
-        
-        <div className="modal-body">
-          <div className="cliente-info">
-            <h4>{item.nomeCliente}</h4>
-            <p>Proposta: {item.numeroProposta}</p>
-            <p>UC: {item.numeroUC} ({item.apelido})</p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Selecionar UG</label>
-              <select
-                value={ugSelecionada}
-                onChange={(e) => setUgSelecionada(e.target.value)}
-              >
-                <option value="">Selecione uma UG...</option>
-                {ugs.map(ug => (
-                  <option key={ug.id} value={ug.nomeUsina}>
-                    {ug.nomeUsina} - {(ug.capacidade || 0).toFixed(2)} MWh
-                  </option>
-                ))}
-                <option value="">--- Remover UG ---</option>
-              </select>
-            </div>
-
-            <div className="modal-footer">
-              <button type="button" onClick={onClose} className="btn btn-secondary">
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Salvar UG
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
     </div>
   );

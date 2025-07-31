@@ -1,4 +1,4 @@
-// src/pages/ProspecPage.jsx - Com filtros por equipe e controle de ações
+// src/pages/ProspecPage.jsx - Com modal de visualização para todos os perfis
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
@@ -15,6 +15,7 @@ const ProspecPage = () => {
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
+  const [modalVisualizacao, setModalVisualizacao] = useState({ show: false, item: null });
   
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -61,7 +62,7 @@ const ProspecPage = () => {
       if (dadosComIds.length === 0) {
         showNotification('Nenhuma proposta encontrada para sua equipe.', 'info');
       } else {
-        showNotification(`${dadosComIds.length} propostas carregadas com sucesso!`, 'success');
+        showNotification(`${dadosComIds.length} propostas carregadas!`, 'success');
       }
       
     } catch (error) {
@@ -92,7 +93,8 @@ const ProspecPage = () => {
       dadosFiltrados = dadosFiltrados.filter(item =>
         item.nomeCliente?.toLowerCase().includes(busca) ||
         item.numeroProposta?.toLowerCase().includes(busca) ||
-        item.numeroUC?.toLowerCase().includes(busca)
+        item.numeroUC?.toLowerCase().includes(busca) ||
+        item.apelido?.toLowerCase().includes(busca)
       );
     }
 
@@ -116,9 +118,17 @@ const ProspecPage = () => {
   };
 
   const editarItem = (index) => {
+    if (user?.role !== 'admin') return;
+    
     const item = dadosFiltrados[index];
     if (!item) return;
     setModalEdicao({ show: true, item, index });
+  };
+
+  const visualizarItem = (index) => {
+    const item = dadosFiltrados[index];
+    if (!item) return;
+    setModalVisualizacao({ show: true, item });
   };
 
   const salvarEdicao = async (dadosAtualizados) => {
@@ -145,7 +155,14 @@ const ProspecPage = () => {
   };
 
   const removerItem = async (index) => {
-    if (!window.confirm('Tem certeza que deseja remover esta proposta?')) {
+    if (user?.role !== 'admin') return;
+
+    const item = dadosFiltrados[index];
+    const confirmacao = window.confirm(
+      `Tem certeza que deseja remover a proposta de ${item.nomeCliente} (${item.apelido || item.numeroUC})?`
+    );
+    
+    if (!confirmacao) {
       return;
     }
 
@@ -186,7 +203,7 @@ const ProspecPage = () => {
   // Obter lista única de consultores para filtro
   const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
 
-  // Verificar se é admin para mostrar ações
+  // Verificar se é admin para mostrar ações de admin
   const isAdmin = user?.role === 'admin';
 
   return (
@@ -215,8 +232,12 @@ const ProspecPage = () => {
             <span className="stat-value">{dadosFiltrados.filter(p => p.status === 'Fechado').length}</span>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Consultores</span>
-            <span className="stat-value">{consultoresUnicos.length}</span>
+            <span className="stat-label">Valor Médio</span>
+            <span className="stat-value">
+              {dadosFiltrados.length > 0 
+                ? Math.round(dadosFiltrados.reduce((acc, item) => acc + (parseFloat(item.media) || 0), 0) / dadosFiltrados.length).toLocaleString('pt-BR')
+                : '0'} kWh
+            </span>
           </div>
         </section>
 
@@ -225,10 +246,10 @@ const ProspecPage = () => {
           <div className="filters-container">
             <div className="filters-grid">
               <div className="filter-group">
-                <label>Buscar Proposta</label>
+                <label>Buscar</label>
                 <input
                   type="text"
-                  placeholder="🔍 Cliente, proposta ou UC..."
+                  placeholder="🔍 Cliente, proposta, UC..."
                   value={filtros.busca}
                   onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
@@ -240,142 +261,159 @@ const ProspecPage = () => {
                   value={filtros.consultor}
                   onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
                 >
-                  <option value="">Todos os consultores</option>
+                  <option value="">Todos</option>
                   {consultoresUnicos.map(consultor => (
                     <option key={consultor} value={consultor}>{consultor}</option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="filter-group">
                 <label>Status</label>
                 <select
                   value={filtros.status}
                   onChange={(e) => setFiltros({...filtros, status: e.target.value})}
                 >
-                  <option value="">Todos os status</option>
+                  <option value="">Todos</option>
                   <option value="Aguardando">Aguardando</option>
-                  <option value="Fechado">Fechado</option>
+                  <option value="Fechado">Fechadas</option>
                 </select>
               </div>
-              
-              <div className="filter-group">
-                <label>&nbsp;</label>
-                <button onClick={limparFiltros} className="btn btn-secondary">
-                  🗑️ Limpar
-                </button>
-              </div>
             </div>
-          </div>
 
-          {/* Ações */}
-          <div className="actions-container">
-            <button onClick={criarNovaProposta} className="btn btn-primary">
-              ➕ Nova Proposta
-            </button>
-            <button onClick={exportarDados} className="btn btn-secondary">
-              📊 Exportar CSV
-            </button>
-            <button onClick={carregarDados} className="btn btn-secondary">
-              🔄 Atualizar
-            </button>
-          </div>
-        </section>
-
-        {/* Tabela de Propostas */}
-        <section className="table-section">
-          <div className="table-header">
-            <h2>📋 Lista de Propostas</h2>
-            <span className="table-count">{dadosFiltrados.length} propostas</span>
-          </div>
-          
-          {loading ? (
-            <div className="loading">Carregando propostas...</div>
-          ) : dadosFiltrados.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <h3>Nenhuma proposta encontrada</h3>
-              <p>Crie sua primeira proposta para começar</p>
-              <button onClick={criarNovaProposta} className="btn btn-primary">
-                ➕ Criar primeira proposta
+            <div className="actions-container">
+              <button onClick={limparFiltros} className="btn btn-secondary">
+                Limpar Filtros
+              </button>
+              <button onClick={criarNovaProposta} className="btn btn-success">
+                ➕ Nova Proposta
+              </button>
+              <button onClick={exportarDados} className="btn btn-primary">
+                📊 Exportar CSV
               </button>
             </div>
-          ) : (
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Proposta</th>
-                    <th>Data</th>
-                    <th>Cliente</th>
-                    <th>UC</th>
-                    <th>Apelido</th>
-                    <th>Consultor</th>
-                    <th>Média (kWh)</th>
-                    <th>Status</th>
-                    {/* Só mostrar coluna de ações para admin */}
-                    {isAdmin && <th>Ações</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {dadosFiltrados.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td>
-                        <span className="numero-proposta">{item.numeroProposta}</span>
-                      </td>
-                      <td>
-                        <span className="data">
-                          {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
-                        </span>
-                      </td>
-                      <td>
-                        <strong>{item.nomeCliente}</strong>
-                        <br />
-                        <span className="telefone">{item.celular || item.telefone}</span>
-                      </td>
-                      <td>
-                        <span className="numero-proposta">{item.numeroUC}</span>
-                      </td>
-                      <td>{item.apelido || '-'}</td>
-                      <td>{item.consultor}</td>
-                      <td>
-                        <span className="valor">{(item.media || 0).toLocaleString()}</span>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
-                          {item.status || 'Aguardando'}
-                        </span>
-                      </td>
-                      {/* Só mostrar ações para admin */}
-                      {isAdmin && (
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              onClick={() => editarItem(index)}
-                              className="btn-icon edit"
-                              title="Editar"
-                            >
-                              ✏️
-                            </button>
-                            <button 
-                              onClick={() => removerItem(index)}
-                              className="btn-icon delete"
-                              title="Remover"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          </div>
         </section>
 
-        {/* Modal de Edição - apenas para admin */}
+        {/* Tabela */}
+        <section className="table-section">
+          <div className="table-container">
+            <div className="table-header">
+              <h2>Lista de Propostas</h2>
+              <span className="table-count">{dadosFiltrados.length} registros</span>
+            </div>
+
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Carregando propostas...</p>
+              </div>
+            ) : dadosFiltrados.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📭</div>
+                <h3>Nenhuma proposta encontrada</h3>
+                <p>Não há propostas que correspondam aos filtros aplicados.</p>
+                <button onClick={criarNovaProposta} className="btn btn-primary">
+                  ➕ Criar Nova Proposta
+                </button>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Nº Proposta</th>
+                      <th>Data</th>
+                      <th>Apelido</th>
+                      <th>UC</th>
+                      <th>Média</th>
+                      <th>Status</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dadosFiltrados.map((item, index) => (
+                      <tr key={item.id}>
+                        <td>{item.nomeCliente || '-'}</td>
+                        <td>
+                          <span className="numero-proposta">
+                            {item.numeroProposta || '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="data">
+                            {item.data ? (() => {
+                              try {
+                                const dataObj = new Date(item.data);
+                                return dataObj.toLocaleDateString('pt-BR');
+                              } catch {
+                                return item.data;
+                              }
+                            })() : '-'}
+                          </span>
+                        </td>
+                        <td>{item.apelido || '-'}</td>
+                        <td>{item.numeroUC || '-'}</td>
+                        <td>
+                          <span className="valor">
+                            {item.media ? parseFloat(item.media).toLocaleString('pt-BR') : '0'} kWh
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
+                            {item.status || 'Aguardando'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            {/* Todos os perfis podem ver detalhes */}
+                            <button
+                              onClick={() => visualizarItem(index)}
+                              className="btn-icon view"
+                              title="Visualizar detalhes"
+                            >
+                              👁️
+                            </button>
+                            {/* Só admin pode editar e remover */}
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => editarItem(index)}
+                                  className="btn-icon edit"
+                                  title="Editar"
+                                >
+                                  ✏️
+                                </button>
+                                <button 
+                                  onClick={() => removerItem(index)}
+                                  className="btn-icon delete"
+                                  title="Remover"
+                                >
+                                  🗑️
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Modal de Visualização - Para todos os perfis */}
+        {modalVisualizacao.show && (
+          <ModalVisualizacao 
+            item={modalVisualizacao.item}
+            onClose={() => setModalVisualizacao({ show: false, item: null })}
+          />
+        )}
+
+        {/* Modal de Edição - Apenas para admin */}
         {modalEdicao.show && isAdmin && (
           <ModalEdicao 
             item={modalEdicao.item}
@@ -388,7 +426,207 @@ const ProspecPage = () => {
   );
 };
 
-// Componente Modal de Edição
+// Componente Modal de Visualização - Disponível para todos os perfis
+const ModalVisualizacao = ({ item, onClose }) => {
+  const formatarPercentual = (valor) => {
+    if (!valor) return '0.0%';
+    return `${(parseFloat(valor) * 100).toFixed(1)}%`;
+  };
+
+  const formatarTelefone = (telefone) => {
+    if (!telefone) return '-';
+    // Formatação básica para telefone brasileiro
+    const nums = telefone.replace(/\D/g, '');
+    if (nums.length === 11) {
+      return `(${nums.substr(0,2)}) ${nums.substr(2,5)}-${nums.substr(7,4)}`;
+    }
+    return telefone;
+  };
+
+  const formatarData = (data) => {
+    if (!data) return '-';
+    try {
+      // Se a data vier no formato ISO (2025-07-30T03:00:00.000Z), converter
+      const dataObj = new Date(data);
+      return dataObj.toLocaleDateString('pt-BR');
+    } catch (error) {
+      return data; // Retorna o valor original se não conseguir converter
+    }
+  };
+
+  // Lista de benefícios padrão com seus textos originais
+  const beneficiosPadrao = [
+    "A Aupus Energia irá oferecer uma economia na energia elétrica, sem impostos",
+    "A Aupus Energia irá oferecer uma economia no valor referente à bandeira tarifária, sem impostos", 
+    "Isenção de taxa de adesão",
+    "Não há cobrança de taxa de cancelamento",
+    "Não há fidelidade contratual",
+    "O cliente pode cancelar a qualquer momento",
+    "Atendimento personalizado",
+    "Suporte técnico especializado",
+    "Economia imediata na primeira fatura"
+  ];
+
+  // Obter benefícios reais marcados na proposta
+  const obterBeneficiosReais = () => {
+    const beneficiosAplicaveis = [];
+    
+    // Verificar se temos benefícios salvos na proposta
+    if (item.beneficios && typeof item.beneficios === 'object') {
+      // Se os benefícios estão salvos como objeto
+      for (let i = 1; i <= 9; i++) {
+        if (item.beneficios[`beneficio${i}`]) {
+          let textoBeneficio = beneficiosPadrao[i - 1];
+          
+          // Personalizar benefícios 1 e 2 com os valores reais
+          if (i === 1 && item.descontoTarifa) {
+            const desconto = (parseFloat(item.descontoTarifa) * 100).toFixed(1);
+            textoBeneficio = `A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor da energia elétrica, sem impostos`;
+          }
+          if (i === 2 && item.descontoBandeira) {
+            const desconto = (parseFloat(item.descontoBandeira) * 100).toFixed(1);
+            textoBeneficio = `A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor referente à bandeira tarifária, sem impostos`;
+          }
+          
+          beneficiosAplicaveis.push(textoBeneficio);
+        }
+      }
+    } else {
+      // Fallback: se não tem benefícios salvos, usar baseado nos descontos
+      if (item.descontoTarifa && parseFloat(item.descontoTarifa) > 0) {
+        const desconto = (parseFloat(item.descontoTarifa) * 100).toFixed(1);
+        beneficiosAplicaveis.push(`A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor da energia elétrica, sem impostos`);
+      }
+      
+      if (item.descontoBandeira && parseFloat(item.descontoBandeira) > 0) {
+        const desconto = (parseFloat(item.descontoBandeira) * 100).toFixed(1);
+        beneficiosAplicaveis.push(`A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor referente à bandeira tarifária, sem impostos`);
+      }
+      
+      // Adicionar benefícios padrão comuns
+      beneficiosAplicaveis.push("Isenção de taxa de adesão");
+      beneficiosAplicaveis.push("Não há cobrança de taxa de cancelamento");
+      beneficiosAplicaveis.push("Não há fidelidade contratual");
+      beneficiosAplicaveis.push("O cliente pode cancelar a qualquer momento");
+    }
+
+    return beneficiosAplicaveis;
+  };
+
+  const beneficiosReais = obterBeneficiosReais();
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>👁️ Detalhes da Proposta</h3>
+          <button onClick={onClose} className="btn btn-close">✕</button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="proposta-details">
+            {/* Informações principais - REORGANIZADA */}
+            <div className="details-section">
+              <h4>📋 Informações Principais</h4>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Cliente:</label>
+                  <span>{item.nomeCliente || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Nº Proposta:</label>
+                  <span className="numero-proposta">{item.numeroProposta || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Data:</label>
+                  <span className="data">{formatarData(item.data)}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Status:</label>
+                  <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
+                    {item.status || 'Aguardando'}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>Telefone:</label>
+                  <span className="telefone">{formatarTelefone(item.telefone)}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Consultor:</label>
+                  <span>{item.consultor || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Recorrência:</label>
+                  <span>{item.recorrencia || '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Informações da UC */}
+            <div className="details-section">
+              <h4>⚡ Informações da UC</h4>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Apelido:</label>
+                  <span>{item.apelido || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Número UC:</label>
+                  <span>{item.numeroUC || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Ligação:</label>
+                  <span>{item.ligacao || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Média Consumo:</label>
+                  <span className="valor">
+                    {item.media ? parseFloat(item.media).toLocaleString('pt-BR') : '0'} kWh
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Descontos e benefícios - REORGANIZADA */}
+            <div className="details-section">
+              <h4>💰 Descontos e Benefícios</h4>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Desconto Tarifa:</label>
+                  <span className="desconto-valor">{formatarPercentual(item.descontoTarifa)}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Desconto Bandeira:</label>
+                  <span className="desconto-valor">{formatarPercentual(item.descontoBandeira)}</span>
+                </div>
+              </div>
+              
+              {/* Lista de benefícios reais */}
+              {beneficiosReais.length > 0 && (
+                <div className="beneficios-lista">
+                  <h5>📝 Benefícios Inclusos:</h5>
+                  <ul>
+                    {beneficiosReais.map((beneficio, index) => (
+                      <li key={index}>{beneficio}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button onClick={onClose} className="btn btn-secondary">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente Modal de Edição - Apenas para admin
 const ModalEdicao = ({ item, onSave, onClose }) => {
   const [dados, setDados] = useState({ ...item });
 
@@ -406,10 +644,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>✏️ Editar Proposta</h3>
-          <button onClick={handleClose} className="close-btn">❌</button>
+          <button onClick={handleClose} className="btn btn-close">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-row">
@@ -432,7 +670,85 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
               </select>
             </div>
           </div>
-          
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Apelido</label>
+              <input
+                type="text"
+                value={dados.apelido || ''}
+                onChange={(e) => setDados({...dados, apelido: e.target.value})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Número UC</label>
+              <input
+                type="text"
+                value={dados.numeroUC || ''}
+                onChange={(e) => setDados({...dados, numeroUC: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Desconto Tarifa (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={dados.descontoTarifa ? (parseFloat(dados.descontoTarifa) * 100).toFixed(1) : ''}
+                onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) / 100 || 0})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Desconto Bandeira (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={dados.descontoBandeira ? (parseFloat(dados.descontoBandeira) * 100).toFixed(1) : ''}
+                onChange={(e) => setDados({...dados, descontoBandeira: parseFloat(e.target.value) / 100 || 0})}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Ligação</label>
+              <input
+                type="text"
+                value={dados.ligacao || ''}
+                onChange={(e) => setDados({...dados, ligacao: e.target.value})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Recorrência</label>
+              <input
+                type="text"
+                value={dados.recorrencia || ''}
+                onChange={(e) => setDados({...dados, recorrencia: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Média (kWh)</label>
+              <input
+                type="number"
+                value={dados.media || ''}
+                onChange={(e) => setDados({...dados, media: parseFloat(e.target.value) || 0})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Telefone</label>
+              <input
+                type="text"
+                value={dados.telefone || ''}
+                onChange={(e) => setDados({...dados, telefone: e.target.value})}
+              />
+            </div>
+          </div>
+
           <div className="form-row">
             <div className="form-group">
               <label>Consultor</label>
@@ -442,22 +758,14 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 onChange={(e) => setDados({...dados, consultor: e.target.value})}
               />
             </div>
-            <div className="form-group">
-              <label>Média (kWh)</label>
-              <input
-                type="number"
-                value={dados.media || 0}
-                onChange={(e) => setDados({...dados, media: parseInt(e.target.value) || 0})}
-              />
-            </div>
           </div>
-          
+
           <div className="modal-footer">
-            <button type="button" onClick={handleClose} className="btn btn-secondary">
-              Cancelar
-            </button>
             <button type="submit" className="btn btn-primary">
               Salvar Alterações
+            </button>
+            <button type="button" onClick={handleClose} className="btn btn-secondary">
+              Cancelar
             </button>
           </div>
         </form>

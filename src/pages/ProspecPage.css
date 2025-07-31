@@ -632,3 +632,631 @@
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #45a049;
 }
+
+/* ADICIONAR AO FINAL DO src/pages/ProspecPage.css - ESTILOS PARA MODAL DE VISUALIZAÇÃO */
+
+/* =======================================================
+   BOTÃO DE VISUALIZAÇÃO (OLHO)
+   ======================================================= */
+
+.btn-icon.view {
+  background: #17a2b8 !important;
+  color: white !important;
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-icon.view:hover {
+  background: #138496 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+/* =======================================================
+   MODAL DE VISUALIZAÇÃO - LAYOUT GRANDE
+   ======================================================= */
+
+.modal-content-large {
+  background: white;
+  border-radius: 15px;
+  max-width: 900px;
+  width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.modal-content-large .modal-header {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 15px 15px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.modal-content-large .modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.modal-content-large .modal-body {
+  padding: 30px;
+}
+
+.modal-content-large .modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 0 0 15px 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* =======================================================
+   DETALHES DA PROPOSTA - SEÇÕES ORGANIZADAS
+   ======================================================= */
+
+.proposta-details {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.details-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid #17a2b8;
+}
+
+.details-section h4 {
+  margin: 0 0 15px 0;
+  color: #17a2b8;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-item label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-item span {
+  font-size: 1rem;
+  color: #212529;
+  font-weight: 500;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+/* =======================================================
+   ESTILOS ESPECÍFICOS PARA VALORES
+   ======================================================= */
+
+.detail-item .numero-proposta {
+  font-family: 'Courier New', monospace !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+  border-color: #2196f3 !important;
+  color: #1565c0 !important;
+}
+
+.detail-item .data {
+  font-family: 'Courier New', monospace !important;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%) !important;
+  border-color: #9c27b0 !important;
+  color: #7b1fa2 !important;
+}
+
+.detail-item .valor {
+  text-align: right !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%) !important;
+  border-color: #4caf50 !important;
+  color: #2e7d32 !important;
+}
+
+.detail-item .desconto-valor {
+  text-align: right !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+  border-color: #ff9800 !important;
+  color: #ef6c00 !important;
+  font-size: 1.1rem !important;
+}
+
+.detail-item .telefone {
+  font-family: 'Courier New', monospace !important;
+  background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%) !important;
+  border-color: #009688 !important;
+  color: #00695c !important;
+}
+
+.detail-item .status-badge {
+  justify-self: flex-start !important;
+  width: fit-content !important;
+  margin: 0 !important;
+  border: none !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* =======================================================
+   RESPONSIVIDADE PARA MODAL DE VISUALIZAÇÃO
+   ======================================================= */
+
+@media (max-width: 768px) {
+  .modal-content-large {
+    width: 95vw;
+    max-height: 90vh;
+    margin: 20px auto;
+  }
+  
+  .modal-content-large .modal-header,
+  .modal-content-large .modal-body,
+  .modal-content-large .modal-footer {
+    padding: 20px;
+  }
+  
+  .details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .details-section {
+    padding: 15px;
+  }
+  
+  .details-section h4 {
+    font-size: 1rem;
+  }
+  
+  .detail-item span {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content-large .modal-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .details-section {
+    padding: 12px;
+  }
+  
+  .detail-item label {
+    font-size: 0.8rem;
+  }
+  
+  .detail-item span {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+}
+
+/* =======================================================
+   MELHORIA NAS AÇÕES DA TABELA
+   ======================================================= */
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  min-width: 120px;
+}
+
+.btn-icon {
+  padding: 8px 10px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 0.85rem !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px;
+  height: 32px;
+}
+
+.btn-icon:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+.btn-icon.edit {
+  background: #007bff !important;
+  color: white !important;
+}
+
+.btn-icon.edit:hover {
+  background: #0056b3 !important;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3) !important;
+}
+
+.btn-icon.delete {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.btn-icon.delete:hover {
+  background: #c82333 !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
+}
+
+/* ADICIONAR AO FINAL DO src/pages/ProspecPage.css - ESTILOS PARA MODAL DE VISUALIZAÇÃO */
+
+/* =======================================================
+   BOTÃO DE VISUALIZAÇÃO (OLHO)
+   ======================================================= */
+
+.btn-icon.view {
+  background: #17a2b8 !important;
+  color: white !important;
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-icon.view:hover {
+  background: #138496 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+/* =======================================================
+   MODAL DE VISUALIZAÇÃO - LAYOUT GRANDE
+   ======================================================= */
+
+.modal-content-large {
+  background: white;
+  border-radius: 15px;
+  max-width: 900px;
+  width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.modal-content-large .modal-header {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 15px 15px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.modal-content-large .modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.modal-content-large .modal-body {
+  padding: 30px;
+}
+
+.modal-content-large .modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 0 0 15px 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* =======================================================
+   DETALHES DA PROPOSTA - SEÇÕES ORGANIZADAS
+   ======================================================= */
+
+.proposta-details {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.details-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid #17a2b8;
+}
+
+.details-section h4 {
+  margin: 0 0 15px 0;
+  color: #17a2b8;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-item label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-item span {
+  font-size: 1rem;
+  color: #212529;
+  font-weight: 500;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+/* =======================================================
+   ESTILOS ESPECÍFICOS PARA VALORES - MENOS COLORIDO
+   ======================================================= */
+
+.detail-item .numero-proposta {
+  font-family: 'Courier New', monospace !important;
+  font-weight: 600 !important;
+  background: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+  color: #495057 !important;
+}
+
+.detail-item .data {
+  font-family: 'Courier New', monospace !important;
+  background: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+  color: #495057 !important;
+}
+
+.detail-item .valor {
+  text-align: right !important;
+  font-weight: 600 !important;
+  background: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+  color: #495057 !important;
+}
+
+.detail-item .desconto-valor {
+  text-align: right !important;
+  font-weight: 700 !important;
+  background: #e8f4fd !important;
+  border-color: #b3d7f0 !important;
+  color: #0056b3 !important;
+  font-size: 1.1rem !important;
+}
+
+.detail-item .telefone {
+  font-family: 'Courier New', monospace !important;
+  background: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+  color: #495057 !important;
+}
+
+.detail-item .status-badge {
+  justify-self: flex-start !important;
+  width: fit-content !important;
+  margin: 0 !important;
+  border: none !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* =======================================================
+   LISTA DE BENEFÍCIOS
+   ======================================================= */
+
+.beneficios-lista {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.beneficios-lista h5 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.beneficios-lista ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beneficios-lista li {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #495057;
+  position: relative;
+  padding-left: 35px;
+}
+
+.beneficios-lista li:before {
+  content: "✓";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #28a745;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.beneficios-lista li:last-child {
+  margin-bottom: 0;
+}
+
+/* =======================================================
+   RESPONSIVIDADE PARA MODAL DE VISUALIZAÇÃO
+   ======================================================= */
+
+@media (max-width: 768px) {
+  .modal-content-large {
+    width: 95vw;
+    max-height: 90vh;
+    margin: 20px auto;
+  }
+  
+  .modal-content-large .modal-header,
+  .modal-content-large .modal-body,
+  .modal-content-large .modal-footer {
+    padding: 20px;
+  }
+  
+  .details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .details-section {
+    padding: 15px;
+  }
+  
+  .details-section h4 {
+    font-size: 1rem;
+  }
+  
+  .detail-item span {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content-large .modal-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .details-section {
+    padding: 12px;
+  }
+  
+  .detail-item label {
+    font-size: 0.8rem;
+  }
+  
+  .detail-item span {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+}
+
+/* =======================================================
+   MELHORIA NAS AÇÕES DA TABELA
+   ======================================================= */
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  min-width: 120px;
+}
+
+.btn-icon {
+  padding: 8px 10px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 0.85rem !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px;
+  height: 32px;
+}
+
+.btn-icon:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+.btn-icon.edit {
+  background: #007bff !important;
+  color: white !important;
+}
+
+.btn-icon.edit:hover {
+  background: #0056b3 !important;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3) !important;
+}
+
+.btn-icon.delete {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.btn-icon.delete:hover {
+  background: #c82333 !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
+}
