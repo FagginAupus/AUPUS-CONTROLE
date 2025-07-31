@@ -1,4 +1,4 @@
-/* src/pages/UGsPage.css - CORRIGIDO com modais sólidos seguindo padrão PROSPEC */
+/* src/pages/UGsPage.css - LARGURA CORRIGIDA */
 
 .page-container {
   min-height: 100vh;
@@ -7,7 +7,8 @@
 }
 
 .container {
-  max-width: 95vw;
+  max-width: 1200px;  /* ← CORRIGIDO: era 95vw */
+  width: 90%;         /* ← CORRIGIDO: largura controlada */
   margin: 0 auto;
   padding: 20px;
 }
@@ -553,6 +554,13 @@
    RESPONSIVIDADE
    ======================================================= */
 
+@media (max-width: 1300px) {
+  .container {
+    max-width: 1100px;
+    width: 88%;
+  }
+}
+
 @media (max-width: 1200px) {
   .quick-stats {
     grid-template-columns: repeat(2, 1fr);
@@ -560,6 +568,11 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 15px;
+  }
+  
   .quick-stats {
     grid-template-columns: 1fr;
     gap: 15px;
@@ -628,6 +641,7 @@
 
 @media (max-width: 480px) {
   .container {
+    width: 98%;
     padding: 10px;
   }
   
@@ -642,9 +656,5 @@
     font-size: 0.7rem;
     min-width: 28px;
     height: 28px;
-  }
-  
-  .stat-icon {
-    font-size: 2rem;
   }
 }
