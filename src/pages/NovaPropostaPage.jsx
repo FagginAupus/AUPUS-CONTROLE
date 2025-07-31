@@ -1,4 +1,4 @@
-// NovaPropostaPage.jsx - MELHORADO
+// NovaPropostaPage.jsx - CORRIGIDA com lógica de consultor baseada no role
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -11,30 +11,31 @@ import './NovaPropostaPage.css';
 
 const NovaPropostaPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, getMyTeam } = useAuth();
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [numeroProposta, setNumeroProposta] = useState('');
   const [semConsultor, setSemConsultor] = useState(false);
   const [beneficiosAdicionais, setBeneficiosAdicionais] = useState([]);
+  const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
       consultor: '',
-      recorrencia: '3%',
+      recorrencia: '0%', // Padrão 0%
       economia: 20,
       bandeira: 20,
       ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-      // Benefícios padrão (todos desmarcados inicialmente)
-      beneficio1: false,
-      beneficio2: false,
-      beneficio3: false,
-      beneficio4: false,
-      beneficio5: false,
-      beneficio6: false,
-      beneficio7: false,
-      beneficio8: false
+      // Benefícios padrão (todos marcados inicialmente)
+      beneficio1: true,
+      beneficio2: true,
+      beneficio3: true,
+      beneficio4: true,
+      beneficio5: true,
+      beneficio6: true,
+      beneficio7: true,
+      beneficio8: true
     }
   });
 
@@ -61,29 +62,84 @@ const NovaPropostaPage = () => {
     }
   };
 
+  // Carregar consultores disponíveis baseado no role do usuário
+  const carregarConsultoresDisponiveis = () => {
+    const team = getMyTeam();
+    let consultores = [];
+
+    switch (user?.role) {
+      case 'admin':
+        // Admin vê todos os consultores cadastrados + opção AUPUS
+        consultores = team.filter(member => member.role === 'consultor');
+        break;
+      
+      case 'consultor':
+        // Consultor vê ele mesmo, gerentes dele e vendedores dele
+        consultores = team.filter(member => 
+          member.role === 'consultor' || 
+          member.role === 'gerente' || 
+          member.role === 'vendedor'
+        );
+        break;
+      
+      case 'gerente':
+        // Gerente vê ele mesmo e os vendedores dele
+        consultores = team.filter(member => 
+          member.role === 'gerente' || 
+          member.role === 'vendedor'
+        );
+        break;
+      
+      case 'vendedor':
+        // Vendedor só vê ele mesmo (fixo)
+        consultores = team.filter(member => member.id === user.id);
+        break;
+      
+      default:
+        consultores = [];
+    }
+
+    setConsultoresDisponiveis(consultores);
+
+    // Se é vendedor, fixar o nome dele
+    if (user?.role === 'vendedor' && consultores.length > 0) {
+      setValue('consultor', consultores[0].name);
+    }
+  };
+
   useEffect(() => {
     gerarNumeroProposta();
+    carregarConsultoresDisponiveis();
   }, []);
 
-  // Handle sem consultor - RECORRÊNCIA AUTOMÁTICA 0%
+  // Handle sem consultor - RECORRÊNCIA AUTOMÁTICA 0% (apenas para admin)
   useEffect(() => {
-    if (watchSemConsultor) {
+    if (watchSemConsultor && user?.role === 'admin') {
       setValue('consultor', 'AUPUS');
       setValue('recorrencia', '0%'); // AUTOMÁTICO 0%
-    } else {
+    } else if (!watchSemConsultor) {
       setValue('consultor', '');
       setValue('recorrencia', '3%');
     }
-  }, [watchSemConsultor, setValue]);
+  }, [watchSemConsultor, setValue, user?.role]);
 
   const limparFormulario = () => {
     if (window.confirm('Deseja limpar todos os dados do formulário?')) {
       reset({
         dataProposta: new Date().toISOString().split('T')[0],
-        recorrencia: '3%',
+        recorrencia: '0%', // Padrão 0%
         economia: 20,
         bandeira: 20,
-        ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }]
+        ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
+        // Benefícios padrão (todos marcados)
+        beneficio1: true,
+        beneficio2: true,
+        beneficio3: true,
+        beneficio4: true,
+        beneficio5: true,
+        beneficio6: true,
+        beneficio7: true,
+        beneficio8: true
       });
       setSemConsultor(false);
       setBeneficiosAdicionais([]);
@@ -166,17 +222,64 @@ const NovaPropostaPage = () => {
   return (
     <div className="page-container">
       <div className="container">
-        <Header title="Nova Proposta" subtitle="Criar nova proposta comercial" icon="📝" />
+        <Header 
+          title="NOVA PROPOSTA" 
+          subtitle={`Proposta Nº ${numeroProposta}`} 
+          icon="📝" 
+        />
+        
         <Navigation />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="form-container">
+        <style jsx>{`
+          .form-grid-4-cols {
+            display: grid !important;
+            grid-template-columns: 200px 160px 1fr 180px !important;
+            gap: 15px !important;
+            align-items: start !important;
+            width: 100% !important;
+            margin-bottom: 20px !important;
+          }
           
+          .form-grid-4-cols .form-group {
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .form-grid-4-cols .form-group input,
+          .form-grid-4-cols .form-group select {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            min-width: 0 !important;
+          }
+          
+          .checkbox-group-inline {
+            margin-top: 8px !important;
+            position: relative !important;
+            white-space: nowrap !important;
+          }
+          
+          @media (max-width: 1000px) {
+            .form-grid-4-cols {
+              grid-template-columns: 180px 140px 1fr 160px !important;
+              gap: 12px !important;
+            }
+          }
+          
+          @media (max-width: 768px) {
+            .form-grid-4-cols {
+              grid-template-columns: 1fr !important;
+              gap: 15px !important;
+            }
+          }
+        `}</style>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="nova-proposta-form">
           {/* INFORMAÇÕES BÁSICAS - TUDO JUNTO */}
           <section className="form-section">
             <h2>📋 Informações Básicas</h2>
             
-            {/* Primeira linha */}
-            <div className="form-grid">
+            {/* Primeira linha: Número, Data, Nome, Celular - FORÇAR 4 COLUNAS */}
+            <div className="form-grid-4-cols">
               <div className="form-group">
                 <label>Número da Proposta</label>
                 <input
@@ -219,29 +322,48 @@ const NovaPropostaPage = () => {
               </div>
             </div>
 
-            {/* Segunda linha - Consultor e Configurações */}
-            <div className="form-grid">
+            {/* Segunda linha: Consultor, Recorrência, Economia Tarifa, Economia Bandeira - FORÇAR 4 COLUNAS */}
+            <div className="form-grid-4-cols">
               <div className="form-group">
                 <label>Nome do Consultor *</label>
-                <input 
-                  {...register('consultor', { required: 'Consultor é obrigatório' })} 
-                  type="text" 
-                  disabled={semConsultor}
-                  style={{ backgroundColor: semConsultor ? '#f0f0f0' : '#ffffff' }}
-                  className={errors.consultor ? 'error' : ''}
-                />
+                {user?.role === 'vendedor' ? (
+                  // Para vendedor, campo fixo
+                  <input
+                    type="text"
+                    value={user.name}
+                    disabled
+                    style={{ backgroundColor: '#f0f0f0' }}
+                  />
+                ) : (
+                  // Para outros roles, select com opções apropriadas
+                  <select
+                    {...register('consultor', { required: 'Consultor é obrigatório' })}
+                    disabled={semConsultor}
+                    style={{ backgroundColor: semConsultor ? '#f0f0f0' : '#ffffff' }}
+                    className={errors.consultor ? 'error' : ''}
+                  >
+                    <option value="">Selecione o consultor...</option>
+                    {consultoresDisponiveis.map(consultor => (
+                      <option key={consultor.id} value={consultor.name}>
+                        {consultor.name} ({consultor.role})
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {errors.consultor && <span className="error-message">{errors.consultor.message}</span>}
                 
-                {/* Checkbox abaixo do campo consultor */}
-                <div className="checkbox-group-inline" style={{ marginTop: '8px' }}>
-                  <input 
-                    type="checkbox" 
-                    id="semConsultor" 
-                    checked={semConsultor}
-                    onChange={(e) => setSemConsultor(e.target.checked)}
-                  />
-                  <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
-                </div>
+                {/* Checkbox AUPUS apenas para admin - ABAIXO do campo consultor */}
+                {user?.role === 'admin' && (
+                  <div className="checkbox-group-inline" style={{ marginTop: '8px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="semConsultor" 
+                      checked={semConsultor}
+                      onChange={(e) => setSemConsultor(e.target.checked)}
+                    />
+                    <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
+                  </div>
+                )}
               </div>
               
               <div className="form-group">
@@ -421,35 +543,37 @@ const NovaPropostaPage = () => {
             </div>
 
             {/* BENEFÍCIOS ADICIONAIS */}
-            <div className="beneficios-adicionais">
-              <h3>Benefícios Adicionais</h3>
-              
-              {beneficiosAdicionais.map((beneficio, index) => (
-                <div key={index} className="beneficio-adicional">
-                  <input
-                    type="text"
-                    value={beneficio}
-                    onChange={(e) => atualizarBeneficioAdicional(index, e.target.value)}
-                    placeholder="Digite um benefício adicional..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removerBeneficioAdicional(index)}
-                    className="btn-remove-beneficio"
-                  >
-                    ❌
-                  </button>
-                </div>
-              ))}
-              
-              <button
-                type="button"
-                onClick={adicionarBeneficioAdicional}
-                className="btn btn-secondary"
-              >
-                ➕ Adicionar Benefício
-              </button>
-            </div>
+            {beneficiosAdicionais.length > 0 && (
+              <div className="beneficios-adicionais">
+                <h3>Benefícios Adicionais</h3>
+                
+                {beneficiosAdicionais.map((beneficio, index) => (
+                  <div key={index} className="beneficio-adicional">
+                    <input
+                      type="text"
+                      value={beneficio}
+                      onChange={(e) => atualizarBeneficioAdicional(index, e.target.value)}
+                      placeholder="Digite um benefício adicional..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removerBeneficioAdicional(index)}
+                      className="btn-remove-beneficio"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <button
+              type="button"
+              onClick={adicionarBeneficioAdicional}
+              className="btn btn-secondary"
+            >
+              ➕ Adicionar Benefício
+            </button>
           </section>
 
           {/* AÇÕES */}

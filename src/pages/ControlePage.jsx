@@ -16,6 +16,7 @@ const ControlePage = () => {
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [calibragemGlobal, setCalibragemGlobal] = useState(0);
   const [calibragemAplicada, setCalibragemAplicada] = useState(0);
+  const [ugSelecionada, setUgSelecionada] = useState(''); // Estado para controlar o select
   
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -147,20 +148,40 @@ const ControlePage = () => {
   const editarUG = (index) => {
     const item = dadosFiltrados[index];
     setModalUG({ show: true, item, index });
+    setUgSelecionada(item.ug || ''); // Definir o valor inicial do select
   };
 
-  const salvarUG = async (novaUG) => {
+  const salvarUG = async (novaUG = null) => {
     try {
       const itemParaSalvar = modalUG.item;
-      const itemAtualizado = { ...itemParaSalvar, ug: novaUG || '' };
+      if (!itemParaSalvar) {
+        showNotification('Erro: Item não encontrado', 'error');
+        return;
+      }
+
+      // Use o valor do select se novaUG não for fornecida
+      const ugParaSalvar = novaUG !== null ? novaUG : ugSelecionada;
       
-      await storageService.updateItemControle(itemAtualizado);
+      // Encontrar o index real no array de dados original
+      const indexReal = dados.findIndex(d => d.id === itemParaSalvar.id);
       
+      if (indexReal === -1) {
+        showNotification('Erro: Item não encontrado no controle', 'error');
+        return;
+      }
+
+      // Atualizar usando o método correto do storageService
+      await storageService.atualizarUGControle(indexReal, ugParaSalvar);
+      
+      // Fechar modal
       setModalUG({ show: false, item: null, index: -1 });
+      setUgSelecionada('');
+      
+      // Recarregar dados
       await carregarDados();
       
       showNotification(
-        novaUG ? 'UG atribuída com sucesso!' : 'UG removida com sucesso!', 
+        ugParaSalvar ? 'UG atribuída com sucesso!' : 'UG removida com sucesso!', 
         'success'
       );
     } catch (error) {
@@ -299,28 +320,29 @@ const ControlePage = () => {
         <section className="table-section">
           <div className="table-container">
             {loading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
                 <p>Carregando dados...</p>
               </div>
             ) : dadosFiltrados.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📋</div>
-                <h3>Nenhuma proposta encontrada</h3>
-                <p>Não há propostas no controle que correspondam aos filtros aplicados.</p>
+                <span className="empty-icon">📋</span>
+                <h3>Nenhuma proposta no controle</h3>
+                <p>As propostas fechadas aparecerão aqui automaticamente.</p>
               </div>
             ) : (
-              <div className="table-wrapper">
-                <table className="table">
+              <div className="table-responsive">
+                <table>
                   <thead>
                     <tr>
-                      <th>Cliente</th>
                       <th>Proposta</th>
+                      <th>Cliente</th>
                       <th>UC</th>
                       <th>Consultor</th>
+                      <th>Distribuidora</th>
                       <th>UG</th>
                       <th>Média (kWh)</th>
-                      <th>Calibrado (kWh)</th>
+                      <th>Calibrada (kWh)</th>
                       {isAdmin && <th>Ações</th>}
                     </tr>
                   </thead>
@@ -331,26 +353,34 @@ const ControlePage = () => {
                       return (
                         <tr key={item.id || index}>
                           <td>
-                            <div className="cliente-info">
-                              <span className="nome-cliente">{item.nomeCliente}</span>
-                            </div>
+                            <span className="proposta-numero">{item.numeroProposta}</span>
                           </td>
                           <td>
-                            <span className="numero-proposta">{item.numeroProposta}</span>
+                            <strong>{item.nomeCliente}</strong>
+                            <br />
+                            <small style={{color: '#666'}}>{item.celular}</small>
                           </td>
                           <td>
-                            <span className="numero-uc">{item.numeroUC}</span>
+                            <span className="uc-numero">{item.numeroUC}</span>
+                            {item.apelido && (
+                              <>
+                                <br />
+                                <small style={{color: '#666'}}>{item.apelido}</small>
+                              </>
+                            )}
                           </td>
                           <td>
-                            <span className="consultor">{item.consultor}</span>
+                            <span className="consultor-nome">{item.consultor}</span>
                           </td>
                           <td>
-                            <div className={`ug-cell ${item.ug ? 'ug-definido' : 'ug-vazio'}`}>
-                              <span className="ug-text">
-                                {item.ug || 'Não definida'}
-                              </span>
-                              {item.ug && <span className="ug-status">✓</span>}
-                            </div>
+                            <span className="distribuidora-nome">{item.distribuidora}</span>
+                          </td>
+                          <td>
+                            {item.ug ? (
+                              <span className="ug-atribuida">{item.ug}</span>
+                            ) : (
+                              <span className="sem-ug">Sem UG</span>
+                            )}
                           </td>
                           <td>
                             <span className="media-valor">
@@ -411,20 +441,14 @@ const ControlePage = () => {
                   <h4>{modalUG.item?.nomeCliente}</h4>
                   <p><strong>Proposta:</strong> {modalUG.item?.numeroProposta}</p>
                   <p><strong>UC:</strong> {modalUG.item?.numeroUC}</p>
-                  <p><strong>Média:</strong> {modalUG.item?.media}</p>
+                  <p><strong>Média:</strong> {modalUG.item?.media} kWh</p>
                 </div>
 
                 <div className="form-group">
                   <label>UG Responsável</label>
                   <select 
-                    defaultValue={modalUG.item?.ug || ''}
-                    onChange={(e) => {
-                      const novaUG = e.target.value;
-                      setModalUG(prev => ({
-                        ...prev,
-                        item: { ...prev.item, ug: novaUG }
-                      }));
-                    }}
+                    value={ugSelecionada}
+                    onChange={(e) => setUgSelecionada(e.target.value)}
                   >
                     <option value="">Selecione uma UG</option>
                     {ugsDisponiveis.map(ug => (
@@ -438,16 +462,23 @@ const ControlePage = () => {
 
               <div className="modal-footer modal-footer-controle">
                 <button 
-                  onClick={() => salvarUG(modalUG.item?.ug)}
+                  onClick={() => salvarUG()}
                   className="btn btn-primary"
+                  disabled={!ugSelecionada}
                 >
-                  Salvar
+                  💾 Salvar UG
                 </button>
                 <button 
                   onClick={() => salvarUG('')}
                   className="btn btn-danger"
                 >
-                  Remover UG
+                  🗑️ Remover UG
+                </button>
+                <button 
+                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
+                  className="btn btn-secondary"
+                >
+                  Cancelar
                 </button>
               </div>
             </div>
