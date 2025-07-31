@@ -1,4 +1,4 @@
-/* src/pages/ProspecPage.css - CORREÇÃO ESPAÇAMENTO FILTROS */
+/* src/pages/ControlePage.css - CORRIGIDO com modal sólido seguindo padrão PROSPEC */
 
 .page-container {
   min-height: 100vh;
@@ -13,14 +13,14 @@
 }
 
 /* =======================================================
-   ESTATÍSTICAS RÁPIDAS - POSICIONAMENTO CORRETO
+   ESTATÍSTICAS RÁPIDAS
    ======================================================= */
 
 .quick-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
-  margin-bottom: 30px; /* AUMENTADO - espaço antes dos filtros */
+  margin-bottom: 30px;
 }
 
 .stat-card {
@@ -57,17 +57,15 @@
 }
 
 /* =======================================================
-   SEÇÃO DE FILTROS - ESPAÇAMENTO CORRIGIDO
+   SEÇÃO DE FILTROS
    ======================================================= */
 
 .filters-section {
   background: white;
   border-radius: 15px;
   padding: 25px;
-  margin-bottom: 35px; /* AUMENTADO - espaço suficiente antes da tabela */
+  margin-bottom: 35px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  
-  /* Garantir que não sobreponha */
   position: relative;
   z-index: 1;
 }
@@ -81,9 +79,9 @@
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px; /* AUMENTADO - melhor espaçamento entre filtros */
+  gap: 20px;
   align-items: end;
-  margin-bottom: 20px; /* ESPAÇO antes dos botões */
+  margin-bottom: 20px;
 }
 
 .filter-group {
@@ -100,272 +98,185 @@
 
 .filter-group input,
 .filter-group select {
-  padding: 12px 15px; /* AUMENTADO - padding mais generoso */
+  padding: 12px 15px;
   border: 2px solid #e1e1e1;
   border-radius: 8px;
-  font-size: 0.95rem; /* AUMENTADO - fonte ligeiramente maior */
-  transition: border-color 0.3s ease;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: white;
 }
 
 .filter-group input:focus,
 .filter-group select:focus {
   outline: none;
   border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
-.actions-container {
+.calibragem-controls {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  margin-top: 20px; /* ESPAÇO acima dos botões */
-  padding-top: 20px; /* PADDING adicional */
-  border-top: 1px solid #e1e1e1; /* Separador visual */
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  padding: 20px 0;
+  border-top: 1px solid #e1e1e1;
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
+.calibragem-group {
+  display: flex;
+  align-items: end;
+  gap: 15px;
+}
+
+.calibragem-group label {
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: #333;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
-}
-
-.btn:disabled {
-  background: #bdc3c7 !important;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
+.calibragem-group input {
+  padding: 10px 12px;
+  border: 2px solid #e1e1e1;
+  border-radius: 6px;
+  width: 120px;
+  font-size: 0.95rem;
 }
 
 /* =======================================================
-   SEÇÃO DA TABELA - POSICIONAMENTO CORRETO
+   TABELA
    ======================================================= */
 
 .table-section {
   background: white;
   border-radius: 15px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  
-  /* IMPORTANTE: Espaço suficiente do conteúdo anterior */
-  margin-top: 30px;
-  
-  /* Garantir que não sobreponha */
-  position: relative;
-  z-index: 0;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
 }
 
-.table-header {
-  background: #f8f9fa;
-  padding: 20px 25px;
-  border-bottom: 2px solid #e1e1e1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.table-header h2 {
-  margin: 0;
-  color: #333;
-  font-size: 1.3rem;
-}
-
-.table-count {
-  background: #4CAF50;
-  color: white;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-/* Loading */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #666;
-}
-
-.spinner-large {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4CAF50;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Tabela */
 .table-wrapper {
   overflow-x: auto;
   max-height: 70vh;
-  position: relative;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.table th,
+.table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e1e1e1;
 }
 
 .table th {
   background: #f8f9fa;
-  padding: 15px 12px;
-  text-align: left;
   font-weight: 600;
   color: #333;
-  border-bottom: 2px solid #e1e1e1;
   position: sticky;
   top: 0;
-  z-index: 10;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  min-width: 100px;
-}
-
-.table th:hover {
-  background: #e9ecef;
-  cursor: pointer;
-}
-
-.table td {
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.85rem;
-  vertical-align: middle;
-  min-width: 80px;
+  z-index: 2;
 }
 
 .table tr:hover {
   background: #f8f9fa;
 }
 
-.table tr:nth-child(even) {
-  background: #fbfbfb;
-}
-
-.table tr:nth-child(even):hover {
-  background: #f0f0f0;
-}
-
-/* Células especiais */
-.numero-proposta {
-  font-family: 'Courier New', monospace;
+/* Células específicas */
+.cliente-info .nome-cliente {
   font-weight: 600;
   color: #333;
 }
 
-.valor {
-  text-align: right;
+.numero-proposta,
+.numero-uc {
+  font-family: monospace;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.consultor {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.ug-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ug-text {
   font-weight: 500;
 }
 
-.data {
-  font-family: 'Courier New', monospace;
-  color: #666;
+.ug-vazio .ug-text {
+  color: #dc3545;
+  font-style: italic;
 }
 
-/* Status Badge */
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.7rem;
+.ug-definido .ug-text {
+  color: #28a745;
+}
+
+.ug-status {
+  color: #28a745;
+  font-size: 0.8rem;
+}
+
+.media-valor {
+  font-family: monospace;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #007bff;
 }
 
-.status-aguardando {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
-}
-
-.status-fechado {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #74b9ff;
-}
-
-/* Ações da Tabela */
-.table-actions {
+.calibragem-info {
   display: flex;
-  gap: 5px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.action-btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.calibragem-resultado {
+  font-family: monospace;
+  font-weight: 600;
+  color: #28a745;
 }
 
-.action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+.sem-calibragem {
+  color: #666;
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
-.action-btn.edit {
-  background: #007bff;
-  color: white;
-}
+/* =======================================================
+   ESTADOS DA PÁGINA
+   ======================================================= */
 
-.action-btn.edit:hover {
-  background: #0056b3;
-}
-
-.action-btn.view {
-  background: #6c757d;
-  color: white;
-}
-
-.action-btn.view:hover {
-  background: #545b62;
-}
-
-/* Estado vazio */
+.loading-state,
 .empty-state {
   text-align: center;
   padding: 60px 20px;
   color: #666;
+}
+
+.loading-state .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .empty-icon {
@@ -376,69 +287,267 @@
 
 .empty-state h3 {
   margin-bottom: 10px;
-  color: #333;
+  color: #495057;
 }
 
 .empty-state p {
   margin-bottom: 20px;
 }
 
-/* Responsivo */
-@media (max-width: 1200px) {
-  .container {
-    max-width: 98vw;
-    padding: 15px;
+/* =======================================================
+   BOTÕES
+   ======================================================= */
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(108,117,125,0.3);
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220,53,69,0.3);
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* =======================================================
+   MODAL - SEGUINDO PADRÃO PROSPEC COM FUNDO SÓLIDO
+   ======================================================= */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* Modal de Controle com fundo sólido */
+.modal-controle {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  max-width: 600px !important;
+  width: 90% !important;
+}
+
+/* Header do modal de Controle */
+.modal-header-controle {
+  background: #f8f9fa !important;
+  border-bottom: 2px solid #e9ecef !important;
+  padding: 20px 24px !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.modal-header-controle h3 {
+  margin: 0 !important;
+  color: #2c3e50 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+/* Body do modal de Controle */
+.modal-body-controle {
+  padding: 24px !important;
+  background: white !important;
+}
+
+.proposta-info {
+  margin-bottom: 20px !important;
+  padding: 16px !important;
+  background: #f8f9fa !important;
+  border-radius: 8px !important;
+  border-left: 4px solid #007bff !important;
+}
+
+.proposta-info h4 {
+  margin: 0 0 10px 0 !important;
+  color: #2c3e50 !important;
+  font-size: 1.1rem !important;
+}
+
+.proposta-info p {
+  margin: 5px 0 !important;
+  font-size: 0.9rem !important;
+  color: #495057 !important;
+}
+
+.proposta-info p strong {
+  color: #2c3e50 !important;
+}
+
+.modal-body-controle .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.modal-body-controle .form-group label {
+  font-weight: 500 !important;
+  color: #495057 !important;
+  font-size: 0.9rem !important;
+}
+
+.modal-body-controle .form-group select {
+  padding: 12px 15px !important;
+  border: 2px solid #e9ecef !important;
+  border-radius: 6px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+  background: white !important;
+}
+
+.modal-body-controle .form-group select:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+  outline: none !important;
+}
+
+/* Footer do modal */
+.modal-footer-controle {
+  padding: 20px 24px !important;
+  border-top: 1px solid #e9ecef !important;
+  background: #f8f9fa !important;
+  border-radius: 0 0 12px 12px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+/* Botão fechar */
+.modal-controle .btn-close {
+  background: none !important;
+  border: none !important;
+  font-size: 1.5rem !important;
+  cursor: pointer !important;
+  color: #666 !important;
+  padding: 0 !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-controle .btn-close:hover {
+  background: #e9ecef !important;
+  color: #333 !important;
+}
+
+/* Botões do modal */
+.modal-controle .btn {
+  padding: 10px 20px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.modal-controle .btn-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+  color: white !important;
+}
+
+.modal-controle .btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3, #004085) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4) !important;
+}
+
+.modal-controle .btn-danger {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.modal-controle .btn-danger:hover {
+  background: #c82333 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4) !important;
+}
+
+/* Animação do modal */
+.modal-controle {
+  animation: modalSlideIn 0.3s ease-out !important;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
   }
-  
-  .filters-grid {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =======================================================
+   RESPONSIVIDADE
+   ======================================================= */
+
+@media (max-width: 1200px) {
+  .quick-stats {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .filters-section {
-    padding: 20px 15px;
-    margin-bottom: 25px; /* Reduzido em mobile */
-  }
-  
-  .filters-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .actions-container {
-    flex-direction: column;
-  }
-  
-  .actions-container .btn {
-    width: 100%;
-  }
-  
-  .table-header {
-    padding: 15px 20px;
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
-  }
-  
-  .table-wrapper {
-    max-height: 50vh;
-    overflow-x: auto;
-  }
-  
-  .table {
-    min-width: 800px;
-  }
-  
-  .table th,
-  .table td {
-    padding: 6px 4px;
-    font-size: 0.7rem;
-    min-width: 50px;
-  }
-  
   .quick-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 15px;
   }
   
@@ -449,43 +558,72 @@
   .stat-value {
     font-size: 1.5rem;
   }
-}
-
-@media (max-width: 480px) {
-  .quick-stats {
+  
+  .filters-section {
+    padding: 20px 15px;
+  }
+  
+  .filters-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .calibragem-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .calibragem-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .calibragem-group input {
+    width: 100%;
+  }
+  
+  .table {
+    min-width: 800px;
   }
   
   .table th,
   .table td {
-    padding: 4px 3px;
-    font-size: 0.65rem;
+    padding: 8px 6px;
+    font-size: 0.8rem;
   }
   
-  .action-btn {
-    padding: 4px 6px;
+  .modal-controle {
+    width: 95% !important;
+    max-width: none !important;
+    margin: 10px !important;
+  }
+
+  .modal-header-controle,
+  .modal-body-controle,
+  .modal-footer-controle {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 6px 4px;
+    font-size: 0.75rem;
+  }
+  
+  .btn-small {
+    padding: 4px 8px;
     font-size: 0.7rem;
   }
   
-  .status-badge {
-    padding: 3px 6px;
-    font-size: 0.6rem;
+  .stat-icon {
+    font-size: 2rem;
   }
-}
-
-/* =======================================================
-   CORREÇÕES ESPECÍFICAS PARA EVITAR SOBREPOSIÇÃO
-   ======================================================= */
-
-/* Garantir que dados resumo não sobreponham filtros */
-.summary-data {
-  margin-top: 25px;
-  margin-bottom: 25px;
-  clear: both;
-}
-
-/* Seção de dados bem separada */
-.data-section {
-  clear: both;
-  margin-top: 35px !important; /* Forçar espaçamento */
 }

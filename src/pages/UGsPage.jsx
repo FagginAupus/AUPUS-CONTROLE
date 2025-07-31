@@ -1,10 +1,11 @@
-// UGsPage.jsx - FILTRO DE STATUS REMOVIDO
+// UGsPage.jsx - CORRIGIDO com modais seguindo padrão PROSPEC
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
+import './UGsPage.css';
 
 const UGsPage = () => {
   const { user } = useAuth();
@@ -16,7 +17,6 @@ const UGsPage = () => {
   
   const [filtros, setFiltros] = useState({
     busca: ''
-    // Removido: status: ''
   });
 
   const [estatisticas, setEstatisticas] = useState({
@@ -50,7 +50,6 @@ const UGsPage = () => {
       setDados(ugsComCalculos);
       setDadosFiltrados(ugsComCalculos);
       
-      // Atualizar estatísticas
       atualizarEstatisticas(ugsComCalculos);
       
       if (ugsComCalculos.length === 0) {
@@ -78,8 +77,6 @@ const UGsPage = () => {
         item.nomeUsina?.toLowerCase().includes(busca)
       );
     }
-
-    // Removido filtro de status
 
     setDadosFiltrados(dadosFiltrados);
     atualizarEstatisticas(dadosFiltrados);
@@ -250,7 +247,7 @@ const UGsPage = () => {
           </div>
         </section>
 
-        {/* Filtros e Controles - SEM FILTRO DE STATUS */}
+        {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
             <div className="filters-grid">
@@ -263,8 +260,6 @@ const UGsPage = () => {
                   onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
               </div>
-              
-              {/* FILTRO DE STATUS REMOVIDO */}
             </div>
 
             <div className="actions-container">
@@ -294,62 +289,90 @@ const UGsPage = () => {
           
           <div className="table-wrapper">
             {loading ? (
-              <div className="loading">Carregando UGs...</div>
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Carregando UGs...</p>
+              </div>
+            ) : dadosFiltrados.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🏭</div>
+                <h3>Nenhuma UG encontrada</h3>
+                <p>
+                  {dados.length === 0 
+                    ? 'Não há UGs cadastradas ainda.'
+                    : 'Nenhuma UG corresponde aos filtros aplicados.'
+                  }
+                </p>
+              </div>
             ) : (
               <table className="table">
                 <thead>
                   <tr>
                     <th>Nome da Usina</th>
-                    <th>Potência CA</th>
-                    <th>Potência CC</th>
-                    <th>Fator Capacidade</th>
-                    <th>Capacidade</th>
+                    <th>Potência CA (kW)</th>
+                    <th>Potência CC (kW)</th>
+                    <th>Fator de Capacidade</th>
+                    <th>Capacidade (MWh)</th>
                     <th>UCs Atribuídas</th>
-                    <th>Média</th>
-                    <th>Ações</th>
+                    <th>Média Total (kWh)</th>
+                    {isAdmin && <th>Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {dadosFiltrados.map((item, index) => (
                     <tr key={item.id || index}>
                       <td>
-                        <div className="ug-name">
-                          🏭 {item.nomeUsina}
+                        <div className="usina-info">
+                          <span className="nome-usina">{item.nomeUsina}</span>
                         </div>
                       </td>
-                      <td>{item.potenciaCA} kW</td>
-                      <td>{item.potenciaCC} kW</td>
-                      <td>{(item.fatorCapacidade * 100).toFixed(1)}%</td>
-                      <td>{Math.round(item.capacidade).toLocaleString('pt-BR')} MWh</td>
-                      <td>{item.ucsAtribuidas} UCs</td>
-                      <td>{item.media.toLocaleString('pt-BR')} kWh</td>
                       <td>
-                        <div className="action-buttons">
-                          {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => editarUG(index)}
-                                className="btn btn-edit"
-                                title="Editar"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => excluirUG(index)}
-                                className="btn btn-delete"
-                                title="Excluir"
-                                disabled={item.ucsAtribuidas > 0}
-                                style={{
-                                  opacity: item.ucsAtribuidas > 0 ? 0.5 : 1,
-                                  cursor: item.ucsAtribuidas > 0 ? 'not-allowed' : 'pointer'
-                                }}
-                              >
-                                🗑️
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <span className="potencia-valor">{item.potenciaCA?.toLocaleString('pt-BR') || '0'}</span>
                       </td>
+                      <td>
+                        <span className="potencia-valor">{item.potenciaCC?.toLocaleString('pt-BR') || '0'}</span>
+                      </td>
+                      <td>
+                        <span className="fator-capacidade">{((item.fatorCapacidade || 0) * 100).toFixed(1)}%</span>
+                      </td>
+                      <td>
+                        <span className="capacidade-valor">{(item.capacidade || 0).toLocaleString('pt-BR')}</span>
+                      </td>
+                      <td>
+                        <span className={`ucs-count ${item.ucsAtribuidas > 0 ? 'has-ucs' : 'no-ucs'}`}>
+                          {item.ucsAtribuidas || 0}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="media-total">
+                          {(item.mediaTotal || 0).toLocaleString('pt-BR')}
+                        </span>
+                      </td>
+                      {isAdmin && (
+                        <td>
+                          <div className="action-buttons">
+                            <button
+                              onClick={() => editarUG(index)}
+                              className="action-btn edit"
+                              title="Editar UG"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => excluirUG(index)}
+                              className="action-btn delete"
+                              title="Excluir UG"
+                              disabled={item.ucsAtribuidas > 0}
+                              style={{
+                                opacity: item.ucsAtribuidas > 0 ? 0.5 : 1,
+                                cursor: item.ucsAtribuidas > 0 ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -378,7 +401,7 @@ const UGsPage = () => {
   );
 };
 
-// Modal Nova UG - COM FUNDO SÓLIDO
+// Modal Nova UG - COM FUNDO SÓLIDO seguindo padrão PROSPEC
 const ModalNovaUG = ({ onSave, onClose }) => {
   const [dados, setDados] = useState({
     nomeUsina: '',
@@ -414,7 +437,7 @@ const ModalNovaUG = ({ onSave, onClose }) => {
             </div>
 
             <div className="form-group">
-              <label>Potência CA *</label>
+              <label>Potência CA (kW) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -422,12 +445,12 @@ const ModalNovaUG = ({ onSave, onClose }) => {
                 value={dados.potenciaCA}
                 onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
                 required
-                placeholder="0.00"
+                placeholder="Ex: 5000"
               />
             </div>
 
             <div className="form-group">
-              <label>Potência CC *</label>
+              <label>Potência CC (kW) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -435,22 +458,27 @@ const ModalNovaUG = ({ onSave, onClose }) => {
                 value={dados.potenciaCC}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
                 required
-                placeholder="0.00"
+                placeholder="Ex: 6000"
               />
             </div>
 
             <div className="form-group">
-              <label>Fator de Capacidade *</label>
+              <label>Fator de Capacidade</label>
               <input
                 type="number"
-                step="0.001"
+                step="0.01"
                 min="0"
                 max="1"
                 value={dados.fatorCapacidade}
-                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
-                required
-                placeholder="0.250"
+                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0.25})}
+                placeholder="Ex: 0.25"
               />
+            </div>
+          </div>
+
+          <div className="info-ug">
+            <div className="info-item">
+              <strong>Capacidade estimada:</strong> {(720 * dados.potenciaCC * (dados.fatorCapacidade / 100)).toFixed(0)} MWh/ano
             </div>
           </div>
 
@@ -468,7 +496,7 @@ const ModalNovaUG = ({ onSave, onClose }) => {
   );
 };
 
-// Modal Edição UG - COM FUNDO SÓLIDO
+// Modal Edição UG - COM FUNDO SÓLIDO seguindo padrão PROSPEC
 const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   const [dados, setDados] = useState({
     nomeUsina: item?.nomeUsina || '',
@@ -503,7 +531,7 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label>Potência CA *</label>
+              <label>Potência CA (kW) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -515,7 +543,7 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label>Potência CC *</label>
+              <label>Potência CC (kW) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -527,25 +555,24 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label>Fator de Capacidade *</label>
+              <label>Fator de Capacidade</label>
               <input
                 type="number"
-                step="0.001"
+                step="0.01"
                 min="0"
                 max="1"
                 value={dados.fatorCapacidade}
-                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0})}
-                required
+                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0.25})}
               />
             </div>
           </div>
 
           <div className="info-ug">
             <div className="info-item">
-              <strong>UCs Atribuídas:</strong> {item?.ucsAtribuidas || 0}
+              <strong>Capacidade estimada:</strong> {(720 * dados.potenciaCC * (dados.fatorCapacidade / 100)).toFixed(0)} MWh/ano
             </div>
             <div className="info-item">
-              <strong>Capacidade Calculada:</strong> {(720 * dados.potenciaCC * dados.fatorCapacidade).toFixed(2)} MWh
+              <strong>UCs atribuídas:</strong> {item?.ucsAtribuidas || 0}
             </div>
           </div>
 
