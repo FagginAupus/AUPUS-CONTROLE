@@ -1,4 +1,4 @@
-// src/pages/UGsPage.jsx - Com cálculo de calibragem corrigido
+// UGsPage.jsx - FILTRO DE STATUS REMOVIDO
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -11,20 +11,16 @@ const UGsPage = () => {
   const [dados, setDados] = useState([]);
   const [dadosFiltrados, setDadosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [calibragemGlobal, setCalibragemGlobal] = useState(0);
-  const [calibragemAplicada, setCalibragemAplicada] = useState(0); // Valor realmente aplicado
   const [modalNovaUG, setModalNovaUG] = useState({ show: false });
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   
   const [filtros, setFiltros] = useState({
-    busca: '',
-    status: ''
+    busca: ''
+    // Removido: status: ''
   });
 
   const [estatisticas, setEstatisticas] = useState({
     total: 0,
-    calibradas: 0,
-    naoCalibradas: 0,
     capacidadeTotal: 0
   });
 
@@ -39,10 +35,7 @@ const UGsPage = () => {
       
       // Calcular médias e UCs por UG
       const ugsComCalculos = ugs.map(ug => {
-        // Encontrar UCs desta UG
         const ucsDestaUG = controle.filter(uc => uc.ug === ug.nomeUsina);
-        
-        // Calcular média das UCs desta UG
         const mediaTotal = ucsDestaUG.reduce((soma, uc) => soma + (parseFloat(uc.media) || 0), 0);
         const mediaUG = ucsDestaUG.length > 0 ? Math.round(mediaTotal / ucsDestaUG.length) : 0;
         
@@ -50,17 +43,12 @@ const UGsPage = () => {
           ...ug,
           media: mediaUG,
           ucsAtribuidas: ucsDestaUG.length,
-          mediaTotal: Math.round(mediaTotal) // Para cálculo de calibragem
+          mediaTotal: Math.round(mediaTotal)
         };
       });
       
       setDados(ugsComCalculos);
       setDadosFiltrados(ugsComCalculos);
-      
-      // Carregar calibragem global
-      const calibragem = storageService.getCalibragemGlobal();
-      setCalibragemGlobal(calibragem);
-      setCalibragemAplicada(calibragem); // Também definir como aplicada
       
       // Atualizar estatísticas
       atualizarEstatisticas(ugsComCalculos);
@@ -91,13 +79,7 @@ const UGsPage = () => {
       );
     }
 
-    if (filtros.status) {
-      if (filtros.status === 'calibradas') {
-        dadosFiltrados = dadosFiltrados.filter(item => item.calibrado);
-      } else if (filtros.status === 'nao-calibradas') {
-        dadosFiltrados = dadosFiltrados.filter(item => !item.calibrado);
-      }
-    }
+    // Removido filtro de status
 
     setDadosFiltrados(dadosFiltrados);
     atualizarEstatisticas(dadosFiltrados);
@@ -105,14 +87,10 @@ const UGsPage = () => {
 
   const atualizarEstatisticas = (dadosFiltrados) => {
     const total = dadosFiltrados.length;
-    const calibradas = dadosFiltrados.filter(item => item.calibrado).length;
-    const naoCalibradas = total - calibradas;
     const capacidadeTotal = dadosFiltrados.reduce((soma, item) => soma + (parseFloat(item.capacidade) || 0), 0);
 
     setEstatisticas({
       total,
-      calibradas,
-      naoCalibradas,
       capacidadeTotal: Math.round(capacidadeTotal)
     });
   };
@@ -127,8 +105,7 @@ const UGsPage = () => {
 
   const limparFiltros = () => {
     setFiltros({
-      busca: '',
-      status: ''
+      busca: ''
     });
   };
 
@@ -150,9 +127,7 @@ const UGsPage = () => {
         ...dadosUG,
         capacidade,
         media: 0,
-        calibragem: 0,
         ucsAtribuidas: 0,
-        calibrado: false,
         dataCadastro: new Date().toISOString(),
         id: Date.now().toString()
       };
@@ -161,7 +136,7 @@ const UGsPage = () => {
       await carregarDados();
       
       setModalNovaUG({ show: false });
-      showNotification(`UG "${dadosUG.nomeUsina}" criada com sucesso!`, 'success');
+      showNotification('UG criada com sucesso!', 'success');
       
     } catch (error) {
       console.error('❌ Erro ao criar UG:', error);
@@ -170,6 +145,8 @@ const UGsPage = () => {
   };
 
   const editarUG = (index) => {
+    if (user?.role !== 'admin') return;
+    
     const item = dadosFiltrados[index];
     if (!item) return;
     setModalEdicao({ show: true, item, index });
@@ -186,13 +163,13 @@ const UGsPage = () => {
         return;
       }
 
-      if (dadosAtualizados.potenciaCC || dadosAtualizados.fatorCapacidade) {
-        const potenciaCC = dadosAtualizados.potenciaCC || item.potenciaCC;
-        const fatorCapacidade = dadosAtualizados.fatorCapacidade || item.fatorCapacidade;
-        dadosAtualizados.capacidade = 720 * potenciaCC * (fatorCapacidade / 100);
-      }
+      const capacidade = 720 * dadosAtualizados.potenciaCC * (dadosAtualizados.fatorCapacidade / 100);
+      const ugAtualizada = {
+        ...dadosAtualizados,
+        capacidade
+      };
 
-      await storageService.atualizarUG(indexReal, dadosAtualizados);
+      await storageService.atualizarUG(indexReal, ugAtualizada);
       await carregarDados();
       
       setModalEdicao({ show: false, item: null, index: -1 });
@@ -204,26 +181,25 @@ const UGsPage = () => {
     }
   };
 
-  const removerUG = async (index) => {
-    const item = dadosFiltrados[index];
+  const excluirUG = async (index) => {
+    if (user?.role !== 'admin') return;
     
-    if ((item.ucsAtribuidas || 0) > 0) {
+    const item = dadosFiltrados[index];
+    if (!item) return;
+
+    // Verificar se tem UCs atribuídas ANTES de mostrar o popup
+    if (item.ucsAtribuidas > 0) {
       showNotification(
-        `Não é possível excluir a UG "${item.nomeUsina}" pois ela possui ${item.ucsAtribuidas} UC(s) atribuída(s).`,
+        `Não é possível excluir a UG "${item.nomeUsina}" pois ela possui ${item.ucsAtribuidas} UC(s) atribuída(s). Remova as UCs primeiro.`,
         'warning'
       );
       return;
     }
 
-    const confirmacao = window.confirm(
-      `Tem certeza que deseja excluir a UG "${item.nomeUsina}"?\n\nEsta ação não pode ser desfeita.`
-    );
-    
-    if (!confirmacao) return;
+    if (!window.confirm(`Deseja realmente excluir a UG "${item.nomeUsina}"?`)) return;
 
     try {
       const indexReal = dados.findIndex(ug => ug.id === item.id);
-      
       if (indexReal === -1) {
         showNotification('UG não encontrada para exclusão', 'error');
         return;
@@ -231,64 +207,24 @@ const UGsPage = () => {
 
       await storageService.removerUG(indexReal);
       await carregarDados();
-      
-      showNotification(`UG "${item.nomeUsina}" removida com sucesso!`, 'success');
+      showNotification('UG excluída com sucesso!', 'success');
       
     } catch (error) {
-      console.error('❌ Erro ao remover UG:', error);
-      showNotification('Erro ao remover UG: ' + error.message, 'error');
+      console.error('❌ Erro ao excluir:', error);
+      showNotification('Erro ao excluir: ' + error.message, 'error');
     }
   };
 
-  const exportarDados = async () => {
+  const exportarCSV = async () => {
     try {
       await storageService.exportarParaCSV('ugs');
-      showNotification('Dados de UGs exportados com sucesso!', 'success');
+      showNotification('Dados exportados com sucesso!', 'success');
     } catch (error) {
       console.error('❌ Erro ao exportar:', error);
       showNotification('Erro ao exportar: ' + error.message, 'error');
     }
   };
 
-  // Função para calcular valor calibrado baseado na média total da UG
-  const calcularValorCalibrado = (mediaTotal, calibragem) => {
-    if (!mediaTotal || mediaTotal === 0) return 0;
-    if (!calibragem || calibragem === 0) return mediaTotal;
-    
-    const multiplicador = 1 + (calibragem / 100);
-    return Math.round(mediaTotal * multiplicador);
-  };
-
-  // Função para aplicar calibragem (só para admin)
-  const aplicarCalibragemGlobal = async () => {
-    if (user?.role !== 'admin') return;
-    
-    if (calibragemGlobal === 0) {
-      showNotification('Digite um valor de calibragem diferente de zero', 'warning');
-      return;
-    }
-
-    try {
-      // Salvar a calibragem
-      storageService.setCalibragemGlobal(calibragemGlobal);
-      
-      // Aplicar calibragem global
-      await storageService.aplicarCalibragemGlobal(calibragemGlobal);
-      
-      // Atualizar o valor aplicado para refletir na tabela
-      setCalibragemAplicada(calibragemGlobal);
-      
-      await carregarDados();
-      
-      showNotification(`Calibragem de ${calibragemGlobal}% aplicada em todas as UGs!`, 'success');
-      
-    } catch (error) {
-      console.error('❌ Erro na calibragem global:', error);
-      showNotification('Erro na calibragem: ' + error.message, 'error');
-    }
-  };
-
-  // Verificar se é admin
   const isAdmin = user?.role === 'admin';
 
   return (
@@ -309,20 +245,12 @@ const UGsPage = () => {
             <span className="stat-value">{estatisticas.total}</span>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Calibradas</span>
-            <span className="stat-value">{estatisticas.calibradas}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Não Calibradas</span>
-            <span className="stat-value">{estatisticas.naoCalibradas}</span>
-          </div>
-          <div className="stat-card">
             <span className="stat-label">Capacidade Total</span>
             <span className="stat-value">{estatisticas.capacidadeTotal.toLocaleString('pt-BR')} MWh</span>
           </div>
         </section>
 
-        {/* Filtros e Controles */}
+        {/* Filtros e Controles - SEM FILTRO DE STATUS */}
         <section className="filters-section">
           <div className="filters-container">
             <div className="filters-grid">
@@ -336,206 +264,113 @@ const UGsPage = () => {
                 />
               </div>
               
-              <div className="filter-group">
-                <label>Status</label>
-                <select
-                  value={filtros.status}
-                  onChange={(e) => setFiltros({...filtros, status: e.target.value})}
-                >
-                  <option value="">Todos</option>
-                  <option value="calibradas">Calibradas</option>
-                  <option value="nao-calibradas">Não Calibradas</option>
-                </select>
-              </div>
+              {/* FILTRO DE STATUS REMOVIDO */}
             </div>
 
             <div className="actions-container">
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
+              <button onClick={exportarCSV} className="btn btn-secondary">
+                📊 Exportar CSV
+              </button>
               {isAdmin && (
                 <button 
                   onClick={() => setModalNovaUG({ show: true })} 
-                  className="btn btn-success"
+                  className="btn btn-primary"
                 >
                   ➕ Nova UG
                 </button>
               )}
-              <button onClick={exportarDados} className="btn btn-primary">
-                📊 Exportar CSV
-              </button>
             </div>
           </div>
         </section>
 
         {/* Tabela */}
-        <section className="table-section">
-          <div className="table-container">
-            <div className="table-header">
-              <h2>Unidades Geradoras</h2>
-              <div className="table-header-right">
-                <span className="table-count">{dadosFiltrados.length} registros</span>
-                {isAdmin && (
-                  <div className="calibragem-controls-compact">
-                    <input
-                      id="calibragemGlobalUGs"
-                      type="number"
-                      value={calibragemGlobal}
-                      onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
-                      min="0"
-                      max="200"
-                      step="0.1"
-                      placeholder="0"
-                      className="calibragem-input-compact"
-                      title="Percentual de calibragem"
-                    />
-                    <span className="calibragem-percent-compact">%</span>
-                    <button 
-                      onClick={aplicarCalibragemGlobal}
-                      className="calibragem-apply-compact"
-                      disabled={calibragemGlobal === 0}
-                      title="Aplicar calibragem"
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
+        <section className="data-section">
+          <div className="table-header">
+            <h2>📋 Lista de UGs ({dadosFiltrados.length})</h2>
+          </div>
+          
+          <div className="table-wrapper">
             {loading ? (
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Carregando UGs...</p>
-              </div>
-            ) : dadosFiltrados.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">🏭</div>
-                <h3>Nenhuma UG encontrada</h3>
-                <p>Não há unidades geradoras que correspondam aos filtros aplicados.</p>
-                {isAdmin && (
-                  <button 
-                    onClick={() => setModalNovaUG({ show: true })} 
-                    className="btn btn-primary"
-                  >
-                    ➕ Cadastrar Primeira UG
-                  </button>
-                )}
-              </div>
+              <div className="loading">Carregando UGs...</div>
             ) : (
-              <div className="table-wrapper">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Nome da Usina</th>
-                      <th>Potência CA (MW)</th>
-                      <th>Potência CC (MW)</th>
-                      <th>Fator Capacidade</th>
-                      <th>Capacidade (MWh)</th>
-                      <th>UCs Atribuídas</th>
-                      <th>Média (kWh)</th>
-                      <th>Calibragem (kWh)</th>
-                      {isAdmin && <th>Ações</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dadosFiltrados.map((item, index) => {
-                      const valorCalibrado = calcularValorCalibrado(item.mediaTotal || 0, calibragemAplicada);
-                      
-                      return (
-                        <tr key={item.id}>
-                          <td>
-                            <strong>{item.nomeUsina}</strong>
-                          </td>
-                          <td className="text-right">
-                            {parseFloat(item.potenciaCA || 0).toFixed(2)} MW
-                          </td>
-                          <td className="text-right">
-                            {parseFloat(item.potenciaCC || 0).toFixed(2)} MW
-                          </td>
-                          <td className="text-right">
-                            {parseFloat(item.fatorCapacidade || 0).toFixed(3)}
-                          </td>
-                          <td className="text-right">
-                            {parseFloat(item.capacidade || 0).toFixed(2)} MWh
-                          </td>
-                          <td className="text-center">
-                            {item.ucsAtribuidas > 0 ? (
-                              <span className="ucs-atribuidas">
-                                {item.ucsAtribuidas}
-                              </span>
-                            ) : (
-                              <span style={{color: '#999'}}>0</span>
-                            )}
-                          </td>
-                          <td className="text-right">
-                            {item.mediaTotal > 0 ? (
-                              <span className="media-calculada">
-                                {Math.round(item.mediaTotal).toLocaleString('pt-BR')} kWh
-                              </span>
-                            ) : (
-                              <span style={{color: '#999'}}>0 kWh</span>
-                            )}
-                          </td>
-                          <td className="text-right">
-                            {calibragemAplicada > 0 && item.mediaTotal > 0 ? (
-                              <div className="calibragem-info">
-                                <span className="calibragem-calculada">
-                                  {valorCalibrado.toLocaleString('pt-BR')} kWh
-                                </span>
-                                <small style={{color: '#666', fontSize: '0.75rem'}}>
-                                  (+{calibragemAplicada}%)
-                                </small>
-                              </div>
-                            ) : (
-                              <span className="sem-calibragem">Sem calibragem</span>
-                            )}
-                          </td>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Nome da Usina</th>
+                    <th>Potência CA</th>
+                    <th>Potência CC</th>
+                    <th>Fator Capacidade</th>
+                    <th>Capacidade</th>
+                    <th>UCs Atribuídas</th>
+                    <th>Média</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dadosFiltrados.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td>
+                        <div className="ug-name">
+                          🏭 {item.nomeUsina}
+                        </div>
+                      </td>
+                      <td>{item.potenciaCA} kW</td>
+                      <td>{item.potenciaCC} kW</td>
+                      <td>{(item.fatorCapacidade * 100).toFixed(1)}%</td>
+                      <td>{Math.round(item.capacidade).toLocaleString('pt-BR')} MWh</td>
+                      <td>{item.ucsAtribuidas} UCs</td>
+                      <td>{item.media.toLocaleString('pt-BR')} kWh</td>
+                      <td>
+                        <div className="action-buttons">
                           {isAdmin && (
-                            <td>
-                              <div className="table-actions">
-                                <button
-                                  onClick={() => editarUG(index)}
-                                  className="btn btn-small btn-secondary"
-                                  title="Editar UG"
-                                >
-                                  ✏️
-                                </button>
-                                <button
-                                  onClick={() => removerUG(index)}
-                                  className="btn btn-small btn-danger"
-                                  title="Excluir UG"
-                                  disabled={item.ucsAtribuidas > 0}
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            </td>
+                            <>
+                              <button
+                                onClick={() => editarUG(index)}
+                                className="btn btn-edit"
+                                title="Editar"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => excluirUG(index)}
+                                className="btn btn-delete"
+                                title="Excluir"
+                                disabled={item.ucsAtribuidas > 0}
+                                style={{
+                                  opacity: item.ucsAtribuidas > 0 ? 0.5 : 1,
+                                  cursor: item.ucsAtribuidas > 0 ? 'not-allowed' : 'pointer'
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </>
                           )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </section>
 
-        {/* Modal Nova UG */}
-        {modalNovaUG.show && (
+        {/* Modais */}
+        {modalNovaUG.show && isAdmin && (
           <ModalNovaUG 
-            onClose={() => setModalNovaUG({ show: false })}
             onSave={criarNovaUG}
+            onClose={() => setModalNovaUG({ show: false })}
           />
         )}
 
-        {/* Modal Edição */}
-        {modalEdicao.show && (
+        {modalEdicao.show && isAdmin && (
           <ModalEdicaoUG 
             item={modalEdicao.item}
-            onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
             onSave={salvarEdicaoUG}
+            onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
           />
         )}
       </div>
@@ -543,8 +378,8 @@ const UGsPage = () => {
   );
 };
 
-// Modal Nova UG
-const ModalNovaUG = ({ onClose, onSave }) => {
+// Modal Nova UG - COM FUNDO SÓLIDO
+const ModalNovaUG = ({ onSave, onClose }) => {
   const [dados, setDados] = useState({
     nomeUsina: '',
     potenciaCA: 0,
@@ -559,13 +394,13 @@ const ModalNovaUG = ({ onClose, onSave }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Nova Unidade Geradora</h3>
+      <div className="modal-content modal-ug" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header modal-header-ug">
+          <h3>🏭 Nova UG</h3>
           <button onClick={onClose} className="btn btn-close">✕</button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body">
+        <form onSubmit={handleSubmit} className="modal-body modal-body-ug">
           <div className="form-grid">
             <div className="form-group">
               <label>Nome da Usina *</label>
@@ -574,26 +409,29 @@ const ModalNovaUG = ({ onClose, onSave }) => {
                 value={dados.nomeUsina}
                 onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
                 required
-                placeholder="Ex: UG Solar Norte"
+                placeholder="Ex: Usina Solar ABC"
               />
             </div>
 
             <div className="form-group">
-              <label>Potência CA (MW)</label>
+              <label>Potência CA *</label>
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={dados.potenciaCA}
                 onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                required
                 placeholder="0.00"
               />
             </div>
 
             <div className="form-group">
-              <label>Potência CC (MW) *</label>
+              <label>Potência CC *</label>
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={dados.potenciaCC}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
                 required
@@ -630,7 +468,7 @@ const ModalNovaUG = ({ onClose, onSave }) => {
   );
 };
 
-// Modal Edição UG
+// Modal Edição UG - COM FUNDO SÓLIDO
 const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   const [dados, setDados] = useState({
     nomeUsina: item?.nomeUsina || '',
@@ -646,13 +484,13 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Editar UG</h3>
+      <div className="modal-content modal-ug" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header modal-header-ug">
+          <h3>✏️ Editar UG</h3>
           <button onClick={onClose} className="btn btn-close">✕</button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body">
+        <form onSubmit={handleSubmit} className="modal-body modal-body-ug">
           <div className="form-grid">
             <div className="form-group">
               <label>Nome da Usina *</label>
@@ -665,20 +503,23 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label>Potência CA (MW)</label>
+              <label>Potência CA *</label>
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={dados.potenciaCA}
                 onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                required
               />
             </div>
 
             <div className="form-group">
-              <label>Potência CC (MW) *</label>
+              <label>Potência CC *</label>
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={dados.potenciaCC}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
                 required
@@ -699,9 +540,13 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
             </div>
           </div>
 
-          <div className="info-section">
-            <p><strong>UCs Atribuídas:</strong> {item?.ucsAtribuidas || 0}</p>
-            <p><strong>Capacidade Calculada:</strong> {(720 * dados.potenciaCC * (dados.fatorCapacidade / 100)).toFixed(2)} MWh</p>
+          <div className="info-ug">
+            <div className="info-item">
+              <strong>UCs Atribuídas:</strong> {item?.ucsAtribuidas || 0}
+            </div>
+            <div className="info-item">
+              <strong>Capacidade Calculada:</strong> {(720 * dados.potenciaCC * dados.fatorCapacidade).toFixed(2)} MWh
+            </div>
           </div>
 
           <div className="modal-footer">

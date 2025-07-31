@@ -1,4 +1,4 @@
-/* src/components/common/Navigation.css - Estilos da navegação com user info */
+/* src/components/common/Navigation.css - Ajustado para Nova Proposta */
 
 .navigation {
   margin-bottom: 30px;
@@ -19,22 +19,22 @@
 
 .nav-menu {
   display: flex;
-  gap: 5px;
+  gap: 3px; /* Reduzido de 5px para 3px para acomodar mais itens */
   flex-wrap: wrap;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 6px; /* Reduzido de 8px para 6px */
+  padding: 10px 16px; /* Reduzido de 12px 20px para 10px 16px */
   background: transparent;
   border: 2px solid transparent;
   border-radius: 12px;
   color: #2c3e50;
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Reduzido de 0.9rem para 0.85rem */
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
@@ -54,12 +54,12 @@
 }
 
 .nav-icon {
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* Reduzido de 1.2rem para 1.1rem */
 }
 
 .nav-label {
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px; /* Reduzido de 0.5px para 0.3px */
 }
 
 /* =======================================================
@@ -107,8 +107,23 @@
 }
 
 /* =======================================================
-   RESPONSIVIDADE
+   RESPONSIVIDADE - AJUSTADA PARA MAIS ITENS
    ======================================================= */
+
+@media (max-width: 1400px) {
+  .nav-item {
+    padding: 10px 14px; /* Ainda mais compacto */
+    font-size: 0.8rem;
+  }
+  
+  .nav-icon {
+    font-size: 1rem;
+  }
+  
+  .nav-menu {
+    gap: 2px;
+  }
+}
 
 @media (max-width: 1200px) {
   .nav-container {
@@ -129,6 +144,12 @@
   .nav-menu {
     justify-content: center;
     width: 100%;
+    gap: 5px; /* Mais espaço em layouts empilhados */
+  }
+  
+  .nav-item {
+    padding: 10px 16px;
+    font-size: 0.85rem;
   }
 }
 
@@ -138,20 +159,38 @@
   }
 
   .nav-menu {
-    gap: 8px;
+    gap: 4px;
+    overflow-x: auto; /* Permite scroll horizontal se necessário */
+    padding-bottom: 5px;
+  }
+  
+  /* Scroll horizontal personalizado */
+  .nav-menu::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .nav-menu::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+  
+  .nav-menu::-webkit-scrollbar-thumb {
+    background: #4CAF50;
+    border-radius: 2px;
   }
 
   .nav-item {
-    padding: 10px 16px;
-    font-size: 0.85rem;
+    padding: 8px 12px; /* Mais compacto em mobile */
+    font-size: 0.8rem;
+    min-width: max-content; /* Evita quebra de linha */
   }
 
   .nav-label {
-    display: none;
+    display: none; /* Esconde texto em telas muito pequenas */
   }
 
   .nav-icon {
-    font-size: 1.4rem;
+    font-size: 1.3rem; /* Ícone maior quando só o ícone aparece */
   }
 
   .user-details {
@@ -178,14 +217,14 @@
   }
 
   .nav-menu {
-    gap: 5px;
+    gap: 3px;
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start; /* Alinha à esquerda para permitir scroll */
   }
 
   .nav-item {
-    padding: 8px 12px;
-    flex: 1;
+    padding: 8px 10px;
+    flex: 0 0 auto; /* Não permite que encolham */
     justify-content: center;
   }
 
@@ -250,4 +289,42 @@
   content: "⏳";
   font-size: 1.5rem;
   margin-right: 10px;
+}
+
+/* =======================================================
+   MELHORIAS PARA NOVA PROPOSTA
+   ======================================================= */
+
+/* Destaque especial para Nova Proposta quando ativa */
+.nav-item[data-id="nova-proposta"].active {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.nav-item[data-id="nova-proposta"]:hover:not(.active) {
+  background: rgba(0, 123, 255, 0.1);
+  border-color: rgba(0, 123, 255, 0.2);
+}
+
+/* Tooltips para mobile quando só mostra ícones */
+@media (max-width: 768px) {
+  .nav-item {
+    position: relative;
+  }
+  
+  .nav-item:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0.9;
+  }
 }

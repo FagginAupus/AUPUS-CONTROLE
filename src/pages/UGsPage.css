@@ -602,3 +602,221 @@
     font-size: 2rem;
   }
 }
+
+/* =======================================================
+   ESTILOS PARA MODAIS DE UG - ADICIONAR AO UGsPage.css
+   ======================================================= */
+
+/* Modal de UG com fundo sólido */
+.modal-ug {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  max-width: 600px !important;
+  width: 90% !important;
+}
+
+/* Header do modal de UG */
+.modal-header-ug {
+  background: #f8f9fa !important;
+  border-bottom: 2px solid #e9ecef !important;
+  padding: 20px 24px !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.modal-header-ug h3 {
+  margin: 0 !important;
+  color: #2c3e50 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+/* Body do modal de UG */
+.modal-body-ug {
+  padding: 24px !important;
+  background: white !important;
+}
+
+.modal-body-ug .form-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px !important;
+}
+
+.modal-body-ug .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.modal-body-ug .form-group label {
+  font-weight: 500 !important;
+  color: #495057 !important;
+  font-size: 0.9rem !important;
+}
+
+.modal-body-ug .form-group input {
+  padding: 10px 12px !important;
+  border: 2px solid #e9ecef !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+  background: white !important;
+}
+
+.modal-body-ug .form-group input:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+  outline: none !important;
+}
+
+.modal-body-ug .form-group input:required:invalid {
+  border-color: #dc3545 !important;
+}
+
+.modal-body-ug .form-group input:required:valid {
+  border-color: #28a745 !important;
+}
+
+/* Informações da UG */
+.info-ug {
+  margin: 20px 0 !important;
+  padding: 16px !important;
+  background: #f8f9fa !important;
+  border-radius: 8px !important;
+  border-left: 4px solid #007bff !important;
+}
+
+.info-item {
+  margin-bottom: 8px !important;
+  font-size: 0.9rem !important;
+  color: #495057 !important;
+}
+
+.info-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.info-item strong {
+  color: #2c3e50 !important;
+}
+
+/* Footer do modal */
+.modal-ug .modal-footer {
+  padding: 20px 24px !important;
+  border-top: 1px solid #e9ecef !important;
+  background: #f8f9fa !important;
+  border-radius: 0 0 12px 12px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+/* Botão fechar */
+.modal-ug .btn-close {
+  background: none !important;
+  border: none !important;
+  font-size: 1.5rem !important;
+  cursor: pointer !important;
+  color: #666 !important;
+  padding: 0 !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-ug .btn-close:hover {
+  background: #e9ecef !important;
+  color: #333 !important;
+}
+
+/* Botões do modal */
+.modal-ug .btn {
+  padding: 10px 20px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.modal-ug .btn-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+  color: white !important;
+}
+
+.modal-ug .btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3, #004085) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4) !important;
+}
+
+.modal-ug .btn-secondary {
+  background: #6c757d !important;
+  color: white !important;
+}
+
+.modal-ug .btn-secondary:hover {
+  background: #545b62 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4) !important;
+}
+
+/* Responsividade para modais de UG */
+@media (max-width: 768px) {
+  .modal-ug {
+    width: 95% !important;
+    max-width: none !important;
+    margin: 10px !important;
+  }
+
+  .modal-body-ug .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .modal-header-ug,
+  .modal-body-ug,
+  .modal-ug .modal-footer {
+    padding: 16px !important;
+  }
+}
+
+/* Animação do modal de UG */
+.modal-ug {
+  animation: modalSlideIn 0.3s ease-out !important;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Botão de exclusão desabilitado */
+.btn-delete:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-delete:disabled:hover {
+  background: #dc3545 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+

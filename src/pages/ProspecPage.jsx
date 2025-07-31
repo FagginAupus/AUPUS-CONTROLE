@@ -626,13 +626,55 @@ const ModalVisualizacao = ({ item, onClose }) => {
   );
 };
 
-// Componente Modal de Edição - Apenas para admin
+// Componente Modal de Edição - ATUALIZADO com novos campos
 const ModalEdicao = ({ item, onSave, onClose }) => {
-  const [dados, setDados] = useState({ ...item });
+  const [dados, setDados] = useState({ 
+    ...item,
+    // Novos campos para documentação
+    tipoDocumento: item.tipoDocumento || 'CPF',
+    nomeRepresentante: item.nomeRepresentante || '',
+    cpf: item.cpf || '',
+    documentoPessoal: item.documentoPessoal || null,
+    razaoSocial: item.razaoSocial || '',
+    cnpj: item.cnpj || '',
+    contratoSocial: item.contratoSocial || null,
+    documentoPessoalRepresentante: item.documentoPessoalRepresentante || null,
+    enderecoUC: item.enderecoUC || '',
+    isArrendamento: item.isArrendamento || false,
+    contratoLocacao: item.contratoLocacao || null,
+    enderecoRepresentante: item.enderecoRepresentante || '',
+    termoAdesao: item.termoAdesao || null
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Validação apenas se status for "Fechado"
+    if (dados.status === 'Fechado') {
+      const camposObrigatorios = [];
+      
+      if (!dados.nomeCliente) camposObrigatorios.push('Nome do Cliente');
+      if (!dados.apelido) camposObrigatorios.push('Apelido UC');
+      if (!dados.numeroUC) camposObrigatorios.push('Número UC');
+      if (!dados.enderecoUC) camposObrigatorios.push('Endereço da UC');
+      if (!dados.enderecoRepresentante) camposObrigatorios.push('Endereço do Representante');
+      
+      if (dados.tipoDocumento === 'CPF') {
+        if (!dados.nomeRepresentante) camposObrigatorios.push('Nome do Representante');
+        if (!dados.cpf) camposObrigatorios.push('CPF');
+      } else {
+        if (!dados.razaoSocial) camposObrigatorios.push('Razão Social');
+        if (!dados.cnpj) camposObrigatorios.push('CNPJ');
+        if (!dados.nomeRepresentante) camposObrigatorios.push('Nome do Representante da Empresa');
+      }
+      
+      if (camposObrigatorios.length > 0) {
+        alert(`Para fechar a proposta, preencha os seguintes campos:\n\n• ${camposObrigatorios.join('\n• ')}`);
+        return;
+      }
+    }
+    
     onSave(dados);
   };
 
@@ -642,130 +684,379 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     onClose();
   };
 
+  const handleFileChange = (campo, file) => {
+    setDados({...dados, [campo]: file});
+  };
+
+  const handleTipoDocumentoChange = (tipo) => {
+    setDados({
+      ...dados, 
+      tipoDocumento: tipo,
+      // Limpar campos do tipo não selecionado
+      ...(tipo === 'CPF' ? {
+        razaoSocial: '',
+        cnpj: '',
+        contratoSocial: null,
+        documentoPessoalRepresentante: null
+      } : {
+        nomeRepresentante: '',
+        cpf: '',
+        documentoPessoal: null
+      })
+    });
+  };
+
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+      <div className="modal-content modal-edicao-expandido" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header modal-header-solido">
           <h3>✏️ Editar Proposta</h3>
           <button onClick={handleClose} className="btn btn-close">✕</button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Nome do Cliente</label>
-              <input
-                type="text"
-                value={dados.nomeCliente || ''}
-                onChange={(e) => setDados({...dados, nomeCliente: e.target.value})}
-              />
+        
+        <form onSubmit={handleSubmit} className="modal-body modal-body-expandido">
+          {/* Informações Básicas */}
+          <div className="secao-modal">
+            <h4 className="titulo-secao">📋 Informações Básicas</h4>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label>Nome do Cliente</label>
+                <input
+                  type="text"
+                  value={dados.nomeCliente || ''}
+                  onChange={(e) => setDados({...dados, nomeCliente: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Apelido UC</label>
+                <input
+                  type="text"
+                  value={dados.apelido || ''}
+                  onChange={(e) => setDados({...dados, apelido: e.target.value})}
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                value={dados.status || 'Aguardando'}
-                onChange={(e) => setDados({...dados, status: e.target.value})}
-              >
-                <option value="Aguardando">Aguardando</option>
-                <option value="Fechado">Fechado</option>
-              </select>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Número UC</label>
+                <input
+                  type="text"
+                  value={dados.numeroUC || ''}
+                  onChange={(e) => setDados({...dados, numeroUC: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Ligação</label>
+                <select
+                  value={dados.ligacao || ''}
+                  onChange={(e) => setDados({...dados, ligacao: e.target.value})}
+                >
+                  <option value="">Selecione...</option>
+                  <option value="Monofásica">Monofásica</option>
+                  <option value="Bifásica">Bifásica</option>
+                  <option value="Trifásica">Trifásica</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Desconto Tarifa (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={dados.descontoTarifa ? (parseFloat(dados.descontoTarifa) * 100).toFixed(1) : ''}
+                  onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) / 100 || 0})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Desconto Bandeira (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={dados.descontoBandeira ? (parseFloat(dados.descontoBandeira) * 100).toFixed(1) : ''}
+                  onChange={(e) => setDados({...dados, descontoBandeira: parseFloat(e.target.value) / 100 || 0})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Média (kWh)</label>
+                <input
+                  type="number"
+                  value={dados.media || ''}
+                  onChange={(e) => setDados({...dados, media: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div className="form-group">
+                {/* Espaço vazio para manter layout */}
+              </div>
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Apelido</label>
-              <input
-                type="text"
-                value={dados.apelido || ''}
-                onChange={(e) => setDados({...dados, apelido: e.target.value})}
-              />
+          {/* Tipo de Documento */}
+          <div className="secao-modal">
+            <h4 className="titulo-secao">📄 Documentação</h4>
+            
+            <div className="document-type-selector">
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="tipoDocumento"
+                  value="CPF"
+                  checked={dados.tipoDocumento === 'CPF'}
+                  onChange={(e) => handleTipoDocumentoChange(e.target.value)}
+                />
+                <span>CPF</span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="tipoDocumento"
+                  value="CNPJ"
+                  checked={dados.tipoDocumento === 'CNPJ'}
+                  onChange={(e) => handleTipoDocumentoChange(e.target.value)}
+                />
+                <span>CNPJ</span>
+              </label>
             </div>
-            <div className="form-group">
-              <label>Número UC</label>
-              <input
-                type="text"
-                value={dados.numeroUC || ''}
-                onChange={(e) => setDados({...dados, numeroUC: e.target.value})}
-              />
+
+            {/* Campos CPF */}
+            {dados.tipoDocumento === 'CPF' && (
+              <div className="document-fields">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nome do Representante</label>
+                    <input
+                      type="text"
+                      value={dados.nomeRepresentante || ''}
+                      onChange={(e) => setDados({...dados, nomeRepresentante: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>CPF</label>
+                    <input
+                      type="text"
+                      value={dados.cpf || ''}
+                      onChange={(e) => setDados({...dados, cpf: e.target.value})}
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group file-group">
+                    <label>Documento Pessoal</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
+                    />
+                    {dados.documentoPessoal && (
+                      <small className="file-info">
+                        📎 {dados.documentoPessoal.name || 'Documento carregado'}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Campos CNPJ */}
+            {dados.tipoDocumento === 'CNPJ' && (
+              <div className="document-fields">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Razão Social</label>
+                    <input
+                      type="text"
+                      value={dados.razaoSocial || ''}
+                      onChange={(e) => setDados({...dados, razaoSocial: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>CNPJ</label>
+                    <input
+                      type="text"
+                      value={dados.cnpj || ''}
+                      onChange={(e) => setDados({...dados, cnpj: e.target.value})}
+                      placeholder="00.000.000/0000-00"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nome do Representante da Empresa</label>
+                    <input
+                      type="text"
+                      value={dados.nomeRepresentante || ''}
+                      onChange={(e) => setDados({...dados, nomeRepresentante: e.target.value})}
+                      placeholder="Nome completo do representante legal"
+                    />
+                  </div>
+                  <div className="form-group">
+                    {/* Espaço vazio para manter layout */}
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group file-group">
+                    <label>Contrato Social da Empresa</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('contratoSocial', e.target.files[0])}
+                    />
+                    {dados.contratoSocial && (
+                      <small className="file-info">
+                        📎 {dados.contratoSocial.name || 'Contrato Social carregado'}
+                      </small>
+                    )}
+                  </div>
+                  <div className="form-group file-group">
+                    <label>Documento Pessoal do Representante</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('documentoPessoalRepresentante', e.target.files[0])}
+                    />
+                    {dados.documentoPessoalRepresentante && (
+                      <small className="file-info">
+                        📎 {dados.documentoPessoalRepresentante.name || 'Documento do Representante carregado'}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Campos comuns para ambos */}
+            <div className="common-fields">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Endereço da UC</label>
+                  <input
+                    type="text"
+                    value={dados.enderecoUC || ''}
+                    onChange={(e) => setDados({...dados, enderecoUC: e.target.value})}
+                    placeholder="Rua, número, bairro, cidade, CEP"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group checkbox-group-modal">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={dados.isArrendamento || false}
+                      onChange={(e) => setDados({...dados, isArrendamento: e.target.checked})}
+                    />
+                    <span>Este endereço é arrendamento</span>
+                  </label>
+                </div>
+              </div>
+
+              {dados.isArrendamento && (
+                <div className="form-row">
+                  <div className="form-group file-group">
+                    <label>Contrato de Locação</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('contratoLocacao', e.target.files[0])}
+                    />
+                    {dados.contratoLocacao && (
+                      <small className="file-info">
+                        📎 {dados.contratoLocacao.name || 'Contrato carregado'}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Endereço do Representante</label>
+                  <input
+                    type="text"
+                    value={dados.enderecoRepresentante || ''}
+                    onChange={(e) => setDados({...dados, enderecoRepresentante: e.target.value})}
+                    placeholder="Rua, número, bairro, cidade, CEP"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group file-group">
+                  <label>Termo de Adesão Assinado</label>
+                  <div className="file-with-download">
+                    <button
+                      type="button"
+                      className="btn-download-termo"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = '/documentos/TERMO-AUPUS.pdf';
+                        link.download = 'TERMO-AUPUS.pdf';
+                        link.click();
+                      }}
+                      title="Baixar Termo de Adesão Padrão"
+                    >
+                      📄 Baixar Termo Padrão
+                    </button>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('termoAdesao', e.target.files[0])}
+                    />
+                  </div>
+                  {dados.termoAdesao && (
+                    <small className="file-info">
+                      📎 {dados.termoAdesao.name || 'Termo carregado'}
+                    </small>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Desconto Tarifa (%)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={dados.descontoTarifa ? (parseFloat(dados.descontoTarifa) * 100).toFixed(1) : ''}
-                onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) / 100 || 0})}
-              />
-            </div>
-            <div className="form-group">
-              <label>Desconto Bandeira (%)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={dados.descontoBandeira ? (parseFloat(dados.descontoBandeira) * 100).toFixed(1) : ''}
-                onChange={(e) => setDados({...dados, descontoBandeira: parseFloat(e.target.value) / 100 || 0})}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Ligação</label>
-              <input
-                type="text"
-                value={dados.ligacao || ''}
-                onChange={(e) => setDados({...dados, ligacao: e.target.value})}
-              />
-            </div>
-            <div className="form-group">
-              <label>Recorrência</label>
-              <input
-                type="text"
-                value={dados.recorrencia || ''}
-                onChange={(e) => setDados({...dados, recorrencia: e.target.value})}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Média (kWh)</label>
-              <input
-                type="number"
-                value={dados.media || ''}
-                onChange={(e) => setDados({...dados, media: parseFloat(e.target.value) || 0})}
-              />
-            </div>
-            <div className="form-group">
-              <label>Telefone</label>
-              <input
-                type="text"
-                value={dados.telefone || ''}
-                onChange={(e) => setDados({...dados, telefone: e.target.value})}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Consultor</label>
-              <input
-                type="text"
-                value={dados.consultor || ''}
-                onChange={(e) => setDados({...dados, consultor: e.target.value})}
-              />
+          {/* Status no final */}
+          <div className="secao-modal">
+            <h4 className="titulo-secao">📊 Status da Proposta</h4>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  value={dados.status || 'Aguardando'}
+                  onChange={(e) => setDados({...dados, status: e.target.value})}
+                >
+                  <option value="Aguardando">Aguardando</option>
+                  <option value="Não Fechado">Não Fechado</option>
+                  <option value="Cancelado">Cancelado</option>
+                  <option value="Fechado">Fechado</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <div className="status-help">
+                  <small>
+                    <strong>Atenção:</strong> Para definir como "Fechado", todos os campos de documentação devem estar preenchidos.
+                  </small>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="modal-footer">
             <button type="submit" className="btn btn-primary">
-              Salvar Alterações
+              💾 Salvar Alterações
             </button>
             <button type="button" onClick={handleClose} className="btn btn-secondary">
-              Cancelar
+              ❌ Cancelar
             </button>
           </div>
         </form>

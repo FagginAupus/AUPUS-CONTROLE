@@ -1,4 +1,4 @@
-/* src/pages/NovaPropostaPage.css - 5 INPUTS EM LINHA + UCs SEPARADAS + BENEFÍCIOS CORRIGIDOS */
+/* NovaPropostaPage.css - LAYOUT MELHORADO */
 
 .page-container {
   min-height: 100vh;
@@ -117,10 +117,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 15px;
   background: white;
   border-radius: 8px;
   border: 1px solid #e1e1e1;
+  margin-bottom: 20px;
 }
 
 .checkbox-group-inline input[type="checkbox"] {
@@ -133,12 +134,12 @@
 .checkbox-group-inline label {
   margin: 0;
   cursor: pointer;
-  font-weight: 400;
+  font-weight: 500;
   color: #333;
 }
 
 /* =======================================================
-   UNIDADES CONSUMIDORAS - 5 INPUTS EM UMA LINHA + LINHAS SEPARADAS
+   UNIDADES CONSUMIDORAS - LAYOUT CORRIGIDO
    ======================================================= */
 
 .ucs-list {
@@ -202,108 +203,124 @@
   transform: translateY(-1px);
 }
 
-/* 5 INPUTS EM UMA LINHA */
+/* 5 INPUTS EM UMA LINHA - LAYOUT CORRIGIDO */
 .uc-inputs-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr; /* 5 colunas iguais */
-  gap: 15px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
   width: 100%;
+  box-sizing: border-box;
 }
 
-/* Botão adicionar UC */
-.btn-add-uc {
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 15px;
-  align-self: flex-start;
+.uc-inputs-row .form-group {
+  margin-bottom: 0;
 }
 
-.btn-add-uc:hover {
-  background: #218838;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+.uc-inputs-row .form-group label {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.uc-inputs-row .form-group input,
+.uc-inputs-row .form-group select {
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
+/* Ações das UCs - BOTÃO ABAIXO */
+.uc-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e1e1;
+  text-align: center;
 }
 
 /* =======================================================
-   BENEFÍCIOS - CORRIGIDOS PARA ALINHAMENTO À ESQUERDA
+   BENEFÍCIOS - LAYOUT MELHORADO
    ======================================================= */
-
-.beneficios-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  padding: 0; /* Remover padding que centralizava */
-}
 
 .beneficios-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-  width: 100%;
-}
-
-.checkbox-group {
-  display: flex;
-  align-items: flex-start; /* Alinhar ao topo */
   gap: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e1e1e1;
-  text-align: left; /* FORÇAR ALINHAMENTO À ESQUERDA */
-  justify-content: flex-start; /* ALINHAR CONTEÚDO À ESQUERDA */
-  transition: border-color 0.3s ease;
+  margin-bottom: 25px;
 }
 
-.checkbox-group.beneficio-item {
+.beneficio-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 10px;
-  padding: 12px;
+  padding: 12px 15px;
   background: white;
   border-radius: 8px;
   border: 1px solid #e1e1e1;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: left; /* GARANTIR ALINHAMENTO À ESQUERDA */
-  justify-content: flex-start; /* GARANTIR CONTEÚDO À ESQUERDA */
+  transition: all 0.3s ease;
 }
 
-.checkbox-group input[type="checkbox"],
-.checkbox-group.beneficio-item input[type="checkbox"] {
+.beneficio-item:hover {
+  background: #f8f9fa;
+  border-color: #4CAF50;
+}
+
+.beneficio-item input[type="checkbox"] {
   width: 18px;
   height: 18px;
   margin: 0;
   cursor: pointer;
-  flex-shrink: 0; /* Não permitir que o checkbox encolha */
+  flex-shrink: 0;
   margin-top: 2px;
 }
 
-.checkbox-group label,
-.checkbox-group.beneficio-item label {
+.beneficio-item label {
   margin: 0;
   cursor: pointer;
   font-weight: 400;
-  line-height: 1.4;
   color: #333;
-  width: 100%;
-  text-align: left; /* GARANTIR TEXTO À ESQUERDA */
-  flex: 1; /* Ocupar espaço restante */
+  line-height: 1.4;
+  text-align: left;
+  flex: 1;
 }
 
-.checkbox-group:hover,
-.checkbox-group.beneficio-item:hover {
-  background: #f8f9fa;
-  border-color: #4CAF50;
+/* Benefícios adicionais */
+.beneficios-adicionais {
+  border-top: 2px solid #e1e1e1;
+  padding-top: 20px;
+}
+
+.beneficios-adicionais h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.beneficio-adicional {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.beneficio-adicional input[type="text"] {
+  flex: 1;
+  padding: 10px 12px;
+  border: 2px solid #e1e1e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.btn-remove-beneficio {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-remove-beneficio:hover {
+  background: #c82333;
 }
 
 /* =======================================================
@@ -368,6 +385,13 @@
    RESPONSIVE DESIGN
    ======================================================= */
 
+@media (max-width: 1200px) {
+  .uc-inputs-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+}
+
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
@@ -386,11 +410,90 @@
   .btn {
     justify-content: center;
   }
-}
 
-@media (max-width: 1200px) {
-  .uc-inputs-row {
-    grid-template-columns: 1fr 1fr;
+  .beneficio-item {
+    padding: 10px 12px;
     gap: 10px;
   }
+
+  .beneficio-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+
+  .container {
+    padding: 15px;
+  }
+
+  .form-section {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .uc-inputs-row .form-group input,
+  .uc-inputs-row .form-group select {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+
+  .uc-inputs-row .form-group label {
+    font-size: 0.8rem;
+  }
+}
+
+/* =======================================================
+   MELHORIAS DE ACESSIBILIDADE
+   ======================================================= */
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: 2px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+.btn:focus {
+  outline: 2px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+/* =======================================================
+   ANIMAÇÕES
+   ======================================================= */
+
+.uc-row {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.beneficio-item {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Estados de carregamento */
+.form-group.loading input {
+  background: #f8f9fa;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }

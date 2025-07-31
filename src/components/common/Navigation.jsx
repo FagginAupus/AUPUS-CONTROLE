@@ -1,4 +1,4 @@
-// src/components/common/Navigation.jsx - Navegação com controle de acesso por role
+// src/components/common/Navigation.jsx - Com Nova Proposta no menu horizontal
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +17,13 @@ const Navigation = () => {
       path: '/',
       paths: ['/', '/dashboard'],
       requiredPage: 'dashboard'
+    },
+    { 
+      id: 'nova-proposta', 
+      label: 'NOVA PROPOSTA', 
+      icon: '📝', 
+      path: '/nova-proposta',
+      requiredPage: 'prospec' // Usa a mesma permissão do prospec
     },
     { 
       id: 'prospec', 
@@ -102,6 +109,8 @@ const Navigation = () => {
               key={item.id}
               onClick={() => handleNavigation(item.path)}
               className={`nav-item ${isActive(item) ? 'active' : ''}`}
+              title={item.label} // Para tooltip em mobile
+              data-id={item.id}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
