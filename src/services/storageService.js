@@ -1,14 +1,13 @@
-// src/services/storageService.js - Sistema de armazenamento local completo
-
+// src/services/storageService.js - Corrigido com sincronização aprimorada
 class StorageService {
     constructor() {
-        console.log('🗄️ StorageService inicializado (localStorage)');
+        this.modo = 'local'; // Para localStorage
         this.calibragemGlobal = 0;
         this.carregarCalibragemGlobal();
     }
 
     // ========================================
-    // MÉTODOS PARA PROSPECÇÃO
+    // MÉTODOS PARA PROSPEC
     // ========================================
 
     async getProspec() {
@@ -36,9 +35,21 @@ class StorageService {
     async atualizarProspec(index, dadosAtualizados) {
         console.log(`🔄 atualizarProspec (localStorage) - index ${index}`);
         const dados = await this.getProspec();
+        
         if (index >= 0 && index < dados.length) {
+            const statusAnterior = dados[index].status;
+            const numeroProposta = dados[index].numeroProposta;
+            const numeroUC = dados[index].numeroUC;
+            
             dados[index] = { ...dados[index], ...dadosAtualizados };
             await this.salvarProspec(dados);
+            
+            // 🔄 SINCRONIZAÇÃO APRIMORADA: Se mudou status, sincronizar controle
+            if (statusAnterior !== dadosAtualizados.status) {
+                console.log(`🔄 Status mudou de '${statusAnterior}' para '${dadosAtualizados.status}', sincronizando controle...`);
+                await this.sincronizarStatusFechado(numeroProposta, numeroUC, dadosAtualizados.status);
+            }
+            
             return true;
         }
         return false;
@@ -47,46 +58,20 @@ class StorageService {
     async removerProspec(index) {
         console.log(`🗑️ removerProspec (localStorage) - index ${index}`);
         const dados = await this.getProspec();
+        
         if (index >= 0 && index < dados.length) {
+            const proposta = dados[index];
+            
+            // Se era fechado, remover do controle também
+            if (proposta.status === 'Fechado') {
+                await this.removerControle(proposta.numeroProposta, proposta.numeroUC);
+            }
+            
             dados.splice(index, 1);
             await this.salvarProspec(dados);
             return true;
         }
         return false;
-    }
-
-    async gerarNumeroProposta() {
-        try {
-            const propostas = await this.getProspec();
-            const ano = new Date().getFullYear();
-            
-            // Encontrar o maior número do ano atual
-            const propostasAno = propostas.filter(p => 
-                p.numeroProposta && p.numeroProposta.startsWith(ano.toString())
-            );
-            
-            let maiorNumero = 0;
-            propostasAno.forEach(p => {
-                const match = p.numeroProposta.match(/(\d{4})\/(\d+)/);
-                if (match) {
-                    const numero = parseInt(match[2]);
-                    if (numero > maiorNumero) {
-                        maiorNumero = numero;
-                    }
-                }
-            });
-            
-            const proximoNumero = maiorNumero + 1;
-            const numeroProposta = `${ano}/${proximoNumero.toString().padStart(3, '0')}`;
-            
-            console.log(`📋 Número da proposta gerado: ${numeroProposta}`);
-            return numeroProposta;
-            
-        } catch (error) {
-            console.error('❌ Erro ao gerar número da proposta:', error);
-            const fallback = `${new Date().getFullYear()}/${Date.now().toString().slice(-3)}`;
-            return fallback;
-        }
     }
 
     // ========================================
@@ -118,8 +103,16 @@ class StorageService {
         );
         
         if (!jaExiste) {
-            dados.push(proposta);
+            // Garantir que a UG está vazia inicialmente
+            const propostaControle = {
+                ...proposta,
+                ug: proposta.ug || '', // UG vazia por padrão
+                dataTransferencia: new Date().toISOString()
+            };
+            
+            dados.push(propostaControle);
             await this.salvarControle(dados);
+            console.log(`✅ UC ${proposta.numeroUC} da proposta ${proposta.numeroProposta} adicionada ao controle`);
             return true;
         }
         
@@ -142,7 +135,7 @@ class StorageService {
         console.log(`🔄 atualizarUGControle (localStorage) - index ${index}, UG: ${ug}`);
         const dados = await this.getControle();
         if (index >= 0 && index < dados.length) {
-            dados[index].ug = ug;
+            dados[index].ug = ug || '';
             await this.salvarControle(dados);
             
             // Atualizar médias das UGs após atribuição
@@ -162,12 +155,55 @@ class StorageService {
         
         if (novosDados.length !== dados.length) {
             await this.salvarControle(novosDados);
-            console.log('✅ UC removida do controle');
+            console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} removida do controle`);
             return true;
         }
         
         console.log('⚠️ UC não encontrada no controle');
         return false;
+    }
+
+    // ========================================
+    // SINCRONIZAÇÃO APRIMORADA
+    // ========================================
+
+    async sincronizarStatusFechado(numeroProposta, numeroUC, novoStatus) {
+        console.log(`🔄 sincronizarStatusFechado - Proposta: ${numeroProposta}, UC: ${numeroUC}, Status: ${novoStatus}`);
+        
+        try {
+            const prospec = await this.getProspec();
+            const proposta = prospec.find(p => 
+                p.numeroProposta === numeroProposta && p.numeroUC === numeroUC
+            );
+            
+            if (!proposta) {
+                console.log('⚠️ Proposta não encontrada no prospec');
+                return false;
+            }
+            
+            if (novoStatus === 'Fechado') {
+                // Adicionar esta UC específica ao controle
+                const sucesso = await this.adicionarControle({
+                    ...proposta,
+                    ug: '', // UG vazia inicialmente
+                    status: 'Fechado' // Garantir que o status é Fechado
+                });
+                
+                if (sucesso) {
+                    console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} transferida para o controle`);
+                }
+                
+            } else {
+                // Remover esta UC específica do controle
+                await this.removerControle(numeroProposta, numeroUC);
+                console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} removida do controle`);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Erro na sincronização:', error);
+            return false;
+        }
     }
 
     // ========================================
@@ -226,111 +262,52 @@ class StorageService {
             
             if (ucsAtribuidas.length > 0) {
                 console.log(`❌ Não é possível remover UG "${ug.nomeUsina}" - possui ${ucsAtribuidas.length} UCs atribuídas`);
-                throw new Error(`Não é possível remover a UG "${ug.nomeUsina}" pois ela possui ${ucsAtribuidas.length} UC(s) atribuída(s). Remova primeiro as atribuições.`);
+                throw new Error(`Não é possível remover a UG "${ug.nomeUsina}" pois ela possui ${ucsAtribuidas.length} UC(s) atribuída(s). Transfira as UCs para outras UGs antes de remover.`);
             }
             
             dados.splice(index, 1);
             await this.salvarUGs(dados);
-            console.log(`✅ UG "${ug.nomeUsina}" removida com sucesso`);
             return true;
         }
         return false;
     }
 
     // ========================================
-    // CÁLCULO DE MÉDIA E CALIBRAGEM DAS UGs BASEADO NAS UCs ATRIBUÍDAS
+    // MÉTODOS DE NÚMERO DE PROPOSTA
     // ========================================
 
-    async calcularMediaUG(nomeUG) {
+    async gerarNumeroProposta() {
         try {
-            const controle = await this.getControle();
-            const ucsAtribuidas = controle.filter(uc => uc.ug === nomeUG);
+            const ano = new Date().getFullYear();
+            const prospec = await this.getProspec();
             
-            if (ucsAtribuidas.length === 0) {
-                return { media: 0, calibragem: 0, ucsCount: 0 };
-            }
+            // Filtrar propostas do ano atual
+            const propostasAno = prospec.filter(p => {
+                const [anoP] = p.numeroProposta.split('/');
+                return parseInt(anoP) === ano;
+            });
             
-            // Somar todas as médias das UCs atribuídas
-            const mediaTotal = ucsAtribuidas.reduce((acc, uc) => {
-                const media = parseFloat(uc.media) || 0;
-                return acc + media;
-            }, 0);
+            // Obter próximo número sequencial
+            let proximoNumero = propostasAno.length + 1;
+            let numeroProposta;
             
-            // Buscar o valor de calibragem global salvo no localStorage
-            const calibragemPercent = this.getCalibragemGlobal();
-            const calibragem = mediaTotal * (1 + calibragemPercent / 100);
+            // Verificar se já existe essa numeração
+            do {
+                numeroProposta = `${ano}/${proximoNumero.toString().padStart(4, '0')}`;
+                const existe = prospec.find(p => p.numeroProposta === numeroProposta);
+                if (!existe) break;
+                proximoNumero++;
+            } while (true);
             
-            return {
-                media: mediaTotal,
-                calibragem: calibragem,
-                ucsCount: ucsAtribuidas.length
-            };
+            console.log('📋 Número da proposta gerado:', numeroProposta);
+            return numeroProposta;
+            
         } catch (error) {
-            console.error('❌ Erro ao calcular média UG:', error);
-            return { media: 0, calibragem: 0, ucsCount: 0 };
-        }
-    }
-
-    async aplicarCalibragemGlobal(percentual) {
-        try {
-            // Salvar a calibragem global no localStorage
-            this.setCalibragemGlobal(percentual);
-            
-            const ugs = await this.getUGs();
-            const ugsAtualizadas = [];
-            
-            for (const ug of ugs) {
-                const calculo = await this.calcularMediaUG(ug.nomeUsina);
-                
-                const ugAtualizada = {
-                    ...ug,
-                    media: calculo.media,
-                    calibragem: calculo.calibragem,
-                    ucsAtribuidas: calculo.ucsCount,
-                    calibrado: calculo.ucsCount > 0,
-                    percentualCalibragem: percentual
-                };
-                
-                ugsAtualizadas.push(ugAtualizada);
-            }
-            
-            await this.salvarUGs(ugsAtualizadas);
-            console.log(`✅ Calibragem de ${percentual}% aplicada em todas as UGs`);
-            
-            return true;
-        } catch (error) {
-            console.error('❌ Erro ao aplicar calibragem global:', error);
-            return false;
-        }
-    }
-
-    async atualizarMediasUGs() {
-        try {
-            const ugs = await this.getUGs();
-            const ugsAtualizadas = [];
-            
-            for (const ug of ugs) {
-                const calculo = await this.calcularMediaUG(ug.nomeUsina);
-                
-                const ugAtualizada = {
-                    ...ug,
-                    media: calculo.media,
-                    calibragem: calculo.calibragem,
-                    ucsAtribuidas: calculo.ucsCount,
-                    // Manter o status de calibrado baseado se tem UCs atribuídas
-                    calibrado: calculo.ucsCount > 0
-                };
-                
-                ugsAtualizadas.push(ugAtualizada);
-            }
-            
-            await this.salvarUGs(ugsAtualizadas);
-            console.log('✅ Médias das UGs atualizadas baseadas nas UCs atribuídas');
-            
-            return true;
-        } catch (error) {
-            console.error('❌ Erro ao atualizar médias UGs:', error);
-            return false;
+            console.error('❌ Erro ao gerar número da proposta:', error);
+            // Fallback: usar timestamp
+            const ano = new Date().getFullYear();
+            const timestamp = Date.now().toString().slice(-4);
+            return `${ano}/${timestamp}`;
         }
     }
 
@@ -338,60 +315,85 @@ class StorageService {
     // CALIBRAGEM GLOBAL
     // ========================================
 
-    setCalibragemGlobal(percentual) {
-        this.calibragemGlobal = percentual;
-        localStorage.setItem('aupus_calibragem_global', percentual.toString());
-        console.log(`💾 Calibragem global salva: ${percentual}%`);
-    }
-
-    getCalibragemGlobal() {
-        return this.calibragemGlobal;
-    }
-
     carregarCalibragemGlobal() {
         const calibragem = localStorage.getItem('aupus_calibragem_global');
         this.calibragemGlobal = calibragem ? parseFloat(calibragem) : 0;
         console.log(`📥 Calibragem global carregada: ${this.calibragemGlobal}%`);
     }
 
-    // ========================================
-    // SINCRONIZAÇÃO APRIMORADA
-    // ========================================
+    setCalibragemGlobal(valor) {
+        this.calibragemGlobal = valor;
+        localStorage.setItem('aupus_calibragem_global', valor.toString());
+        console.log(`💾 Calibragem global salva: ${valor}%`);
+    }
 
-    async sincronizarStatusFechado(numeroProposta, numeroUC, novoStatus) {
-        console.log(`🔄 sincronizarStatusFechado - Proposta: ${numeroProposta}, UC: ${numeroUC}, Status: ${novoStatus}`);
+    getCalibragemGlobal() {
+        return this.calibragemGlobal;
+    }
+
+    async aplicarCalibragemGlobal(percentual) {
+        console.log(`⚙️ Aplicando calibragem global de ${percentual}%`);
         
         try {
-            const prospec = await this.getProspec();
-            const proposta = prospec.find(p => 
-                p.numeroProposta === numeroProposta && p.numeroUC === numeroUC
-            );
+            const ugs = await this.getUGs();
             
-            if (!proposta) {
-                console.log('⚠️ Proposta não encontrada no prospec');
-                return false;
-            }
+            // Aplicar calibragem em todas as UGs
+            const ugsAtualizadas = ugs.map(ug => ({
+                ...ug,
+                calibrado: true,
+                percentualCalibragem: percentual,
+                dataUltimaCalibragem: new Date().toISOString()
+            }));
             
-            if (novoStatus === 'Fechado') {
-                // Adicionar esta UC específica ao controle
-                const sucesso = await this.adicionarControle({
-                    ...proposta,
-                    ug: '' // UG vazia inicialmente
-                });
-                if (sucesso) {
-                    console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} adicionada ao controle`);
-                }
-                
-            } else {
-                // Remover esta UC específica do controle
-                await this.removerControle(numeroProposta, numeroUC);
-                console.log(`✅ UC ${numeroUC} da proposta ${numeroProposta} removida do controle`);
-            }
+            await this.salvarUGs(ugsAtualizadas);
             
+            // Atualizar médias
+            await this.atualizarMediasUGs();
+            
+            console.log(`✅ Calibragem aplicada em ${ugs.length} UGs`);
             return true;
+            
         } catch (error) {
-            console.error('❌ Erro na sincronização:', error);
-            return false;
+            console.error('❌ Erro na calibragem global:', error);
+            throw error;
+        }
+    }
+
+    async atualizarMediasUGs() {
+        console.log('🔄 Atualizando médias das UGs...');
+        
+        try {
+            const controle = await this.getControle();
+            const ugs = await this.getUGs();
+            
+            // Calcular médias por UG
+            const mediasUG = {};
+            
+            controle.forEach(uc => {
+                if (uc.ug && uc.media) {
+                    if (!mediasUG[uc.ug]) {
+                        mediasUG[uc.ug] = { total: 0, count: 0 };
+                    }
+                    mediasUG[uc.ug].total += parseFloat(uc.media) || 0;
+                    mediasUG[uc.ug].count += 1;
+                }
+            });
+            
+            // Atualizar UGs com novas médias
+            const ugsAtualizadas = ugs.map(ug => {
+                const media = mediasUG[ug.nomeUsina];
+                return {
+                    ...ug,
+                    media: media ? Math.round(media.total / media.count) : 0,
+                    totalUCs: media ? media.count : 0
+                };
+            });
+            
+            await this.salvarUGs(ugsAtualizadas);
+            console.log('✅ Médias das UGs atualizadas');
+            
+        } catch (error) {
+            console.error('❌ Erro ao atualizar médias das UGs:', error);
         }
     }
 
@@ -404,303 +406,167 @@ class StorageService {
             console.log(`📊 exportarParaCSV (${tipo})`);
             
             let dados = [];
-            let csvContent = '';
             let nomeArquivo = '';
-
+            
             switch (tipo) {
                 case 'prospec':
                     dados = await this.getProspec();
-                    
-                    if (dados.length === 0) {
-                        throw new Error('Nenhuma proposta disponível para exportação');
-                    }
-
-                    // Cabeçalhos
-                    const headersProspec = [
-                        'Número Proposta',
-                        'Data',
-                        'Nome Cliente',
-                        'Celular',
-                        'Consultor',
-                        'Recorrência',
-                        'Desconto Tarifa',
-                        'Desconto Bandeira',
-                        'Distribuidora',
-                        'Número UC',
-                        'Apelido UC',
-                        'Ligação',
-                        'Média (kWh)',
-                        'Status'
-                    ];
-                    
-                    csvContent = headersProspec.join(',') + '\n';
-                    
-                    dados.forEach(item => {
-                        const linha = [
-                            `"${item.numeroProposta || ''}"`,
-                            `"${item.data || ''}"`,
-                            `"${item.nomeCliente || ''}"`,
-                            `"${item.celular || item.telefone || ''}"`,
-                            `"${item.consultor || ''}"`,
-                            `"${item.recorrencia || ''}"`,
-                            `"${((item.descontoTarifa || 0) * 100).toFixed(1)}%"`,
-                            `"${((item.descontoBandeira || 0) * 100).toFixed(1)}%"`,
-                            `"${item.distribuidora || ''}"`,
-                            `"${item.numeroUC || ''}"`,
-                            `"${item.apelido || ''}"`,
-                            `"${item.ligacao || ''}"`,
-                            `"${item.media || 0}"`,
-                            `"${item.status || 'Aguardando'}"`
-                        ];
-                        csvContent += linha.join(',') + '\n';
-                    });
-                    
-                    nomeArquivo = `aupus_prospec_${new Date().toISOString().slice(0, 10)}.csv`;
+                    nomeArquivo = `aupus-prospec-${new Date().toISOString().split('T')[0]}.csv`;
                     break;
-
                 case 'controle':
                     dados = await this.getControle();
-                    
-                    if (dados.length === 0) {
-                        throw new Error('Nenhum dado de controle disponível para exportação');
-                    }
-
-                    // Cabeçalhos
-                    const headersControle = [
-                        'Número Proposta',
-                        'Data',
-                        'Nome Cliente',
-                        'Celular',
-                        'Consultor',
-                        'Número UC',
-                        'Apelido UC',
-                        'Média (kWh)',
-                        'UG Atribuída',
-                        'Calibragem (kWh)',
-                        'Status Calibragem'
-                    ];
-                    
-                    csvContent = headersControle.join(',') + '\n';
-                    
-                    dados.forEach(item => {
-                        const linha = [
-                            `"${item.numeroProposta || ''}"`,
-                            `"${item.data || ''}"`,
-                            `"${item.nomeCliente || ''}"`,
-                            `"${item.celular || item.telefone || ''}"`,
-                            `"${item.consultor || ''}"`,
-                            `"${item.numeroUC || ''}"`,
-                            `"${item.apelido || ''}"`,
-                            `"${item.media || 0}"`,
-                            `"${item.ug || 'Sem UG'}"`,
-                            `"${item.calibragem || 0}"`,
-                            `"${item.calibrado ? 'Calibrada' : 'Não Calibrada'}"`
-                        ];
-                        csvContent += linha.join(',') + '\n';
-                    });
-                    
-                    nomeArquivo = `aupus_controle_${new Date().toISOString().slice(0, 10)}.csv`;
+                    nomeArquivo = `aupus-controle-${new Date().toISOString().split('T')[0]}.csv`;
                     break;
-
                 case 'ugs':
                     dados = await this.getUGs();
-                    
-                    if (dados.length === 0) {
-                        throw new Error('Nenhuma UG disponível para exportação');
-                    }
-
-                    // Cabeçalhos
-                    const headersUGs = [
-                        'Nome Usina',
-                        'Potência CA (kW)',
-                        'Potência CC (kW)',
-                        'Fator Capacidade (%)',
-                        'Capacidade (kWh)',
-                        'Média Total (kWh)',
-                        'Calibragem (kWh)',
-                        'UCs Atribuídas',
-                        'Status Calibragem',
-                        'Data Cadastro'
-                    ];
-                    
-                    csvContent = headersUGs.join(',') + '\n';
-                    
-                    dados.forEach(item => {
-                        const linha = [
-                            `"${item.nomeUsina || ''}"`,
-                            `"${item.potenciaCA || 0}"`,
-                            `"${item.potenciaCC || 0}"`,
-                            `"${item.fatorCapacidade || 0}"`,
-                            `"${item.capacidade || 0}"`,
-                            `"${item.media || 0}"`,
-                            `"${item.calibragem || 0}"`,
-                            `"${item.ucsAtribuidas || 0}"`,
-                            `"${item.calibrado ? 'Calibrada' : 'Não Calibrada'}"`,
-                            `"${item.dataCadastro || ''}"`
-                        ];
-                        csvContent += linha.join(',') + '\n';
-                    });
-                    
-                    nomeArquivo = `aupus_ugs_${new Date().toISOString().slice(0, 10)}.csv`;
+                    nomeArquivo = `aupus-ugs-${new Date().toISOString().split('T')[0]}.csv`;
                     break;
-
                 default:
-                    throw new Error('Tipo de exportação não suportado');
+                    throw new Error('Tipo de exportação inválido');
             }
-
-            // Criar e baixar arquivo
+            
+            if (dados.length === 0) {
+                throw new Error('Não há dados para exportar');
+            }
+            
+            // Converter para CSV
+            const headers = Object.keys(dados[0]);
+            const csvContent = [
+                headers.join(','), // Cabeçalho
+                ...dados.map(row => 
+                    headers.map(header => {
+                        const value = row[header];
+                        // Escapar valores que contêm vírgula ou aspas
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value || '';
+                    }).join(',')
+                )
+            ].join('\n');
+            
+            // Download do arquivo
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
             
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', nomeArquivo);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            } else {
-                throw new Error('Seu navegador não suporta download de arquivos');
-            }
-
-            console.log(`✅ Arquivo ${nomeArquivo} exportado com sucesso`);
-            return true;
-
+            link.setAttribute('href', url);
+            link.setAttribute('download', nomeArquivo);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`✅ Arquivo ${nomeArquivo} baixado com sucesso`);
+            return { sucesso: true, nomeArquivo };
+            
         } catch (error) {
-            console.error(`❌ Erro ao exportar CSV (${tipo}):`, error);
+            console.error('❌ Erro na exportação:', error);
             throw error;
         }
     }
 
-    // Método para exportar dados filtrados (para relatórios por equipe)
     async exportarDadosFiltrados(tipo, dadosFiltrados) {
         try {
             console.log(`📊 exportarDadosFiltrados (${tipo}) - ${dadosFiltrados.length} registros`);
             
-            if (!dadosFiltrados || dadosFiltrados.length === 0) {
-                throw new Error('Nenhum dado disponível para exportação');
+            if (dadosFiltrados.length === 0) {
+                throw new Error('Não há dados para exportar');
             }
-
-            let csvContent = '';
-            let nomeArquivo = '';
-
-            switch (tipo) {
-                case 'prospec':
-                    // Cabeçalhos para prospecção
-                    const headersProspec = [
-                        'Número Proposta',
-                        'Data',
-                        'Nome Cliente',
-                        'Celular',
-                        'Consultor',
-                        'Recorrência',
-                        'Desconto Tarifa',
-                        'Desconto Bandeira',
-                        'Distribuidora',
-                        'Número UC',
-                        'Apelido UC',
-                        'Ligação',
-                        'Média (kWh)',
-                        'Status'
-                    ];
-                    
-                    csvContent = headersProspec.join(',') + '\n';
-                    
-                    dadosFiltrados.forEach(item => {
-                        const linha = [
-                            `"${item.numeroProposta || ''}"`,
-                            `"${item.data || ''}"`,
-                            `"${item.nomeCliente || ''}"`,
-                            `"${item.celular || item.telefone || ''}"`,
-                            `"${item.consultor || ''}"`,
-                            `"${item.recorrencia || ''}"`,
-                            `"${((item.descontoTarifa || 0) * 100).toFixed(1)}%"`,
-                            `"${((item.descontoBandeira || 0) * 100).toFixed(1)}%"`,
-                            `"${item.distribuidora || ''}"`,
-                            `"${item.numeroUC || ''}"`,
-                            `"${item.apelido || ''}"`,
-                            `"${item.ligacao || ''}"`,
-                            `"${item.media || 0}"`,
-                            `"${item.status || 'Aguardando'}"`
-                        ];
-                        csvContent += linha.join(',') + '\n';
-                    });
-                    
-                    nomeArquivo = `aupus_prospec_filtrado_${new Date().toISOString().slice(0, 10)}.csv`;
-                    break;
-
-                case 'controle':
-                    // Cabeçalhos para controle
-                    const headersControle = [
-                        'Número Proposta',
-                        'Data',
-                        'Nome Cliente',
-                        'Celular',
-                        'Consultor',
-                        'Número UC',
-                        'Apelido UC',
-                        'Média (kWh)',
-                        'UG Atribuída',
-                        'Calibragem (kWh)',
-                        'Status Calibragem'
-                    ];
-                    
-                    csvContent = headersControle.join(',') + '\n';
-                    
-                    dadosFiltrados.forEach(item => {
-                        const linha = [
-                            `"${item.numeroProposta || ''}"`,
-                            `"${item.data || ''}"`,
-                            `"${item.nomeCliente || ''}"`,
-                            `"${item.celular || item.telefone || ''}"`,
-                            `"${item.consultor || ''}"`,
-                            `"${item.numeroUC || ''}"`,
-                            `"${item.apelido || ''}"`,
-                            `"${item.media || 0}"`,
-                            `"${item.ug || 'Sem UG'}"`,
-                            `"${item.calibragem || 0}"`,
-                            `"${item.calibrado ? 'Calibrada' : 'Não Calibrada'}"`
-                        ];
-                        csvContent += linha.join(',') + '\n';
-                    });
-                    
-                    nomeArquivo = `aupus_controle_filtrado_${new Date().toISOString().slice(0, 10)}.csv`;
-                    break;
-
-                default:
-                    throw new Error('Tipo de exportação não suportado');
-            }
-
-            // Criar e baixar arquivo
+            
+            const nomeArquivo = `aupus-${tipo}-filtrado-${new Date().toISOString().split('T')[0]}.csv`;
+            
+            // Converter para CSV
+            const headers = Object.keys(dadosFiltrados[0]);
+            const csvContent = [
+                headers.join(','), // Cabeçalho
+                ...dadosFiltrados.map(row => 
+                    headers.map(header => {
+                        const value = row[header];
+                        // Escapar valores que contêm vírgula ou aspas
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value || '';
+                    }).join(',')
+                )
+            ].join('\n');
+            
+            // Download do arquivo
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
             
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', nomeArquivo);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            } else {
-                throw new Error('Seu navegador não suporta download de arquivos');
-            }
-
-            console.log(`✅ Arquivo ${nomeArquivo} exportado com sucesso`);
-            return true;
-
+            link.setAttribute('href', url);
+            link.setAttribute('download', nomeArquivo);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`✅ Arquivo ${nomeArquivo} baixado com sucesso`);
+            return { sucesso: true, nomeArquivo };
+            
         } catch (error) {
-            console.error(`❌ Erro ao exportar dados filtrados (${tipo}):`, error);
+            console.error('❌ Erro na exportação filtrada:', error);
+            throw error;
+        }
+    }
+
+    // ========================================
+    // MÉTODOS DE DEBUG E LIMPEZA
+    // ========================================
+
+    async limparTodosDados() {
+        console.log('🗑️ Limpando todos os dados do localStorage...');
+        
+        localStorage.removeItem('aupus_prospec');
+        localStorage.removeItem('aupus_controle');
+        localStorage.removeItem('aupus_ugs');
+        localStorage.removeItem('aupus_calibragem_global');
+        
+        this.calibragemGlobal = 0;
+        
+        console.log('✅ Todos os dados foram limpos');
+        return true;
+    }
+
+    async obterEstatisticas() {
+        try {
+            const prospec = await this.getProspec();
+            const controle = await this.getControle();
+            const ugs = await this.getUGs();
+            
+            const estatisticas = {
+                prospec: {
+                    total: prospec.length,
+                    aguardando: prospec.filter(p => p.status === 'Aguardando').length,
+                    fechados: prospec.filter(p => p.status === 'Fechado').length
+                },
+                controle: {
+                    total: controle.length,
+                    comUG: controle.filter(c => c.ug && c.ug.trim() !== '').length,
+                    semUG: controle.filter(c => !c.ug || c.ug.trim() === '').length
+                },
+                ugs: {
+                    total: ugs.length,
+                    calibradas: ugs.filter(u => u.calibrado).length,
+                    naoCalibradas: ugs.filter(u => !u.calibrado).length
+                }
+            };
+            
+            console.log('📊 Estatísticas:', estatisticas);
+            return estatisticas;
+            
+        } catch (error) {
+            console.error('❌ Erro ao obter estatísticas:', error);
             throw error;
         }
     }
 }
 
-// Instância única do serviço
+// Exportar instância única
 const storageService = new StorageService();
-
 export default storageService;
