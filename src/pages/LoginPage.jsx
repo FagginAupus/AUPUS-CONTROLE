@@ -1,4 +1,4 @@
-// src/pages/LoginPage.jsx - Página de login com autenticação hierárquica
+// src/pages/LoginPage.jsx - Página de login com layout simplificado
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -85,40 +85,34 @@ const LoginPage = () => {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="username">Usuário</label>
-            <div className="input-container">
-              <span className="input-icon">👤</span>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite seu usuário"
-                autoComplete="username"
-                disabled={loading}
-                required
-              />
-            </div>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Digite seu usuário"
+              autoComplete="username"
+              disabled={loading}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label htmlFor="password">Senha</label>
-            <div className="input-container">
-              <span className="input-icon">🔒</span>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite sua senha"
-                autoComplete="current-password"
-                disabled={loading}
-                required
-              />
-            </div>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Digite sua senha"
+              autoComplete="current-password"
+              disabled={loading}
+              required
+            />
           </div>
 
           <button 
@@ -132,10 +126,7 @@ const LoginPage = () => {
                 Entrando...
               </>
             ) : (
-              <>
-                <span className="button-icon">🚀</span>
-                Entrar
-              </>
+              'Entrar'
             )}
           </button>
         </form>
@@ -145,22 +136,18 @@ const LoginPage = () => {
             <h4>Tipos de Acesso:</h4>
             <div className="access-types">
               <div className="access-type">
-                <span className="access-icon">👑</span>
                 <span className="access-name">Administrador</span>
                 <span className="access-desc">Acesso completo ao sistema</span>
               </div>
               <div className="access-type">
-                <span className="access-icon">👔</span>
                 <span className="access-name">Consultor</span>
                 <span className="access-desc">Gestão de equipe e propostas</span>
               </div>
               <div className="access-type">
-                <span className="access-icon">👨‍💼</span>
                 <span className="access-name">Gerente</span>
                 <span className="access-desc">Supervisão de vendedores</span>
               </div>
               <div className="access-type">
-                <span className="access-icon">👨‍💻</span>
                 <span className="access-name">Vendedor</span>
                 <span className="access-desc">Gestão de propostas próprias</span>
               </div>

@@ -33,6 +33,10 @@ const ControlePage = () => {
 
   const { showNotification } = useNotification();
 
+  // ALTERAÇÃO: Verificar se deve mostrar calibragem (apenas admin)
+  const isAdmin = user?.role === 'admin';
+  const mostrarCalibragem = isAdmin;
+
   const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
@@ -81,21 +85,17 @@ const ControlePage = () => {
     }
   }, [showNotification, user, getMyTeam, getConsultorName]);
 
-  const carregarUGsDisponiveis = useCallback(async () => {
-    if (user?.role !== 'admin') return;
-    
+  const carregarUGs = useCallback(async () => {
     try {
+      if (!isAdmin) return; // Só admin pode gerenciar UGs
+      
       const ugs = await storageService.getUGs();
       setUgsDisponiveis(ugs);
-      
-      const calibragemSalva = storageService.getCalibragemGlobal();
-      setCalibragemGlobal(calibragemSalva);
-      setCalibragemAplicada(calibragemSalva);
-      
     } catch (error) {
       console.error('❌ Erro ao carregar UGs:', error);
+      showNotification('Erro ao carregar UGs', 'error');
     }
-  }, [user]);
+  }, [isAdmin, showNotification]);
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
@@ -108,7 +108,7 @@ const ControlePage = () => {
 
     if (filtros.ug) {
       if (filtros.ug === 'sem-ug') {
-        dadosFiltrados = dadosFiltrados.filter(item => !item.ug || item.ug.trim() === '');
+        dadosFiltrados = dadosFiltrados.filter(item => !item.ug);
       } else {
         dadosFiltrados = dadosFiltrados.filter(item => item.ug === filtros.ug);
       }
@@ -119,86 +119,114 @@ const ControlePage = () => {
       dadosFiltrados = dadosFiltrados.filter(item =>
         item.nomeCliente?.toLowerCase().includes(busca) ||
         item.numeroProposta?.toLowerCase().includes(busca) ||
-        item.numeroUC?.toLowerCase().includes(busca)
+        item.numeroUC?.toLowerCase().includes(busca) ||
+        item.apelido?.toLowerCase().includes(busca)
       );
     }
 
     setDadosFiltrados(dadosFiltrados);
-    atualizarEstatisticas(dadosFiltrados);
   }, [dados, filtros]);
 
-  const atualizarEstatisticas = (dadosFiltrados) => {
-    const total = dadosFiltrados.length;
-    const comUG = dadosFiltrados.filter(item => item.ug && item.ug.trim() !== '').length;
-    const semUG = total - comUG;
-    const calibradas = dadosFiltrados.filter(item => item.calibrado).length;
+  const atualizarEstatisticas = (dados) => {
+    const stats = {
+      total: dados.length,
+      comUG: dados.filter(item => item.ug).length,
+      semUG: dados.filter(item => !item.ug).length,
+      calibradas: dados.filter(item => item.calibragem && parseFloat(item.calibragem) > 0).length
+    };
+    setEstatisticas(stats);
+  };
 
-    setEstatisticas({ total, comUG, semUG, calibradas });
+  const calcularValorCalibrado = (media, calibragem) => {
+    if (!media || !calibragem) return 0;
+    const mediaNum = parseFloat(media);
+    const calibragemNum = parseFloat(calibragem);
+    return mediaNum + (mediaNum * calibragemNum / 100);
   };
 
   useEffect(() => {
     carregarDados();
-    carregarUGsDisponiveis();
-  }, [carregarDados, carregarUGsDisponiveis]);
+    carregarUGs();
+  }, [carregarDados, carregarUGs]);
 
   useEffect(() => {
     filtrarDados();
   }, [filtrarDados]);
 
   const editarUG = (index) => {
+    if (!isAdmin) return;
+    
     const item = dadosFiltrados[index];
+    if (!item) return;
     setModalUG({ show: true, item, index });
-    setUgSelecionada(item.ug || ''); // Definir o valor inicial do select
   };
 
-  const salvarUG = async (novaUG = null) => {
+  const salvarUG = async (ugSelecionada) => {
     try {
-      const itemParaSalvar = modalUG.item;
-      if (!itemParaSalvar) {
-        showNotification('Erro: Item não encontrado', 'error');
-        return;
-      }
-
-      // Use o valor do select se novaUG não for fornecida
-      const ugParaSalvar = novaUG !== null ? novaUG : ugSelecionada;
+      const { item } = modalUG;
       
-      // Encontrar o index real no array de dados original
-      const indexReal = dados.findIndex(d => d.id === itemParaSalvar.id);
+      const indexReal = dados.findIndex(p => p.id === item.id);
       
       if (indexReal === -1) {
-        showNotification('Erro: Item não encontrado no controle', 'error');
+        showNotification('Item não encontrado', 'error');
         return;
       }
 
-      // Atualizar usando o método correto do storageService
-      await storageService.atualizarUGControle(indexReal, ugParaSalvar);
-      
-      // Fechar modal
-      setModalUG({ show: false, item: null, index: -1 });
-      setUgSelecionada('');
-      
-      // Recarregar dados
+      const dadosAtualizados = {
+        ...item,
+        ug: ugSelecionada
+      };
+
+      await storageService.atualizarControle(indexReal, dadosAtualizados);
       await carregarDados();
       
-      showNotification(
-        ugParaSalvar ? 'UG atribuída com sucesso!' : 'UG removida com sucesso!', 
-        'success'
-      );
+      setModalUG({ show: false, item: null, index: -1 });
+      showNotification('UG atribuída com sucesso!', 'success');
+      
     } catch (error) {
       console.error('❌ Erro ao salvar UG:', error);
-      showNotification('Erro ao salvar UG: ' + error.message, 'error');
+      showNotification('Erro ao salvar: ' + error.message, 'error');
     }
   };
 
-  const aplicarCalibragem = () => {
-    setCalibragemAplicada(calibragemGlobal);
-    storageService.setCalibragemGlobal(calibragemGlobal);
-    showNotification(`Calibragem de ${calibragemGlobal}% aplicada!`, 'success');
+  const aplicarCalibragem = async () => {
+    if (!isAdmin) return;
+    
+    if (calibragemGlobal <= 0) {
+      showNotification('Informe um valor de calibragem válido', 'warning');
+      return;
+    }
+
+    if (!window.confirm(`Aplicar calibragem de ${calibragemGlobal}% a todas as propostas?`)) {
+      return;
+    }
+
+    try {
+      // Aplicar calibragem a todos os dados
+      const dadosComCalibragem = dados.map(item => ({
+        ...item,
+        calibragem: calibragemGlobal
+      }));
+
+      // Salvar cada item individualmente
+      for (let i = 0; i < dadosComCalibragem.length; i++) {
+        await storageService.atualizarControle(i, dadosComCalibragem[i]);
+      }
+
+      setCalibragemAplicada(calibragemGlobal);
+      await carregarDados();
+      
+      showNotification(`Calibragem de ${calibragemGlobal}% aplicada com sucesso!`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro ao aplicar calibragem:', error);
+      showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
+    }
   };
 
   const exportarDados = async () => {
     try {
-      await storageService.exportarDadosFiltrados('controle', dadosFiltrados);
+      await storageService.exportarParaCSV('controle');
       showNotification('Dados exportados com sucesso!', 'success');
     } catch (error) {
       console.error('❌ Erro ao exportar:', error);
@@ -206,18 +234,9 @@ const ControlePage = () => {
     }
   };
 
-  const calcularValorCalibrado = (media, calibragem) => {
-    if (!media || media === 0) return 0;
-    if (!calibragem || calibragem === 0) return parseFloat(media);
-    
-    const multiplicador = 1 + (calibragem / 100);
-    return Math.round(parseFloat(media) * multiplicador);
-  };
-
+  // Obter listas únicas para filtros
   const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
   const ugsUnicas = [...new Set(dados.map(item => item.ug).filter(Boolean))];
-
-  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="page-container">
@@ -230,7 +249,7 @@ const ControlePage = () => {
         
         <Navigation />
 
-        {/* Estatísticas */}
+        {/* Estatísticas Rápidas */}
         <section className="quick-stats">
           <div className="stat-card">
             <span className="stat-label">Total</span>
@@ -342,7 +361,8 @@ const ControlePage = () => {
                       <th>Distribuidora</th>
                       <th>UG</th>
                       <th>Média (kWh)</th>
-                      <th>Calibrada (kWh)</th>
+                      {/* ALTERAÇÃO: Coluna de calibragem só aparece para admin */}
+                      {mostrarCalibragem && <th>Calibrada (kWh)</th>}
                       {isAdmin && <th>Ações</th>}
                     </tr>
                   </thead>
@@ -387,20 +407,23 @@ const ControlePage = () => {
                               {item.media ? parseFloat(item.media).toFixed(0) : '0'}
                             </span>
                           </td>
-                          <td>
-                            {calibragemAplicada > 0 && item.media ? (
-                              <div className="calibragem-info">
-                                <span className="calibragem-resultado">
-                                  {valorCalibrado.toFixed(0)}
-                                </span>
-                                <small style={{color: '#666', fontSize: '0.8rem'}}>
-                                  (+{calibragemAplicada}%)
-                                </small>
-                              </div>
-                            ) : (
-                              <span className="sem-calibragem">Sem calibragem</span>
-                            )}
-                          </td>
+                          {/* ALTERAÇÃO: Coluna de calibragem só aparece para admin */}
+                          {mostrarCalibragem && (
+                            <td>
+                              {calibragemAplicada > 0 && item.media ? (
+                                <div className="calibragem-info">
+                                  <span className="calibragem-resultado">
+                                    {valorCalibrado.toFixed(0)}
+                                  </span>
+                                  <small style={{color: '#666', fontSize: '0.8rem'}}>
+                                    (+{calibragemAplicada}%)
+                                  </small>
+                                </div>
+                              ) : (
+                                <span className="sem-calibragem">Sem calibragem</span>
+                              )}
+                            </td>
+                          )}
                           {isAdmin && (
                             <td>
                               <button
@@ -422,68 +445,69 @@ const ControlePage = () => {
           </div>
         </section>
 
-        {/* Modal UG - CORRIGIDO seguindo padrão PROSPEC */}
-        {modalUG.show && (
-          <div className="modal-overlay" onClick={() => setModalUG({ show: false, item: null, index: -1 })}>
-            <div className="modal-content modal-controle" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header modal-header-controle">
-                <h3>⚙️ Editar UG</h3>
-                <button 
-                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
-                  className="btn btn-close"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="modal-body modal-body-controle">
-                <div className="proposta-info">
-                  <h4>{modalUG.item?.nomeCliente}</h4>
-                  <p><strong>Proposta:</strong> {modalUG.item?.numeroProposta}</p>
-                  <p><strong>UC:</strong> {modalUG.item?.numeroUC}</p>
-                  <p><strong>Média:</strong> {modalUG.item?.media} kWh</p>
-                </div>
-
-                <div className="form-group">
-                  <label>UG Responsável</label>
-                  <select 
-                    value={ugSelecionada}
-                    onChange={(e) => setUgSelecionada(e.target.value)}
-                  >
-                    <option value="">Selecione uma UG</option>
-                    {ugsDisponiveis.map(ug => (
-                      <option key={ug.nomeUsina} value={ug.nomeUsina}>
-                        {ug.nomeUsina}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="modal-footer modal-footer-controle">
-                <button 
-                  onClick={() => salvarUG()}
-                  className="btn btn-primary"
-                  disabled={!ugSelecionada}
-                >
-                  💾 Salvar UG
-                </button>
-                <button 
-                  onClick={() => salvarUG('')}
-                  className="btn btn-danger"
-                >
-                  🗑️ Remover UG
-                </button>
-                <button 
-                  onClick={() => setModalUG({ show: false, item: null, index: -1 })}
-                  className="btn btn-secondary"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Modal UG - Apenas para admin */}
+        {modalUG.show && isAdmin && (
+          <ModalUG 
+            item={modalUG.item}
+            ugsDisponiveis={ugsDisponiveis}
+            onSave={salvarUG}
+            onClose={() => setModalUG({ show: false, item: null, index: -1 })}
+          />
         )}
+      </div>
+    </div>
+  );
+};
+
+// Modal para seleção de UG
+const ModalUG = ({ item, ugsDisponiveis, onSave, onClose }) => {
+  const [ugSelecionada, setUgSelecionada] = useState(item.ug || '');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(ugSelecionada);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>🏭 Atribuir UG</h3>
+          <button onClick={onClose} className="btn btn-close">✕</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="proposta-info">
+            <p><strong>Cliente:</strong> {item.nomeCliente}</p>
+            <p><strong>UC:</strong> {item.numeroUC}</p>
+            <p><strong>Proposta:</strong> {item.numeroProposta}</p>
+          </div>
+          
+          <div className="form-group">
+            <label>Selecionar UG:</label>
+            <select
+              value={ugSelecionada}
+              onChange={(e) => setUgSelecionada(e.target.value)}
+              required
+            >
+              <option value="">Escolha uma UG...</option>
+              {ugsDisponiveis.map((ug, index) => (
+                <option key={index} value={ug.nomeUsina}>
+                  {ug.nomeUsina} - {ug.potenciaCA}kW
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn btn-secondary">
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn-primary">
+              💾 Salvar UG
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

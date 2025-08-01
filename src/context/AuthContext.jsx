@@ -279,9 +279,11 @@ export const AuthProvider = ({ children }) => {
     switch (page) {
       case 'ugs':
         return user.role === 'admin';
+      case 'controle':
+        // ALTERAÇÃO: Controle apenas para admin e consultor
+        return ['admin', 'consultor'].includes(user.role);
       case 'dashboard':
       case 'prospec':
-      case 'controle':
       case 'relatorios':
         return ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role);
       default:

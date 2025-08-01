@@ -118,8 +118,6 @@ const ProspecPage = () => {
   };
 
   const editarItem = (index) => {
-    if (user?.role !== 'admin') return;
-    
     const item = dadosFiltrados[index];
     if (!item) return;
     setModalEdicao({ show: true, item, index });
@@ -155,8 +153,6 @@ const ProspecPage = () => {
   };
 
   const removerItem = async (index) => {
-    if (user?.role !== 'admin') return;
-
     const item = dadosFiltrados[index];
     const confirmacao = window.confirm(
       `Tem certeza que deseja remover a proposta de ${item.nomeCliente} (${item.apelido || item.numeroUC})?`
@@ -375,25 +371,22 @@ const ProspecPage = () => {
                             >
                               👁️
                             </button>
-                            {/* Só admin pode editar e remover */}
-                            {isAdmin && (
-                              <>
-                                <button
-                                  onClick={() => editarItem(index)}
-                                  className="btn-icon edit"
-                                  title="Editar"
-                                >
-                                  ✏️
-                                </button>
-                                <button 
-                                  onClick={() => removerItem(index)}
-                                  className="btn-icon delete"
-                                  title="Remover"
-                                >
-                                  🗑️
-                                </button>
-                              </>
-                            )}
+                            {/* Todos os perfis podem editar */}
+                            <button
+                              onClick={() => editarItem(index)}
+                              className="btn-icon edit"
+                              title="Editar"
+                            >
+                              ✏️
+                            </button>
+                            {/* Todos os perfis podem remover */}
+                            <button 
+                              onClick={() => removerItem(index)}
+                              className="btn-icon delete"
+                              title="Remover"
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -409,12 +402,13 @@ const ProspecPage = () => {
         {modalVisualizacao.show && (
           <ModalVisualizacao 
             item={modalVisualizacao.item}
+            user={user}
             onClose={() => setModalVisualizacao({ show: false, item: null })}
           />
         )}
 
-        {/* Modal de Edição - Apenas para admin */}
-        {modalEdicao.show && isAdmin && (
+        {/* Modal de Edição - Para todos os perfis */}
+        {modalEdicao.show && (
           <ModalEdicao 
             item={modalEdicao.item}
             onSave={salvarEdicao}
@@ -427,7 +421,7 @@ const ProspecPage = () => {
 };
 
 // Componente Modal de Visualização - Disponível para todos os perfis
-const ModalVisualizacao = ({ item, onClose }) => {
+const ModalVisualizacao = ({ item, user, onClose }) => {
   const formatarPercentual = (valor) => {
     if (!valor) return '0.0%';
     return `${(parseFloat(valor) * 100).toFixed(1)}%`;
@@ -515,6 +509,9 @@ const ModalVisualizacao = ({ item, onClose }) => {
 
   const beneficiosReais = obterBeneficiosReais();
 
+  // ALTERAÇÃO: Verificar se deve mostrar recorrência (apenas admin e consultor)
+  const mostrarRecorrencia = ['admin', 'consultor'].includes(user?.role);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
@@ -555,10 +552,13 @@ const ModalVisualizacao = ({ item, onClose }) => {
                   <label>Consultor:</label>
                   <span>{item.consultor || '-'}</span>
                 </div>
-                <div className="detail-item">
-                  <label>Recorrência:</label>
-                  <span>{item.recorrencia || '-'}</span>
-                </div>
+                {/* ALTERAÇÃO: Mostrar recorrência apenas para admin e consultor */}
+                {mostrarRecorrencia && (
+                  <div className="detail-item">
+                    <label>Recorrência:</label>
+                    <span>{item.recorrencia || '-'}</span>
+                  </div>
+                )}
               </div>
             </div>
 
