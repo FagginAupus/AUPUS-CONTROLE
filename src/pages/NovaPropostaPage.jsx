@@ -1,4 +1,4 @@
-// NovaPropostaPage.jsx - CORRIGIDA com lógica de consultor baseada no role
+// NovaPropostaPage.jsx - CORRIGIDO
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -15,7 +15,6 @@ const NovaPropostaPage = () => {
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [numeroProposta, setNumeroProposta] = useState('');
-  const [semConsultor, setSemConsultor] = useState(false);
   const [beneficiosAdicionais, setBeneficiosAdicionais] = useState([]);
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
 
@@ -23,19 +22,19 @@ const NovaPropostaPage = () => {
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
       consultor: '',
-      recorrencia: '0%', // Padrão 0%
+      recorrencia: '3%',
       economia: 20,
       bandeira: 20,
       ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-      // Benefícios padrão (todos marcados inicialmente)
-      beneficio1: true,
-      beneficio2: true,
-      beneficio3: true,
-      beneficio4: true,
-      beneficio5: true,
-      beneficio6: true,
-      beneficio7: true,
-      beneficio8: true
+      // Benefícios padrão (todos desmarcados inicialmente)
+      beneficio1: false,
+      beneficio2: false,
+      beneficio3: false,
+      beneficio4: false,
+      beneficio5: false,
+      beneficio6: false,
+      beneficio7: false,
+      beneficio8: false
     }
   });
 
@@ -44,8 +43,44 @@ const NovaPropostaPage = () => {
     name: 'ucs'
   });
 
-  const watchSemConsultor = watch('semConsultor');
-  const watchRecorrencia = watch('recorrencia');
+  const watchConsultor = watch('consultor');
+
+  // Carregar consultores disponíveis baseado no role
+  const carregarConsultores = () => {
+    try {
+      const team = getMyTeam();
+      
+      if (user?.role === 'admin') {
+        // Admin vê todos os consultores + sem consultor
+        const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
+        setConsultoresDisponiveis([...consultores, 'Sem consultor (AUPUS direto)']);
+        
+      } else if (user?.role === 'consultor') {
+        // Consultor vê ele mesmo + seus funcionários diretos e indiretos
+        const consultorNome = user.name;
+        const funcionarios = team.filter(member => 
+          member.role === 'gerente' || member.role === 'vendedor'
+        ).map(member => member.name);
+        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
+        
+      } else if (user?.role === 'gerente') {
+        // Gerente vê ele mesmo + seus vendedores diretos
+        const gerenteNome = user.name;
+        const vendedores = team.filter(member => 
+          member.role === 'vendedor'
+        ).map(member => member.name);
+        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
+        
+      } else if (user?.role === 'vendedor') {
+        // Vendedor vê apenas ele mesmo
+        setConsultoresDisponiveis([user.name]);
+        setValue('consultor', user.name); // Pré-selecionar automaticamente
+      }
+    } catch (error) {
+      console.error('Erro ao carregar consultores:', error);
+      setConsultoresDisponiveis([user?.name || 'Erro']);
+    }
+  };
 
   // Gerar número da proposta
   const gerarNumeroProposta = async () => {
@@ -62,86 +97,30 @@ const NovaPropostaPage = () => {
     }
   };
 
-  // Carregar consultores disponíveis baseado no role do usuário
-  const carregarConsultoresDisponiveis = () => {
-    const team = getMyTeam();
-    let consultores = [];
-
-    switch (user?.role) {
-      case 'admin':
-        // Admin vê todos os consultores cadastrados + opção AUPUS
-        consultores = team.filter(member => member.role === 'consultor');
-        break;
-      
-      case 'consultor':
-        // Consultor vê ele mesmo, gerentes dele e vendedores dele
-        consultores = team.filter(member => 
-          member.role === 'consultor' || 
-          member.role === 'gerente' || 
-          member.role === 'vendedor'
-        );
-        break;
-      
-      case 'gerente':
-        // Gerente vê ele mesmo e os vendedores dele
-        consultores = team.filter(member => 
-          member.role === 'gerente' || 
-          member.role === 'vendedor'
-        );
-        break;
-      
-      case 'vendedor':
-        // Vendedor só vê ele mesmo (fixo)
-        consultores = team.filter(member => member.id === user.id);
-        break;
-      
-      default:
-        consultores = [];
-    }
-
-    setConsultoresDisponiveis(consultores);
-
-    // Se é vendedor, fixar o nome dele
-    if (user?.role === 'vendedor' && consultores.length > 0) {
-      setValue('consultor', consultores[0].name);
-    }
-  };
-
   useEffect(() => {
     gerarNumeroProposta();
-    carregarConsultoresDisponiveis();
+    carregarConsultores();
   }, []);
 
-  // Handle sem consultor - RECORRÊNCIA AUTOMÁTICA 0% (apenas para admin)
+  // Handle consultor change - LÓGICA CORRIGIDA
   useEffect(() => {
-    if (watchSemConsultor && user?.role === 'admin') {
-      setValue('consultor', 'AUPUS');
+    if (watchConsultor === 'Sem consultor (AUPUS direto)') {
       setValue('recorrencia', '0%'); // AUTOMÁTICO 0%
-    } else if (!watchSemConsultor) {
-      setValue('consultor', '');
-      setValue('recorrencia', '3%');
+    } else if (watchConsultor && watchConsultor !== 'Sem consultor (AUPUS direto)') {
+      setValue('recorrencia', '3%'); // Voltar para 3% quando selecionar consultor
     }
-  }, [watchSemConsultor, setValue, user?.role]);
+  }, [watchConsultor, setValue]);
 
   const limparFormulario = () => {
     if (window.confirm('Deseja limpar todos os dados do formulário?')) {
       reset({
         dataProposta: new Date().toISOString().split('T')[0],
-        recorrencia: '0%', // Padrão 0%
+        consultor: '',
+        recorrencia: '3%',
         economia: 20,
         bandeira: 20,
-        ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-        // Benefícios padrão (todos marcados)
-        beneficio1: true,
-        beneficio2: true,
-        beneficio3: true,
-        beneficio4: true,
-        beneficio5: true,
-        beneficio6: true,
-        beneficio7: true,
-        beneficio8: true
+        ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }]
       });
-      setSemConsultor(false);
       setBeneficiosAdicionais([]);
       gerarNumeroProposta();
       showNotification('Formulário limpo com sucesso!', 'info');
@@ -170,13 +149,19 @@ const NovaPropostaPage = () => {
       for (let i = 0; i < data.ucs.length; i++) {
         const uc = data.ucs[i];
         
+        // Ajustar nome do consultor
+        let consultorFinal = data.consultor;
+        if (data.consultor === 'Sem consultor (AUPUS direto)') {
+          consultorFinal = 'AUPUS';
+        }
+        
         const proposta = {
           id: `${numeroProposta}-${uc.numeroUC}-${Date.now()}-${i}`,
           numeroProposta,
           data: data.dataProposta,
           nomeCliente: data.nomeCliente,
           celular: data.celular,
-          consultor: data.consultor,
+          consultor: consultorFinal,
           recorrencia: data.recorrencia,
           descontoTarifa: data.economia / 100,
           descontoBandeira: data.bandeira / 100,
@@ -206,7 +191,6 @@ const NovaPropostaPage = () => {
 
       showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
       reset();
-      setSemConsultor(false);
       setBeneficiosAdicionais([]);
       await gerarNumeroProposta();
       navigate('/prospec');
@@ -222,64 +206,17 @@ const NovaPropostaPage = () => {
   return (
     <div className="page-container">
       <div className="container">
-        <Header 
-          title="NOVA PROPOSTA" 
-          subtitle={`Proposta Nº ${numeroProposta}`} 
-          icon="📝" 
-        />
-        
+        <Header title="Nova Proposta" subtitle="Criar nova proposta comercial" icon="📝" />
         <Navigation />
 
-        <style jsx>{`
-          .form-grid-4-cols {
-            display: grid !important;
-            grid-template-columns: 200px 160px 1fr 180px !important;
-            gap: 15px !important;
-            align-items: start !important;
-            width: 100% !important;
-            margin-bottom: 20px !important;
-          }
+        <form onSubmit={handleSubmit(onSubmit)} className="form-container">
           
-          .form-grid-4-cols .form-group {
-            width: 100% !important;
-            min-width: 0 !important;
-          }
-          
-          .form-grid-4-cols .form-group input,
-          .form-grid-4-cols .form-group select {
-            width: 100% !important;
-            box-sizing: border-box !important;
-            min-width: 0 !important;
-          }
-          
-          .checkbox-group-inline {
-            margin-top: 8px !important;
-            position: relative !important;
-            white-space: nowrap !important;
-          }
-          
-          @media (max-width: 1000px) {
-            .form-grid-4-cols {
-              grid-template-columns: 180px 140px 1fr 160px !important;
-              gap: 12px !important;
-            }
-          }
-          
-          @media (max-width: 768px) {
-            .form-grid-4-cols {
-              grid-template-columns: 1fr !important;
-              gap: 15px !important;
-            }
-          }
-        `}</style>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="nova-proposta-form">
-          {/* INFORMAÇÕES BÁSICAS - TUDO JUNTO */}
+          {/* INFORMAÇÕES BÁSICAS - LAYOUT CORRIGIDO */}
           <section className="form-section">
             <h2>📋 Informações Básicas</h2>
             
-            {/* Primeira linha: Número, Data, Nome, Celular - FORÇAR 4 COLUNAS */}
-            <div className="form-grid-4-cols">
+            {/* Primeira linha - 4 campos uniformes */}
+            <div className="form-grid-uniform">
               <div className="form-group">
                 <label>Número da Proposta</label>
                 <input
@@ -322,12 +259,12 @@ const NovaPropostaPage = () => {
               </div>
             </div>
 
-            {/* Segunda linha: Consultor, Recorrência, Economia Tarifa, Economia Bandeira - FORÇAR 4 COLUNAS */}
-            <div className="form-grid-4-cols">
+            {/* Segunda linha - Consultor e Configurações baseado no role */}
+            <div className="form-grid-uniform">
               <div className="form-group">
                 <label>Nome do Consultor *</label>
                 {user?.role === 'vendedor' ? (
-                  // Para vendedor, campo fixo
+                  // Vendedor: Input desabilitado com o próprio nome
                   <input
                     type="text"
                     value={user.name}
@@ -335,80 +272,66 @@ const NovaPropostaPage = () => {
                     style={{ backgroundColor: '#f0f0f0' }}
                   />
                 ) : (
-                  // Para outros roles, select com opções apropriadas
-                  <select
-                    {...register('consultor', { required: 'Consultor é obrigatório' })}
-                    disabled={semConsultor}
-                    style={{ backgroundColor: semConsultor ? '#f0f0f0' : '#ffffff' }}
+                  // Outros roles: Select com opções baseadas nas regras
+                  <select 
+                    {...register('consultor', { required: 'Consultor é obrigatório' })} 
                     className={errors.consultor ? 'error' : ''}
                   >
-                    <option value="">Selecione o consultor...</option>
-                    {consultoresDisponiveis.map(consultor => (
-                      <option key={consultor.id} value={consultor.name}>
-                        {consultor.name} ({consultor.role})
+                    <option value="">Selecione um consultor...</option>
+                    {consultoresDisponiveis.map((consultor, index) => (
+                      <option key={index} value={consultor}>
+                        {consultor}
                       </option>
                     ))}
                   </select>
                 )}
                 {errors.consultor && <span className="error-message">{errors.consultor.message}</span>}
-                
-                {/* Checkbox AUPUS apenas para admin - ABAIXO do campo consultor */}
-                {user?.role === 'admin' && (
-                  <div className="checkbox-group-inline" style={{ marginTop: '8px' }}>
-                    <input 
-                      type="checkbox" 
-                      id="semConsultor" 
-                      checked={semConsultor}
-                      onChange={(e) => setSemConsultor(e.target.checked)}
-                    />
-                    <label htmlFor="semConsultor">Sem consultor (AUPUS direto)</label>
-                  </div>
-                )}
               </div>
               
-              <div className="form-group">
-                <label>Recorrência do Consultor</label>
-                <select 
-                  {...register('recorrencia')} 
-                  disabled={semConsultor}
-                  style={{ backgroundColor: semConsultor ? '#f0f0f0' : '#ffffff' }}
-                >
-                  <option value="0%">0%</option>
-                  <option value="1%">1%</option>
-                  <option value="2%">2%</option>
-                  <option value="3%">3%</option>
-                  <option value="4%">4%</option>
-                  <option value="5%">5%</option>
-                  <option value="6%">6%</option>
-                  <option value="7%">7%</option>
-                </select>
-              </div>
-              
+              {/* Recorrência: Visível apenas para Admin e Consultor */}
+              {(user?.role === 'admin' || user?.role === 'consultor') && (
+                <div className="form-group">
+                  <label>Recorrência do Consultor</label>
+                  <select 
+                    {...register('recorrencia')} 
+                    disabled={watchConsultor === 'Sem consultor (AUPUS direto)'}
+                    style={{ 
+                      backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#f0f0f0' : '#ffffff',
+                      cursor: watchConsultor === 'Sem consultor (AUPUS direto)' ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <option value="0%">0%</option>
+                    <option value="3%">3%</option>
+                    <option value="5%">5%</option>
+                    <option value="7%">7%</option>
+                    <option value="10%">10%</option>
+                  </select>
+                </div>
+              )}
+
               <div className="form-group">
                 <label>Economia Tarifa (%)</label>
                 <input 
                   {...register('economia', { min: 0, max: 100 })} 
                   type="number" 
-                  step="0.1" 
-                  min="0" 
-                  max="100"
+                  step="0.1"
+                  placeholder="20"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label>Economia Bandeira (%)</label>
                 <input 
                   {...register('bandeira', { min: 0, max: 100 })} 
-                  type="number" 
+                  type="number"
                   step="0.1" 
-                  min="0" 
-                  max="100"
+                  placeholder="20"
                 />
               </div>
             </div>
           </section>
 
-          {/* UNIDADES CONSUMIDORAS - LAYOUT MELHORADO */}
+          {/* UNIDADES CONSUMIDORAS */}
           <section className="form-section">
             <h2>🏢 Unidades Consumidoras</h2>
             
@@ -423,43 +346,47 @@ const NovaPropostaPage = () => {
                         onClick={() => remove(index)}
                         className="btn-remove-uc"
                       >
-                        ❌ Remover
+                        🗑️ Remover
                       </button>
                     )}
                   </div>
                   
-                  {/* 5 INPUTS EM UMA LINHA - LAYOUT CORRIGIDO */}
                   <div className="uc-inputs-row">
                     <div className="form-group">
                       <label>Distribuidora</label>
                       <select {...register(`ucs.${index}.distribuidora`)}>
                         <option value="">Selecione...</option>
-                        <option value="Equatorial">Equatorial</option>
-                        <option value="ENEL">ENEL</option>
+                        <option value="ENEL GO">ENEL GO</option>
+                        <option value="ENEL CE">ENEL CE</option>
+                        <option value="ENERGISA">ENERGISA</option>
+                        <option value="EQUATORIAL">EQUATORIAL</option>
                         <option value="CEMIG">CEMIG</option>
+                        <option value="COPEL">COPEL</option>
+                        <option value="CELPE">CELPE</option>
+                        <option value="COELBA">COELBA</option>
+                        <option value="LIGHT">LIGHT</option>
                         <option value="CPFL">CPFL</option>
-                        <option value="Light">Light</option>
                       </select>
                     </div>
-                    
+
                     <div className="form-group">
                       <label>Número UC</label>
-                      <input
-                        {...register(`ucs.${index}.numeroUC`)}
-                        type="text"
-                        placeholder="12345678"
+                      <input 
+                        {...register(`ucs.${index}.numeroUC`)} 
+                        type="text" 
+                        placeholder="Ex: 12345678"
                       />
                     </div>
-                    
+
                     <div className="form-group">
-                      <label>Apelido</label>
-                      <input
-                        {...register(`ucs.${index}.apelido`)}
-                        type="text"
-                        placeholder="Casa Principal"
+                      <label>Apelido UC</label>
+                      <input 
+                        {...register(`ucs.${index}.apelido`)} 
+                        type="text" 
+                        placeholder="Nome familiar"
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label>Ligação</label>
                       <select {...register(`ucs.${index}.ligacao`)}>
@@ -469,22 +396,20 @@ const NovaPropostaPage = () => {
                         <option value="Trifásica">Trifásica</option>
                       </select>
                     </div>
-                    
+
                     <div className="form-group">
-                      <label>Consumo (kWh)</label>
-                      <input
-                        {...register(`ucs.${index}.consumo`)}
-                        type="number"
-                        placeholder="500"
-                        min="0"
+                      <label>Consumo Médio (kWh)</label>
+                      <input 
+                        {...register(`ucs.${index}.consumo`)} 
+                        type="number" 
+                        placeholder="Ex: 350"
                       />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            
-            {/* BOTÃO ADICIONAR UC ABAIXO DOS INPUTS */}
+
             <div className="uc-actions">
               <button
                 type="button"
@@ -496,110 +421,157 @@ const NovaPropostaPage = () => {
             </div>
           </section>
 
-          {/* INFORMAÇÕES IMPORTANTES (BENEFÍCIOS) - MELHORADO */}
+          {/* BENEFÍCIOS */}
           <section className="form-section">
-            <h2>ℹ️ Informações Importantes</h2>
+            <h2>🎁 Benefícios Inclusos</h2>
             
             <div className="beneficios-grid">
               <div className="beneficio-item">
-                <input {...register('beneficio1')} type="checkbox" id="beneficio1" />
-                <label htmlFor="beneficio1">Os benefícios econômicos foram calculados com base nas tarifas de energia, sem impostos</label>
+                <input 
+                  {...register('beneficio1')} 
+                  type="checkbox" 
+                  id="beneficio1"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio1">
+                  Isenção de taxa de adesão
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio2')} type="checkbox" id="beneficio2" />
-                <label htmlFor="beneficio2">A titularidade da fatura será transferida para o Consórcio Clube Aupus</label>
+                <input 
+                  {...register('beneficio2')} 
+                  type="checkbox" 
+                  id="beneficio2"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio2">
+                  Não há cobrança de taxa de cancelamento
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio3')} type="checkbox" id="beneficio3" />
-                <label htmlFor="beneficio3">A Aupus Energia fornecerá consultoria energética para o condomínio</label>
+                <input 
+                  {...register('beneficio3')} 
+                  type="checkbox" 
+                  id="beneficio3"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio3">
+                  Não há fidelidade contratual
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio4')} type="checkbox" id="beneficio4" />
-                <label htmlFor="beneficio4">Todo o processo será conduzido pela Aupus Energia, não se preocupe</label>
+                <input 
+                  {...register('beneficio4')} 
+                  type="checkbox" 
+                  id="beneficio4"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio4">
+                  O cliente pode cancelar a qualquer momento
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio5')} type="checkbox" id="beneficio5" />
-                <label htmlFor="beneficio5">Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energia</label>
+                <input 
+                  {...register('beneficio5')} 
+                  type="checkbox" 
+                  id="beneficio5"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio5">
+                  Suporte técnico especializado
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio6')} type="checkbox" id="beneficio6" />
-                <label htmlFor="beneficio6">Contamos com uma moderna plataforma para te oferecer uma experiência única!</label>
+                <input 
+                  {...register('beneficio6')} 
+                  type="checkbox" 
+                  id="beneficio6"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio6">
+                  Monitoramento 24/7 do sistema
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio7')} type="checkbox" id="beneficio7" />
-                <label htmlFor="beneficio7">A proposta se aplica para todos os condôminos que tiverem interesse</label>
+                <input 
+                  {...register('beneficio7')} 
+                  type="checkbox" 
+                  id="beneficio7"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio7">
+                  Relatórios mensais de economia
+                </label>
               </div>
-              
+
               <div className="beneficio-item">
-                <input {...register('beneficio8')} type="checkbox" id="beneficio8" />
-                <label htmlFor="beneficio8">Não há fidelidade contratual - o cliente pode cancelar a qualquer momento</label>
+                <input 
+                  {...register('beneficio8')} 
+                  type="checkbox" 
+                  id="beneficio8"
+                  defaultChecked
+                />
+                <label htmlFor="beneficio8">
+                  Desconto direto na conta de energia
+                </label>
               </div>
             </div>
 
-            {/* BENEFÍCIOS ADICIONAIS */}
-            {beneficiosAdicionais.length > 0 && (
-              <div className="beneficios-adicionais">
-                <h3>Benefícios Adicionais</h3>
-                
-                {beneficiosAdicionais.map((beneficio, index) => (
-                  <div key={index} className="beneficio-adicional">
-                    <input
-                      type="text"
-                      value={beneficio}
-                      onChange={(e) => atualizarBeneficioAdicional(index, e.target.value)}
-                      placeholder="Digite um benefício adicional..."
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removerBeneficioAdicional(index)}
-                      className="btn-remove-beneficio"
-                    >
-                      ❌
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <button
-              type="button"
-              onClick={adicionarBeneficioAdicional}
-              className="btn btn-secondary"
-            >
-              ➕ Adicionar Benefício
-            </button>
+            {/* Benefícios Adicionais */}
+            <div className="beneficios-adicionais">
+              <h3>Benefícios Personalizados</h3>
+              
+              {beneficiosAdicionais.map((beneficio, index) => (
+                <div key={index} className="beneficio-adicional">
+                  <input
+                    type="text"
+                    value={beneficio}
+                    onChange={(e) => atualizarBeneficioAdicional(index, e.target.value)}
+                    placeholder="Digite um benefício personalizado..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removerBeneficioAdicional(index)}
+                    className="btn btn-danger btn-sm"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+              
+              <button
+                type="button"
+                onClick={adicionarBeneficioAdicional}
+                className="btn btn-secondary btn-sm"
+              >
+                ➕ Adicionar Benefício
+              </button>
+            </div>
           </section>
 
-          {/* AÇÕES */}
+          {/* AÇÕES DO FORMULÁRIO */}
           <div className="form-actions">
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="btn btn-primary"
-            >
-              {loading ? '⏳ Salvando...' : '💾 Salvar Proposta'}
-            </button>
-            
-            <button 
-              type="button" 
-              onClick={limparFormulario} 
+            <button
+              type="button"
+              onClick={limparFormulario}
               className="btn btn-secondary"
+              disabled={loading}
             >
               🗑️ Limpar Formulário
             </button>
-            
-            <button 
-              type="button" 
-              onClick={() => navigate('/prospec')} 
-              className="btn btn-secondary"
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
             >
-              ⬅️ Voltar
+              {loading ? '⏳ Salvando...' : '💾 Salvar Proposta'}
             </button>
           </div>
         </form>
