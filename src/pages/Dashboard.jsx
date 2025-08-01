@@ -1,4 +1,4 @@
-// src/pages/Dashboard.jsx - Dashboard corrigido
+// src/pages/Dashboard.jsx - Dashboard corrigido com equipe para admin
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
@@ -84,7 +84,14 @@ const Dashboard = () => {
   const carregarEquipe = () => {
     try {
       const team = getMyTeam();
-      setEquipe(team.filter(member => member.id !== user?.id)); // Excluir o próprio usuário
+      
+      if (user?.role === 'admin') {
+        // Admin vê apenas consultores
+        setEquipe(team.filter(member => member.role === 'consultor'));
+      } else {
+        // Outros roles veem sua equipe completa (exceto eles mesmos)
+        setEquipe(team.filter(member => member.id !== user?.id));
+      }
     } catch (error) {
       console.error('Erro ao carregar equipe:', error);
     }
@@ -138,6 +145,7 @@ const Dashboard = () => {
       gerente: '👨‍💼',
       vendedor: '👨‍💻'
     };
+
     return icons[role] || '👤';
   };
 
@@ -149,6 +157,20 @@ const Dashboard = () => {
   // Obter gerentes disponíveis para atribuir vendedores
   const getGerentesDisponiveis = () => {
     return equipe.filter(member => member.role === 'gerente');
+  };
+
+  // Função para obter o título da seção baseado no role
+  const getTituloEquipe = () => {
+    switch (user?.role) {
+      case 'admin':
+        return 'Consultores Cadastrados';
+      case 'consultor':
+        return 'Minha Equipe';
+      case 'gerente':
+        return 'Minha Equipe';
+      default:
+        return 'Equipe';
+    }
   };
 
   return (
@@ -243,33 +265,35 @@ const Dashboard = () => {
                 </button>
               )}
             </div>
+          </section>
+        )}
 
-            {/* Lista da Equipe */}
-            {equipe.length > 0 && (
-              <div className="team-list">
-                <h3>Sua Equipe ({equipe.length})</h3>
-                <div className="team-grid">
-                  {equipe.map(member => (
-                    <div key={member.id} className="team-member">
-                      <div className="member-avatar">
-                        <span className="member-icon">{getRoleIcon(member.role)}</span>
-                      </div>
-                      <div className="member-info">
-                        <h4>{member.name}</h4>
-                        <p className="member-role">{getTipoLabel(member.role)}</p>
-                        <p className="member-username">@{member.username}</p>
-                        <p className="member-date">Criado em {formatarData(member.createdAt)}</p>
-                        {member.managerId && (
-                          <p className="member-manager">
-                            Gerente: {equipe.find(g => g.id === member.managerId)?.name || 'N/A'}
-                          </p>
-                        )}
-                      </div>
+        {/* Lista da Equipe - ALTERAÇÃO: Mostrar para todos os roles que têm equipe */}
+        {equipe.length > 0 && (
+          <section className="user-management">
+            <div className="team-list">
+              <h3>{getTituloEquipe()} ({equipe.length})</h3>
+              <div className="team-grid">
+                {equipe.map(member => (
+                  <div key={member.id} className="team-member">
+                    <div className="member-avatar">
+                      <span className="member-icon">{getRoleIcon(member.role)}</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="member-info">
+                      <h4>{member.name}</h4>
+                      <p className="member-role">{getTipoLabel(member.role)}</p>
+                      <p className="member-username">@{member.username}</p>
+                      <p className="member-date">Criado em {formatarData(member.createdAt)}</p>
+                      {member.managerId && (
+                        <p className="member-manager">
+                          Gerente: {equipe.find(g => g.id === member.managerId)?.name || 'N/A'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </section>
         )}
 
@@ -329,53 +353,51 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>➕ Cadastrar {getTipoLabel(tipo)}</h3>
-          <button onClick={onClose} className="close-btn">❌</button>
+          <button onClick={onClose} className="btn btn-close">✕</button>
         </div>
         
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-group">
-            <label>Nome Completo *</label>
+            <label>Nome Completo:</label>
             <input
               type="text"
               value={dados.name}
               onChange={(e) => setDados({...dados, name: e.target.value})}
-              placeholder="Ex: João Silva"
+              placeholder="Digite o nome completo"
               required
             />
           </div>
 
           <div className="form-group">
-            <label>Nome de Usuário *</label>
+            <label>Nome de Usuário:</label>
             <input
               type="text"
               value={dados.username}
-              onChange={(e) => setDados({...dados, username: e.target.value.toLowerCase()})}
-              placeholder="Ex: joao.silva"
+              onChange={(e) => setDados({...dados, username: e.target.value})}
+              placeholder="Digite o nome de usuário"
               required
             />
           </div>
 
           <div className="form-group">
-            <label>Senha *</label>
+            <label>Senha:</label>
             <input
               type="password"
               value={dados.password}
               onChange={(e) => setDados({...dados, password: e.target.value})}
-              placeholder="Mínimo 3 caracteres"
-              minLength="3"
+              placeholder="Digite a senha"
               required
             />
           </div>
 
-          {/* Campo para atribuir gerente apenas para vendedores */}
           {tipo === 'vendedor' && gerentes.length > 0 && (
             <div className="form-group">
-              <label>Atribuir a um Gerente (Opcional)</label>
+              <label>Gerente Responsável:</label>
               <select
                 value={dados.managerId}
                 onChange={(e) => setDados({...dados, managerId: e.target.value})}
               >
-                <option value="">Nenhum gerente</option>
+                <option value="">Selecione um gerente...</option>
                 {gerentes.map(gerente => (
                   <option key={gerente.id} value={gerente.id}>
                     {gerente.name}
@@ -386,11 +408,11 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
           )}
 
           <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn-secondary">
+            <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Criando...' : `Criar ${getTipoLabel(tipo)}`}
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Salvando...' : `Criar ${getTipoLabel(tipo)}`}
             </button>
           </div>
         </form>

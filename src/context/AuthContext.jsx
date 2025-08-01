@@ -227,11 +227,13 @@ export const AuthProvider = ({ children }) => {
   const getMyTeamIds = () => {
     if (!user) return [];
     
+    const users = getUsersFromStorage();
+    
     if (user.role === 'admin') {
-      return ['admin']; // Admin vê tudo através de lógica especial
+      // Admin vê todos os usuários (exceto ele mesmo)
+      return users.filter(u => u.id !== user.id).map(u => u.id);
     }
 
-    const users = getUsersFromStorage();
     const teamIds = [user.id]; // Sempre incluir o próprio usuário
 
     // Função recursiva para buscar subordinados
