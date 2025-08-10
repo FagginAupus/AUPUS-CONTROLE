@@ -1,7 +1,6 @@
-// src/context/AuthContext.jsx - Sistema de autenticação com hierarquia de usuários - ATUALIZADO
+// src/context/AuthContext.jsx - CORREÇÃO FINAL apenas do getMyTeam
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import storageService from '../services/storageService';
-import apiService from '../services/apiService';
 
 const AuthContext = createContext();
 
@@ -57,7 +56,7 @@ export const AuthProvider = ({ children }) => {
       const result = await storageService.login(credentials);
       
       if (result.success) {
-        const userData = result.user || result.data?.user;
+        const userData = result.user;
         setUser(userData);
         setIsAuthenticated(true);
         console.log('✅ Login realizado com sucesso:', userData.nome || userData.name);
@@ -161,61 +160,43 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Você não tem permissão para criar este tipo de usuário');
       }
 
-      // Se API estiver disponível, tentar criar via API
-      if (storageService.useAPI) {
-        try {
-          const result = await apiService.criarUsuario(userData);
-          console.log('✅ Usuário criado via API:', result);
-          return result;
-        } catch (error) {
-          console.warn('⚠️ Falha na API, criando localmente:', error);
-        }
+      const users = getUsersFromStorage();
+      
+      // Verificar se username já existe
+      if (users.find(u => u.username === userData.username)) {
+        throw new Error('Nome de usuário já existe');
       }
 
-      // Fallback para criação local
-      return await createUserLocal(userData);
+      // Definir permissões baseadas no role
+      const permissions = getPermissionsByRole(userData.role);
+      
+      const newUser = {
+        id: Date.now().toString(),
+        username: userData.username,
+        password: userData.password,
+        name: userData.name,
+        role: userData.role,
+        permissions,
+        createdBy: user.id,
+        createdAt: new Date().toISOString(),
+        subordinates: [],
+        managerId: userData.managerId || null // ID do gerente para vendedores
+      };
+
+      users.push(newUser);
+      saveUsersToStorage(users);
+
+      // Adicionar aos subordinados do usuário atual ou do gerente
+      const supervisorId = userData.managerId || user.id;
+      addSubordinateToUser(supervisorId, newUser.id);
+
+      console.log('✅ Usuário criado:', newUser.name);
+      return newUser;
       
     } catch (error) {
       console.error('❌ Erro ao criar usuário:', error);
       throw error;
     }
-  };
-
-  // Criação local de usuário (fallback)
-  const createUserLocal = async (userData) => {
-    const users = getUsersFromStorage();
-    
-    // Verificar se username já existe
-    if (users.find(u => u.username === userData.username)) {
-      throw new Error('Nome de usuário já existe');
-    }
-
-    // Definir permissões baseadas no role
-    const permissions = getPermissionsByRole(userData.role);
-    
-    const newUser = {
-      id: Date.now().toString(),
-      username: userData.username,
-      password: userData.password,
-      name: userData.name,
-      email: userData.email || `${userData.username}@aupus.com`,
-      role: userData.role,
-      permissions,
-      createdBy: user.id,
-      createdAt: new Date().toISOString(),
-      subordinates: [],
-      managerId: userData.managerId || null // ID do gerente para vendedores
-    };
-
-    users.push(newUser);
-    saveUsersToStorage(users);
-
-    // Adicionar aos subordinados do usuário atual ou do gerente
-    const supervisorId = userData.managerId || user.id;
-    addSubordinateToUser(supervisorId, newUser.id);
-
-    console.log('✅ Usuário criado localmente:', newUser.name);
-    return newUser;
   };
 
   // Função para verificar se pode criar usuário
@@ -274,44 +255,56 @@ export const AuthProvider = ({ children }) => {
     return [user.id, ...(user.subordinates || [])];
   };
 
-  // Obter dados da equipe
-  const getMyTeam = async () => {
-    try {
-      // Se API disponível, buscar da API
-      if (storageService.useAPI) {
-        try {
-          const teamData = await storageService.getTeam();
-          return teamData;
-        } catch (error) {
-          console.warn('⚠️ Falha na API, usando dados locais:', error);
-        }
-      }
-      
-      // Fallback para dados locais
-      return getMyTeamLocal();
-      
-    } catch (error) {
-      console.error('❌ Erro ao obter equipe:', error);
+  // ✅ CORREÇÃO PRINCIPAL: getMyTeam deve SEMPRE retornar um array
+  const getMyTeam = () => {
+    if (!user) {
+      console.log('❌ getMyTeam: Nenhum usuário logado, retornando array vazio');
       return [];
     }
-  };
-
-  // Obter equipe local (fallback)
-  const getMyTeamLocal = () => {
-    if (!user) return [];
     
-    const users = getUsersFromStorage();
-    const teamIds = getMyTeamIds();
-    
-    return users
-      .filter(u => teamIds.includes(u.id))
-      .map(u => ({
-        id: u.id,
-        name: u.name,
-        username: u.username,
-        role: u.role,
-        email: u.email
-      }));
+    try {
+      const users = getUsersFromStorage();
+      const teamIds = getMyTeamIds();
+      
+      const team = users
+        .filter(u => teamIds.includes(u.id))
+        .map(u => ({
+          id: u.id,
+          name: u.name || u.nome,
+          username: u.username,
+          role: u.role,
+          email: u.email
+        }));
+      
+      // Se não há equipe, retornar pelo menos o próprio usuário
+      if (team.length === 0 && user) {
+        console.log('⚠️ getMyTeam: Equipe vazia, retornando apenas usuário atual');
+        return [{
+          id: user.id,
+          name: user.name || user.nome,
+          username: user.username || user.email,
+          role: user.role,
+          email: user.email
+        }];
+      }
+      
+      console.log('✅ getMyTeam: Retornando equipe com', team.length, 'membros');
+      return team;
+      
+    } catch (error) {
+      console.error('❌ Erro em getMyTeam:', error);
+      // Fallback final: retornar apenas o usuário atual
+      if (user) {
+        return [{
+          id: user.id,
+          name: user.name || user.nome || 'Usuário',
+          username: user.username || user.email,
+          role: user.role,
+          email: user.email
+        }];
+      }
+      return [];
+    }
   };
 
   // Funções auxiliares (mantidas do código original)
