@@ -1,12 +1,13 @@
-// src/App.js - Roteamento com controle de acesso hierárquico
-import React from 'react';
+// src/App.js - Roteamento com controle de acesso hierárquico - ATUALIZADO
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// Importar o storage service para inicializar globalmente
-import './services/storageService';
+// Importar os services para inicializar globalmente
+import storageService from './services/storageService';
+import apiService from './services/apiService';
 
 // Páginas
 import LoginPage from './pages/LoginPage';
@@ -17,15 +18,38 @@ import ControlePage from './pages/ControlePage';
 import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
 
+// Componente para status da API
+import ApiStatusIndicator from './components/common/ApiStatusIndicator';
+
 // Estilos globais
 import './App.css';
 
 function App() {
+  useEffect(() => {
+    // Inicializar serviços quando o app carrega
+    const initializeServices = async () => {
+      console.log('🚀 Inicializando AUPUS...');
+      
+      try {
+        // Detectar modo de operação (API ou localStorage)
+        await storageService.detectarModoOperacao();
+        console.log('✅ Services inicializados');
+      } catch (error) {
+        console.error('❌ Erro na inicialização dos services:', error);
+      }
+    };
+
+    initializeServices();
+  }, []);
+
   return (
     <AuthProvider>
       <NotificationProvider>
         <Router>
           <div className="App">
+            {/* Indicador de status da API */}
+            <ApiStatusIndicator />
+            
             <Routes>
               {/* Rota de Login */}
               <Route path="/login" element={<LoginPage />} />

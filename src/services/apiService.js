@@ -3,18 +3,19 @@ import Cookies from 'js-cookie';
 
 class ApiService {
     constructor() {
-        // URL base da API - ajustar conforme seu servidor
-        this.baseURL = process.env.NODE_ENV === 'production' 
-            ? 'http://45.55.122.87/api'  // URL de produção
-            : 'http://localhost:8000/api'; // URL de desenvolvimento
+        // URL base da API - ajustar conforme seu ambiente
+        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
         
         this.token = Cookies.get('aupus_token') || localStorage.getItem('aupus_token');
         
-        console.log(`🔗 ApiService inicializado - Environment: ${process.env.NODE_ENV}`);
+        console.log(`🔗 ApiService inicializado`);
         console.log(`🌐 Base URL: ${this.baseURL}`);
     }
 
-    // Configurar token de autenticação
+    // ========================================
+    // CONFIGURAÇÃO DE TOKEN
+    // ========================================
+
     setToken(token) {
         this.token = token;
         Cookies.set('aupus_token', token, { expires: 7 }); // 7 dias
@@ -22,7 +23,6 @@ class ApiService {
         console.log('🔐 Token configurado');
     }
 
-    // Remover token
     clearToken() {
         this.token = null;
         Cookies.remove('aupus_token');
@@ -30,7 +30,10 @@ class ApiService {
         console.log('🚪 Token removido');
     }
 
-    // Método base para requisições
+    // ========================================
+    // MÉTODO BASE PARA REQUISIÇÕES
+    // ========================================
+
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
         
@@ -59,7 +62,8 @@ class ApiService {
             if (!response.ok) {
                 if (response.status === 401) {
                     this.clearToken();
-                    window.location.href = '/login';
+                    // Opcional: redirecionar para login
+                    // window.location.href = '/login';
                     throw new Error('Sessão expirada');
                 }
                 
@@ -72,12 +76,12 @@ class ApiService {
             return data;
 
         } catch (error) {
-            console.error(`❌ Erro na requisição ${endpoint}:`, error);
+            console.error(`❌ Erro na requisição ${config.method || 'GET'} ${url}:`, error);
             throw error;
         }
     }
 
-    // Métodos HTTP específicos
+    // Métodos de conveniência
     async get(endpoint) {
         return this.request(endpoint, { method: 'GET' });
     }
@@ -96,258 +100,244 @@ class ApiService {
         });
     }
 
+    async patch(endpoint, data) {
+        return this.request(endpoint, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    }
+
     async delete(endpoint) {
         return this.request(endpoint, { method: 'DELETE' });
     }
 
     // ========================================
-    // MÉTODOS DE AUTENTICAÇÃO
+    // AUTENTICAÇÃO
     // ========================================
 
-    async login(email, password) {
-        try {
-            const response = await this.post('/auth/login', {
-                email,
-                password,
-            });
-
-            if (response.success && response.token) {
-                this.setToken(response.token);
-                return {
-                    success: true,
-                    user: response.user,
-                    token: response.token,
-                };
-            }
-
-            return {
-                success: false,
-                message: response.message || 'Erro no login',
-            };
-        } catch (error) {
-            return {
-                success: false,
-                message: error.message || 'Erro de conexão',
-            };
+    async login(credentials) {
+        const response = await this.post('/auth/login', credentials);
+        if (response.success && response.token) {
+            this.setToken(response.token);
         }
+        return response;
+    }
+
+    async register(userData) {
+        return this.post('/auth/register', userData);
     }
 
     async logout() {
         try {
             await this.post('/auth/logout');
         } catch (error) {
-            console.error('Erro no logout:', error);
+            console.warn('Erro ao fazer logout na API:', error);
         } finally {
             this.clearToken();
         }
     }
 
-    async getUser() {
-        try {
-            const response = await this.get('/auth/user');
-            return response.user;
-        } catch (error) {
-            console.error('Erro ao obter usuário:', error);
-            return null;
+    async refreshToken() {
+        const response = await this.post('/auth/refresh');
+        if (response.token) {
+            this.setToken(response.token);
         }
+        return response;
+    }
+
+    async getCurrentUser() {
+        return this.get('/auth/me');
+    }
+
+    async changePassword(passwordData) {
+        return this.post('/auth/change-password', passwordData);
     }
 
     // ========================================
-    // MÉTODOS PARA PROPOSTAS
-    // ========================================
-
-    async getPropostas() {
-        const response = await this.get('/propostas');
-        return response.data || [];
-    }
-
-    async criarProposta(proposta) {
-        const response = await this.post('/propostas', proposta);
-        return response.data;
-    }
-
-    async atualizarProposta(id, dados) {
-        const response = await this.put(`/propostas/${id}`, dados);
-        return response.data;
-    }
-
-    async excluirProposta(id) {
-        await this.delete(`/propostas/${id}`);
-        return true;
-    }
-
-    // ========================================
-    // MÉTODOS PARA CONTROLE
-    // ========================================
-
-    async getControle() {
-        const response = await this.get('/controle');
-        return response.data || [];
-    }
-
-    async adicionarControle(proposta) {
-        const response = await this.post('/controle', proposta);
-        return response.data;
-    }
-
-    async atualizarControle(id, dados) {
-        const response = await this.put(`/controle/${id}`, dados);
-        return response.data;
-    }
-
-    async atualizarUGControle(id, ug) {
-        const response = await this.put(`/controle/${id}/ug`, { ug });
-        return response.data;
-    }
-
-    async removerControle(id) {
-        await this.delete(`/controle/${id}`);
-        return true;
-    }
-
-    // ========================================
-    // MÉTODOS PARA UGS
-    // ========================================
-
-    async getUGs() {
-        const response = await this.get('/unidades-consumidoras?tipo=ug');
-        return response.data || [];
-    }
-
-    async criarUG(ug) {
-        const response = await this.post('/unidades-consumidoras', {
-            ...ug,
-            is_ug: true
-        });
-        return response.data;
-    }
-
-    async atualizarUG(id, dados) {
-        const response = await this.put(`/unidades-consumidoras/${id}`, dados);
-        return response.data;
-    }
-
-    async excluirUG(id) {
-        await this.delete(`/unidades-consumidoras/${id}`);
-        return true;
-    }
-
-    // ========================================
-    // MÉTODOS PARA USUÁRIOS
+    // USUÁRIOS
     // ========================================
 
     async getUsuarios() {
-        const response = await this.get('/usuarios');
-        return response.data || [];
+        return this.get('/usuarios');
     }
 
-    async criarUsuario(usuario) {
-        const response = await this.post('/usuarios', usuario);
-        return response.data;
+    async getUsuario(id) {
+        return this.get(`/usuarios/${id}`);
     }
 
-    async atualizarUsuario(id, dados) {
-        const response = await this.put(`/usuarios/${id}`, dados);
-        return response.data;
+    async criarUsuario(userData) {
+        return this.post('/usuarios', userData);
     }
 
-    // ========================================
-    // MÉTODOS PARA CONFIGURAÇÕES
-    // ========================================
-
-    async getConfiguracoes() {
-        const response = await this.get('/configuracoes');
-        return response.data || {};
+    async atualizarUsuario(id, userData) {
+        return this.put(`/usuarios/${id}`, userData);
     }
 
-    async salvarConfiguracao(chave, valor) {
-        const response = await this.post('/configuracoes', { chave, valor });
-        return response.data;
+    async toggleUsuarioAtivo(id) {
+        return this.patch(`/usuarios/${id}/toggle-active`);
+    }
+
+    async getTeam() {
+        return this.get('/usuarios/team');
     }
 
     // ========================================
-    // MÉTODOS PARA RELATÓRIOS E ESTATÍSTICAS
+    // PROPOSTAS (PROSPEC)
     // ========================================
 
-    async getEstatisticas() {
-        const response = await this.get('/relatorios/estatisticas');
-        return response.data || {};
+    async getPropostas(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/propostas?${params}` : '/propostas';
+        return this.get(endpoint);
     }
 
-    async getDashboardData() {
-        const response = await this.get('/dashboard');
-        return response.data || {};
+    async getProposta(id) {
+        return this.get(`/propostas/${id}`);
+    }
+
+    async criarProposta(propostaData) {
+        return this.post('/propostas', propostaData);
+    }
+
+    async atualizarProposta(id, propostaData) {
+        return this.put(`/propostas/${id}`, propostaData);
+    }
+
+    async excluirProposta(id) {
+        return this.delete(`/propostas/${id}`);
+    }
+
+    async getEstatisticasPropostas(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/propostas/statistics?${params}` : '/propostas/statistics';
+        return this.get(endpoint);
+    }
+
+    async exportarPropostas(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/propostas/export?${params}` : '/propostas/export';
+        return this.get(endpoint);
     }
 
     // ========================================
-    // MIGRAÇÃO DO LOCALSTORAGE PARA API
+    // UNIDADES CONSUMIDORAS
     // ========================================
 
-    async migrarDadosLocalStorage() {
-        try {
-            console.log('🔄 Iniciando migração dos dados do localStorage...');
-            
-            // Obter dados do localStorage
-            const prospecData = localStorage.getItem('aupus_prospec');
-            const controleData = localStorage.getItem('aupus_controle');
-            const ugsData = localStorage.getItem('aupus_ugs');
+    async getUnidadesConsumidoras(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/unidades-consumidoras?${params}` : '/unidades-consumidoras';
+        return this.get(endpoint);
+    }
 
-            let migrationResult = {
-                propostas: 0,
-                controle: 0,
-                ugs: 0,
-                errors: []
-            };
+    async getUnidadeConsumidora(id) {
+        return this.get(`/unidades-consumidoras/${id}`);
+    }
 
-            // Migrar propostas
-            if (prospecData) {
-                try {
-                    const propostas = JSON.parse(prospecData);
-                    for (const proposta of propostas) {
-                        await this.criarProposta(proposta);
-                        migrationResult.propostas++;
-                    }
-                } catch (error) {
-                    migrationResult.errors.push(`Propostas: ${error.message}`);
-                }
-            }
+    async criarUnidadeConsumidora(ucData) {
+        return this.post('/unidades-consumidoras', ucData);
+    }
 
-            // Migrar UGs
-            if (ugsData) {
-                try {
-                    const ugs = JSON.parse(ugsData);
-                    for (const ug of ugs) {
-                        await this.criarUG(ug);
-                        migrationResult.ugs++;
-                    }
-                } catch (error) {
-                    migrationResult.errors.push(`UGs: ${error.message}`);
-                }
-            }
+    async atualizarUnidadeConsumidora(id, ucData) {
+        return this.put(`/unidades-consumidoras/${id}`, ucData);
+    }
 
-            // Migrar controle
-            if (controleData) {
-                try {
-                    const controle = JSON.parse(controleData);
-                    for (const item of controle) {
-                        await this.adicionarControle(item);
-                        migrationResult.controle++;
-                    }
-                } catch (error) {
-                    migrationResult.errors.push(`Controle: ${error.message}`);
-                }
-            }
+    async excluirUnidadeConsumidora(id) {
+        return this.delete(`/unidades-consumidoras/${id}`);
+    }
 
-            console.log('✅ Migração concluída:', migrationResult);
-            return migrationResult;
+    async getEstatisticasUnidades(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/unidades-consumidoras/statistics?${params}` : '/unidades-consumidoras/statistics';
+        return this.get(endpoint);
+    }
 
-        } catch (error) {
-            console.error('❌ Erro na migração:', error);
-            throw error;
-        }
+    // ========================================
+    // CONTROLE
+    // ========================================
+
+    async getControle(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/controle?${params}` : '/controle';
+        return this.get(endpoint);
+    }
+
+    async adicionarControle(controleData) {
+        return this.post('/controle', controleData);
+    }
+
+    async atualizarControle(id, controleData) {
+        return this.put(`/controle/${id}`, controleData);
+    }
+
+    async excluirControle(id) {
+        return this.delete(`/controle/${id}`);
+    }
+
+    // ========================================
+    // CONFIGURAÇÕES
+    // ========================================
+
+    async getConfiguracoes(grupo = null) {
+        const endpoint = grupo ? `/configuracoes/grupo/${grupo}` : '/configuracoes';
+        return this.get(endpoint);
+    }
+
+    async salvarConfiguracao(chave, valor, grupo = 'geral') {
+        return this.post('/configuracoes', {
+            chave,
+            valor,
+            grupo
+        });
+    }
+
+    async atualizarConfiguracao(id, configData) {
+        return this.put(`/configuracoes/${id}`, configData);
+    }
+
+    async resetarConfiguracoes(chaves = null) {
+        return this.post('/configuracoes/reset', { chaves });
+    }
+
+    async exportarConfiguracoes(grupo = null) {
+        return this.post('/configuracoes/export', { grupo });
+    }
+
+    async limparCacheConfiguracoes() {
+        return this.post('/configuracoes/clear-cache');
+    }
+
+    // ========================================
+    // DASHBOARD & SISTEMA
+    // ========================================
+
+    async getDashboardData(filtros = {}) {
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/dashboard?${params}` : '/dashboard';
+        return this.get(endpoint);
+    }
+
+    async getSystemInfo() {
+        return this.get('/sistema/info');
+    }
+
+    async getSystemHealth() {
+        return this.get('/sistema/health');
+    }
+
+    // ========================================
+    // TESTES E HEALTH CHECK
+    // ========================================
+
+    async healthCheck() {
+        return this.get('/health-check');
+    }
+
+    async testDatabase() {
+        return this.get('/test-db');
     }
 }
 
-// Exportar instância única
+// Criar instância única (Singleton)
 const apiService = new ApiService();
+
 export default apiService;

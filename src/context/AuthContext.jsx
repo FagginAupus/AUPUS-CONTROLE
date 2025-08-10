@@ -1,5 +1,7 @@
-// src/context/AuthContext.js - Sistema de autenticação com hierarquia de usuários
+// src/context/AuthContext.jsx - Sistema de autenticação com hierarquia de usuários - ATUALIZADO
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import storageService from '../services/storageService';
+import apiService from '../services/apiService';
 
 const AuthContext = createContext();
 
@@ -18,31 +20,72 @@ export const AuthProvider = ({ children }) => {
 
   // Verificar se há usuário logado ao inicializar
   useEffect(() => {
-    const savedUser = localStorage.getItem('aupus_user');
-    if (savedUser) {
+    const initializeAuth = async () => {
       try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        setIsAuthenticated(true);
+        // Verificar se há token válido
+        const token = localStorage.getItem('aupus_token');
+        if (token) {
+          // Tentar obter usuário atual da API ou localStorage
+          const userData = await storageService.getCurrentUser();
+          if (userData) {
+            setUser(userData);
+            setIsAuthenticated(true);
+            console.log('✅ Usuário restaurado:', userData.nome || userData.name);
+          }
+        }
       } catch (error) {
-        console.error('Erro ao carregar usuário salvo:', error);
+        console.warn('⚠️ Erro ao restaurar sessão:', error);
+        // Limpar dados inválidos
         localStorage.removeItem('aupus_user');
+        localStorage.removeItem('aupus_token');
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   // Função para fazer login
   const login = async (username, password) => {
     try {
       setLoading(true);
+      console.log('🔐 Iniciando login...');
       
+      // Tentar login via storageService (que usa API ou localStorage)
+      const credentials = { email: username, password };
+      const result = await storageService.login(credentials);
+      
+      if (result.success) {
+        const userData = result.user || result.data?.user;
+        setUser(userData);
+        setIsAuthenticated(true);
+        console.log('✅ Login realizado com sucesso:', userData.nome || userData.name);
+        return { success: true, user: userData };
+      }
+      
+      // Se falhou na API, tentar método local original (fallback)
+      return await loginLocal(username, password);
+      
+    } catch (error) {
+      console.error('❌ Erro no login:', error);
+      return { success: false, message: error.message || 'Erro interno do sistema' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Método de login local (fallback para compatibilidade)
+  const loginLocal = async (username, password) => {
+    try {
       // Verificar usuário admin padrão
       if (username === 'admin' && password === '123') {
         const adminUser = {
           id: 'admin',
           username: 'admin',
           name: 'Administrador',
+          nome: 'Administrador', // Para compatibilidade com API
+          email: 'admin@aupus.com',
           role: 'admin',
           permissions: {
             canCreateConsultors: true,
@@ -58,12 +101,15 @@ export const AuthProvider = ({ children }) => {
         setUser(adminUser);
         setIsAuthenticated(true);
         localStorage.setItem('aupus_user', JSON.stringify(adminUser));
+        console.log('✅ Login admin local realizado');
         return { success: true, user: adminUser };
       }
 
-      // Verificar usuários cadastrados
+      // Verificar usuários cadastrados localmente
       const users = getUsersFromStorage();
-      const foundUser = users.find(u => u.username === username && u.password === password);
+      const foundUser = users.find(u => 
+        (u.username === username || u.email === username) && u.password === password
+      );
       
       if (foundUser) {
         // Não salvar a senha no contexto
@@ -72,24 +118,39 @@ export const AuthProvider = ({ children }) => {
         setUser(userWithoutPassword);
         setIsAuthenticated(true);
         localStorage.setItem('aupus_user', JSON.stringify(userWithoutPassword));
+        console.log('✅ Login local realizado:', userWithoutPassword.name);
         return { success: true, user: userWithoutPassword };
       }
 
       return { success: false, message: 'Usuário ou senha inválidos' };
       
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ Erro no login local:', error);
       return { success: false, message: 'Erro interno do sistema' };
-    } finally {
-      setLoading(false);
     }
   };
 
   // Função para fazer logout
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('aupus_user');
+  const logout = async () => {
+    try {
+      console.log('🚪 Iniciando logout...');
+      
+      // Fazer logout via storageService
+      await storageService.logout();
+      
+      // Limpar estado local
+      setUser(null);
+      setIsAuthenticated(false);
+      
+      console.log('✅ Logout realizado com sucesso');
+    } catch (error) {
+      console.error('❌ Erro no logout:', error);
+      // Mesmo com erro, limpar dados locais
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('aupus_user');
+      localStorage.removeItem('aupus_token');
+    }
   };
 
   // Função para criar usuário (consultor, gerente, vendedor)
@@ -100,51 +161,70 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Você não tem permissão para criar este tipo de usuário');
       }
 
-      const users = getUsersFromStorage();
-      
-      // Verificar se username já existe
-      if (users.find(u => u.username === userData.username)) {
-        throw new Error('Nome de usuário já existe');
+      // Se API estiver disponível, tentar criar via API
+      if (storageService.useAPI) {
+        try {
+          const result = await apiService.criarUsuario(userData);
+          console.log('✅ Usuário criado via API:', result);
+          return result;
+        } catch (error) {
+          console.warn('⚠️ Falha na API, criando localmente:', error);
+        }
       }
 
-      // Definir permissões baseadas no role
-      const permissions = getPermissionsByRole(userData.role);
-      
-      const newUser = {
-        id: Date.now().toString(),
-        username: userData.username,
-        password: userData.password,
-        name: userData.name,
-        role: userData.role,
-        permissions,
-        createdBy: user.id,
-        createdAt: new Date().toISOString(),
-        subordinates: [],
-        managerId: userData.managerId || null // ID do gerente para vendedores
-      };
-
-      users.push(newUser);
-      saveUsersToStorage(users);
-
-      // Adicionar aos subordinados do usuário atual ou do gerente
-      const supervisorId = userData.managerId || user.id;
-      addSubordinate(newUser.id, supervisorId);
-
-      return { success: true, user: newUser };
+      // Fallback para criação local
+      return await createUserLocal(userData);
       
     } catch (error) {
-      console.error('Erro ao criar usuário:', error);
-      return { success: false, message: error.message };
+      console.error('❌ Erro ao criar usuário:', error);
+      throw error;
     }
   };
 
-  // Verificar se pode criar usuário
+  // Criação local de usuário (fallback)
+  const createUserLocal = async (userData) => {
+    const users = getUsersFromStorage();
+    
+    // Verificar se username já existe
+    if (users.find(u => u.username === userData.username)) {
+      throw new Error('Nome de usuário já existe');
+    }
+
+    // Definir permissões baseadas no role
+    const permissions = getPermissionsByRole(userData.role);
+    
+    const newUser = {
+      id: Date.now().toString(),
+      username: userData.username,
+      password: userData.password,
+      name: userData.name,
+      email: userData.email || `${userData.username}@aupus.com`,
+      role: userData.role,
+      permissions,
+      createdBy: user.id,
+      createdAt: new Date().toISOString(),
+      subordinates: [],
+      managerId: userData.managerId || null // ID do gerente para vendedores
+    };
+
+    users.push(newUser);
+    saveUsersToStorage(users);
+
+    // Adicionar aos subordinados do usuário atual ou do gerente
+    const supervisorId = userData.managerId || user.id;
+    addSubordinateToUser(supervisorId, newUser.id);
+
+    console.log('✅ Usuário criado localmente:', newUser.name);
+    return newUser;
+  };
+
+  // Função para verificar se pode criar usuário
   const canCreateUser = (role) => {
     if (!user) return false;
     
     switch (user.role) {
       case 'admin':
-        return role === 'consultor';
+        return ['consultor', 'gerente'].includes(role);
       case 'consultor':
         return ['gerente', 'vendedor'].includes(role);
       case 'gerente':
@@ -154,146 +234,87 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Definir permissões por role
-  const getPermissionsByRole = (role) => {
-    switch (role) {
-      case 'admin':
-        return {
-          canCreateConsultors: true,
-          canAccessAll: true,
-          canManageUGs: true,
-          canManageCalibration: true,
-          canSeeAllData: true
-        };
-      case 'consultor':
-        return {
-          canCreateConsultors: false,
-          canAccessAll: false,
-          canManageUGs: false,
-          canManageCalibration: false,
-          canSeeAllData: false,
-          canCreateManagers: true,
-          canCreateSellers: true
-        };
-      case 'gerente':
-        return {
-          canCreateConsultors: false,
-          canAccessAll: false,
-          canManageUGs: false,
-          canManageCalibration: false,
-          canSeeAllData: false,
-          canCreateManagers: false,
-          canCreateSellers: true
-        };
-      case 'vendedor':
-        return {
-          canCreateConsultors: false,
-          canAccessAll: false,
-          canManageUGs: false,
-          canManageCalibration: false,
-          canSeeAllData: false,
-          canCreateManagers: false,
-          canCreateSellers: false
-        };
-      default:
-        return {};
-    }
-  };
-
-  // Adicionar subordinado
-  const addSubordinate = (subordinateId, supervisorId = null) => {
-    const users = getUsersFromStorage();
-    const targetSupervisorId = supervisorId || user.id;
-    const userIndex = users.findIndex(u => u.id === targetSupervisorId);
-    
-    if (userIndex !== -1) {
-      if (!users[userIndex].subordinates) {
-        users[userIndex].subordinates = [];
-      }
-      users[userIndex].subordinates.push(subordinateId);
-      saveUsersToStorage(users);
-      
-      // Atualizar contexto local apenas se for o usuário atual
-      if (targetSupervisorId === user.id) {
-        setUser(prev => ({
-          ...prev,
-          subordinates: [...(prev.subordinates || []), subordinateId]
-        }));
-      }
-    }
-  };
-
-  // Obter todos os IDs de funcionários sob responsabilidade do usuário atual
-  const getMyTeamIds = () => {
-    if (!user) return [];
-    
-    const users = getUsersFromStorage();
-    
-    if (user.role === 'admin') {
-      // Admin vê todos os usuários (exceto ele mesmo)
-      return users.filter(u => u.id !== user.id).map(u => u.id);
-    }
-
-    const teamIds = [user.id]; // Sempre incluir o próprio usuário
-
-    // Função recursiva para buscar subordinados
-    const getSubordinatesRecursively = (userId) => {
-      const currentUser = users.find(u => u.id === userId);
-      if (!currentUser || !currentUser.subordinates) return [];
-
-      const directSubordinates = currentUser.subordinates;
-      let allSubordinates = [...directSubordinates];
-
-      // Para cada subordinado direto, buscar seus subordinados
-      directSubordinates.forEach(subId => {
-        allSubordinates = [...allSubordinates, ...getSubordinatesRecursively(subId)];
-      });
-
-      return allSubordinates;
-    };
-
-    const allSubordinates = getSubordinatesRecursively(user.id);
-    teamIds.push(...allSubordinates);
-
-    return [...new Set(teamIds)]; // Remover duplicados
-  };
-
-  // Obter usuários da equipe com dados completos
-  const getMyTeam = () => {
-    const teamIds = getMyTeamIds();
-    const users = getUsersFromStorage();
-    return users.filter(u => teamIds.includes(u.id));
-  };
-
-  // Verificar se usuário tem acesso a uma funcionalidade
+  // Verificar permissão
   const hasPermission = (permission) => {
-    return user?.permissions?.[permission] || false;
+    if (!user) return false;
+    if (user.role === 'admin') return true; // Admin tem todas as permissões
+    return user.permissions?.[permission] || false;
   };
 
-  // Verificar se pode acessar página
+  // Verificar acesso a página
   const canAccessPage = (page) => {
     if (!user) return false;
     
-    // Admin pode acessar tudo
-    if (user.role === 'admin') return true;
-    
-    // Páginas restritas por role
     switch (page) {
+      case 'dashboard':
+        return true; // Todos podem acessar dashboard
+      case 'prospec':
+      case 'controle':
+        return ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role);
       case 'ugs':
         return user.role === 'admin';
-      case 'controle':
-        // ALTERAÇÃO: Controle apenas para admin e consultor
-        return ['admin', 'consultor'].includes(user.role);
-      case 'dashboard':
-      case 'prospec':
       case 'relatorios':
-        return ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role);
+        return ['admin', 'consultor', 'gerente'].includes(user.role);
       default:
-        return true;
+        return false;
     }
   };
 
-  // Funções auxiliares para localStorage
+  // Obter IDs da equipe
+  const getMyTeamIds = () => {
+    if (!user) return [];
+    
+    if (user.role === 'admin') {
+      // Admin vê todos
+      const users = getUsersFromStorage();
+      return users.map(u => u.id);
+    }
+    
+    // Incluir o próprio usuário + subordinados
+    return [user.id, ...(user.subordinates || [])];
+  };
+
+  // Obter dados da equipe
+  const getMyTeam = async () => {
+    try {
+      // Se API disponível, buscar da API
+      if (storageService.useAPI) {
+        try {
+          const teamData = await storageService.getTeam();
+          return teamData;
+        } catch (error) {
+          console.warn('⚠️ Falha na API, usando dados locais:', error);
+        }
+      }
+      
+      // Fallback para dados locais
+      return getMyTeamLocal();
+      
+    } catch (error) {
+      console.error('❌ Erro ao obter equipe:', error);
+      return [];
+    }
+  };
+
+  // Obter equipe local (fallback)
+  const getMyTeamLocal = () => {
+    if (!user) return [];
+    
+    const users = getUsersFromStorage();
+    const teamIds = getMyTeamIds();
+    
+    return users
+      .filter(u => teamIds.includes(u.id))
+      .map(u => ({
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        role: u.role,
+        email: u.email
+      }));
+  };
+
+  // Funções auxiliares (mantidas do código original)
   const getUsersFromStorage = () => {
     try {
       const users = localStorage.getItem('aupus_users');
@@ -309,6 +330,48 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('aupus_users', JSON.stringify(users));
     } catch (error) {
       console.error('Erro ao salvar usuários:', error);
+    }
+  };
+
+  const getPermissionsByRole = (role) => {
+    switch (role) {
+      case 'admin':
+        return {
+          canCreateConsultors: true,
+          canAccessAll: true,
+          canManageUGs: true,
+          canManageCalibration: true,
+          canSeeAllData: true
+        };
+      case 'consultor':
+        return {
+          canCreateConsultors: false,
+          canAccessAll: false,
+          canManageUGs: false,
+          canManageCalibration: true,
+          canSeeAllData: false
+        };
+      default:
+        return {
+          canCreateConsultors: false,
+          canAccessAll: false,
+          canManageUGs: false,
+          canManageCalibration: false,
+          canSeeAllData: false
+        };
+    }
+  };
+
+  const addSubordinateToUser = (supervisorId, subordinateId) => {
+    const users = getUsersFromStorage();
+    const supervisor = users.find(u => u.id === supervisorId);
+    
+    if (supervisor) {
+      if (!supervisor.subordinates) supervisor.subordinates = [];
+      if (!supervisor.subordinates.includes(subordinateId)) {
+        supervisor.subordinates.push(subordinateId);
+        saveUsersToStorage(users);
+      }
     }
   };
 
