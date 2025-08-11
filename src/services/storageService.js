@@ -1,4 +1,4 @@
-// src/services/storageService.js - COMPLETO COM CORREÇÃO DE LOGIN
+// src/services/storageService.js - COMPLETO COM CORREÇÃO DO MÉTODO adicionarProspec
 import apiService from './apiService';
 
 class StorageService {
@@ -45,135 +45,107 @@ class StorageService {
             email = credentials;
             password = arguments[1];
         } else {
-            return { success: false, message: 'Credenciais inválidas' };
+            throw new Error('Credenciais inválidas');
         }
 
         console.log('🔐 login - tentando autenticação para:', email);
 
         if (this.useAPI) {
+            console.log('🔐 login (API)');
             try {
-                console.log('🔐 login (API)');
-                const response = await apiService.login(email, password);
+                const response = await apiService.post('/auth/login', { email, password });
                 
                 if (response.success && response.user && response.token) {
-                    localStorage.setItem('aupus_user', JSON.stringify(response.user));
-                    localStorage.setItem('aupus_token', response.token);
-                    console.log(`✅ Login API realizado: ${response.user.name || response.user.nome}`);
-                    return response;
+                    // Salvar token no apiService
+                    apiService.setToken(response.token);
+                    
+                    // Salvar dados do usuário
+                    const userData = {
+                        ...response.user,
+                        token: response.token,
+                        lastLogin: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    localStorage.setItem('token', response.token);
+                    
+                    console.log('✅ Login API realizado:', response.user.nome);
+                    return userData;
+                } else {
+                    throw new Error(response.message || 'Resposta inválida da API');
                 }
-                
-                return response;
             } catch (error) {
-                console.log('⚠️ API falhou, tentando login local:', error.message);
+                console.log('⚠️ API login falhou, tentando localStorage:', error.message);
                 return this.loginLocal(email, password);
             }
         } else {
+            console.log('🔐 login (localStorage)');
             return this.loginLocal(email, password);
         }
     }
 
     loginLocal(email, password) {
-        try {
-            console.log('🔐 loginLocal - tentando para:', email);
-            
-            // Verificar usuário admin padrão primeiro
-            if (email === 'admin@aupus.com' && password === '123') {
-                const adminUser = {
-                    id: 'admin',
-                    email: 'admin@aupus.com',
-                    name: 'Administrador',
-                    nome: 'Administrador',
-                    role: 'admin',
-                    permissions: ['all']
-                };
-                
-                localStorage.setItem('aupus_user', JSON.stringify(adminUser));
-                localStorage.setItem('aupus_token', `local_token_admin`);
-                console.log('✅ Login admin local realizado');
-                
-                return { 
-                    success: true, 
-                    user: adminUser,
-                    token: 'local_token_admin'
-                };
+        // Usuários de desenvolvimento
+        const devUsers = [
+            {
+                id: '1',
+                email: 'admin@aupus.com',
+                password: 'admin123',
+                nome: 'Administrador',
+                role: 'admin'
+            },
+            {
+                id: '2',
+                email: 'consultor@aupus.com',
+                password: 'consultor123',
+                nome: 'Consultor Principal',
+                role: 'consultor'
+            },
+            {
+                id: '3',
+                email: 'gerente@aupus.com',
+                password: 'gerente123',
+                nome: 'Gerente Regional',
+                role: 'gerente'
+            },
+            {
+                id: '4',
+                email: 'vendedor@aupus.com',
+                password: 'vendedor123',
+                nome: 'Vendedor',
+                role: 'vendedor'
             }
+        ];
 
-            // Buscar em usuários locais
-            const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-            
-            const userData = usuarios.find(u => 
-                u.email && u.email.toLowerCase() === email.toLowerCase() && 
-                (u.senha === password || u.password === password)
-            );
-
-            if (userData) {
-                const normalizedUser = {
-                    ...userData,
-                    name: userData.nome || userData.name,
-                    nome: userData.nome || userData.name
-                };
-                
-                localStorage.setItem('aupus_user', JSON.stringify(normalizedUser));
-                localStorage.setItem('aupus_token', `local_token_${userData.id}`);
-                console.log(`✅ Login local realizado: ${normalizedUser.name}`);
-                
-                return { 
-                    success: true, 
-                    user: normalizedUser,
-                    token: `local_token_${userData.id}`
-                };
-            }
-
-            console.log('❌ Usuário não encontrado ou senha incorreta');
-            return { 
-                success: false, 
-                message: 'Email ou senha incorretos'
+        const user = devUsers.find(u => u.email === email && u.password === password);
+        
+        if (user) {
+            const userData = {
+                id: user.id,
+                nome: user.nome,
+                email: user.email,
+                role: user.role,
+                lastLogin: new Date().toISOString()
             };
-
-        } catch (error) {
-            console.error('❌ Erro no login local:', error);
-            return { 
-                success: false, 
-                message: 'Erro no sistema de autenticação local' 
-            };
-        }
-    }
-
-    async logout() {
-        if (this.useAPI) {
-            try {
-                console.log('🚪 logout (API)');
-                await apiService.logout();
-            } catch (error) {
-                console.log('⚠️ Erro no logout da API:', error.message);
-            }
+            
+            localStorage.setItem('user', JSON.stringify(userData));
+            console.log('✅ Login localStorage realizado:', user.nome);
+            return userData;
         }
         
-        // Limpar dados locais
-        localStorage.removeItem('aupus_user');
-        localStorage.removeItem('aupus_token');
-        console.log('✅ Logout local realizado');
+        throw new Error('Credenciais inválidas');
     }
 
-    async getCurrentUser() {
-        if (this.useAPI) {
-            try {
-                const response = await apiService.getCurrentUser();
-                const user = response.data || response;
-                localStorage.setItem('aupus_user', JSON.stringify(user));
-                return user;
-            } catch (error) {
-                console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getUserLocal();
-            }
-        } else {
-            return this.getUserLocal();
-        }
+    logout() {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        apiService.clearToken();
+        console.log('👋 Logout realizado');
     }
 
-    getUserLocal() {
+    getCurrentUser() {
         try {
-            const userData = localStorage.getItem('aupus_user');
+            const userData = localStorage.getItem('user');
             return userData ? JSON.parse(userData) : null;
         } catch (error) {
             console.error('❌ Erro ao obter dados do usuário:', error);
@@ -214,7 +186,7 @@ class StorageService {
     async saveProspec(proposta) {
         if (this.useAPI) {
             try {
-                console.log('💾 saveProspec (API):', proposta.numero_proposta);
+                console.log('💾 saveProspec (API):', proposta.numeroProposta || proposta.numero_proposta);
                 const response = await apiService.post('/propostas', proposta);
                 
                 // Atualizar cache local
@@ -238,6 +210,12 @@ class StorageService {
         } else {
             return this.saveProspecLocal(proposta);
         }
+    }
+
+    // ✅ MÉTODO ADICIONADO - adicionarProspec como alias para saveProspec
+    async adicionarProspec(proposta) {
+        console.log('📝 adicionarProspec - Alias para saveProspec');
+        return await this.saveProspec(proposta);
     }
 
     saveProspecLocal(proposta) {
@@ -277,40 +255,82 @@ class StorageService {
     async deleteProspec(id) {
         if (this.useAPI) {
             try {
-                console.log('🗑️ deleteProspec (API):', id);
+                console.log('🗑️ deleteProspec (API)');
                 await apiService.delete(`/propostas/${id}`);
                 
                 // Remover do cache local
                 const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
-                const filteredPropostas = propostas.filter(p => p.id !== id);
-                localStorage.setItem('propostas', JSON.stringify(filteredPropostas));
+                const novasPropostas = propostas.filter(p => p.id !== id);
+                localStorage.setItem('propostas', JSON.stringify(novasPropostas));
                 
-                console.log('✅ Proposta excluída da API e cache atualizado');
-                return true;
+                console.log('✅ Proposta removida da API');
             } catch (error) {
-                console.log('⚠️ API falhou, excluindo localmente:', error.message);
-                return this.deleteProspecLocal(id);
+                console.log('⚠️ API falhou, removendo localmente:', error.message);
+                this.deleteProspecLocal(id);
             }
         } else {
-            return this.deleteProspecLocal(id);
+            this.deleteProspecLocal(id);
         }
     }
 
     deleteProspecLocal(id) {
         try {
             const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
-            const filteredPropostas = propostas.filter(p => p.id !== id);
-            localStorage.setItem('propostas', JSON.stringify(filteredPropostas));
-            console.log('✅ Proposta excluída do localStorage');
-            return true;
+            const novasPropostas = propostas.filter(p => p.id !== id);
+            localStorage.setItem('propostas', JSON.stringify(novasPropostas));
+            console.log('✅ Proposta removida do localStorage');
         } catch (error) {
-            console.error('❌ Erro ao excluir proposta:', error);
+            console.error('❌ Erro ao remover proposta:', error);
             throw error;
         }
     }
 
+    async atualizarProspec(index, dadosAtualizados) {
+        const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+        
+        if (index >= 0 && index < propostas.length) {
+            propostas[index] = { 
+                ...propostas[index], 
+                ...dadosAtualizados,
+                updated_at: new Date().toISOString()
+            };
+            
+            if (this.useAPI) {
+                try {
+                    await apiService.put(`/propostas/${propostas[index].id}`, propostas[index]);
+                    console.log('✅ Proposta atualizada na API');
+                } catch (error) {
+                    console.log('⚠️ API falhou, mantendo alteração local:', error.message);
+                }
+            }
+            
+            localStorage.setItem('propostas', JSON.stringify(propostas));
+            console.log('✅ Proposta atualizada');
+        }
+    }
+
+    async removerProspec(index) {
+        const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+        
+        if (index >= 0 && index < propostas.length) {
+            const proposta = propostas[index];
+            
+            if (this.useAPI && proposta.id) {
+                try {
+                    await this.deleteProspec(proposta.id);
+                } catch (error) {
+                    console.log('⚠️ Erro na API, removendo localmente:', error.message);
+                }
+            }
+            
+            propostas.splice(index, 1);
+            localStorage.setItem('propostas', JSON.stringify(propostas));
+            console.log('✅ Proposta removida');
+        }
+    }
+
     // ========================================
-    // CONTROLE CLUBE
+    // CONTROLE
     // ========================================
 
     async getControle() {
@@ -318,90 +338,90 @@ class StorageService {
             try {
                 console.log('📥 getControle (API)');
                 const response = await apiService.get('/controle');
-                const controle = Array.isArray(response) ? response : (response.data || []);
+                const controles = Array.isArray(response) ? response : (response.data || []);
                 
                 // Cache no localStorage
-                localStorage.setItem('controle', JSON.stringify(controle));
-                console.log(`✅ Carregadas ${controle.length} do controle da API`);
+                localStorage.setItem('controle', JSON.stringify(controles));
+                console.log(`✅ Carregadas ${controles.length} do controle da API`);
                 
-                return controle;
+                return controles;
             } catch (error) {
                 console.log('⚠️ API falhou, usando localStorage:', error.message);
                 // Fallback para localStorage
-                const localControle = JSON.parse(localStorage.getItem('controle') || '[]');
-                console.log(`✅ Carregadas ${localControle.length} do controle do localStorage`);
-                return localControle;
+                const localControles = JSON.parse(localStorage.getItem('controle') || '[]');
+                console.log(`✅ Carregadas ${localControles.length} do controle do localStorage`);
+                return localControles;
             }
         } else {
-            const controle = JSON.parse(localStorage.getItem('controle') || '[]');
-            console.log(`✅ Carregadas ${controle.length} do controle do localStorage`);
-            return controle;
+            const controles = JSON.parse(localStorage.getItem('controle') || '[]');
+            console.log(`✅ Carregadas ${controles.length} do controle do localStorage`);
+            return controles;
         }
     }
 
-    async saveControle(item) {
+    async saveControle(controle) {
         if (this.useAPI) {
             try {
                 console.log('💾 saveControle (API)');
-                const response = await apiService.post('/controle', item);
+                const response = await apiService.post('/controle', controle);
                 
                 // Atualizar cache local
-                const controle = JSON.parse(localStorage.getItem('controle') || '[]');
-                const existingIndex = controle.findIndex(c => c.id === item.id);
+                const controles = JSON.parse(localStorage.getItem('controle') || '[]');
+                const existingIndex = controles.findIndex(c => c.id === controle.id);
                 
                 if (existingIndex >= 0) {
-                    controle[existingIndex] = response;
+                    controles[existingIndex] = response;
                 } else {
-                    controle.push(response);
+                    controles.push(response);
                 }
                 
-                localStorage.setItem('controle', JSON.stringify(controle));
-                console.log('✅ Item do controle salvo na API');
+                localStorage.setItem('controle', JSON.stringify(controles));
+                console.log('✅ Controle salvo na API');
                 
                 return response;
             } catch (error) {
                 console.log('⚠️ API falhou, salvando localmente:', error.message);
-                return this.saveControleLocal(item);
+                return this.saveControleLocal(controle);
             }
         } else {
-            return this.saveControleLocal(item);
+            return this.saveControleLocal(controle);
         }
     }
 
-    saveControleLocal(item) {
+    saveControleLocal(controle) {
         try {
-            const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+            const controles = JSON.parse(localStorage.getItem('controle') || '[]');
             const timestamp = new Date().toISOString();
             
-            if (item.id) {
-                const index = controle.findIndex(c => c.id === item.id);
+            if (controle.id) {
+                const index = controles.findIndex(c => c.id === controle.id);
                 if (index >= 0) {
-                    controle[index] = { ...item, updated_at: timestamp };
+                    controles[index] = { ...controle, updated_at: timestamp };
                 } else {
-                    controle.push({ ...item, updated_at: timestamp });
+                    controles.push({ ...controle, updated_at: timestamp });
                 }
             } else {
-                const novoItem = {
-                    ...item,
+                const novoControle = {
+                    ...controle,
                     id: `ctrl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                     created_at: timestamp,
                     updated_at: timestamp
                 };
-                controle.push(novoItem);
+                controles.push(novoControle);
             }
             
-            localStorage.setItem('controle', JSON.stringify(controle));
-            console.log('✅ Item do controle salvo no localStorage');
+            localStorage.setItem('controle', JSON.stringify(controles));
+            console.log('✅ Controle salvo no localStorage');
             
-            return controle[controle.length - 1];
+            return controles[controles.length - 1];
         } catch (error) {
-            console.error('❌ Erro ao salvar item do controle:', error);
+            console.error('❌ Erro ao salvar controle:', error);
             throw error;
         }
     }
 
     // ========================================
-    // UNIDADES GERADORAS (UGs)
+    // UGS (USINAS GERADORAS)
     // ========================================
 
     async getUGs() {
@@ -495,104 +515,222 @@ class StorageService {
     // CALIBRAGEM GLOBAL
     // ========================================
 
-    async getCalibragemGlobal() {
-        if (this.useAPI) {
-            try {
-                const response = await apiService.get('/configuracoes/calibragem_global');
-                const calibragem = response.valor ? parseFloat(response.valor) : 0;
-                this.calibragemGlobal = calibragem;
-                localStorage.setItem('calibragem_global', calibragem.toString());
-                return calibragem;
-            } catch (error) {
-                console.log('⚠️ API falhou, usando localStorage para calibragem');
-                return this.getCalibragemGlobalLocal();
+    getCalibragemGlobal() {
+        return parseFloat(localStorage.getItem('calibragemGlobal') || '0');
+    }
+
+    setCalibragemGlobal(valor) {
+        this.calibragemGlobal = parseFloat(valor);
+        localStorage.setItem('calibragemGlobal', valor.toString());
+        console.log(`🎛️ Calibragem global definida: ${valor}%`);
+    }
+
+    aplicarCalibragemGlobal(novoValor) {
+        const controles = JSON.parse(localStorage.getItem('controle') || '[]');
+        const calibragemAtual = this.getCalibragemGlobal();
+        
+        controles.forEach(controle => {
+            if (controle.consumoMedio > 0) {
+                // Reverter calibragem anterior
+                if (calibragemAtual !== 0) {
+                    controle.consumoMedio = controle.consumoMedio / (1 + calibragemAtual / 100);
+                }
+                // Aplicar nova calibragem
+                controle.consumoMedio = controle.consumoMedio * (1 + novoValor / 100);
             }
-        } else {
-            return this.getCalibragemGlobalLocal();
-        }
-    }
-
-    getCalibragemGlobalLocal() {
-        const calibragem = parseFloat(localStorage.getItem('calibragem_global') || '0');
-        this.calibragemGlobal = calibragem;
-        return calibragem;
-    }
-
-    async setCalibragemGlobal(valor) {
-        if (this.useAPI) {
-            try {
-                await apiService.put('/configuracoes/calibragem_global', { valor });
-                this.calibragemGlobal = valor;
-                localStorage.setItem('calibragem_global', valor.toString());
-                console.log('✅ Calibragem global atualizada na API');
-                return true;
-            } catch (error) {
-                console.log('⚠️ API falhou, salvando calibragem localmente');
-                return this.setCalibragemGlobalLocal(valor);
-            }
-        } else {
-            return this.setCalibragemGlobalLocal(valor);
-        }
-    }
-
-    setCalibragemGlobalLocal(valor) {
-        this.calibragemGlobal = valor;
-        localStorage.setItem('calibragem_global', valor.toString());
-        console.log('✅ Calibragem global atualizada no localStorage');
-        return true;
+        });
+        
+        localStorage.setItem('controle', JSON.stringify(controles));
+        this.setCalibragemGlobal(novoValor);
+        
+        console.log(`🎛️ Calibragem global aplicada: ${novoValor}%`);
+        return controles.length;
     }
 
     // ========================================
-    // MÉTODOS UTILITÁRIOS
+    // UTILITÁRIOS DE EXPORT
     // ========================================
 
-    async sincronizar() {
-        if (!this.useAPI) {
-            console.log('⚠️ API não disponível - sincronização cancelada');
-            return false;
-        }
-
+    async exportarParaCSV(tipo, filtros = {}) {
         try {
-            console.log('🔄 Iniciando sincronização...');
+            let dados = [];
+            let nomeArquivo = '';
             
-            // Sincronizar dados
-            await Promise.all([
+            switch (tipo) {
+                case 'prospec':
+                    dados = await this.getProspec();
+                    nomeArquivo = `prospec_${new Date().toISOString().slice(0, 10)}`;
+                    break;
+                case 'controle':
+                    dados = await this.getControle();
+                    nomeArquivo = `controle_${new Date().toISOString().slice(0, 10)}`;
+                    break;
+                case 'ugs':
+                    dados = await this.getUGs();
+                    nomeArquivo = `ugs_${new Date().toISOString().slice(0, 10)}`;
+                    break;
+                default:
+                    throw new Error('Tipo de exportação não suportado');
+            }
+            
+            if (dados.length === 0) {
+                throw new Error('Nenhum dado para exportar');
+            }
+            
+            // Aplicar filtros se fornecidos
+            if (filtros.consultor) {
+                dados = dados.filter(item => item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase()));
+            }
+            
+            if (filtros.status) {
+                dados = dados.filter(item => item.status === filtros.status);
+            }
+            
+            if (filtros.dataInicio && filtros.dataFim) {
+                dados = dados.filter(item => {
+                    const dataItem = new Date(item.data || item.created_at);
+                    return dataItem >= new Date(filtros.dataInicio) && dataItem <= new Date(filtros.dataFim);
+                });
+            }
+            
+            // Converter para CSV
+            const csvContent = this.jsonToCSV(dados);
+            this.downloadCSV(csvContent, `${nomeArquivo}.csv`);
+            
+            console.log(`✅ Dados exportados: ${dados.length} registros`);
+            return dados.length;
+            
+        } catch (error) {
+            console.error('❌ Erro na exportação:', error);
+            throw error;
+        }
+    }
+
+    jsonToCSV(jsonData) {
+        if (!jsonData || jsonData.length === 0) {
+            return '';
+        }
+        
+        // Obter todas as chaves possíveis
+        const allKeys = new Set();
+        jsonData.forEach(item => {
+            Object.keys(item).forEach(key => allKeys.add(key));
+        });
+        
+        const headers = Array.from(allKeys);
+        
+        // Criar linhas CSV
+        const csvRows = [
+            headers.join(','), // Cabeçalho
+            ...jsonData.map(item => 
+                headers.map(header => {
+                    const value = item[header];
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+                    // Escapar vírgulas e aspas
+                    const stringValue = String(value).replace(/"/g, '""');
+                    return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')
+                        ? `"${stringValue}"`
+                        : stringValue;
+                }).join(',')
+            )
+        ];
+        
+        return csvRows.join('\n');
+    }
+
+    downloadCSV(csvContent, filename) {
+        // Adicionar BOM para UTF-8
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.URL.revokeObjectURL(url);
+    }
+
+    // ========================================
+    // LIMPEZA E MANUTENÇÃO
+    // ========================================
+
+    limparDados(tipo) {
+        switch (tipo) {
+            case 'prospec':
+                localStorage.removeItem('propostas');
+                console.log('🧹 Propostas limpas');
+                break;
+            case 'controle':
+                localStorage.removeItem('controle');
+                console.log('🧹 Controles limpos');
+                break;
+            case 'ugs':
+                localStorage.removeItem('ugs');
+                console.log('🧹 UGs limpas');
+                break;
+            case 'all':
+                localStorage.removeItem('propostas');
+                localStorage.removeItem('controle');
+                localStorage.removeItem('ugs');
+                localStorage.removeItem('calibragemGlobal');
+                console.log('🧹 Todos os dados limpos');
+                break;
+            default:
+                console.log('⚠️ Tipo de limpeza não reconhecido');
+        }
+    }
+
+    // ========================================
+    // ESTATÍSTICAS
+    // ========================================
+
+    async getEstatisticas() {
+        try {
+            const [propostas, controles, ugs] = await Promise.all([
                 this.getProspec(),
                 this.getControle(),
                 this.getUGs()
             ]);
-            
-            console.log('✅ Sincronização concluída');
-            return true;
+
+            return {
+                propostas: {
+                    total: propostas.length,
+                    aguardando: propostas.filter(p => p.status === 'Aguardando').length,
+                    fechadas: propostas.filter(p => p.status === 'Fechado').length,
+                    canceladas: propostas.filter(p => p.status === 'Cancelado').length
+                },
+                controles: {
+                    total: controles.length,
+                    ativos: controles.filter(c => c.ativo !== false).length,
+                    comUG: controles.filter(c => c.ugVinculada).length
+                },
+                ugs: {
+                    total: ugs.length,
+                    ativas: ugs.filter(u => u.status === 'Ativa').length,
+                    capacidadeTotal: ugs.reduce((sum, u) => sum + (u.capacidade || 0), 0)
+                },
+                calibragem: {
+                    global: this.getCalibragemGlobal()
+                }
+            };
         } catch (error) {
-            console.error('❌ Erro na sincronização:', error);
-            return false;
+            console.error('❌ Erro ao obter estatísticas:', error);
+            return null;
         }
-    }
-
-    isAPIAvailable() {
-        return this.useAPI;
-    }
-
-    // Método para limpar todos os dados locais
-    clearAllData() {
-        const keysToRemove = [
-            'propostas',
-            'controle', 
-            'ugs',
-            'calibragem_global',
-            'aupus_user',
-            'aupus_token',
-            'usuarios'
-        ];
-        
-        keysToRemove.forEach(key => {
-            localStorage.removeItem(key);
-        });
-        
-        console.log('🧹 Dados locais limpos');
     }
 }
 
-export const storageService = new StorageService();
+// Instância única
+const storageService = new StorageService();
+
+// ✅ EXPORTAÇÕES CORRETAS
 export default storageService;
+export { storageService };

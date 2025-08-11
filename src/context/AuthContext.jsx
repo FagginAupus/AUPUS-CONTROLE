@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx - Context de autenticação corrigido para usar email
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { storageService } from '../services/storageService';
+import storageService from '../services/storageService'; // ✅ IMPORTAÇÃO CORRIGIDA - removido destructuring
 
 const AuthContext = createContext();
 
@@ -87,7 +87,8 @@ export const AuthProvider = ({ children }) => {
             canAccessAll: true,
             canManageUGs: true,
             canManageCalibration: true,
-            canSeeAllData: true
+            canSeeAllData: true,
+            canAccessReports: true // ✅ ADICIONADO
           },
           createdBy: null,
           subordinates: []
@@ -202,19 +203,31 @@ export const AuthProvider = ({ children }) => {
 
   // Função para verificar se pode acessar uma página
   const canAccessPage = (pageName) => {
-    if (!user || !user.permissions) {
+    if (!user) {
       return false;
     }
 
+    // ✅ LÓGICA SIMPLIFICADA - baseada no role
     const pagePermissions = {
       'dashboard': true, // Todos podem acessar dashboard
-      'prospec': user.permissions.canAccessReports || user.permissions.canAccessAll || user.role === 'admin',
-      'controle': user.permissions.canAccessReports || user.permissions.canAccessAll || user.role === 'admin',
-      'ugs': user.permissions.canManageUGs || user.role === 'admin',
-      'relatorios': user.permissions.canAccessReports || user.permissions.canAccessAll || user.role === 'admin'
+      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
+      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
+      'ugs': ['admin'].includes(user.role), // Apenas admin
+      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
     };
 
     return pagePermissions[pageName] || false;
+  };
+
+  // Função para obter nome do consultor
+  const getConsultorName = (consultorId) => {
+    const team = getMyTeam();
+    const consultor = team.find(member => 
+      member.id === consultorId || 
+      member.name === consultorId ||
+      member.email === consultorId
+    );
+    return consultor?.name || consultorId || 'Desconhecido';
   };
 
   // Função para verificar se pode criar usuário
@@ -265,9 +278,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     getMyTeam,
-    canAccessPage,
+    canAccessPage, // ✅ FUNÇÃO INCLUÍDA
     canCreateUser,
-    createUser
+    createUser,
+    getConsultorName // ✅ FUNÇÃO INCLUÍDA
   };
 
   return (
