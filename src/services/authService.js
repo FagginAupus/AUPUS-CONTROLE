@@ -1,199 +1,225 @@
-// src/services/authService.js
-import Cookies from 'js-cookie';
+// src/context/AuthContext.jsx - CORRIGIDO PARA INTEGRAÇÃO COM API
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import storageService from '../services/storageService';
 
-class AuthService {
-  constructor() {
-    this.TOKEN_KEY = 'aupus_auth_token';
-    this.USER_KEY = 'aupus_user_data';
-    this.SESSION_DURATION = 8; // 8 horas
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Verificar se há usuário salvo ao inicializar
+  useEffect(() => {
+    const initAuth = () => {
+      try {
+        const savedUser = localStorage.getItem('user'); // Usar 'user' como no storageService
+        const savedToken = localStorage.getItem('token');
+        
+        if (savedUser && savedToken) {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          setIsAuthenticated(true);
+          console.log('👤 Usuário restaurado do localStorage:', userData.name || userData.nome);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao restaurar sessão:', error);
+        // Limpar dados corrompidos
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  const login = async (email, password) => {
+    setLoading(true);
+    console.log('🔐 Iniciando login...');
     
-    // Usuários pré-definidos (substituto temporário do banco)
-    this.users = [
-      {
-        id: 1,
-        username: 'admin',
-        password: 'aupus2025',
-        name: 'Administrador',
-        role: 'admin',
-        permissions: ['all']
-      },
-      {
-        id: 2,
-        username: 'consultor1',
-        password: '123456',
-        name: 'João Silva',
-        role: 'consultor',
-        permissions: ['prospec', 'nova-proposta']
-      },
-      {
-        id: 3,
-        username: 'operador',
-        password: 'op2025',
-        name: 'Maria Santos',
-        role: 'operador',
-        permissions: ['prospec', 'controle', 'ugs']
-      }
-    ];
-  }
-
-  // Login do usuário
-  async login(username, password) {
     try {
-      // Simular delay de requisição
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const user = this.users.find(u => 
-        u.username === username && u.password === password
-      );
-
-      if (!user) {
-        throw new Error('Usuário ou senha inválidos');
-      }
-
-      // Gerar token simples (em produção usar JWT)
-      const token = this.generateToken(user);
+      // CORREÇÃO: Chamar login do storageService diretamente
+      const userData = await storageService.login(email, password);
       
-      // Salvar dados de autenticação
-      Cookies.set(this.TOKEN_KEY, token, { 
-        expires: this.SESSION_DURATION / 24,
-        secure: window.location.protocol === 'https:',
-        sameSite: 'strict'
-      });
-
-      const userData = {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        permissions: user.permissions,
-        loginTime: new Date().toISOString()
-      };
-
-      localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
-
-      console.log('✅ Login realizado:', userData.name);
-      return { success: true, user: userData };
-
+      if (userData && userData.id) {
+        setUser(userData);
+        setIsAuthenticated(true);
+        console.log('✅ Login realizado com sucesso:', userData.name || userData.nome);
+        return { success: true, user: userData };
+      }
+      
+      throw new Error('Login falhou - usuário inválido');
+      
     } catch (error) {
-      console.error('❌ Erro no login:', error.message);
-      throw error;
+      console.error('❌ Erro no login:', error);
+      return { success: false, message: error.message || 'Erro interno do sistema' };
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  // Logout do usuário
-  logout() {
+  const logout = async () => {
     try {
-      Cookies.remove(this.TOKEN_KEY);
-      localStorage.removeItem(this.USER_KEY);
+      console.log('🚪 Fazendo logout...');
       
-      console.log('✅ Logout realizado');
+      // Usar logout do storageService
+      storageService.logout();
+      
+      // Resetar estado
+      setUser(null);
+      setIsAuthenticated(false);
+      
+      console.log('✅ Logout realizado com sucesso');
       return { success: true };
+      
     } catch (error) {
       console.error('❌ Erro no logout:', error);
-      throw error;
-    }
-  }
-
-  // Verificar se usuário está autenticado
-  isAuthenticated() {
-    const token = Cookies.get(this.TOKEN_KEY);
-    const userData = this.getUserData();
-    
-    return !!(token && userData);
-  }
-
-  // Obter dados do usuário logado
-  getUserData() {
-    try {
-      const userData = localStorage.getItem(this.USER_KEY);
-      return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('❌ Erro ao obter dados do usuário:', error);
-      return null;
-    }
-  }
-
-  // Verificar permissão
-  hasPermission(permission) {
-    const user = this.getUserData();
-    if (!user) return false;
-    
-    // Admin tem todas as permissões
-    if (user.permissions.includes('all')) return true;
-    
-    return user.permissions.includes(permission);
-  }
-
-  // Gerar token simples
-  generateToken(user) {
-    const payload = {
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      timestamp: Date.now()
-    };
-    
-    // Em produção, usar biblioteca JWT
-    return btoa(JSON.stringify(payload));
-  }
-
-  // Validar token
-  validateToken(token) {
-    try {
-      const payload = JSON.parse(atob(token));
-      const now = Date.now();
-      const tokenAge = now - payload.timestamp;
-      const maxAge = this.SESSION_DURATION * 60 * 60 * 1000; // 8 horas em ms
       
-      return tokenAge < maxAge;
+      // Forçar limpeza mesmo com erro
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updateUser = (userData) => {
+    try {
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      console.log('👤 Dados do usuário atualizados');
     } catch (error) {
+      console.error('❌ Erro ao atualizar usuário:', error);
+    }
+  };
+
+  const getMyTeam = () => {
+    try {
+      if (!user) {
+        console.log('⚠️ getMyTeam: Usuário não logado');
+        return [];
+      }
+
+      // Para admin, retornar todos os usuários
+      if (user.role === 'admin') {
+        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+        console.log(`👥 getMyTeam (admin): ${usuarios.length} usuários`);
+        return usuarios;
+      }
+
+      // Para outros usuários, verificar subordinados
+      if (user.subordinates && user.subordinates.length > 0) {
+        console.log(`👥 getMyTeam: ${user.subordinates.length} subordinados`);
+        return user.subordinates;
+      }
+
+      console.log('⚠️ getMyTeam: Equipe vazia, retornando apenas usuário atual');
+      return [user];
+
+    } catch (error) {
+      console.error('❌ Erro ao obter equipe:', error);
+      return [user].filter(Boolean);
+    }
+  };
+
+  // Função para verificar se pode acessar uma página
+  const canAccessPage = (pageName) => {
+    if (!user) {
       return false;
     }
-  }
 
-  // Obter informações da sessão
-  getSessionInfo() {
-    const user = this.getUserData();
-    const token = Cookies.get(this.TOKEN_KEY);
+    // ✅ LÓGICA SIMPLIFICADA - baseada no role
+    const pagePermissions = {
+      'dashboard': true, // Todos podem acessar dashboard
+      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
+      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
+      'ugs': ['admin'].includes(user.role), // Apenas admin
+      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
+    };
+
+    return pagePermissions[pageName] || false;
+  };
+
+  // Função para obter nome do consultor
+  const getConsultorName = (consultorId) => {
+    const team = getMyTeam();
+    const consultor = team.find(member => 
+      member.id === consultorId || 
+      member.name === consultorId ||
+      member.email === consultorId
+    );
+    return consultor?.name || consultorId || 'Desconhecido';
+  };
+
+  // Função para verificar se pode criar usuário
+  const canCreateUser = (role) => {
+    if (!user) return false;
     
-    if (!user || !token) return null;
-
-    try {
-      const payload = JSON.parse(atob(token));
-      const loginTime = new Date(payload.timestamp);
-      const expiresAt = new Date(loginTime.getTime() + (this.SESSION_DURATION * 60 * 60 * 1000));
-      
-      return {
-        user,
-        loginTime,
-        expiresAt,
-        isValid: this.validateToken(token)
-      };
-    } catch (error) {
-      return null;
+    switch (user.role) {
+      case 'admin':
+        return ['consultor', 'gerente', 'vendedor'].includes(role);
+      case 'consultor':
+        return ['gerente', 'vendedor'].includes(role);
+      case 'gerente':
+        return role === 'vendedor';
+      default:
+        return false;
     }
-  }
+  };
 
-  // Renovar sessão
-  async renewSession() {
-    const user = this.getUserData();
-    if (!user) throw new Error('Usuário não autenticado');
+  // Função para criar usuário (simplificada)
+  const createUser = async (userData) => {
+    try {
+      if (!canCreateUser(userData.role)) {
+        throw new Error('Você não tem permissão para criar este tipo de usuário');
+      }
 
-    const userRecord = this.users.find(u => u.id === user.id);
-    if (!userRecord) throw new Error('Usuário não encontrado');
+      // Por enquanto, simular criação
+      console.log('👤 Criando usuário:', userData);
+      
+      return { 
+        success: true, 
+        message: 'Usuário criado com sucesso (simulado)' 
+      };
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar usuário:', error);
+      return { 
+        success: false, 
+        message: error.message 
+      };
+    }
+  };
 
-    // Gerar novo token
-    const newToken = this.generateToken(userRecord);
-    
-    Cookies.set(this.TOKEN_KEY, newToken, { 
-      expires: this.SESSION_DURATION / 24,
-      secure: window.location.protocol === 'https:',
-      sameSite: 'strict'
-    });
+  const value = {
+    user,
+    isAuthenticated,
+    loading,
+    login,
+    logout,
+    updateUser,
+    getMyTeam,
+    canAccessPage,
+    canCreateUser,
+    createUser,
+    getConsultorName
+  };
 
-    console.log('✅ Sessão renovada');
-    return { success: true };
-  }
-}
-
-export default new AuthService();
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

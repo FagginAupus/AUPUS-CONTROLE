@@ -1,4 +1,4 @@
-// src/pages/LoginPage.jsx - Página de login corrigida para usar email
+// src/pages/LoginPage.jsx - CORRIGIDO PARA NAVEGAÇÃO AUTOMÁTICA
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,25 +7,28 @@ import './LoginPage.css';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: '',  // Mudado de username para email
+    email: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
 
-  // Redirecionar se já estiver logado
+  // CORREÇÃO: Redirecionar quando isAuthenticated mudar
   useEffect(() => {
-    if (isAuthenticated) {
+    console.log('👤 LoginPage - isAuthenticated:', isAuthenticated, 'user:', user?.name);
+    
+    if (isAuthenticated && user) {
+      console.log('🔄 Redirecionando para dashboard...');
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {  // Mudado de username para email
+    if (!formData.email || !formData.password) {
       showNotification('Preencha todos os campos', 'warning');
       return;
     }
@@ -38,18 +41,29 @@ const LoginPage = () => {
     }
 
     setLoading(true);
+    console.log('🔐 LoginPage - Iniciando processo de login...');
 
     try {
-      const result = await login(formData.email, formData.password);  // Mudado de username para email
+      const result = await login(formData.email, formData.password);
+      console.log('🔐 LoginPage - Resultado do login:', result);
       
       if (result.success) {
-        showNotification(`Bem-vindo(a), ${result.user.name}!`, 'success');
-        navigate('/dashboard', { replace: true });
+        console.log('✅ LoginPage - Login bem-sucedido, usuário:', result.user);
+        showNotification(`Bem-vindo(a), ${result.user.name || result.user.nome}!`, 'success');
+        
+        // CORREÇÃO: Navegação imediata se ainda não foi redirecionado
+        setTimeout(() => {
+          if (!isAuthenticated) {
+            console.log('🔄 LoginPage - Forçando navegação manual...');
+            navigate('/dashboard', { replace: true });
+          }
+        }, 100);
       } else {
+        console.log('❌ LoginPage - Falha no login:', result.message);
         showNotification(result.message || 'Email ou senha incorretos', 'error');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ LoginPage - Erro no login:', error);
       showNotification('Erro interno do sistema', 'error');
     } finally {
       setLoading(false);
@@ -69,6 +83,8 @@ const LoginPage = () => {
       handleSubmit(e);
     }
   };
+
+  // Pré-preencher com dados de teste - REMOVIDO
 
   return (
     <div className="login-container">
@@ -91,16 +107,16 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>  {/* Mudado de Usuário para Email */}
+            <label htmlFor="email">Email</label>
             <input
-              type="email"  // Mudado de text para email
+              type="email"
               id="email"
-              name="email"  // Mudado de username para email
-              value={formData.email}  // Mudado de username para email
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               onKeyPress={handleKeyPress}
-              placeholder="Digite seu email"  // Mudado placeholder
-              autoComplete="email"  // Mudado de username para email
+              placeholder="Digite seu email"
+              autoComplete="email"
               disabled={loading}
               required
             />

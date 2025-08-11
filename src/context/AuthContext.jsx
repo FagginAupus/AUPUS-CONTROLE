@@ -1,6 +1,6 @@
-// src/context/AuthContext.jsx - Context de autenticação corrigido para usar email
+// src/context/AuthContext.jsx - CORRIGIDO PARA INTEGRAÇÃO COM API
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import storageService from '../services/storageService'; // ✅ IMPORTAÇÃO CORRIGIDA - removido destructuring
+import storageService from '../services/storageService';
 
 const AuthContext = createContext();
 
@@ -21,20 +21,20 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = () => {
       try {
-        const savedUser = localStorage.getItem('aupus_user');
-        const savedToken = localStorage.getItem('aupus_token');
+        const savedUser = localStorage.getItem('user'); // Usar 'user' como no storageService
+        const savedToken = localStorage.getItem('token');
         
         if (savedUser && savedToken) {
           const userData = JSON.parse(savedUser);
           setUser(userData);
           setIsAuthenticated(true);
-          console.log('👤 Usuário restaurado do localStorage:', userData.nome || userData.name);
+          console.log('👤 Usuário restaurado do localStorage:', userData.name || userData.nome);
         }
       } catch (error) {
         console.error('❌ Erro ao restaurar sessão:', error);
         // Limpar dados corrompidos
-        localStorage.removeItem('aupus_user');
-        localStorage.removeItem('aupus_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
       } finally {
         setLoading(false);
       }
@@ -43,94 +43,35 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email, password) => {  // Mudado de username para email
+  const login = async (email, password) => {
     setLoading(true);
     console.log('🔐 Iniciando login...');
     
     try {
-      // Tentar login via API primeiro
-      const credentials = { email, password };  // Enviando email em vez de username
-      const result = await storageService.login(credentials);
+      // CORREÇÃO: storageService.login retorna userData diretamente, não um objeto {success, user}
+      const userData = await storageService.login(email, password);
       
-      if (result.success) {
-        const userData = result.user;
+      console.log('🔐 AuthContext - Resposta do storageService:', userData);
+      
+      // CORREÇÃO: storageService.login retorna userData ou lança erro
+      if (userData && (userData.id || userData.name || userData.nome)) {
+        console.log('✅ AuthContext - Definindo usuário:', userData);
         setUser(userData);
         setIsAuthenticated(true);
-        console.log('✅ Login realizado com sucesso:', userData.nome || userData.name);
+        console.log('✅ AuthContext - Estados atualizados');
         return { success: true, user: userData };
       }
       
-      // Se falhou na API, tentar método local original (fallback)
-      return await loginLocal(email, password);  // Mudado de username para email
+      // Se chegou aqui, userData é inválido
+      throw new Error('Dados de usuário inválidos');
       
     } catch (error) {
-      console.error('❌ Erro no login:', error);
+      console.error('❌ AuthContext - Erro no login:', error);
+      setUser(null);
+      setIsAuthenticated(false);
       return { success: false, message: error.message || 'Erro interno do sistema' };
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Método de login local (fallback para compatibilidade)
-  const loginLocal = async (email, password) => {  // Mudado de username para email
-    try {
-      // Verificar usuário admin padrão (mantendo por compatibilidade)
-      if (email === 'admin@aupus.com' && password === '123') {  // Usando email em vez de username
-        const adminUser = {
-          id: 'admin',
-          email: 'admin@aupus.com',
-          name: 'Administrador',
-          nome: 'Administrador', // Para compatibilidade com API
-          role: 'admin',
-          permissions: {
-            canCreateConsultors: true,
-            canAccessAll: true,
-            canManageUGs: true,
-            canManageCalibration: true,
-            canSeeAllData: true,
-            canAccessReports: true // ✅ ADICIONADO
-          },
-          createdBy: null,
-          subordinates: []
-        };
-        
-        setUser(adminUser);
-        setIsAuthenticated(true);
-        localStorage.setItem('aupus_user', JSON.stringify(adminUser));
-        console.log('✅ Login admin local realizado');
-        return { success: true, user: adminUser };
-      }
-
-      // Verificar usuários cadastrados localmente
-      const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-      const usuario = usuarios.find(u => 
-        u.email === email && u.password === password  // Mudado de username para email
-      );
-
-      if (usuario) {
-        const userData = {
-          ...usuario,
-          nome: usuario.name || usuario.nome
-        };
-        
-        setUser(userData);
-        setIsAuthenticated(true);
-        localStorage.setItem('aupus_user', JSON.stringify(userData));
-        console.log('✅ Login local realizado:', userData.nome);
-        return { success: true, user: userData };
-      }
-
-      return { 
-        success: false, 
-        message: 'Email ou senha incorretos'  // Mudou mensagem de erro
-      };
-
-    } catch (error) {
-      console.error('❌ Erro no login local:', error);
-      return { 
-        success: false, 
-        message: 'Erro no sistema de autenticação local' 
-      };
     }
   };
 
@@ -138,9 +79,8 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🚪 Fazendo logout...');
       
-      // Limpar dados locais
-      localStorage.removeItem('aupus_user');
-      localStorage.removeItem('aupus_token');
+      // Usar logout do storageService
+      storageService.logout();
       
       // Resetar estado
       setUser(null);
@@ -155,8 +95,8 @@ export const AuthProvider = ({ children }) => {
       // Forçar limpeza mesmo com erro
       setUser(null);
       setIsAuthenticated(false);
-      localStorage.removeItem('aupus_user');
-      localStorage.removeItem('aupus_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
       
       return { success: false, message: error.message };
     }
@@ -165,7 +105,7 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (userData) => {
     try {
       setUser(userData);
-      localStorage.setItem('aupus_user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(userData));
       console.log('👤 Dados do usuário atualizados');
     } catch (error) {
       console.error('❌ Erro ao atualizar usuário:', error);
@@ -278,10 +218,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     getMyTeam,
-    canAccessPage, // ✅ FUNÇÃO INCLUÍDA
+    canAccessPage,
     canCreateUser,
     createUser,
-    getConsultorName // ✅ FUNÇÃO INCLUÍDA
+    getConsultorName
   };
 
   return (
