@@ -1,4 +1,4 @@
-// src/services/storageService.js - COMPLETO COM MÉTODOS DE UGs
+// src/services/storageService.js - COMPLETO COM CORREÇÃO DE LOGIN
 import apiService from './apiService';
 
 class StorageService {
@@ -30,10 +30,26 @@ class StorageService {
     }
 
     // ========================================
-    // AUTENTICAÇÃO
+    // AUTENTICAÇÃO - CORRIGIDO
     // ========================================
 
-    async login(email, password) {
+    async login(credentials) {
+        // CORREÇÃO: Aceitar tanto objeto credentials quanto email, password separados
+        let email, password;
+        
+        if (typeof credentials === 'object' && credentials.email && credentials.password) {
+            email = credentials.email;
+            password = credentials.password;
+        } else if (arguments.length === 2) {
+            // Compatibilidade com login(email, password)
+            email = credentials;
+            password = arguments[1];
+        } else {
+            return { success: false, message: 'Credenciais inválidas' };
+        }
+
+        console.log('🔐 login - tentando autenticação para:', email);
+
         if (this.useAPI) {
             try {
                 console.log('🔐 login (API)');
@@ -42,7 +58,7 @@ class StorageService {
                 if (response.success && response.user && response.token) {
                     localStorage.setItem('aupus_user', JSON.stringify(response.user));
                     localStorage.setItem('aupus_token', response.token);
-                    console.log(`✅ Login API realizado: ${response.user.nome}`);
+                    console.log(`✅ Login API realizado: ${response.user.name || response.user.nome}`);
                     return response;
                 }
                 
@@ -58,24 +74,57 @@ class StorageService {
 
     loginLocal(email, password) {
         try {
+            console.log('🔐 loginLocal - tentando para:', email);
+            
+            // Verificar usuário admin padrão primeiro
+            if (email === 'admin@aupus.com' && password === '123') {
+                const adminUser = {
+                    id: 'admin',
+                    email: 'admin@aupus.com',
+                    name: 'Administrador',
+                    nome: 'Administrador',
+                    role: 'admin',
+                    permissions: ['all']
+                };
+                
+                localStorage.setItem('aupus_user', JSON.stringify(adminUser));
+                localStorage.setItem('aupus_token', `local_token_admin`);
+                console.log('✅ Login admin local realizado');
+                
+                return { 
+                    success: true, 
+                    user: adminUser,
+                    token: 'local_token_admin'
+                };
+            }
+
+            // Buscar em usuários locais
             const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
             
             const userData = usuarios.find(u => 
-                u.email.toLowerCase() === email.toLowerCase() && 
-                u.senha === password
+                u.email && u.email.toLowerCase() === email.toLowerCase() && 
+                (u.senha === password || u.password === password)
             );
 
             if (userData) {
-                localStorage.setItem('aupus_user', JSON.stringify(userData));
+                const normalizedUser = {
+                    ...userData,
+                    name: userData.nome || userData.name,
+                    nome: userData.nome || userData.name
+                };
+                
+                localStorage.setItem('aupus_user', JSON.stringify(normalizedUser));
                 localStorage.setItem('aupus_token', `local_token_${userData.id}`);
-                console.log(`✅ Login local realizado: ${userData.nome}`);
+                console.log(`✅ Login local realizado: ${normalizedUser.name}`);
+                
                 return { 
                     success: true, 
-                    user: userData,
+                    user: normalizedUser,
                     token: `local_token_${userData.id}`
                 };
             }
 
+            console.log('❌ Usuário não encontrado ou senha incorreta');
             return { 
                 success: false, 
                 message: 'Email ou senha incorretos'
@@ -103,6 +152,7 @@ class StorageService {
         // Limpar dados locais
         localStorage.removeItem('aupus_user');
         localStorage.removeItem('aupus_token');
+        console.log('✅ Logout local realizado');
     }
 
     async getCurrentUser() {
@@ -126,536 +176,423 @@ class StorageService {
             const userData = localStorage.getItem('aupus_user');
             return userData ? JSON.parse(userData) : null;
         } catch (error) {
-            console.error('❌ Erro ao obter usuário local:', error);
+            console.error('❌ Erro ao obter dados do usuário:', error);
             return null;
         }
     }
 
-    async getTeam() {
-        if (this.useAPI) {
-            try {
-                const response = await apiService.getTeam();
-                return response.data || response;
-            } catch (error) {
-                console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getTeamLocal();
-            }
-        } else {
-            return this.getTeamLocal();
-        }
-    }
-
-    getTeamLocal() {
-        try {
-            const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-            const currentUser = this.getUserLocal();
-            
-            if (!currentUser) return [];
-            
-            if (currentUser.role === 'admin') {
-                return usuarios;
-            }
-            
-            // Para outros usuários, retornar apenas subordinados
-            return usuarios.filter(u => u.createdBy === currentUser.id);
-            
-        } catch (error) {
-            console.error('❌ Erro ao obter equipe local:', error);
-            return [];
-        }
-    }
-
     // ========================================
-    // MÉTODOS PARA PROPOSTAS (PROSPEC)
+    // PROPOSTAS
     // ========================================
 
     async getProspec() {
         if (this.useAPI) {
             try {
                 console.log('📥 getProspec (API)');
-                const response = await apiService.getPropostas();
-                const dados = response.data || response;
+                const response = await apiService.get('/propostas');
+                const propostas = Array.isArray(response) ? response : (response.data || []);
                 
-                // Cache local
-                localStorage.setItem('propostas', JSON.stringify(dados));
-                console.log(`✅ Carregadas ${dados.length} propostas da API`);
+                // Cache no localStorage
+                localStorage.setItem('propostas', JSON.stringify(propostas));
+                console.log(`✅ Carregadas ${propostas.length} propostas da API`);
                 
-                return dados;
+                return propostas;
             } catch (error) {
                 console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getProspecLocal();
+                // Fallback para localStorage
+                const localPropostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+                console.log(`✅ Carregadas ${localPropostas.length} propostas do localStorage`);
+                return localPropostas;
             }
         } else {
-            console.log('📥 getProspec (localStorage)');
-            return this.getProspecLocal();
+            const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+            console.log(`✅ Carregadas ${propostas.length} propostas do localStorage`);
+            return propostas;
         }
     }
 
-    getProspecLocal() {
-        try {
-            const dados = JSON.parse(localStorage.getItem('propostas') || '[]');
-            console.log(`✅ Carregadas ${dados.length} propostas do localStorage`);
-            return dados;
-        } catch (error) {
-            console.error('❌ Erro ao carregar propostas local:', error);
-            return [];
-        }
-    }
-
-    async salvarProposta(proposta) {
+    async saveProspec(proposta) {
         if (this.useAPI) {
             try {
-                const response = await apiService.criarProposta(proposta);
-                // Atualizar cache local
-                const propostas = this.getProspecLocal();
-                const novaProposta = response.data || response;
-                propostas.push(novaProposta);
-                localStorage.setItem('propostas', JSON.stringify(propostas));
+                console.log('💾 saveProspec (API):', proposta.numero_proposta);
+                const response = await apiService.post('/propostas', proposta);
                 
-                return { success: true, data: novaProposta };
+                // Atualizar cache local
+                const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+                const existingIndex = propostas.findIndex(p => p.id === proposta.id);
+                
+                if (existingIndex >= 0) {
+                    propostas[existingIndex] = response;
+                } else {
+                    propostas.push(response);
+                }
+                
+                localStorage.setItem('propostas', JSON.stringify(propostas));
+                console.log('✅ Proposta salva na API e cache atualizado');
+                
+                return response;
             } catch (error) {
                 console.log('⚠️ API falhou, salvando localmente:', error.message);
-                return this.salvarPropostaLocal(proposta);
+                return this.saveProspecLocal(proposta);
             }
         } else {
-            return this.salvarPropostaLocal(proposta);
+            return this.saveProspecLocal(proposta);
         }
     }
 
-    salvarPropostaLocal(proposta) {
+    saveProspecLocal(proposta) {
         try {
-            const propostas = this.getProspecLocal();
-            const novaProposta = {
-                ...proposta,
-                id: proposta.id || Date.now().toString(),
-                dataAtualizacao: new Date().toISOString()
-            };
+            const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+            const timestamp = new Date().toISOString();
             
-            propostas.push(novaProposta);
+            if (proposta.id) {
+                // Atualizar existente
+                const index = propostas.findIndex(p => p.id === proposta.id);
+                if (index >= 0) {
+                    propostas[index] = { ...proposta, updated_at: timestamp };
+                } else {
+                    propostas.push({ ...proposta, updated_at: timestamp });
+                }
+            } else {
+                // Nova proposta
+                const novaProposta = {
+                    ...proposta,
+                    id: `prop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    created_at: timestamp,
+                    updated_at: timestamp
+                };
+                propostas.push(novaProposta);
+            }
+            
             localStorage.setItem('propostas', JSON.stringify(propostas));
+            console.log('✅ Proposta salva no localStorage');
             
-            return { success: true, data: novaProposta };
+            return propostas[propostas.length - 1];
         } catch (error) {
-            console.error('❌ Erro ao salvar proposta local:', error);
-            return { success: false, error: error.message };
+            console.error('❌ Erro ao salvar proposta:', error);
+            throw error;
+        }
+    }
+
+    async deleteProspec(id) {
+        if (this.useAPI) {
+            try {
+                console.log('🗑️ deleteProspec (API):', id);
+                await apiService.delete(`/propostas/${id}`);
+                
+                // Remover do cache local
+                const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+                const filteredPropostas = propostas.filter(p => p.id !== id);
+                localStorage.setItem('propostas', JSON.stringify(filteredPropostas));
+                
+                console.log('✅ Proposta excluída da API e cache atualizado');
+                return true;
+            } catch (error) {
+                console.log('⚠️ API falhou, excluindo localmente:', error.message);
+                return this.deleteProspecLocal(id);
+            }
+        } else {
+            return this.deleteProspecLocal(id);
+        }
+    }
+
+    deleteProspecLocal(id) {
+        try {
+            const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+            const filteredPropostas = propostas.filter(p => p.id !== id);
+            localStorage.setItem('propostas', JSON.stringify(filteredPropostas));
+            console.log('✅ Proposta excluída do localStorage');
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao excluir proposta:', error);
+            throw error;
         }
     }
 
     // ========================================
-    // MÉTODOS PARA CONTROLE
+    // CONTROLE CLUBE
     // ========================================
 
     async getControle() {
         if (this.useAPI) {
             try {
                 console.log('📥 getControle (API)');
-                const response = await apiService.getControle();
-                const dados = response.data || response;
+                const response = await apiService.get('/controle');
+                const controle = Array.isArray(response) ? response : (response.data || []);
                 
-                // Cache local
-                localStorage.setItem('controle', JSON.stringify(dados));
-                console.log(`✅ Carregadas ${dados.length} itens de controle da API`);
+                // Cache no localStorage
+                localStorage.setItem('controle', JSON.stringify(controle));
+                console.log(`✅ Carregadas ${controle.length} do controle da API`);
                 
-                return dados;
+                return controle;
             } catch (error) {
                 console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getControleLocal();
+                // Fallback para localStorage
+                const localControle = JSON.parse(localStorage.getItem('controle') || '[]');
+                console.log(`✅ Carregadas ${localControle.length} do controle do localStorage`);
+                return localControle;
             }
         } else {
-            console.log('📥 getControle (localStorage)');
-            return this.getControleLocal();
+            const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+            console.log(`✅ Carregadas ${controle.length} do controle do localStorage`);
+            return controle;
         }
     }
 
-    getControleLocal() {
+    async saveControle(item) {
+        if (this.useAPI) {
+            try {
+                console.log('💾 saveControle (API)');
+                const response = await apiService.post('/controle', item);
+                
+                // Atualizar cache local
+                const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+                const existingIndex = controle.findIndex(c => c.id === item.id);
+                
+                if (existingIndex >= 0) {
+                    controle[existingIndex] = response;
+                } else {
+                    controle.push(response);
+                }
+                
+                localStorage.setItem('controle', JSON.stringify(controle));
+                console.log('✅ Item do controle salvo na API');
+                
+                return response;
+            } catch (error) {
+                console.log('⚠️ API falhou, salvando localmente:', error.message);
+                return this.saveControleLocal(item);
+            }
+        } else {
+            return this.saveControleLocal(item);
+        }
+    }
+
+    saveControleLocal(item) {
         try {
-            const dados = JSON.parse(localStorage.getItem('controle') || '[]');
-            console.log(`✅ Carregadas ${dados.length} do controle do localStorage`);
-            return dados;
+            const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+            const timestamp = new Date().toISOString();
+            
+            if (item.id) {
+                const index = controle.findIndex(c => c.id === item.id);
+                if (index >= 0) {
+                    controle[index] = { ...item, updated_at: timestamp };
+                } else {
+                    controle.push({ ...item, updated_at: timestamp });
+                }
+            } else {
+                const novoItem = {
+                    ...item,
+                    id: `ctrl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    created_at: timestamp,
+                    updated_at: timestamp
+                };
+                controle.push(novoItem);
+            }
+            
+            localStorage.setItem('controle', JSON.stringify(controle));
+            console.log('✅ Item do controle salvo no localStorage');
+            
+            return controle[controle.length - 1];
         } catch (error) {
-            console.error('❌ Erro ao carregar controle local:', error);
-            return [];
+            console.error('❌ Erro ao salvar item do controle:', error);
+            throw error;
         }
     }
 
     // ========================================
-    // MÉTODOS PARA UGs (USINAS GERADORAS)
+    // UNIDADES GERADORAS (UGs)
     // ========================================
 
     async getUGs() {
         if (this.useAPI) {
             try {
                 console.log('📥 getUGs (API)');
-                // Assumindo que há um endpoint para UGs na API
                 const response = await apiService.get('/ugs');
-                const dados = response.data || response;
+                const ugs = Array.isArray(response) ? response : (response.data || []);
                 
-                // Cache local
-                localStorage.setItem('ugs', JSON.stringify(dados));
-                console.log(`✅ Carregadas ${dados.length} UGs da API`);
+                // Cache no localStorage
+                localStorage.setItem('ugs', JSON.stringify(ugs));
+                console.log(`✅ Carregadas ${ugs.length} UGs da API`);
                 
-                return dados;
+                return ugs;
             } catch (error) {
                 console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getUGsLocal();
+                // Fallback para localStorage
+                const localUGs = JSON.parse(localStorage.getItem('ugs') || '[]');
+                console.log(`✅ Carregadas ${localUGs.length} UGs do localStorage`);
+                return localUGs;
             }
         } else {
-            console.log('📥 getUGs (localStorage)');
-            return this.getUGsLocal();
+            const ugs = JSON.parse(localStorage.getItem('ugs') || '[]');
+            console.log(`✅ Carregadas ${ugs.length} UGs do localStorage`);
+            return ugs;
         }
     }
 
-    getUGsLocal() {
-        try {
-            const dados = JSON.parse(localStorage.getItem('ugs') || '[]');
-            console.log(`✅ Carregadas ${dados.length} UGs do localStorage`);
-            return dados;
-        } catch (error) {
-            console.error('❌ Erro ao carregar UGs local:', error);
-            return [];
-        }
-    }
-
-    async adicionarUG(ug) {
+    async saveUG(ug) {
         if (this.useAPI) {
             try {
-                console.log('💾 adicionarUG (API)');
+                console.log('💾 saveUG (API)');
                 const response = await apiService.post('/ugs', ug);
                 
                 // Atualizar cache local
-                const ugs = this.getUGsLocal();
-                const novaUG = response.data || response;
-                ugs.push(novaUG);
-                localStorage.setItem('ugs', JSON.stringify(ugs));
+                const ugs = JSON.parse(localStorage.getItem('ugs') || '[]');
+                const existingIndex = ugs.findIndex(u => u.id === ug.id);
                 
-                console.log(`✅ UG "${ug.nomeUsina}" adicionada via API`);
-                return { success: true, data: novaUG };
+                if (existingIndex >= 0) {
+                    ugs[existingIndex] = response;
+                } else {
+                    ugs.push(response);
+                }
+                
+                localStorage.setItem('ugs', JSON.stringify(ugs));
+                console.log('✅ UG salva na API');
+                
+                return response;
             } catch (error) {
                 console.log('⚠️ API falhou, salvando localmente:', error.message);
-                return this.adicionarUGLocal(ug);
+                return this.saveUGLocal(ug);
             }
         } else {
-            return this.adicionarUGLocal(ug);
+            return this.saveUGLocal(ug);
         }
     }
 
-    adicionarUGLocal(ug) {
+    saveUGLocal(ug) {
         try {
-            const ugs = this.getUGsLocal();
-            const novaUG = {
-                ...ug,
-                id: ug.id || Date.now().toString(),
-                dataCadastro: new Date().toISOString(),
-                dataAtualizacao: new Date().toISOString()
-            };
+            const ugs = JSON.parse(localStorage.getItem('ugs') || '[]');
+            const timestamp = new Date().toISOString();
             
-            ugs.push(novaUG);
-            localStorage.setItem('ugs', JSON.stringify(ugs));
-            
-            console.log(`✅ UG "${ug.nomeUsina}" adicionada localmente`);
-            return { success: true, data: novaUG };
-        } catch (error) {
-            console.error('❌ Erro ao adicionar UG local:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async atualizarUG(index, ugAtualizada) {
-        if (this.useAPI) {
-            try {
-                const ugs = this.getUGsLocal();
-                const ugExistente = ugs[index];
-                
-                if (!ugExistente || !ugExistente.id) {
-                    throw new Error('UG não encontrada para atualização');
+            if (ug.id) {
+                const index = ugs.findIndex(u => u.id === ug.id);
+                if (index >= 0) {
+                    ugs[index] = { ...ug, updated_at: timestamp };
+                } else {
+                    ugs.push({ ...ug, updated_at: timestamp });
                 }
-
-                console.log('📝 atualizarUG (API)');
-                const response = await apiService.put(`/ugs/${ugExistente.id}`, ugAtualizada);
-                
-                // Atualizar cache local
-                ugs[index] = { ...ugAtualizada, id: ugExistente.id };
-                localStorage.setItem('ugs', JSON.stringify(ugs));
-                
-                console.log(`✅ UG "${ugAtualizada.nomeUsina}" atualizada via API`);
-                return { success: true, data: response.data || response };
-            } catch (error) {
-                console.log('⚠️ API falhou, atualizando localmente:', error.message);
-                return this.atualizarUGLocal(index, ugAtualizada);
+            } else {
+                const novaUG = {
+                    ...ug,
+                    id: `ug_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    created_at: timestamp,
+                    updated_at: timestamp
+                };
+                ugs.push(novaUG);
             }
-        } else {
-            return this.atualizarUGLocal(index, ugAtualizada);
-        }
-    }
-
-    atualizarUGLocal(index, ugAtualizada) {
-        try {
-            const ugs = this.getUGsLocal();
-            
-            if (index < 0 || index >= ugs.length) {
-                throw new Error('Índice inválido para atualização');
-            }
-
-            const ugExistente = ugs[index];
-            ugs[index] = {
-                ...ugExistente,
-                ...ugAtualizada,
-                dataAtualizacao: new Date().toISOString()
-            };
             
             localStorage.setItem('ugs', JSON.stringify(ugs));
+            console.log('✅ UG salva no localStorage');
             
-            console.log(`✅ UG "${ugAtualizada.nomeUsina}" atualizada localmente`);
-            return { success: true, data: ugs[index] };
+            return ugs[ugs.length - 1];
         } catch (error) {
-            console.error('❌ Erro ao atualizar UG local:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async removerUG(index) {
-        if (this.useAPI) {
-            try {
-                const ugs = this.getUGsLocal();
-                const ugExistente = ugs[index];
-                
-                if (!ugExistente || !ugExistente.id) {
-                    throw new Error('UG não encontrada para remoção');
-                }
-
-                console.log('🗑️ removerUG (API)');
-                await apiService.delete(`/ugs/${ugExistente.id}`);
-                
-                // Atualizar cache local
-                ugs.splice(index, 1);
-                localStorage.setItem('ugs', JSON.stringify(ugs));
-                
-                console.log(`✅ UG "${ugExistente.nomeUsina}" removida via API`);
-                return { success: true };
-            } catch (error) {
-                console.log('⚠️ API falhou, removendo localmente:', error.message);
-                return this.removerUGLocal(index);
-            }
-        } else {
-            return this.removerUGLocal(index);
-        }
-    }
-
-    removerUGLocal(index) {
-        try {
-            const ugs = this.getUGsLocal();
-            
-            if (index < 0 || index >= ugs.length) {
-                throw new Error('Índice inválido para remoção');
-            }
-
-            const ugRemovida = ugs.splice(index, 1)[0];
-            localStorage.setItem('ugs', JSON.stringify(ugs));
-            
-            console.log(`✅ UG "${ugRemovida.nomeUsina}" removida localmente`);
-            return { success: true };
-        } catch (error) {
-            console.error('❌ Erro ao remover UG local:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // ========================================
-    // MÉTODOS DE EXPORTAÇÃO
-    // ========================================
-
-    async exportarParaCSV(tipo, dados = null) {
-        try {
-            let dadosExportacao;
-            let nomeArquivo;
-
-            switch (tipo) {
-                case 'prospec':
-                    dadosExportacao = dados || await this.getProspec();
-                    nomeArquivo = `prospec_${new Date().toISOString().split('T')[0]}.csv`;
-                    break;
-                case 'controle':
-                    dadosExportacao = dados || await this.getControle();
-                    nomeArquivo = `controle_${new Date().toISOString().split('T')[0]}.csv`;
-                    break;
-                case 'ugs':
-                    dadosExportacao = dados || await this.getUGs();
-                    nomeArquivo = `ugs_${new Date().toISOString().split('T')[0]}.csv`;
-                    break;
-                default:
-                    throw new Error(`Tipo de exportação '${tipo}' não suportado`);
-            }
-
-            if (!dadosExportacao || dadosExportacao.length === 0) {
-                throw new Error('Nenhum dado disponível para exportação');
-            }
-
-            const csvContent = this.converterParaCSV(dadosExportacao);
-            this.baixarCSV(csvContent, nomeArquivo);
-            
-            console.log(`✅ Dados de ${tipo} exportados: ${nomeArquivo}`);
-            return { success: true, filename: nomeArquivo };
-        } catch (error) {
-            console.error('❌ Erro na exportação:', error);
+            console.error('❌ Erro ao salvar UG:', error);
             throw error;
         }
     }
 
-    async exportarDadosFiltrados(tipo, dadosFiltrados) {
-        return this.exportarParaCSV(tipo, dadosFiltrados);
-    }
-
-    converterParaCSV(dados) {
-        if (!dados || dados.length === 0) return '';
-
-        const headers = Object.keys(dados[0]);
-        const csvRows = [headers.join(',')];
-
-        for (const item of dados) {
-            const values = headers.map(header => {
-                const val = item[header];
-                return `"${String(val || '').replace(/"/g, '""')}"`;
-            });
-            csvRows.push(values.join(','));
-        }
-
-        return csvRows.join('\n');
-    }
-
-    baixarCSV(conteudo, nomeArquivo) {
-        const blob = new Blob([conteudo], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', nomeArquivo);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    }
-
     // ========================================
-    // CONFIGURAÇÕES E CALIBRAGEM
+    // CALIBRAGEM GLOBAL
     // ========================================
 
     async getCalibragemGlobal() {
         if (this.useAPI) {
             try {
                 const response = await apiService.get('/configuracoes/calibragem_global');
-                this.calibragemGlobal = parseFloat(response.valor || response.data?.valor || 0);
+                const calibragem = response.valor ? parseFloat(response.valor) : 0;
+                this.calibragemGlobal = calibragem;
+                localStorage.setItem('calibragem_global', calibragem.toString());
+                return calibragem;
             } catch (error) {
-                console.log('⚠️ API falhou, usando calibragem local:', error.message);
-                this.calibragemGlobal = parseFloat(localStorage.getItem('config_calibragem_global') || '0');
+                console.log('⚠️ API falhou, usando localStorage para calibragem');
+                return this.getCalibragemGlobalLocal();
             }
         } else {
-            this.calibragemGlobal = parseFloat(localStorage.getItem('config_calibragem_global') || '0');
+            return this.getCalibragemGlobalLocal();
         }
-        
-        console.log(`⚙️ Calibragem global carregada: ${this.calibragemGlobal}%`);
-        return this.calibragemGlobal;
+    }
+
+    getCalibragemGlobalLocal() {
+        const calibragem = parseFloat(localStorage.getItem('calibragem_global') || '0');
+        this.calibragemGlobal = calibragem;
+        return calibragem;
     }
 
     async setCalibragemGlobal(valor) {
-        this.calibragemGlobal = parseFloat(valor);
-        localStorage.setItem('config_calibragem_global', this.calibragemGlobal.toString());
-        
         if (this.useAPI) {
             try {
-                await apiService.post('/configuracoes', {
-                    chave: 'calibragem_global',
-                    valor: this.calibragemGlobal
-                });
-            } catch (error) {
-                console.log('⚠️ Erro ao salvar calibragem na API:', error.message);
-            }
-        }
-        
-        console.log(`⚙️ Calibragem global definida: ${this.calibragemGlobal}%`);
-        return this.calibragemGlobal;
-    }
-
-    // ========================================
-    // MÉTODOS DE UTILIDADE
-    // ========================================
-
-    // Limpar todos os dados (reset)
-    clearAllData() {
-        const keys = [
-            'aupus_user', 'aupus_token', 'propostas', 'controle', 
-            'usuarios', 'configuracoes', 'ugs'
-        ];
-        
-        keys.forEach(key => localStorage.removeItem(key));
-        
-        // Limpar configs específicas
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('config_')) {
-                localStorage.removeItem(key);
-            }
-        });
-        
-        this.calibragemGlobal = 0;
-        console.log('🧹 Todos os dados locais foram limpos');
-    }
-
-    // Verificar integridade dos dados
-    async verifyDataIntegrity() {
-        try {
-            const user = this.getUserLocal();
-            const token = localStorage.getItem('aupus_token');
-            const propostas = this.getProspecLocal();
-            const controle = this.getControleLocal();
-            const ugs = this.getUGsLocal();
-            
-            return {
-                hasUser: !!user,
-                hasToken: !!token,
-                propostas: propostas.length,
-                controle: controle.length,
-                ugs: ugs.length,
-                apiAvailable: this.useAPI
-            };
-        } catch (error) {
-            console.error('❌ Erro na verificação de integridade:', error);
-            return null;
-        }
-    }
-
-    // Sincronizar dados locais com API
-    async syncWithAPI() {
-        if (!this.useAPI) {
-            console.log('⚠️ API não disponível para sincronização');
-            return false;
-        }
-
-        try {
-            console.log('🔄 Iniciando sincronização com API...');
-            
-            // Re-detectar disponibilidade da API
-            await this.detectarModoOperacao();
-            
-            if (this.useAPI) {
-                // Buscar dados atualizados
-                await this.getProspec();
-                await this.getControle();
-                await this.getUGs();
-                await this.getCalibragemGlobal();
-                
-                console.log('✅ Sincronização concluída');
+                await apiService.put('/configuracoes/calibragem_global', { valor });
+                this.calibragemGlobal = valor;
+                localStorage.setItem('calibragem_global', valor.toString());
+                console.log('✅ Calibragem global atualizada na API');
                 return true;
+            } catch (error) {
+                console.log('⚠️ API falhou, salvando calibragem localmente');
+                return this.setCalibragemGlobalLocal(valor);
             }
-            
+        } else {
+            return this.setCalibragemGlobalLocal(valor);
+        }
+    }
+
+    setCalibragemGlobalLocal(valor) {
+        this.calibragemGlobal = valor;
+        localStorage.setItem('calibragem_global', valor.toString());
+        console.log('✅ Calibragem global atualizada no localStorage');
+        return true;
+    }
+
+    // ========================================
+    // MÉTODOS UTILITÁRIOS
+    // ========================================
+
+    async sincronizar() {
+        if (!this.useAPI) {
+            console.log('⚠️ API não disponível - sincronização cancelada');
             return false;
+        }
+
+        try {
+            console.log('🔄 Iniciando sincronização...');
+            
+            // Sincronizar dados
+            await Promise.all([
+                this.getProspec(),
+                this.getControle(),
+                this.getUGs()
+            ]);
+            
+            console.log('✅ Sincronização concluída');
+            return true;
         } catch (error) {
             console.error('❌ Erro na sincronização:', error);
             return false;
         }
     }
+
+    isAPIAvailable() {
+        return this.useAPI;
+    }
+
+    // Método para limpar todos os dados locais
+    clearAllData() {
+        const keysToRemove = [
+            'propostas',
+            'controle', 
+            'ugs',
+            'calibragem_global',
+            'aupus_user',
+            'aupus_token',
+            'usuarios'
+        ];
+        
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        console.log('🧹 Dados locais limpos');
+    }
 }
 
-// Instância única
 export const storageService = new StorageService();
 export default storageService;
