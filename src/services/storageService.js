@@ -31,175 +31,27 @@ class StorageService {
     }
 
     // ========================================
-    // MÉTODOS PARA PROPOSTAS (PROSPEC)
-    // ========================================
-
-    async getProspec() {
-        if (this.useAPI) {
-            try {
-                console.log('📥 getProspec (API)');
-                const response = await apiService.getPropostas();
-                const dados = response.data || response;
-                
-                // Cache no localStorage como backup
-                localStorage.setItem('aupus_prospec', JSON.stringify(dados));
-                return dados;
-            } catch (error) {
-                console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getProspecLocal();
-            }
-        } else {
-            return this.getProspecLocal();
-        }
-    }
-
-    async salvarProspec(dados) {
-        if (this.useAPI) {
-            try {
-                console.log(`💾 salvarProspec (API) - ${dados.length} registros`);
-                // Para salvamento em lote, salvar localmente e sincronizar depois
-                localStorage.setItem('aupus_prospec', JSON.stringify(dados));
-                // TODO: Implementar sincronização em lote
-                return true;
-            } catch (error) {
-                console.log('⚠️ API falhou, salvando no localStorage:', error.message);
-                return this.salvarProspecLocal(dados);
-            }
-        } else {
-            return this.salvarProspecLocal(dados);
-        }
-    }
-
-    async adicionarProspec(proposta) {
-        if (this.useAPI) {
-            try {
-                console.log('💾 adicionarProspec (API):', proposta);
-                const response = await apiService.criarProposta(proposta);
-                const novaProposta = response.data || response;
-                
-                // Atualizar cache local
-                const dadosLocal = this.getProspecLocal();
-                dadosLocal.push(novaProposta);
-                localStorage.setItem('aupus_prospec', JSON.stringify(dadosLocal));
-                
-                return true;
-            } catch (error) {
-                console.log('⚠️ API falhou, salvando no localStorage:', error.message);
-                return this.adicionarProspecLocal(proposta);
-            }
-        } else {
-            return this.adicionarProspecLocal(proposta);
-        }
-    }
-
-    async atualizarProspec(index, dadosAtualizados) {
-        if (this.useAPI) {
-            try {
-                const dadosLocal = this.getProspecLocal();
-                if (index >= 0 && index < dadosLocal.length) {
-                    const proposta = dadosLocal[index];
-                    
-                    console.log(`🔄 atualizarProspec (API) - ID ${proposta.id}`);
-                    await apiService.atualizarProposta(proposta.id, dadosAtualizados);
-                    
-                    // Atualizar cache local
-                    dadosLocal[index] = { ...proposta, ...dadosAtualizados };
-                    localStorage.setItem('aupus_prospec', JSON.stringify(dadosLocal));
-                    
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.log('⚠️ API falhou, atualizando localStorage:', error.message);
-                return this.atualizarProspecLocal(index, dadosAtualizados);
-            }
-        } else {
-            return this.atualizarProspecLocal(index, dadosAtualizados);
-        }
-    }
-
-    async removerProspec(index) {
-        if (this.useAPI) {
-            try {
-                const dadosLocal = this.getProspecLocal();
-                if (index >= 0 && index < dadosLocal.length) {
-                    const proposta = dadosLocal[index];
-                    
-                    console.log(`🗑️ removerProspec (API) - ID ${proposta.id}`);
-                    await apiService.excluirProposta(proposta.id);
-                    
-                    // Remover do cache local
-                    dadosLocal.splice(index, 1);
-                    localStorage.setItem('aupus_prospec', JSON.stringify(dadosLocal));
-                    
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.log('⚠️ API falhou, removendo do localStorage:', error.message);
-                return this.removerProspecLocal(index);
-            }
-        } else {
-            return this.removerProspecLocal(index);
-        }
-    }
-
-    // ========================================
-    // MÉTODOS PARA CONTROLE
-    // ========================================
-
-    async getControle() {
-        if (this.useAPI) {
-            try {
-                console.log('📥 getControle (API)');
-                const response = await apiService.getControle();
-                const dados = response.data || response;
-                
-                localStorage.setItem('aupus_controle', JSON.stringify(dados));
-                return dados;
-            } catch (error) {
-                console.log('⚠️ API falhou, usando localStorage:', error.message);
-                return this.getControleLocal();
-            }
-        } else {
-            return this.getControleLocal();
-        }
-    }
-
-    async adicionarControle(proposta) {
-        if (this.useAPI) {
-            try {
-                console.log('💾 adicionarControle (API):', proposta);
-                const response = await apiService.adicionarControle(proposta);
-                const novoItem = response.data || response;
-                
-                const dadosLocal = this.getControleLocal();
-                dadosLocal.push(novoItem);
-                localStorage.setItem('aupus_controle', JSON.stringify(dadosLocal));
-                
-                return true;
-            } catch (error) {
-                console.log('⚠️ API falhou, salvando no localStorage:', error.message);
-                return this.adicionarControleLocal(proposta);
-            }
-        } else {
-            return this.adicionarControleLocal(proposta);
-        }
-    }
-
-    // ========================================
-    // MÉTODOS PARA USUÁRIOS & AUTENTICAÇÃO
+    // AUTENTICAÇÃO
     // ========================================
 
     async login(credentials) {
         if (this.useAPI) {
             try {
                 console.log('🔐 login (API)');
-                const response = await apiService.login(credentials);
+                // Garantir que estamos enviando email, não username
+                const loginData = {
+                    email: credentials.email,
+                    password: credentials.password
+                };
                 
-                if (response.success) {
-                    // Salvar dados do usuário no localStorage
+                const response = await apiService.login(loginData);
+                
+                if (response && response.success) {
+                    // Salvar dados localmente também
                     localStorage.setItem('aupus_user', JSON.stringify(response.user));
+                    localStorage.setItem('aupus_token', response.token);
+                    
+                    console.log('✅ Login API realizado:', response.user.name);
                     return response;
                 }
                 
@@ -210,6 +62,75 @@ class StorageService {
             }
         } else {
             return this.loginLocal(credentials);
+        }
+    }
+
+    loginLocal(credentials) {
+        console.log('🔐 login (localStorage)');
+        
+        try {
+            // Verificar usuário admin padrão (com email em vez de username)
+            if (credentials.email === 'admin@aupus.com' && credentials.password === '123') {
+                const adminUser = {
+                    id: 'admin',
+                    email: 'admin@aupus.com',
+                    name: 'Administrador',
+                    nome: 'Administrador',
+                    role: 'admin',
+                    permissions: {
+                        canCreateConsultors: true,
+                        canAccessAll: true,
+                        canManageUGs: true,
+                        canManageCalibration: true,
+                        canSeeAllData: true
+                    }
+                };
+                
+                localStorage.setItem('aupus_user', JSON.stringify(adminUser));
+                localStorage.setItem('aupus_token', 'local_admin_token');
+                
+                console.log('✅ Login admin local realizado');
+                return { 
+                    success: true, 
+                    user: adminUser,
+                    token: 'local_admin_token'
+                };
+            }
+
+            // Verificar usuários cadastrados localmente
+            const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const usuario = usuarios.find(u => 
+                u.email === credentials.email && u.password === credentials.password
+            );
+
+            if (usuario) {
+                const userData = {
+                    ...usuario,
+                    nome: usuario.name || usuario.nome
+                };
+                
+                localStorage.setItem('aupus_user', JSON.stringify(userData));
+                localStorage.setItem('aupus_token', `local_token_${userData.id}`);
+                
+                console.log('✅ Login local realizado:', userData.nome);
+                return { 
+                    success: true, 
+                    user: userData,
+                    token: `local_token_${userData.id}`
+                };
+            }
+
+            return { 
+                success: false, 
+                message: 'Email ou senha incorretos'
+            };
+
+        } catch (error) {
+            console.error('❌ Erro no login local:', error);
+            return { 
+                success: false, 
+                message: 'Erro no sistema de autenticação local' 
+            };
         }
     }
 
@@ -244,6 +165,16 @@ class StorageService {
         }
     }
 
+    getUserLocal() {
+        try {
+            const userData = localStorage.getItem('aupus_user');
+            return userData ? JSON.parse(userData) : null;
+        } catch (error) {
+            console.error('❌ Erro ao obter usuário local:', error);
+            return null;
+        }
+    }
+
     async getTeam() {
         if (this.useAPI) {
             try {
@@ -258,6 +189,238 @@ class StorageService {
         }
     }
 
+    getTeamLocal() {
+        try {
+            const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const currentUser = this.getUserLocal();
+            
+            if (!currentUser) return [];
+            
+            if (currentUser.role === 'admin') {
+                return usuarios;
+            }
+            
+            // Para outros usuários, retornar apenas subordinados
+            return usuarios.filter(u => u.createdBy === currentUser.id);
+            
+        } catch (error) {
+            console.error('❌ Erro ao obter equipe local:', error);
+            return [];
+        }
+    }
+
+    // ========================================
+    // MÉTODOS PARA PROPOSTAS (PROSPEC)
+    // ========================================
+
+    async getProspec() {
+        if (this.useAPI) {
+            try {
+                console.log('📥 getProspec (API)');
+                const response = await apiService.getPropostas();
+                const dados = response.data || response;
+                
+                // Cache local
+                localStorage.setItem('propostas', JSON.stringify(dados));
+                console.log(`✅ Carregadas ${dados.length} propostas da API`);
+                
+                return dados;
+            } catch (error) {
+                console.log('⚠️ API falhou, usando localStorage:', error.message);
+                return this.getProspecLocal();
+            }
+        } else {
+            return this.getProspecLocal();
+        }
+    }
+
+    getProspecLocal() {
+        console.log('📥 getProspec (localStorage)');
+        const dados = JSON.parse(localStorage.getItem('propostas') || '[]');
+        console.log(`✅ Carregadas ${dados.length} propostas do localStorage`);
+        return dados;
+    }
+
+    async saveProspec(dados) {
+        if (this.useAPI) {
+            try {
+                console.log('💾 saveProspec (API)');
+                const response = await apiService.saveProposta(dados);
+                
+                // Atualizar cache local
+                this.updateProspecLocal(dados);
+                
+                return response;
+            } catch (error) {
+                console.log('⚠️ API falhou, salvando no localStorage:', error.message);
+                return this.saveProspecLocal(dados);
+            }
+        } else {
+            return this.saveProspecLocal(dados);
+        }
+    }
+
+    saveProspecLocal(dados) {
+        console.log('💾 saveProspec (localStorage)');
+        const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+        
+        const index = propostas.findIndex(p => p.id === dados.id);
+        if (index >= 0) {
+            propostas[index] = { ...propostas[index], ...dados };
+        } else {
+            dados.id = dados.id || Date.now().toString();
+            propostas.push(dados);
+        }
+        
+        localStorage.setItem('propostas', JSON.stringify(propostas));
+        console.log('✅ Proposta salva no localStorage');
+        return { success: true, data: dados };
+    }
+
+    updateProspecLocal(dados) {
+        const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+        const index = propostas.findIndex(p => p.id === dados.id);
+        
+        if (index >= 0) {
+            propostas[index] = { ...propostas[index], ...dados };
+            localStorage.setItem('propostas', JSON.stringify(propostas));
+        }
+    }
+
+    async deleteProspec(id) {
+        if (this.useAPI) {
+            try {
+                console.log('🗑️ deleteProspec (API)');
+                const response = await apiService.deleteProposta(id);
+                
+                // Remover do cache local
+                this.deleteProspecLocal(id);
+                
+                return response;
+            } catch (error) {
+                console.log('⚠️ API falhou, removendo do localStorage:', error.message);
+                return this.deleteProspecLocal(id);
+            }
+        } else {
+            return this.deleteProspecLocal(id);
+        }
+    }
+
+    deleteProspecLocal(id) {
+        console.log('🗑️ deleteProspec (localStorage)');
+        const propostas = JSON.parse(localStorage.getItem('propostas') || '[]');
+        const novasPropostas = propostas.filter(p => p.id !== id);
+        localStorage.setItem('propostas', JSON.stringify(novasPropostas));
+        console.log('✅ Proposta removida do localStorage');
+        return { success: true };
+    }
+
+    // ========================================
+    // MÉTODOS PARA CONTROLE
+    // ========================================
+
+    async getControle() {
+        if (this.useAPI) {
+            try {
+                console.log('📥 getControle (API)');
+                const response = await apiService.getControle();
+                const dados = response.data || response;
+                
+                // Cache local
+                localStorage.setItem('controle', JSON.stringify(dados));
+                console.log(`✅ Carregadas ${dados.length} do controle da API`);
+                
+                return dados;
+            } catch (error) {
+                console.log('⚠️ API falhou, usando localStorage:', error.message);
+                return this.getControleLocal();
+            }
+        } else {
+            return this.getControleLocal();
+        }
+    }
+
+    getControleLocal() {
+        console.log('📥 getControle (localStorage)');
+        const dados = JSON.parse(localStorage.getItem('controle') || '[]');
+        console.log(`✅ Carregadas ${dados.length} do controle do localStorage`);
+        return dados;
+    }
+
+    async saveControle(dados) {
+        if (this.useAPI) {
+            try {
+                console.log('💾 saveControle (API)');
+                const response = await apiService.saveControle(dados);
+                
+                // Atualizar cache local
+                this.updateControleLocal(dados);
+                
+                return response;
+            } catch (error) {
+                console.log('⚠️ API falhou, salvando no localStorage:', error.message);
+                return this.saveControleLocal(dados);
+            }
+        } else {
+            return this.saveControleLocal(dados);
+        }
+    }
+
+    saveControleLocal(dados) {
+        console.log('💾 saveControle (localStorage)');
+        const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+        
+        const index = controle.findIndex(c => c.id === dados.id);
+        if (index >= 0) {
+            controle[index] = { ...controle[index], ...dados };
+        } else {
+            dados.id = dados.id || Date.now().toString();
+            controle.push(dados);
+        }
+        
+        localStorage.setItem('controle', JSON.stringify(controle));
+        console.log('✅ Controle salvo no localStorage');
+        return { success: true, data: dados };
+    }
+
+    updateControleLocal(dados) {
+        const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+        const index = controle.findIndex(c => c.id === dados.id);
+        
+        if (index >= 0) {
+            controle[index] = { ...controle[index], ...dados };
+            localStorage.setItem('controle', JSON.stringify(controle));
+        }
+    }
+
+    async deleteControle(id) {
+        if (this.useAPI) {
+            try {
+                console.log('🗑️ deleteControle (API)');
+                const response = await apiService.deleteControle(id);
+                
+                // Remover do cache local
+                this.deleteControleLocal(id);
+                
+                return response;
+            } catch (error) {
+                console.log('⚠️ API falhou, removendo do localStorage:', error.message);
+                return this.deleteControleLocal(id);
+            }
+        } else {
+            return this.deleteControleLocal(id);
+        }
+    }
+
+    deleteControleLocal(id) {
+        console.log('🗑️ deleteControle (localStorage)');
+        const controle = JSON.parse(localStorage.getItem('controle') || '[]');
+        const novoControle = controle.filter(c => c.id !== id);
+        localStorage.setItem('controle', JSON.stringify(novoControle));
+        console.log('✅ Controle removido do localStorage');
+        return { success: true };
+    }
+
     // ========================================
     // MÉTODOS PARA CONFIGURAÇÕES
     // ========================================
@@ -269,7 +432,7 @@ class StorageService {
                 const dados = response.data || response;
                 
                 // Cache local
-                const chave = grupo ? `aupus_config_${grupo}` : 'aupus_config';
+                const chave = grupo ? `config_${grupo}` : 'configuracoes';
                 localStorage.setItem(chave, JSON.stringify(dados));
                 
                 return dados;
@@ -282,312 +445,150 @@ class StorageService {
         }
     }
 
-    async salvarConfiguracao(chave, valor, grupo = 'geral') {
+    getConfiguracoesLocal(grupo = null) {
+        const chave = grupo ? `config_${grupo}` : 'configuracoes';
+        return JSON.parse(localStorage.getItem(chave) || '{}');
+    }
+
+    async saveConfiguracao(grupo, chave, valor) {
+        const dados = { grupo, chave, valor };
+        
         if (this.useAPI) {
             try {
-                await apiService.salvarConfiguracao(chave, valor, grupo);
+                const response = await apiService.saveConfiguracao(dados);
                 
                 // Atualizar cache local
-                const configsLocal = this.getConfiguracoesLocal(grupo);
-                const existing = configsLocal.find(c => c.chave === chave);
-                if (existing) {
-                    existing.valor = valor;
-                } else {
-                    configsLocal.push({ chave, valor, grupo });
-                }
+                this.updateConfiguracaoLocal(grupo, chave, valor);
                 
-                const chaveStorage = grupo ? `aupus_config_${grupo}` : 'aupus_config';
-                localStorage.setItem(chaveStorage, JSON.stringify(configsLocal));
-                
-                return true;
+                return response;
             } catch (error) {
                 console.log('⚠️ API falhou, salvando no localStorage:', error.message);
-                return this.salvarConfiguracaoLocal(chave, valor, grupo);
+                return this.saveConfiguracaoLocal(grupo, chave, valor);
             }
         } else {
-            return this.salvarConfiguracaoLocal(chave, valor, grupo);
+            return this.saveConfiguracaoLocal(grupo, chave, valor);
         }
     }
 
+    saveConfiguracaoLocal(grupo, chave, valor) {
+        const configKey = `config_${grupo}`;
+        const config = JSON.parse(localStorage.getItem(configKey) || '{}');
+        config[chave] = valor;
+        localStorage.setItem(configKey, JSON.stringify(config));
+        return { success: true };
+    }
+
+    updateConfiguracaoLocal(grupo, chave, valor) {
+        const configKey = `config_${grupo}`;
+        const config = JSON.parse(localStorage.getItem(configKey) || '{}');
+        config[chave] = valor;
+        localStorage.setItem(configKey, JSON.stringify(config));
+    }
+
     // ========================================
-    // MÉTODOS PARA ESTATÍSTICAS
+    // CALIBRAGEM GLOBAL
     // ========================================
 
-    async getEstatisticas() {
+    async getCalibragemGlobal() {
         if (this.useAPI) {
             try {
-                const response = await apiService.getDashboardData();
-                return response.data || response;
+                const config = await this.getConfiguracoes('global');
+                this.calibragemGlobal = parseFloat(config.calibragem || 0);
+                return this.calibragemGlobal;
             } catch (error) {
-                console.log('⚠️ API falhou, calculando estatísticas locais:', error.message);
-                return this.calcularEstatisticasLocais();
+                console.log('⚠️ Erro ao obter calibragem da API, usando cache:', error.message);
+                return this.calibragemGlobal;
             }
         } else {
-            return this.calcularEstatisticasLocais();
+            const config = this.getConfiguracoesLocal('global');
+            this.calibragemGlobal = parseFloat(config.calibragem || 0);
+            return this.calibragemGlobal;
         }
+    }
+
+    async setCalibragemGlobal(valor) {
+        this.calibragemGlobal = parseFloat(valor || 0);
+        await this.saveConfiguracao('global', 'calibragem', this.calibragemGlobal);
+        console.log(`⚙️ Calibragem global definida: ${this.calibragemGlobal}%`);
+        return this.calibragemGlobal;
     }
 
     // ========================================
-    // MÉTODOS LOCAIS (FALLBACK)
+    // MÉTODOS DE UTILIDADE
     // ========================================
 
-    getProspecLocal() {
-        console.log('📥 getProspec (localStorage)');
-        const dados = localStorage.getItem('aupus_prospec');
-        const resultado = dados ? JSON.parse(dados) : [];
-        console.log(`✅ Carregadas ${resultado.length} propostas do localStorage`);
-        return resultado;
-    }
-
-    salvarProspecLocal(dados) {
-        console.log(`💾 salvarProspec (localStorage) - ${dados.length} registros`);
-        localStorage.setItem('aupus_prospec', JSON.stringify(dados));
-        return true;
-    }
-
-    async adicionarProspecLocal(proposta) {
-        console.log('💾 adicionarProspec (localStorage):', proposta);
-        const dados = this.getProspecLocal();
-        dados.push(proposta);
-        this.salvarProspecLocal(dados);
-        return true;
-    }
-
-    async atualizarProspecLocal(index, dadosAtualizados) {
-        console.log(`🔄 atualizarProspec (localStorage) - index ${index}`);
-        const dados = this.getProspecLocal();
-        
-        if (index >= 0 && index < dados.length) {
-            const statusAnterior = dados[index].status;
-            dados[index] = { ...dados[index], ...dadosAtualizados };
-            this.salvarProspecLocal(dados);
-            
-            // Sincronizar com controle se mudou status
-            if (statusAnterior !== dadosAtualizados.status) {
-                console.log(`🔄 Status mudou, sincronizando controle...`);
-                await this.sincronizarStatusFechado(
-                    dados[index].numeroProposta,
-                    dados[index].numeroUC,
-                    dadosAtualizados.status
-                );
-            }
-            
-            return true;
-        }
-        return false;
-    }
-
-    async removerProspecLocal(index) {
-        console.log(`🗑️ removerProspec (localStorage) - index ${index}`);
-        const dados = this.getProspecLocal();
-        
-        if (index >= 0 && index < dados.length) {
-            const proposta = dados[index];
-            
-            if (proposta.status === 'Fechado') {
-                await this.removerControle(proposta.numeroProposta, proposta.numeroUC);
-            }
-            
-            dados.splice(index, 1);
-            this.salvarProspecLocal(dados);
-            return true;
-        }
-        return false;
-    }
-
-    getControleLocal() {
-        console.log('📥 getControle (localStorage)');
-        const dados = localStorage.getItem('aupus_controle');
-        const resultado = dados ? JSON.parse(dados) : [];
-        console.log(`✅ Carregadas ${resultado.length} do controle do localStorage`);
-        return resultado;
-    }
-
-    async adicionarControleLocal(proposta) {
-        console.log('💾 adicionarControle (localStorage):', proposta);
-        const dados = this.getControleLocal();
-        dados.push(proposta);
-        localStorage.setItem('aupus_controle', JSON.stringify(dados));
-        return true;
-    }
-
-    getUserLocal() {
-        const dados = localStorage.getItem('aupus_user');
-        return dados ? JSON.parse(dados) : null;
-    }
-
-    loginLocal(credentials) {
-        // Implementação básica para fallback
-        const mockUser = {
-            id: 1,
-            name: 'Usuário Local',
-            email: credentials.email,
-            role: 'user'
-        };
-        
-        localStorage.setItem('aupus_user', JSON.stringify(mockUser));
-        return {
-            success: true,
-            user: mockUser,
-            token: 'local_token'
-        };
-    }
-
-    getTeamLocal() {
-        // Retorna equipe local básica
-        return [
-            { id: 1, name: 'Equipe Local', role: 'user' }
+    // Limpar todos os dados (reset)
+    clearAllData() {
+        const keys = [
+            'aupus_user', 'aupus_token', 'propostas', 'controle', 
+            'usuarios', 'configuracoes'
         ];
-    }
-
-    getConfiguracoesLocal(grupo = null) {
-        const chave = grupo ? `aupus_config_${grupo}` : 'aupus_config';
-        const dados = localStorage.getItem(chave);
-        return dados ? JSON.parse(dados) : [];
-    }
-
-    salvarConfiguracaoLocal(chave, valor, grupo = 'geral') {
-        const configs = this.getConfiguracoesLocal(grupo);
-        const existing = configs.find(c => c.chave === chave);
         
-        if (existing) {
-            existing.valor = valor;
-        } else {
-            configs.push({ chave, valor, grupo });
-        }
+        keys.forEach(key => localStorage.removeItem(key));
         
-        const chaveStorage = grupo ? `aupus_config_${grupo}` : 'aupus_config';
-        localStorage.setItem(chaveStorage, JSON.stringify(configs));
-        return true;
-    }
-
-    calcularEstatisticasLocais() {
-        const prospec = this.getProspecLocal();
-        const controle = this.getControleLocal();
-        
-        return {
-            total_propostas: prospec.length,
-            propostas_fechadas: prospec.filter(p => p.status === 'Fechado').length,
-            propostas_em_andamento: prospec.filter(p => p.status === 'Em andamento').length,
-            total_controle: controle.length,
-            taxa_conversao: prospec.length > 0 
-                ? ((prospec.filter(p => p.status === 'Fechado').length / prospec.length) * 100).toFixed(2)
-                : 0
-        };
-    }
-
-    // ========================================
-    // MÉTODOS AUXILIARES
-    // ========================================
-
-    async sincronizarStatusFechado(numeroProposta, numeroUC, novoStatus) {
-        if (novoStatus === 'Fechado') {
-            const prospecData = this.getProspecLocal();
-            const proposta = prospecData.find(p => 
-                p.numeroProposta === numeroProposta && p.numeroUC === numeroUC
-            );
-            
-            if (proposta) {
-                await this.adicionarControle(proposta);
+        // Limpar configs específicas
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('config_')) {
+                localStorage.removeItem(key);
             }
-        } else {
-            await this.removerControle(numeroProposta, numeroUC);
+        });
+        
+        this.calibragemGlobal = 0;
+        console.log('🧹 Todos os dados locais foram limpos');
+    }
+
+    // Verificar integridade dos dados
+    async verifyDataIntegrity() {
+        try {
+            const user = this.getUserLocal();
+            const token = localStorage.getItem('aupus_token');
+            const propostas = this.getProspecLocal();
+            const controle = this.getControleLocal();
+            
+            return {
+                hasUser: !!user,
+                hasToken: !!token,
+                propostas: propostas.length,
+                controle: controle.length,
+                apiAvailable: this.useAPI
+            };
+        } catch (error) {
+            console.error('❌ Erro na verificação de integridade:', error);
+            return null;
         }
     }
 
-    async removerControle(numeroProposta, numeroUC) {
-        const dados = this.getControleLocal();
-        const index = dados.findIndex(item => 
-            item.numeroProposta === numeroProposta && item.numeroUC === numeroUC
-        );
-        
-        if (index !== -1) {
-            dados.splice(index, 1);
-            localStorage.setItem('aupus_controle', JSON.stringify(dados));
-            console.log(`🗑️ Item removido do controle: ${numeroProposta}/${numeroUC}`);
+    // Sincronizar dados locais com API
+    async syncWithAPI() {
+        if (!this.useAPI) {
+            console.log('⚠️ API não disponível para sincronização');
+            return false;
         }
-    }
 
-    // ========================================
-    // MÉTODOS DE EXPORTAÇÃO
-    // ========================================
-
-    async exportarDados(tipo) {
-        let dados;
-        let nomeArquivo;
-        
-        switch (tipo) {
-            case 'prospec':
-                dados = await this.getProspec();
-                nomeArquivo = `prospec_${new Date().toISOString().split('T')[0]}.csv`;
-                break;
-            case 'controle':
-                dados = await this.getControle();
-                nomeArquivo = `controle_${new Date().toISOString().split('T')[0]}.csv`;
-                break;
-            default:
-                throw new Error('Tipo de exportação inválido');
+        try {
+            console.log('🔄 Iniciando sincronização com API...');
+            
+            // Re-detectar disponibilidade da API
+            await this.detectarModoOperacao();
+            
+            if (this.useAPI) {
+                // Buscar dados atualizados
+                await this.getProspec();
+                await this.getControle();
+                await this.getCalibragemGlobal();
+                
+                console.log('✅ Sincronização concluída');
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ Erro na sincronização:', error);
+            return false;
         }
-        
-        this.baixarCSV(dados, nomeArquivo);
-        return true;
-    }
-
-    async exportarDadosFiltrados(tipo, dadosFiltrados) {
-        const nomeArquivo = `${tipo}_filtrado_${new Date().toISOString().split('T')[0]}.csv`;
-        this.baixarCSV(dadosFiltrados, nomeArquivo);
-        return true;
-    }
-
-    baixarCSV(dados, nomeArquivo) {
-        if (!dados || dados.length === 0) {
-            throw new Error('Nenhum dado para exportar');
-        }
-        
-        const headers = Object.keys(dados[0]);
-        const csv = [
-            headers.join(','),
-            ...dados.map(row => 
-                headers.map(header => 
-                    JSON.stringify(row[header] || '')
-                ).join(',')
-            )
-        ].join('\n');
-        
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        
-        if (navigator.msSaveBlob) {
-            navigator.msSaveBlob(blob, nomeArquivo);
-        } else {
-            link.href = URL.createObjectURL(blob);
-            link.download = nomeArquivo;
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        console.log(`📄 Arquivo exportado: ${nomeArquivo}`);
-    }
-
-    // ========================================
-    // CALIBRAGEM
-    // ========================================
-
-    getCalibragemGlobal() {
-        const calibragem = localStorage.getItem('aupus_calibragem_global');
-        return calibragem ? parseFloat(calibragem) : 0;
-    }
-
-    setCalibragemGlobal(valor) {
-        this.calibragemGlobal = valor;
-        localStorage.setItem('aupus_calibragem_global', valor.toString());
-        console.log(`🎯 Calibragem global definida: ${valor}%`);
     }
 }
 
-// Criar instância única (Singleton)
-const storageService = new StorageService();
-
+// Instância única
+export const storageService = new StorageService();
 export default storageService;

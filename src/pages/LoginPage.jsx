@@ -1,4 +1,4 @@
-// src/pages/LoginPage.jsx - Página de login com layout simplificado
+// src/pages/LoginPage.jsx - Página de login corrigida para usar email
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,7 @@ import './LoginPage.css';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',  // Mudado de username para email
     password: ''
   });
   const [loading, setLoading] = useState(false);
@@ -25,21 +25,28 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.username || !formData.password) {
+    if (!formData.email || !formData.password) {  // Mudado de username para email
       showNotification('Preencha todos os campos', 'warning');
+      return;
+    }
+
+    // Validação básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      showNotification('Digite um email válido', 'warning');
       return;
     }
 
     setLoading(true);
 
     try {
-      const result = await login(formData.username, formData.password);
+      const result = await login(formData.email, formData.password);  // Mudado de username para email
       
       if (result.success) {
         showNotification(`Bem-vindo(a), ${result.user.name}!`, 'success');
         navigate('/dashboard', { replace: true });
       } else {
-        showNotification(result.message || 'Erro ao fazer login', 'error');
+        showNotification(result.message || 'Email ou senha incorretos', 'error');
       }
     } catch (error) {
       console.error('Erro no login:', error);
@@ -84,16 +91,16 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Usuário</label>
+            <label htmlFor="email">Email</label>  {/* Mudado de Usuário para Email */}
             <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
+              type="email"  // Mudado de text para email
+              id="email"
+              name="email"  // Mudado de username para email
+              value={formData.email}  // Mudado de username para email
               onChange={handleChange}
               onKeyPress={handleKeyPress}
-              placeholder="Digite seu usuário"
-              autoComplete="username"
+              placeholder="Digite seu email"  // Mudado placeholder
+              autoComplete="email"  // Mudado de username para email
               disabled={loading}
               required
             />

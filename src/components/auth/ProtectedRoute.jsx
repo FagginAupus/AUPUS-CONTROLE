@@ -1,17 +1,31 @@
-// src/components/auth/ProtectedRoute.jsx - Rota protegida com verificação de permissões
+// src/components/auth/ProtectedRoute.jsx - Rota protegida simplificada
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ProtectedRoute = ({ children, requirePage = null }) => {
-  const { isAuthenticated, user, canAccessPage, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{
+          width: '50px',
+          height: '50px',
+          border: '5px solid #f3f3f3',
+          borderTop: '5px solid #3498db',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
         <p>Carregando...</p>
       </div>
     );
@@ -22,24 +36,53 @@ const ProtectedRoute = ({ children, requirePage = null }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Verificação simples de permissões baseada no role
+  const canAccess = (page, userRole) => {
+    if (!page) return true; // Se não especificar página, libera acesso
+    
+    const permissions = {
+      'admin': ['dashboard', 'prospec', 'controle', 'ugs', 'relatorios'],
+      'consultor': ['dashboard', 'prospec', 'controle', 'relatorios'],
+      'gerente': ['dashboard', 'prospec', 'controle'],
+      'vendedor': ['dashboard', 'prospec']
+    };
+    
+    const userPages = permissions[userRole] || ['dashboard'];
+    return userPages.includes(page);
+  };
+
   // Verificar se tem permissão para acessar a página específica
-  if (requirePage && !canAccessPage(requirePage)) {
+  if (requirePage && !canAccess(requirePage, user?.role)) {
     return (
-      <div className="access-denied-container">
-        <div className="access-denied-content">
-          <div className="access-denied-icon">🚫</div>
-          <h2>Acesso Negado</h2>
-          <p>Você não tem permissão para acessar esta página.</p>
-          <p className="user-info">
-            Usuário: <strong>{user?.name}</strong> ({user?.role})
-          </p>
-          <button 
-            onClick={() => window.history.back()}
-            className="btn-back"
-          >
-            ← Voltar
-          </button>
-        </div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '20px',
+        textAlign: 'center',
+        padding: '20px'
+      }}>
+        <div style={{ fontSize: '48px' }}>🚫</div>
+        <h2>Acesso Negado</h2>
+        <p>Você não tem permissão para acessar esta página.</p>
+        <p style={{ color: '#666' }}>
+          Usuário: <strong>{user?.name}</strong> ({user?.role})
+        </p>
+        <button 
+          onClick={() => window.history.back()}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#3498db',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          ← Voltar
+        </button>
       </div>
     );
   }
