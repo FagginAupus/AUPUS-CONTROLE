@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx - Dashboard corrigido com equipe para admin
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -27,61 +27,83 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   // Carregar dados do dashboard
+
   useEffect(() => {
-    carregarDados();
-    carregarEquipe();
-  }, [user]);
-
-  const carregarDados = async () => {
-    try {
-      setLoading(true);
-      
-      let dadosProspec = [];
-      let dadosControle = [];
-      let dadosUGs = [];
-
-      if (user?.role === 'admin') {
-        // Admin vê todos os dados
-        dadosProspec = await storageService.getProspec();
-        dadosControle = await storageService.getControle();
-        dadosUGs = await storageService.getUGs();
-      } else {
-        // Outros usuários veem apenas dados da sua equipe
-        const teamIds = getMyTeam().map(member => member.name);
-        
-        const allProspec = await storageService.getProspec();
-        const allControle = await storageService.getControle();
-        
-        dadosProspec = allProspec.filter(item => 
-          teamIds.includes(item.consultor) || teamIds.includes(item.nomeCliente)
-        );
-        
-        dadosControle = allControle.filter(item => 
-          teamIds.includes(item.consultor) || teamIds.includes(item.nomeCliente)
-        );
-
-        // UGs apenas para admin
-        dadosUGs = user?.role === 'admin' ? await storageService.getUGs() : [];
-      }
-
-      setEstatisticas({
-        totalPropostas: dadosProspec.length,
-        aguardando: dadosProspec.filter(p => p.status === 'Aguardando').length,
-        fechadas: dadosProspec.filter(p => p.status === 'Fechado').length,
-        totalUCs: new Set(dadosProspec.map(p => p.numeroUC)).size,
-        totalControle: dadosControle.length,
-        totalUGs: dadosUGs.length
-      });
-      
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      showNotification('Erro ao carregar estatísticas', 'error');
-    } finally {
-      setLoading(false);
+    if (user?.id) {
+      carregarDados();
+      carregarEquipe();
     }
-  };
+  }, [user?.id]); // Apenas user.id como dependency
 
-  const carregarEquipe = () => {
+const carregarDados = useCallback(async () => {
+  if (!user?.id) return; // Evitar carregar se user não existe
+  
+  try {
+    setLoading(true);
+    
+    let dadosProspec = [];
+    let dadosControle = [];
+    let dadosUGs = [];
+
+    // Admin vê todos os dados
+    dadosProspec = await storageService.getProspec();
+
+    // Tentar carregar controle clube apenas se necessário
+    try {
+      dadosControle = await storageService.getControle();
+    } catch (error) {
+      console.warn('⚠️ Controle clube não disponível:', error.message);
+      dadosControle = [];
+    }
+
+    // Carregar UGs apenas para admin
+    if (user?.role === 'admin') {
+      try {
+        dadosUGs = await storageService.getUGs();
+      } catch (error) {
+        console.warn('⚠️ UGs não disponíveis:', error.message);
+        dadosUGs = [];
+      }
+    }
+
+    // Filtrar dados por hierarquia apenas se não for admin
+    if (user.role !== 'admin') {
+      const teamMembers = getMyTeam();
+      const teamNames = teamMembers.map(member => member.name);
+      
+      dadosProspec = dadosProspec.filter(item => 
+        teamNames.includes(item.consultor) || 
+        teamNames.includes(item.nomeCliente) ||
+        item.usuario_id === user.id
+      );
+      
+      dadosControle = dadosControle.filter(item => 
+        teamNames.includes(item.consultor) || 
+        teamNames.includes(item.nomeCliente) ||
+        item.usuario_id === user.id
+      );
+    }
+
+    setEstatisticas({
+      totalPropostas: dadosProspec.length,
+      aguardando: dadosProspec.filter(p => p.status === 'Aguardando').length,
+      fechadas: dadosProspec.filter(p => p.status === 'Fechado').length,
+      totalUCs: new Set(dadosProspec.map(p => p.numeroUC).filter(Boolean)).size,
+      totalControle: dadosControle.length,
+      totalUGs: dadosUGs.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao carregar dados do dashboard:', error);
+    showNotification('Erro ao carregar estatísticas do dashboard', 'error');
+  } finally {
+    setLoading(false);
+  }
+}, [user?.id, user?.role, getMyTeam, showNotification]);
+
+  const carregarEquipe = useCallback(() => {
+    if (!user?.id) return;
+    
     try {
       const team = getMyTeam();
       
@@ -93,9 +115,9 @@ const Dashboard = () => {
         setEquipe(team.filter(member => member.id !== user?.id));
       }
     } catch (error) {
-      console.error('Erro ao carregar equipe:', error);
+      console.error('❌ Erro ao carregar equipe:', error);
     }
-  };
+  }, [user?.id, user?.role, getMyTeam]);
 
   const abrirModalCadastro = (type) => {
     if (!canCreateUser(type)) {
@@ -348,6 +370,26 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
     return labels[type] || type;
   };
 
+  if (loading) {
+    return (
+      <div className="page-container">
+        <div className="container">
+          <Header 
+            title="DASHBOARD" 
+            subtitle="Painel de Controle" 
+            icon="📊" 
+          />
+          <Navigation />
+          
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Carregando dados do dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>

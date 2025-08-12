@@ -1,57 +1,41 @@
-// src/services/storageService.js - APENAS API, SEM LOCALSTORAGE
+// src/services/storageService.js - Apenas API, sem localStorage
 import apiService from './apiService';
 
 class StorageService {
     constructor() {
         console.log('🚀 StorageService inicializado - Modo API Apenas');
-        this.useAPI = true; // Sempre usar API
     }
 
     // ========================================
     // AUTENTICAÇÃO
     // ========================================
 
-    async login(email, password) {
-        try {
-            console.log('🔐 Login via API...');
-            const response = await apiService.post('/auth/login', { email, password });
+    async login(email, senha) {
+        console.log('🔐 Login via API...');
+        const response = await apiService.post('/auth/login', { email, password: senha });
+        console.log('🔍 Resposta do login:', response);
+
+        if (response?.success && response?.user && response?.token) {
+            // Configurar token no apiService
+            apiService.setToken(response.token);
             
-            console.log('🔍 Resposta do login:', response);
-            
-            // Aceitar diferentes estruturas de resposta
-            const token = response?.access_token || response?.token;
-            const user = response?.user;
-            
-            if (token && user) {
-                // Usar a mesma chave que o apiService
-                localStorage.setItem('aupus_token', token);
-                localStorage.setItem('user', JSON.stringify(user));
-                
-                // Configurar token no apiService
-                apiService.setToken(token);
-                
-                console.log('✅ Login realizado com sucesso');
-                return user;
-            }
-            
-            // Log detalhado se falhou
-            console.error('❌ Estrutura de resposta inválida:', {
-                hasAccessToken: !!response?.access_token,
-                hasToken: !!response?.token,
+            // Não usar localStorage - retornar dados diretamente
+            console.log('✅ Login realizado com sucesso');
+            return response.user;
+        } else {
+            console.log('❌ Login failed - response:', {
+                hasSuccess: !!response?.success,
                 hasUser: !!response?.user,
+                hasToken: !!response?.token,
                 response: response
             });
             
             throw new Error('Token de acesso ou dados do usuário não recebidos');
-        } catch (error) {
-            console.error('❌ Erro no login:', error.message);
-            throw new Error(`Falha no login: ${error.message}`);
         }
     }
 
     logout() {
-        localStorage.removeItem('aupus_token');
-        localStorage.removeItem('user');
+        // Apenas limpar token do apiService
         apiService.clearToken();
         console.log('🚪 Logout realizado');
     }
@@ -147,7 +131,8 @@ class StorageService {
     async getControle() {
         try {
             console.log('📥 Carregando controle clube da API...');
-            const response = await apiService.get('/controle-clube');
+            // CORRIGIDO: Rota correta é /controle, não /controle-clube
+            const response = await apiService.get('/controle');
             
             let controles = [];
             if (response?.data?.data && Array.isArray(response.data.data)) {
@@ -173,7 +158,7 @@ class StorageService {
         try {
             console.log('💾 Salvando controle clube na API...');
             
-            const response = await apiService.post('/controle-clube', controle);
+            const response = await apiService.post('/controle', controle);
             
             console.log('✅ Controle clube salvo na API com sucesso');
             return response;
@@ -213,107 +198,200 @@ class StorageService {
         }
     }
 
-    // ========================================
-    // ESTATÍSTICAS
-    // ========================================
-
-    async getStatistics() {
+    async adicionarUG(ug) {
         try {
-            console.log('📊 Carregando estatísticas da API...');
-            const response = await apiService.get('/propostas/statistics');
+            console.log('💾 Salvando UG na API...');
             
-            console.log('✅ Estatísticas carregadas da API');
-            return response.data || response;
+            const response = await apiService.post('/ugs', ug);
+            
+            console.log('✅ UG salva na API com sucesso');
+            return response;
             
         } catch (error) {
-            console.error('❌ Erro ao carregar estatísticas:', error.message);
-            throw new Error(`Não foi possível carregar as estatísticas: ${error.message}`);
+            console.error('❌ Erro ao salvar UG:', error.message);
+            throw new Error(`Não foi possível salvar a UG: ${error.message}`);
         }
     }
 
     // ========================================
-    // UTILITÁRIOS
+    // UNIDADES CONSUMIDORAS
+    // ========================================
+
+    async getUnidadesConsumidoras() {
+        try {
+            console.log('📥 Carregando unidades consumidoras da API...');
+            const response = await apiService.get('/unidades-consumidoras');
+            
+            let unidades = [];
+            if (response?.data?.data && Array.isArray(response.data.data)) {
+                unidades = response.data.data;
+            } else if (response?.data && Array.isArray(response.data)) {
+                unidades = response.data;
+            } else if (Array.isArray(response)) {
+                unidades = response;
+            } else {
+                unidades = [];
+            }
+            
+            console.log(`✅ Carregadas ${unidades.length} unidades consumidoras da API`);
+            return unidades;
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar unidades consumidoras:', error.message);
+            throw new Error(`Não foi possível carregar as unidades consumidoras: ${error.message}`);
+        }
+    }
+
+    // ========================================
+    // CONEXÃO E SAÚDE DA API
+    // ========================================
+
+    async checkApiConnection() {
+        console.log('🔗 Verificando conexão com API...');
+        try {
+            const response = await apiService.get('/health-check');
+            console.log('✅ API conectada e funcionando');
+            return { connected: true, message: 'API funcionando', data: response };
+        } catch (error) {
+            console.error('❌ Erro na conexão com API:', error.message);
+            return { connected: false, message: error.message };
+        }
+    }
+
+    // ========================================
+    // MAPEAMENTO DE DADOS
     // ========================================
 
     mapearPropostaParaBackend(proposta) {
         return {
-            // Campos obrigatórios
-            nome_cliente: proposta.nomeCliente || proposta.nome_cliente,
+            nome_cliente: proposta.nomeCliente,
             consultor: proposta.consultor,
-            
-            // Campos opcionais
-            data_proposta: proposta.data || proposta.data_proposta,
-            numero_proposta: proposta.numeroProposta || proposta.numero_proposta,
-            telefone: proposta.celular || proposta.telefone,
-            email: proposta.email,
-            endereco: proposta.endereco,
-            status: proposta.status || 'Em Análise',
-            economia: proposta.descontoTarifa ? (proposta.descontoTarifa * 100) : proposta.economia,
-            bandeira: proposta.descontoBandeira ? (proposta.descontoBandeira * 100) : proposta.bandeira,
-            recorrencia: proposta.recorrencia,
-            observacoes: proposta.observacoes,
-            valor_financiamento: proposta.valor_financiamento,
-            prazo_financiamento: proposta.prazo_financiamento,
-            
-            // Benefícios - converter objeto em array se necessário
-            beneficios: proposta.beneficios ? 
-                (Array.isArray(proposta.beneficios) ? proposta.beneficios : Object.values(proposta.beneficios)) : 
-                null,
-                
-            // Kit
-            kit: proposta.kit || null
+            data_proposta: proposta.dataProposta,
+            numero_proposta: proposta.numeroProposta,
+            economia: parseFloat(proposta.economia) || 20.00,
+            bandeira: parseFloat(proposta.bandeira) || 20.00,
+            recorrencia: proposta.recorrencia || '3%',
+            observacoes: proposta.observacoes || '',
+            beneficios: proposta.beneficiosAdicionais || []
         };
     }
 
-    getUserData() {
+    // ========================================
+    // EXPORTAÇÃO DE DADOS
+    // ========================================
+
+    async exportarParaCSV(tipo) {
         try {
-            const userData = localStorage.getItem('user');
-            return userData ? JSON.parse(userData) : null;
+            console.log(`📤 Exportando ${tipo} para CSV...`);
+            
+            let dados = [];
+            
+            switch (tipo) {
+                case 'prospec':
+                    dados = await this.getProspec();
+                    break;
+                case 'controle':
+                    dados = await this.getControle();
+                    break;
+                case 'ugs':
+                    dados = await this.getUGs();
+                    break;
+                default:
+                    throw new Error('Tipo de exportação não suportado');
+            }
+
+            if (dados.length === 0) {
+                throw new Error('Nenhum dado encontrado para exportação');
+            }
+
+            this.downloadCSV(dados, `${tipo}_${new Date().toISOString().slice(0, 10)}.csv`);
+            
         } catch (error) {
-            console.error('❌ Erro ao obter dados do usuário:', error);
-            return null;
+            console.error(`❌ Erro ao exportar ${tipo}:`, error.message);
+            throw error;
         }
     }
 
-    setUserData(userData) {
-        localStorage.setItem('user', JSON.stringify(userData));
-    }
-
-    clearAllData() {
-        localStorage.removeItem('user');
-        localStorage.removeItem('aupus_token');
-        apiService.clearToken();
-        console.log('🧹 Dados de autenticação removidos');
+    downloadCSV(dados, nomeArquivo) {
+        if (!dados || dados.length === 0) return;
+        
+        // Obter cabeçalhos (chaves do primeiro objeto)
+        const headers = Object.keys(dados[0]);
+        
+        // Converter para CSV
+        const csvContent = [
+            headers.join(','), // Cabeçalho
+            ...dados.map(item => 
+                headers.map(header => {
+                    let valor = item[header];
+                    if (valor === null || valor === undefined) valor = '';
+                    if (typeof valor === 'string' && valor.includes(',')) {
+                        valor = `"${valor}"`;
+                    }
+                    return valor;
+                }).join(',')
+            )
+        ].join('\n');
+        
+        // Criar e fazer download do arquivo
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', nomeArquivo);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     }
 
     // ========================================
-    // VERIFICAÇÃO DE CONEXÃO COM API
+    // MÉTODOS LEGADOS (COMPATIBILIDADE)
     // ========================================
 
-    async checkApiConnection() {
+    async atualizarProspec(index, dadosAtualizados) {
+        // Para manter compatibilidade com código existente
+        // Na prática, precisamos do ID real da proposta
+        if (dadosAtualizados.id) {
+            return await this.updateProspec(dadosAtualizados.id, dadosAtualizados);
+        } else {
+            throw new Error('ID da proposta é necessário para atualização');
+        }
+    }
+
+    async removerProspec(index) {
+        // Para manter compatibilidade - precisa do ID
+        throw new Error('Método removerProspec requer implementação com ID da proposta');
+    }
+
+    async atualizarControle(index, dadosAtualizados) {
+        // Para manter compatibilidade
+        if (dadosAtualizados.id) {
+            return await apiService.put(`/controle/${dadosAtualizados.id}`, dadosAtualizados);
+        } else {
+            throw new Error('ID do controle é necessário para atualização');
+        }
+    }
+
+    async exportarDadosFiltrados(tipo, dados) {
         try {
-            console.log('🔗 Verificando conexão com API...');
-            const response = await apiService.get('/health-check');
+            console.log(`📤 Exportando dados filtrados de ${tipo}...`);
             
-            if (response?.status === 'ok') {
-                console.log('✅ API conectada e funcionando');
-                return { connected: true, message: 'API funcionando normalmente' };
+            if (!dados || dados.length === 0) {
+                throw new Error('Nenhum dado fornecido para exportação');
             }
-            
-            throw new Error('Resposta inválida da API');
+
+            this.downloadCSV(dados, `${tipo}_filtrado_${new Date().toISOString().slice(0, 10)}.csv`);
             
         } catch (error) {
-            console.error('❌ API não disponível:', error.message);
-            return { 
-                connected: false, 
-                message: `API não disponível: ${error.message}` 
-            };
+            console.error(`❌ Erro ao exportar dados filtrados:`, error.message);
+            throw error;
         }
     }
 }
 
-// Instância única
 const storageService = new StorageService();
-
 export default storageService;
-export { storageService };

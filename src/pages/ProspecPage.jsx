@@ -26,54 +26,55 @@ const ProspecPage = () => {
   const { showNotification } = useNotification();
 
   const carregarDados = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      console.log('📥 Carregando dados do localStorage...');
-      
-      // Carregar dados reais do localStorage
-      const dadosProspec = await storageService.getProspec();
-      
-      let dadosFiltradosPorEquipe = [];
+    if (!user?.id) return; // Adicionar esta linha
+      try {
+        setLoading(true);
+        
+        console.log('📥 Carregando dados do localStorage...');
+        
+        // Carregar dados reais do localStorage
+        const dadosProspec = await storageService.getProspec();
+        
+        let dadosFiltradosPorEquipe = [];
 
-      if (user?.role === 'admin') {
-        // Admin vê todos os dados, mas com consultor responsável
-        dadosFiltradosPorEquipe = dadosProspec.map(item => ({
+        if (user?.role === 'admin') {
+          // Admin vê todos os dados, mas com consultor responsável
+          dadosFiltradosPorEquipe = dadosProspec.map(item => ({
+            ...item,
+            consultor: getConsultorName(item.consultor) // Mostrar consultor responsável
+          }));
+        } else {
+          // Outros usuários veem apenas dados da sua equipe
+          const teamNames = getMyTeam().map(member => member.name);
+          dadosFiltradosPorEquipe = dadosProspec.filter(item => 
+            teamNames.includes(item.consultor)
+          );
+        }
+        
+        // Garantir IDs únicos para cada item
+        const dadosComIds = dadosFiltradosPorEquipe.map((item, index) => ({
           ...item,
-          consultor: getConsultorName(item.consultor) // Mostrar consultor responsável
+          id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
         }));
-      } else {
-        // Outros usuários veem apenas dados da sua equipe
-        const teamNames = getMyTeam().map(member => member.name);
-        dadosFiltradosPorEquipe = dadosProspec.filter(item => 
-          teamNames.includes(item.consultor)
-        );
+        
+        setDados(dadosComIds);
+        setDadosFiltrados(dadosComIds);
+        
+        if (dadosComIds.length === 0) {
+          showNotification('Nenhuma proposta encontrada para sua equipe.', 'info');
+        } else {
+          showNotification(`${dadosComIds.length} propostas carregadas!`, 'success');
+        }
+        
+      } catch (error) {
+        console.error('❌ Erro ao carregar dados:', error);
+        showNotification('Erro ao carregar dados: ' + error.message, 'error');
+        setDados([]);
+        setDadosFiltrados([]);
+      } finally {
+        setLoading(false);
       }
-      
-      // Garantir IDs únicos para cada item
-      const dadosComIds = dadosFiltradosPorEquipe.map((item, index) => ({
-        ...item,
-        id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
-      }));
-      
-      setDados(dadosComIds);
-      setDadosFiltrados(dadosComIds);
-      
-      if (dadosComIds.length === 0) {
-        showNotification('Nenhuma proposta encontrada para sua equipe.', 'info');
-      } else {
-        showNotification(`${dadosComIds.length} propostas carregadas!`, 'success');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error);
-      showNotification('Erro ao carregar dados: ' + error.message, 'error');
-      setDados([]);
-      setDadosFiltrados([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [showNotification, user, getMyTeam, getConsultorName]);
+  }, [user?.id, user?.role, getMyTeam, getConsultorName, showNotification]);
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
@@ -102,8 +103,10 @@ const ProspecPage = () => {
   }, [dados, filtros]);
 
   useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+    if (user?.id) {
+      carregarDados();
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     filtrarDados();
