@@ -1,5 +1,5 @@
-// src/pages/NovaPropostaPage.jsx - CORRIGIDO
-import React, { useState, useEffect } from 'react';
+// src/pages/NovaPropostaPage.jsx - CORRIGIDO COMPLETO
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import Header from '../components/common/Header';
@@ -46,7 +46,7 @@ const NovaPropostaPage = () => {
   const watchConsultor = watch('consultor');
 
   // Carregar consultores disponíveis
-  const carregarConsultores = () => {
+  const carregarConsultores = useCallback(() => {
     try {
       const team = getMyTeam();
       
@@ -73,7 +73,7 @@ const NovaPropostaPage = () => {
       console.error('Erro ao carregar consultores:', error);
       setConsultoresDisponiveis([user?.name || 'Erro']);
     }
-  };
+  }, [getMyTeam, user, setValue]);
 
   // Gerar número da proposta
   const gerarNumeroProposta = async () => {
@@ -93,7 +93,7 @@ const NovaPropostaPage = () => {
   useEffect(() => {
     gerarNumeroProposta();
     carregarConsultores();
-  }, []);
+  }, [carregarConsultores]);
 
   // Handle consultor change
   useEffect(() => {
@@ -113,7 +113,6 @@ const NovaPropostaPage = () => {
         economia: 20,
         bandeira: 20,
         ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-        // Reset dos benefícios
         beneficio1: false,
         beneficio2: false,
         beneficio3: false,
@@ -143,7 +142,7 @@ const NovaPropostaPage = () => {
     setBeneficiosAdicionais(beneficiosAdicionais.filter((_, i) => i !== index));
   };
 
-  // FUNÇÃO PRINCIPAL - CORRIGIDA COM MAPEAMENTO CORRETO
+  // FUNÇÃO PRINCIPAL - COMPLETA E CORRIGIDA
   const onSubmit = async (data) => {
     try {
       setLoading(true);
@@ -175,7 +174,7 @@ const NovaPropostaPage = () => {
       // Preparar unidades consumidoras no formato esperado pelo backend
       const unidadesConsumidoras = data.ucs.map(uc => ({
         numero_unidade: parseInt(uc.numeroUC),
-        numero_cliente: parseInt(uc.numeroUC), // Usar mesmo número para compatibilidade
+        numero_cliente: parseInt(uc.numeroUC),
         apelido: uc.apelido || `UC ${uc.numeroUC}`,
         ligacao: uc.ligacao || '',
         consumo_medio: parseInt(uc.consumo) || 0,
@@ -184,36 +183,29 @@ const NovaPropostaPage = () => {
 
       // ESTRUTURA CORRETA PARA O BACKEND
       const propostaParaBackend = {
-        // Campos obrigatórios
         nome_cliente: data.nomeCliente,
         consultor: consultorFinal,
-        
-        // Campos opcionais
         data_proposta: data.dataProposta,
         numero_proposta: numeroProposta,
         telefone: data.celular,
-        status: 'Aguardando',
-        
-        // Descontos em percentual
+        email: data.email,
+        endereco: data.endereco,
+        status: 'Em Análise',
         economia: data.economia || 0,
         bandeira: data.bandeira || 0,
         recorrencia: data.recorrencia,
-        
-        // Arrays
         beneficios: beneficiosArray,
         unidades_consumidoras: unidadesConsumidoras.length > 0 ? unidadesConsumidoras : null,
-        
-        // Observações
         observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim()
       };
 
       console.log('📤 Enviando proposta para o backend:', propostaParaBackend);
 
-      // Salvar via storageService (que vai tentar API primeiro)
+      // Tentar salvar via API
       const result = await storageService.adicionarProspec(propostaParaBackend);
 
       console.log('✅ Proposta salva com sucesso:', result);
-
+      
       showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
       
       // Limpar formulário e navegar
@@ -225,13 +217,32 @@ const NovaPropostaPage = () => {
     } catch (error) {
       console.error('❌ Erro ao salvar proposta:', error);
       
-      // Mostrar erro específico se disponível
-      let errorMessage = 'Erro ao salvar proposta';
+      // Determinar mensagem de erro baseada no tipo de erro
+      let errorMessage = 'Erro inesperado ao salvar proposta';
+      
       if (error.message) {
-        errorMessage += `: ${error.message}`;
+        // Verificar tipos específicos de erro
+        if (error.message.includes('Call to undefined method')) {
+          errorMessage = 'Erro no servidor: Problema de configuração do backend Laravel';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Erro interno do servidor: Verifique se o backend está funcionando';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'Rota não encontrada: Verifique se a API está configurada corretamente';
+        } else if (error.message.includes('Network Error') || error.message.includes('fetch')) {
+          errorMessage = 'Erro de conexão: Verifique sua internet e se o servidor está rodando';
+        } else if (error.message.includes('401')) {
+          errorMessage = 'Não autorizado: Faça login novamente';
+        } else if (error.message.includes('403')) {
+          errorMessage = 'Sem permissão para executar esta ação';
+        } else if (error.message.includes('422')) {
+          errorMessage = 'Dados inválidos: Verifique os campos obrigatórios';
+        } else {
+          errorMessage = `Erro: ${error.message}`;
+        }
       }
       
       showNotification(errorMessage, 'error');
+      
     } finally {
       setLoading(false);
     }
@@ -325,60 +336,63 @@ const NovaPropostaPage = () => {
                 <input 
                   {...register('recorrencia')} 
                   type="text" 
-                  style={{ backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#ffe6e6' : '#f0f0f0' }}
-                  disabled
+                  style={{ backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#f0f0f0' : 'white' }}
+                  readOnly={watchConsultor === 'Sem consultor (AUPUS direto)'}
                 />
               </div>
 
               <div className="form-group">
-                <label>Desconto Energia (%)</label>
+                <label>Desconto Tarifa (%)</label>
                 <input 
-                  {...register('economia')} 
+                  {...register('economia', { 
+                    required: 'Campo obrigatório',
+                    min: { value: 0, message: 'Valor mínimo 0' },
+                    max: { value: 100, message: 'Valor máximo 100' }
+                  })}
                   type="number" 
+                  step="0.01"
                   min="0" 
-                  max="100" 
-                  step="1"
+                  max="100"
+                  className={errors.economia ? 'error' : ''}
                 />
+                {errors.economia && <span className="error-message">{errors.economia.message}</span>}
               </div>
 
               <div className="form-group">
                 <label>Desconto Bandeira (%)</label>
                 <input 
-                  {...register('bandeira')} 
+                  {...register('bandeira', { 
+                    required: 'Campo obrigatório',
+                    min: { value: 0, message: 'Valor mínimo 0' },
+                    max: { value: 100, message: 'Valor máximo 100' }
+                  })}
                   type="number" 
+                  step="0.01"
                   min="0" 
-                  max="100" 
-                  step="1"
+                  max="100"
+                  className={errors.bandeira ? 'error' : ''}
                 />
+                {errors.bandeira && <span className="error-message">{errors.bandeira.message}</span>}
               </div>
             </div>
           </section>
 
           {/* UNIDADES CONSUMIDORAS */}
           <section className="form-section">
-            <div className="section-header">
-              <h2>🏢 Unidades Consumidoras</h2>
-              <button 
-                type="button" 
-                onClick={() => append({ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' })}
-                className="btn btn-secondary"
-              >
-                + Adicionar UC
-              </button>
-            </div>
-
+            <h2>🏢 Unidades Consumidoras</h2>
+            
             <div className="ucs-list">
               {fields.map((field, index) => (
                 <div key={field.id} className="uc-row">
                   <div className="uc-header">
-                    <h3>UC {index + 1}</h3>
+                    <h3>Unidade {index + 1}</h3>
                     {fields.length > 1 && (
                       <button
                         type="button"
                         onClick={() => remove(index)}
                         className="btn-remove-uc"
                       >
-                        Remover
+                        ❌ Remover
                       </button>
                     )}
                   </div>
@@ -388,10 +402,13 @@ const NovaPropostaPage = () => {
                       <label>Distribuidora</label>
                       <select {...register(`ucs.${index}.distribuidora`)}>
                         <option value="">Selecione...</option>
-                        <option value="ENEL">ENEL</option>
-                        <option value="EQUATORIAL">EQUATORIAL</option>
+                        <option value="ENEL GO">ENEL GO</option>
+                        <option value="EQUATORIAL GO">EQUATORIAL GO</option>
+                        <option value="NEOENERGIA">NEOENERGIA</option>
                         <option value="CEMIG">CEMIG</option>
-                        <option value="COPEL">COPEL</option>
+                        <option value="CPFL">CPFL</option>
+                        <option value="LIGHT">LIGHT</option>
+                        <option value="OUTRAS">OUTRAS</option>
                       </select>
                     </div>
 
@@ -405,11 +422,11 @@ const NovaPropostaPage = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>Apelido UC</label>
+                      <label>Apelido</label>
                       <input 
                         {...register(`ucs.${index}.apelido`)} 
                         type="text" 
-                        placeholder="Ex: Loja Centro"
+                        placeholder="Ex: Casa, Loja..."
                       />
                     </div>
 
@@ -417,14 +434,14 @@ const NovaPropostaPage = () => {
                       <label>Ligação</label>
                       <select {...register(`ucs.${index}.ligacao`)}>
                         <option value="">Selecione...</option>
-                        <option value="Monofásica">Monofásica</option>
-                        <option value="Bifásica">Bifásica</option>
-                        <option value="Trifásica">Trifásica</option>
+                        <option value="MONOFÁSICA">MONOFÁSICA</option>
+                        <option value="BIFÁSICA">BIFÁSICA</option>
+                        <option value="TRIFÁSICA">TRIFÁSICA</option>
                       </select>
                     </div>
 
                     <div className="form-group">
-                      <label>Consumo Médio (kWh)</label>
+                      <label>Consumo (kWh)</label>
                       <input 
                         {...register(`ucs.${index}.consumo`)} 
                         type="number" 
@@ -436,11 +453,19 @@ const NovaPropostaPage = () => {
                 </div>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={() => append({ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' })}
+              className="btn btn-secondary"
+            >
+              + Adicionar Unidade Consumidora
+            </button>
           </section>
 
           {/* BENEFÍCIOS */}
           <section className="form-section">
-            <h2>🎁 Benefícios Inclusos</h2>
+            <h2>💰 Benefícios Inclusos</h2>
             
             <div className="beneficios-grid">
               <div className="beneficio-item">

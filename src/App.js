@@ -1,4 +1,4 @@
-// src/App.js - Roteamento com controle de acesso hierárquico - ATUALIZADO
+// src/App.js - Atualizado com AlertStatus da API
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -7,7 +7,6 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Importar os services para inicializar globalmente
 import storageService from './services/storageService';
-import apiService from './services/apiService';
 
 // Páginas
 import LoginPage from './pages/LoginPage';
@@ -19,7 +18,7 @@ import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
 
 // Componente para status da API
-import ApiStatusIndicator from './components/common/ApiStatusIndicator';
+import ApiStatusAlert from './components/common/ApiStatusAlert';
 
 // Estilos globais
 import './App.css';
@@ -31,9 +30,13 @@ function App() {
       console.log('🚀 Inicializando AUPUS...');
       
       try {
-        // Detectar modo de operação (API ou localStorage)
-        await storageService.detectarModoOperacao();
-        console.log('✅ Services inicializados');
+        // Verificar conexão com API
+        const apiStatus = await storageService.checkApiConnection();
+        if (apiStatus.connected) {
+          console.log('✅ Services inicializados com sucesso');
+        } else {
+          console.warn('⚠️ API não disponível:', apiStatus.message);
+        }
       } catch (error) {
         console.error('❌ Erro na inicialização dos services:', error);
       }
@@ -47,8 +50,8 @@ function App() {
       <NotificationProvider>
         <Router>
           <div className="App">
-            {/* Indicador de status da API */}
-            <ApiStatusIndicator />
+            {/* Alerta de status da API - aparece apenas quando há problemas */}
+            <ApiStatusAlert />
             
             <Routes>
               {/* Rota de Login */}
@@ -85,7 +88,6 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* UGs apenas para admin */}
               <Route path="/ugs" element={
                 <ProtectedRoute requirePage="ugs">
                   <UGsPage />
@@ -98,8 +100,8 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* Redirecionar rotas não encontradas para o dashboard */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Rota padrão - redirecionar para dashboard se autenticado, senão para login */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
         </Router>

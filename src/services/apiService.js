@@ -56,15 +56,17 @@ class ApiService {
             const response = await fetch(url, config);
             
             if (!response.ok) {
-                if (response.status === 401) {
+                // ✅ CORREÇÃO: Só limpar token se for 401 E NÃO for uma tentativa de login
+                if (response.status === 401 && !endpoint.includes('/auth/login')) {
                     this.clearToken();
-                    // Opcional: redirecionar para login
-                    // window.location.href = '/login';
-                    throw new Error('Sessão expirada');
+                    throw new Error('Sessão expirada - faça login novamente');
                 }
                 
+                // Para outras rotas ou para login com 401, buscar mensagem do servidor
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP ${response.status}`);
+                const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+                
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
