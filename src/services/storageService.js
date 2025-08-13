@@ -40,6 +40,7 @@ class StorageService {
         console.log('🚪 Logout realizado');
     }
 
+    
     // ========================================
     // ✅ NOVO: EXPANSÃO DE UCs
     // ========================================
@@ -222,12 +223,12 @@ class StorageService {
                 });
 
                 return {
-                    // Campos que já vêm corretos do backend
+                    // ✅ CAMPOS MAPEADOS CORRETAMENTE PARA EXPANSÃO
                     id: proposta.id,
-                    numero_proposta: proposta.numero_proposta,
-                    nome_cliente: proposta.nome_cliente,
+                    numeroProposta: proposta.numero_proposta,    // ✅ NOME CORRETO
+                    nomeCliente: proposta.nome_cliente,         // ✅ NOME CORRETO
                     consultor: proposta.consultor,
-                    data_proposta: proposta.data_proposta,
+                    data: proposta.data_proposta,                   // ✅ NOME CORRETO
                     status: proposta.status,
                     observacoes: proposta.observacoes,
                     recorrencia: proposta.recorrencia,
@@ -247,7 +248,17 @@ class StorageService {
             });
             
             // ✅ EXPANDIR PARA UCs
+            console.log(`🔍 Expandindo ${propostasMapeadas.length} propostas para UCs...`);
+            propostasMapeadas.forEach((proposta, i) => {
+                console.log(`Proposta ${i + 1}:`, {
+                    id: proposta.id,
+                    unidades_count: proposta.unidades_consumidoras?.length || 0,
+                    unidades: proposta.unidades_consumidoras
+                });
+            });
+
             const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
+            console.log(`✅ Resultado da expansão: ${linhasExpandidas.length} linhas`);
             
             console.log(`✅ Retornadas ${linhasExpandidas.length} linhas expandidas de UC`);
             return linhasExpandidas;
@@ -261,9 +272,9 @@ class StorageService {
     /**
      * ✅ MÉTODO ORIGINAL: getProspec sem expansão (para casos específicos)
      */
-    async getProspecOriginal() {
+    async getProspec() {
         try {
-            console.log('📥 Carregando propostas da API (formato original)...');
+            console.log('📥 Carregando propostas da API para expansão...');
             const response = await apiService.get('/propostas');
             
             let propostas = [];
@@ -278,31 +289,60 @@ class StorageService {
                 propostas = [];
             }
 
-            // ✅ MAPEAR DADOS DO BACKEND SEM EXPANSÃO
-            const propostasMapeadas = propostas.map((proposta) => {
-                return {
+            // ✅ DEBUG: Mostrar dados brutos do backend
+            console.log('🔍 DADOS BRUTOS DO BACKEND:', propostas[0]);
+
+            // ✅ MAPEAR COM DEBUG COMPLETO
+            const propostasMapeadas = propostas.map((proposta, index) => {
+                
+                const propostaMapeada = {
+                    // ✅ USAR OS NOMES QUE JÁ ESTÃO CORRETOS NO BACKEND
                     id: proposta.id,
-                    numeroProposta: proposta.numero_proposta,
-                    nomeCliente: proposta.nome_cliente,
+                    numeroProposta: proposta.numeroProposta,        // ✅ JÁ VEM CORRETO
+                    nomeCliente: proposta.nomeCliente,              // ✅ JÁ VEM CORRETO
                     consultor: proposta.consultor,
-                    data: proposta.data_proposta,
+                    data: proposta.data,                            // ✅ JÁ VEM CORRETO
                     status: proposta.status,
                     observacoes: proposta.observacoes,
                     recorrencia: proposta.recorrencia,
-                    descontoTarifa: this.processarDesconto(proposta.economia),
-                    descontoBandeira: this.processarDesconto(proposta.bandeira),
+                    descontoTarifa: proposta.descontoTarifa || this.processarDesconto(proposta.economia),
+                    descontoBandeira: proposta.descontoBandeira || this.processarDesconto(proposta.bandeira),
                     beneficios: proposta.beneficios || [],
-                    unidadesConsumidoras: proposta.unidades_consumidoras || [],
+                    unidades_consumidoras: proposta.unidades_consumidoras || [],
                     created_at: proposta.created_at,
                     updated_at: proposta.updated_at
                 };
+
+                // ✅ DEBUG: Mostrar o que foi mapeado
+                console.log(`📋 Proposta ${index + 1} APÓS MAPEAMENTO:`, {
+                    id: propostaMapeada.id,
+                    numeroProposta: propostaMapeada.numeroProposta,
+                    nomeCliente: propostaMapeada.nomeCliente,
+                    data: propostaMapeada.data,
+                    ucs_count: propostaMapeada.unidades_consumidoras.length
+                });
+
+                return propostaMapeada;
             });
             
-            console.log(`✅ Carregadas ${propostasMapeadas.length} propostas da API (original)`);
-            return propostasMapeadas;
+            // ✅ EXPANDIR COM DEBUG
+            console.log(`🔍 Expandindo ${propostasMapeadas.length} propostas...`);
+            const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
+            
+            // ✅ DEBUG: Mostrar primeira linha expandida
+            console.log('🔍 PRIMEIRA LINHA EXPANDIDA:', {
+                id: linhasExpandidas[0]?.id,
+                numeroProposta: linhasExpandidas[0]?.numeroProposta,
+                nomeCliente: linhasExpandidas[0]?.nomeCliente,
+                data: linhasExpandidas[0]?.data,
+                apelido: linhasExpandidas[0]?.apelido
+            });
+            
+            console.log(`✅ Retornadas ${linhasExpandidas.length} linhas expandidas de UC`);
+            return linhasExpandidas;
             
         } catch (error) {
-            console.error('❌ Erro ao carregar propostas:', error.message);
+            console.error('❌ Erro ao carregar propostas expandidas:', error.message);
             throw new Error(`Não foi possível carregar as propostas: ${error.message}`);
         }
     }

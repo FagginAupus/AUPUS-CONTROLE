@@ -756,12 +756,15 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 <label>Ligação</label>
                 <select
                   value={dados.ligacao || ''}
-                  onChange={(e) => setDados({...dados, ligacao: e.target.value})}
+                  onChange={(e) => {
+                    console.log('🔧 Alterando ligação:', e.target.value);
+                    setDados({...dados, ligacao: e.target.value});
+                  }}
                 >
                   <option value="">Selecione...</option>
-                  <option value="Monofásica">Monofásica</option>
-                  <option value="Bifásica">Bifásica</option>
-                  <option value="Trifásica">Trifásica</option>
+                  <option value="MONOFÁSICA">MONOFÁSICA</option>
+                  <option value="BIFÁSICA">BIFÁSICA</option>
+                  <option value="TRIFÁSICA">TRIFÁSICA</option>
                 </select>
               </div>
             </div>
