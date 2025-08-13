@@ -1,4 +1,4 @@
-// src/services/storageService.js - Revertido para usar descontoTarifa e descontoBandeira
+// src/services/storageService.js - Completo com expansão de UCs
 import apiService from './apiService';
 
 class StorageService {
@@ -41,12 +41,159 @@ class StorageService {
     }
 
     // ========================================
-    // PROPOSTAS - COM DESCONTOS NO FORMATO CORRETO
+    // ✅ NOVO: EXPANSÃO DE UCs
     // ========================================
 
+    /**
+     * ✅ NOVO MÉTODO: Expande propostas em linhas por UC
+     * Cada UC vira uma linha na tabela, repetindo dados da proposta
+     */
+    expandirPropostasParaUCs(propostas) {
+        const linhasExpandidas = [];
+        
+        propostas.forEach(proposta => {
+            // Verificar se tem UCs no JSON
+            let ucsArray = [];
+            
+            // Tentar diferentes formatos de UCs
+            if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
+                ucsArray = proposta.unidadesConsumidoras;
+            } else if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
+                ucsArray = proposta.unidades_consumidoras;
+            } else if (typeof proposta.unidadesConsumidoras === 'string') {
+                try {
+                    ucsArray = JSON.parse(proposta.unidadesConsumidoras);
+                } catch (e) {
+                    console.warn('Erro ao parsear UCs JSON:', e);
+                    ucsArray = [];
+                }
+            }
+
+            // Se não tem UCs, criar uma linha padrão
+            if (!ucsArray || ucsArray.length === 0) {
+                linhasExpandidas.push({
+                    // ID único para cada linha
+                    id: `${proposta.id}-UC-default-${Date.now()}`,
+                    
+                    // Dados da proposta (repetidos para cada UC)
+                    propostaId: proposta.id,
+                    numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
+                    nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
+                    consultor: proposta.consultor,
+                    data: proposta.data_proposta || proposta.data,
+                    status: proposta.status,
+                    observacoes: proposta.observacoes,
+                    recorrencia: proposta.recorrencia,
+                    descontoTarifa: this.processarDesconto(proposta.descontoTarifa || proposta.economia),
+                    descontoBandeira: this.processarDesconto(proposta.descontoBandeira || proposta.bandeira),
+                    beneficios: proposta.beneficios || [],
+                    
+                    // Dados da UC (vazios neste caso)
+                    ucIndex: 0,
+                    apelido: '-',
+                    numeroUC: '-',
+                    numeroCliente: '-',
+                    ligacao: '-',
+                    media: 0,
+                    distribuidora: '-',
+                    
+                    // Timestamps
+                    created_at: proposta.created_at,
+                    updated_at: proposta.updated_at
+                });
+            } else {
+                // Criar uma linha para cada UC
+                ucsArray.forEach((uc, index) => {
+                    linhasExpandidas.push({
+                        // ID único para cada linha UC
+                        id: `${proposta.id}-UC-${index}-${uc.numero_unidade || index}`,
+                        
+                        // Dados da proposta (repetidos para cada UC)
+                        propostaId: proposta.id,
+                        numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
+                        nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
+                        consultor: proposta.consultor,
+                        data: proposta.data_proposta || proposta.data,
+                        status: proposta.status,
+                        observacoes: proposta.observacoes,
+                        recorrencia: proposta.recorrencia,
+                        descontoTarifa: this.processarDesconto(proposta.descontoTarifa || proposta.economia),
+                        descontoBandeira: this.processarDesconto(proposta.descontoBandeira || proposta.bandeira),
+                        beneficios: proposta.beneficios || [],
+                        
+                        // Dados específicos da UC
+                        ucIndex: index,
+                        apelido: uc.apelido || `UC ${uc.numero_unidade || index + 1}`,
+                        numeroUC: uc.numero_unidade || uc.numeroUC || '-',
+                        numeroCliente: uc.numero_cliente || uc.numeroCliente || '-',
+                        ligacao: uc.ligacao || uc.tipo_ligacao || '-',
+                        media: uc.consumo_medio || uc.media || 0,
+                        distribuidora: uc.distribuidora || '-',
+                        
+                        // Timestamps
+                        created_at: proposta.created_at,
+                        updated_at: proposta.updated_at
+                    });
+                });
+            }
+        });
+        
+        console.log(`✅ Expandidas ${propostas.length} propostas em ${linhasExpandidas.length} linhas de UC`);
+        return linhasExpandidas;
+    }
+
+    /**
+     * ✅ NOVO MÉTODO: Agrupa linhas de volta para propostas (para edição)
+     */
+    agruparUCsParaProposta(linhasUC) {
+        const propostas = {};
+        
+        linhasUC.forEach(linha => {
+            if (!propostas[linha.propostaId]) {
+                propostas[linha.propostaId] = {
+                    id: linha.propostaId,
+                    numeroProposta: linha.numeroProposta,
+                    nomeCliente: linha.nomeCliente,
+                    consultor: linha.consultor,
+                    data: linha.data,
+                    status: linha.status,
+                    observacoes: linha.observacoes,
+                    recorrencia: linha.recorrencia,
+                    descontoTarifa: linha.descontoTarifa,
+                    descontoBandeira: linha.descontoBandeira,
+                    beneficios: linha.beneficios,
+                    unidadesConsumidoras: [],
+                    created_at: linha.created_at,
+                    updated_at: linha.updated_at
+                };
+            }
+            
+            // Adicionar UC apenas se não for linha padrão
+            if (linha.numeroUC !== '-') {
+                propostas[linha.propostaId].unidadesConsumidoras.push({
+                    apelido: linha.apelido,
+                    numero_unidade: linha.numeroUC,
+                    numero_cliente: linha.numeroCliente,
+                    ligacao: linha.ligacao,
+                    consumo_medio: linha.media,
+                    distribuidora: linha.distribuidora
+                });
+            }
+        });
+        
+        return Object.values(propostas)[0]; // Retorna a primeira proposta encontrada
+    }
+
+    // ========================================
+    // PROPOSTAS - COM EXPANSÃO DE UCs
+    // ========================================
+
+    /**
+     * ✅ MÉTODO PRINCIPAL: getProspec com expansão automática
+     */
     async getProspec() {
         try {
-            console.log('📥 Carregando propostas da API...');
+            console.log('📥 Carregando propostas da API para expansão...');
             const response = await apiService.get('/propostas');
             
             let propostas = [];
@@ -71,39 +218,27 @@ class StorageService {
                     numero_proposta: proposta.numeroProposta || proposta.numero_proposta,
                     nome_cliente: proposta.nomeCliente || proposta.nome_cliente,
                     status: proposta.status,
-                    descontoTarifa: proposta.descontoTarifa,
-                    descontoBandeira: proposta.descontoBandeira,
-                    apelido: proposta.apelido,
-                    numeroUC: proposta.numeroUC || proposta.numero_unidade,
-                    media: proposta.media || proposta.consumo_medio
+                    unidades_consumidoras: proposta.unidades_consumidoras
                 });
 
                 return {
                     // Campos que já vêm corretos do backend
                     id: proposta.id,
-                    numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
-                    nomeCliente: proposta.nomeCliente || proposta.nome_cliente,
+                    numero_proposta: proposta.numero_proposta,
+                    nome_cliente: proposta.nome_cliente,
                     consultor: proposta.consultor,
-                    data: proposta.data || proposta.data_proposta,
+                    data_proposta: proposta.data_proposta,
                     status: proposta.status,
                     observacoes: proposta.observacoes,
                     recorrencia: proposta.recorrencia,
 
-                    // ✅ DESCONTOS AGORA COM OS NOMES CORRETOS
-                    descontoTarifa: this.processarDesconto(proposta.descontoTarifa),
-                    descontoBandeira: this.processarDesconto(proposta.descontoBandeira),
-
-                    // Campos da UC (já mapeados no backend)
-                    apelido: proposta.apelido || '',
-                    numeroUC: proposta.numeroUC || proposta.numero_unidade || '',
-                    numeroCliente: proposta.numeroCliente || proposta.numero_cliente || '',
-                    ligacao: proposta.ligacao || proposta.tipo_ligacao || '',
-                    media: proposta.media || proposta.consumo_medio || 0,
-                    distribuidora: proposta.distribuidora || '',
+                    // ✅ DESCONTOS PROCESSADOS
+                    descontoTarifa: this.processarDesconto(proposta.economia),
+                    descontoBandeira: this.processarDesconto(proposta.bandeira),
 
                     // Arrays
                     beneficios: proposta.beneficios || [],
-                    unidadesConsumidoras: proposta.unidadesConsumidoras || [],
+                    unidades_consumidoras: proposta.unidades_consumidoras || [],
 
                     // Timestamps
                     created_at: proposta.created_at,
@@ -111,7 +246,59 @@ class StorageService {
                 };
             });
             
-            console.log(`✅ Carregadas ${propostasMapeadas.length} propostas da API com descontos processados`);
+            // ✅ EXPANDIR PARA UCs
+            const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
+            
+            console.log(`✅ Retornadas ${linhasExpandidas.length} linhas expandidas de UC`);
+            return linhasExpandidas;
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar propostas expandidas:', error.message);
+            throw new Error(`Não foi possível carregar as propostas: ${error.message}`);
+        }
+    }
+
+    /**
+     * ✅ MÉTODO ORIGINAL: getProspec sem expansão (para casos específicos)
+     */
+    async getProspecOriginal() {
+        try {
+            console.log('📥 Carregando propostas da API (formato original)...');
+            const response = await apiService.get('/propostas');
+            
+            let propostas = [];
+            if (response?.data?.data && Array.isArray(response.data.data)) {
+                propostas = response.data.data;
+            } else if (response?.data && Array.isArray(response.data)) {
+                propostas = response.data;
+            } else if (Array.isArray(response)) {
+                propostas = response;
+            } else {
+                console.warn('⚠️ Estrutura de resposta inesperada:', response);
+                propostas = [];
+            }
+
+            // ✅ MAPEAR DADOS DO BACKEND SEM EXPANSÃO
+            const propostasMapeadas = propostas.map((proposta) => {
+                return {
+                    id: proposta.id,
+                    numeroProposta: proposta.numero_proposta,
+                    nomeCliente: proposta.nome_cliente,
+                    consultor: proposta.consultor,
+                    data: proposta.data_proposta,
+                    status: proposta.status,
+                    observacoes: proposta.observacoes,
+                    recorrencia: proposta.recorrencia,
+                    descontoTarifa: this.processarDesconto(proposta.economia),
+                    descontoBandeira: this.processarDesconto(proposta.bandeira),
+                    beneficios: proposta.beneficios || [],
+                    unidadesConsumidoras: proposta.unidades_consumidoras || [],
+                    created_at: proposta.created_at,
+                    updated_at: proposta.updated_at
+                };
+            });
+            
+            console.log(`✅ Carregadas ${propostasMapeadas.length} propostas da API (original)`);
             return propostasMapeadas;
             
         } catch (error) {
@@ -290,6 +477,29 @@ class StorageService {
     mapearPropostaParaBackend(proposta) {
         console.log('🔄 Mapeando proposta para backend:', proposta);
         
+        // ✅ PROCESSAR BENEFÍCIOS
+        let beneficiosArray = [];
+        if (proposta.beneficios && Array.isArray(proposta.beneficios)) {
+            beneficiosArray = proposta.beneficios;
+        } else if (proposta.beneficiosAdicionais && Array.isArray(proposta.beneficiosAdicionais)) {
+            beneficiosArray = proposta.beneficiosAdicionais;
+        }
+        
+        // ✅ PROCESSAR UNIDADES CONSUMIDORAS
+        let unidadesArray = [];
+        if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
+            unidadesArray = proposta.unidadesConsumidoras;
+        } else if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
+            unidadesArray = proposta.unidades_consumidoras;
+        }
+
+        console.log('📋 Dados processados:', {
+            beneficios: beneficiosArray,
+            beneficios_count: beneficiosArray.length,
+            unidades_consumidoras: unidadesArray,
+            unidades_count: unidadesArray.length
+        });
+        
         const dadosBackend = {
             // Campos principais
             nome_cliente: proposta.nomeCliente,
@@ -301,19 +511,23 @@ class StorageService {
             recorrencia: proposta.recorrencia || '3%',
             
             // ✅ DESCONTOS COM FORMATO CORRETO (COM %)
-            descontoTarifa: this.formatarDescontoParaBackend(proposta.descontoTarifa || 20),
-            descontoBandeira: this.formatarDescontoParaBackend(proposta.descontoBandeira || 20),
+            economia: this.formatarDescontoParaBackend(proposta.descontoTarifa || 20),
+            bandeira: this.formatarDescontoParaBackend(proposta.descontoBandeira || 20),
             
-            // Arrays
-            beneficios: Array.isArray(proposta.beneficios) ? proposta.beneficios : [],
-            unidadesConsumidoras: Array.isArray(proposta.unidadesConsumidoras) ? proposta.unidadesConsumidoras : []
+            // ✅ ARRAYS COM NOMES CORRETOS PARA O BACKEND
+            beneficios: beneficiosArray,
+            unidades_consumidoras: unidadesArray
         };
 
         console.log('📤 Dados mapeados para backend:', {
             ...dadosBackend,
             descontos: {
-                descontoTarifa: dadosBackend.descontoTarifa,
-                descontoBandeira: dadosBackend.descontoBandeira
+                economia: dadosBackend.economia,
+                bandeira: dadosBackend.bandeira
+            },
+            arrays: {
+                beneficios_count: dadosBackend.beneficios.length,
+                unidades_count: dadosBackend.unidades_consumidoras.length
             }
         });
         
@@ -325,8 +539,9 @@ class StorageService {
     // ========================================
 
     async atualizarProspec(index, dadosAtualizados) {
-        if (dadosAtualizados.id) {
-            return await this.updateProspec(dadosAtualizados.id, dadosAtualizados);
+        if (dadosAtualizados.id || dadosAtualizados.propostaId) {
+            const id = dadosAtualizados.id || dadosAtualizados.propostaId;
+            return await this.updateProspec(id, dadosAtualizados);
         } else {
             throw new Error('ID da proposta é necessário para atualização');
         }
@@ -358,7 +573,8 @@ class StorageService {
 
     async getProspecStatistics() {
         try {
-            const propostas = await this.getProspec();
+            // ✅ Usar versão original para estatísticas (para não contar UCs repetidas)
+            const propostas = await this.getProspecOriginal();
             
             return {
                 total: propostas.length,
