@@ -447,12 +447,12 @@ class StorageService {
                 total: propostas.length,
                 aguardando: propostas.filter(p => p.status === 'Aguardando').length,
                 fechadas: propostas.filter(p => p.status === 'Fechado').length,
-                perdidas: propostas.filter(p => p.status === 'Perdido').length,
-                emAnalise: propostas.filter(p => p.status === 'Em Análise').length
+                perdidas: propostas.filter(p => p.status === 'Recusado').length,
+                canceladas: propostas.filter(p => p.status === 'Cancelada').length
             };
         } catch (error) {
             console.error('❌ Erro ao obter estatísticas:', error);
-            return { total: 0, aguardando: 0, fechadas: 0, perdidas: 0, emAnalise: 0 };
+            return { total: 0, aguardando: 0, fechadas: 0, perdidas: 0, canceladas: 0 };
         }
     }
 }

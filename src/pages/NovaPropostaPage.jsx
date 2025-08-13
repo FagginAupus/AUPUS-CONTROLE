@@ -174,7 +174,6 @@ const NovaPropostaPage = () => {
       // Preparar unidades consumidoras no formato esperado pelo backend
       const unidadesConsumidoras = data.ucs.map(uc => ({
         numero_unidade: parseInt(uc.numeroUC),
-        numero_cliente: parseInt(uc.numeroUC),
         apelido: uc.apelido || `UC ${uc.numeroUC}`,
         ligacao: uc.ligacao || '',
         consumo_medio: parseInt(uc.consumo) || 0,
@@ -188,7 +187,7 @@ const NovaPropostaPage = () => {
         dataProposta: data.dataProposta,
         numeroProposta: numeroProposta,
         // REMOVIDOS: telefone, email, endereco
-        status: 'Em Análise',
+        status: 'Aguardando',
         economia: data.economia || 0,
         bandeira: data.bandeira || 0,
         recorrencia: data.recorrencia,
