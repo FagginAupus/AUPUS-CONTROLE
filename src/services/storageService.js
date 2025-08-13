@@ -514,9 +514,10 @@ class StorageService {
             economia: this.formatarDescontoParaBackend(proposta.descontoTarifa || 20),
             bandeira: this.formatarDescontoParaBackend(proposta.descontoBandeira || 20),
             
-            // ✅ ARRAYS COM NOMES CORRETOS PARA O BACKEND
-            beneficios: beneficiosArray,
-            unidades_consumidoras: unidadesArray
+            // Arrays
+            beneficios: this.processarBeneficios(proposta),
+            unidades_consumidoras: this.processarUnidadesConsumidoras(proposta)
+
         };
 
         console.log('📤 Dados mapeados para backend:', {
@@ -532,6 +533,43 @@ class StorageService {
         });
         
         return dadosBackend;
+    }
+
+    processarBeneficios(proposta) {
+        let beneficiosArray = [];
+        
+        // Verificar diferentes formatos possíveis
+        if (Array.isArray(proposta.beneficios)) {
+            beneficiosArray = proposta.beneficios;
+        } else if (Array.isArray(proposta.beneficiosAdicionais)) {
+            beneficiosArray = proposta.beneficiosAdicionais;
+        }
+        
+        console.log('🔍 Benefícios processados:', {
+            original_beneficios: proposta.beneficios,
+            original_beneficiosAdicionais: proposta.beneficiosAdicionais,
+            final_array: beneficiosArray,
+            count: beneficiosArray.length
+        });
+        
+        return beneficiosArray;
+    }
+
+    processarUnidadesConsumidoras(proposta) {
+        let unidadesArray = [];
+        
+        if (Array.isArray(proposta.unidadesConsumidoras)) {
+            unidadesArray = proposta.unidadesConsumidoras;
+        } else if (Array.isArray(proposta.unidades_consumidoras)) {
+            unidadesArray = proposta.unidades_consumidoras;
+        }
+        
+        console.log('🏢 Unidades processadas:', {
+            count: unidadesArray.length,
+            unidades: unidadesArray
+        });
+        
+        return unidadesArray;
     }
 
     // ========================================

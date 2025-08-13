@@ -7,6 +7,7 @@ import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
+import apiService from '../services/apiService';
 import './NovaPropostaPage.css';
 
 const NovaPropostaPage = () => {
@@ -78,15 +79,41 @@ const NovaPropostaPage = () => {
   // Gerar número da proposta
   const gerarNumeroProposta = async () => {
     try {
-      const dados = await storageService.getProspec();
+      console.log('📋 Gerando número da proposta...');
+      
+      // Buscar propostas existentes para encontrar o próximo número
+      const propostas = await storageService.getProspec();
+      
       const ano = new Date().getFullYear();
-      const proximoNumero = dados.length + 1;
-      const numero = `${ano}/${proximoNumero.toString().padStart(3, '0')}`;
-      setNumeroProposta(numero);
+      let maiorNumero = 0;
+      
+      // Encontrar o maior número existente do ano atual
+      propostas.forEach(proposta => {
+        if (proposta.numeroProposta && proposta.numeroProposta.startsWith(`${ano}/`)) {
+          const numero = parseInt(proposta.numeroProposta.split('/')[1]) || 0;
+          if (numero > maiorNumero) {
+            maiorNumero = numero;
+          }
+        }
+      });
+      
+      // Próximo número disponível
+      const proximoNumero = maiorNumero + 1;
+      const numeroFormatado = `${ano}/${proximoNumero.toString().padStart(3, '0')}`;
+      
+      setNumeroProposta(numeroFormatado);
+      console.log('✅ Número da proposta gerado:', numeroFormatado);
+      
     } catch (error) {
-      console.error('Erro ao gerar número:', error);
-      const timestamp = Date.now().toString().slice(-4);
-      setNumeroProposta(`${new Date().getFullYear()}/${timestamp}`);
+      console.warn('⚠️ Erro ao gerar número via propostas existentes, usando fallback:', error);
+      
+      // Fallback com timestamp se der erro
+      const ano = new Date().getFullYear();
+      const timestamp = Date.now().toString().slice(-3);
+      const numeroFallback = `${ano}/${timestamp}`;
+      
+      setNumeroProposta(numeroFallback);
+      console.log('✅ Número da proposta (fallback):', numeroFallback);
     }
   };
 
@@ -191,7 +218,7 @@ const NovaPropostaPage = () => {
         economia: data.economia || 0,
         bandeira: data.bandeira || 0,
         recorrencia: data.recorrencia,
-        beneficiosAdicionais: beneficiosArray, // Usar beneficiosAdicionais para compatibilidade
+        beneficios: beneficiosArray,
         unidadesConsumidoras: unidadesConsumidoras.length > 0 ? unidadesConsumidoras : [],
         observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim()
       };
