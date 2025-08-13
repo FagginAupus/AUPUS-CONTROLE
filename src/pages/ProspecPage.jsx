@@ -427,7 +427,9 @@ const ProspecPage = () => {
 const ModalVisualizacao = ({ item, user, onClose }) => {
   const formatarPercentual = (valor) => {
     if (!valor) return '0.0%';
-    return `${(parseFloat(valor) * 100).toFixed(1)}%`;
+    const numero = parseFloat(valor);
+    console.log('🔍 formatarPercentual:', { valor, numero, resultado: `${numero.toFixed(1)}%` });
+    return `${numero.toFixed(1)}%`; // ✅ SEM MULTIPLICAÇÃO
   };
 
   const formatarTelefone = (telefone) => {
@@ -477,11 +479,11 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
           
           // Personalizar benefícios 1 e 2 com os valores reais
           if (i === 1 && item.descontoTarifa) {
-            const desconto = (parseFloat(item.descontoTarifa) * 100).toFixed(1);
+            const desconto = parseFloat(item.descontoTarifa).toFixed(1); // ✅ SEM MULTIPLICAÇÃO
             textoBeneficio = `A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor da energia elétrica, sem impostos`;
           }
           if (i === 2 && item.descontoBandeira) {
-            const desconto = (parseFloat(item.descontoBandeira) * 100).toFixed(1);
+            const desconto = parseFloat(item.descontoBandeira).toFixed(1); // ✅ SEM MULTIPLICAÇÃO
             textoBeneficio = `A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor referente à bandeira tarifária, sem impostos`;
           }
           
@@ -491,12 +493,12 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
     } else {
       // Fallback: se não tem benefícios salvos, usar baseado nos descontos
       if (item.descontoTarifa && parseFloat(item.descontoTarifa) > 0) {
-        const desconto = (parseFloat(item.descontoTarifa) * 100).toFixed(1);
+        const desconto = parseFloat(item.descontoTarifa).toFixed(1); // ✅ SEM MULTIPLICAÇÃO
         beneficiosAplicaveis.push(`A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor da energia elétrica, sem impostos`);
       }
-      
+
       if (item.descontoBandeira && parseFloat(item.descontoBandeira) > 0) {
-        const desconto = (parseFloat(item.descontoBandeira) * 100).toFixed(1);
+        const desconto = parseFloat(item.descontoBandeira).toFixed(1); // ✅ SEM MULTIPLICAÇÃO
         beneficiosAplicaveis.push(`A Aupus Energia irá oferecer uma economia de até ${desconto}% no valor referente à bandeira tarifária, sem impostos`);
       }
       
@@ -772,8 +774,8 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   step="0.1"
                   min="0"
                   max="100"
-                  value={dados.descontoTarifa ? (parseFloat(dados.descontoTarifa) * 100).toFixed(1) : ''}
-                  onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) / 100 || 0})}
+                  value={dados.descontoTarifa ? parseFloat(dados.descontoTarifa).toFixed(1) : ''} 
+                  onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) || 0})} 
                 />
               </div>
               <div className="form-group">
@@ -783,8 +785,8 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   step="0.1"
                   min="0"
                   max="100"
-                  value={dados.descontoBandeira ? (parseFloat(dados.descontoBandeira) * 100).toFixed(1) : ''}
-                  onChange={(e) => setDados({...dados, descontoBandeira: parseFloat(e.target.value) / 100 || 0})}
+                  value={dados.descontoBandeira ? parseFloat(dados.descontoBandeira).toFixed(1) : ''} 
+                  onChange={(e) => setDados({...dados, descontoBandeira: parseFloat(e.target.value) || 0})} 
                 />
               </div>
             </div>

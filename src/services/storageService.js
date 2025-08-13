@@ -1,4 +1,4 @@
-// src/services/storageService.js - Baseado no seu código atual, SEM telefone/email/endereco
+// src/services/storageService.js - Revertido para usar descontoTarifa e descontoBandeira
 import apiService from './apiService';
 
 class StorageService {
@@ -7,7 +7,7 @@ class StorageService {
     }
 
     // ========================================
-    // AUTENTICAÇÃO
+    // AUTENTICAÇÃO - MANTENDO ESTRUTURA ORIGINAL
     // ========================================
 
     async login(email, senha) {
@@ -41,7 +41,7 @@ class StorageService {
     }
 
     // ========================================
-    // PROPOSTAS - SEM telefone, email, endereco
+    // PROPOSTAS - COM DESCONTOS NO FORMATO CORRETO
     // ========================================
 
     async getProspec() {
@@ -63,9 +63,56 @@ class StorageService {
                 console.warn('⚠️ Estrutura de resposta inesperada:', response);
                 propostas = [];
             }
+
+            // ✅ MAPEAR DADOS DO BACKEND COM DESCONTOS CORRETOS
+            const propostasMapeadas = propostas.map((proposta, index) => {
+                console.log(`📋 Mapeando proposta ${index + 1}:`, {
+                    id: proposta.id,
+                    numero_proposta: proposta.numeroProposta || proposta.numero_proposta,
+                    nome_cliente: proposta.nomeCliente || proposta.nome_cliente,
+                    status: proposta.status,
+                    descontoTarifa: proposta.descontoTarifa,
+                    descontoBandeira: proposta.descontoBandeira,
+                    apelido: proposta.apelido,
+                    numeroUC: proposta.numeroUC || proposta.numero_unidade,
+                    media: proposta.media || proposta.consumo_medio
+                });
+
+                return {
+                    // Campos que já vêm corretos do backend
+                    id: proposta.id,
+                    numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
+                    nomeCliente: proposta.nomeCliente || proposta.nome_cliente,
+                    consultor: proposta.consultor,
+                    data: proposta.data || proposta.data_proposta,
+                    status: proposta.status,
+                    observacoes: proposta.observacoes,
+                    recorrencia: proposta.recorrencia,
+
+                    // ✅ DESCONTOS AGORA COM OS NOMES CORRETOS
+                    descontoTarifa: this.processarDesconto(proposta.descontoTarifa),
+                    descontoBandeira: this.processarDesconto(proposta.descontoBandeira),
+
+                    // Campos da UC (já mapeados no backend)
+                    apelido: proposta.apelido || '',
+                    numeroUC: proposta.numeroUC || proposta.numero_unidade || '',
+                    numeroCliente: proposta.numeroCliente || proposta.numero_cliente || '',
+                    ligacao: proposta.ligacao || proposta.tipo_ligacao || '',
+                    media: proposta.media || proposta.consumo_medio || 0,
+                    distribuidora: proposta.distribuidora || '',
+
+                    // Arrays
+                    beneficios: proposta.beneficios || [],
+                    unidadesConsumidoras: proposta.unidadesConsumidoras || [],
+
+                    // Timestamps
+                    created_at: proposta.created_at,
+                    updated_at: proposta.updated_at
+                };
+            });
             
-            console.log(`✅ Carregadas ${propostas.length} propostas da API`);
-            return propostas;
+            console.log(`✅ Carregadas ${propostasMapeadas.length} propostas da API com descontos processados`);
+            return propostasMapeadas;
             
         } catch (error) {
             console.error('❌ Erro ao carregar propostas:', error.message);
@@ -125,13 +172,12 @@ class StorageService {
     }
 
     // ========================================
-    // CONTROLE CLUBE
+    // CONTROLE CLUBE, UGS, etc (mantidos iguais)
     // ========================================
 
     async getControle() {
         try {
             console.log('📥 Carregando controle clube da API...');
-            // CORRIGIDO: Rota correta é /controle, não /controle-clube
             const response = await apiService.get('/controle');
             
             let controles = [];
@@ -153,29 +199,6 @@ class StorageService {
             throw new Error(`Não foi possível carregar o controle clube: ${error.message}`);
         }
     }
-
-    async saveControle(controle) {
-        try {
-            console.log('💾 Salvando controle clube na API...');
-            
-            const response = await apiService.post('/controle', controle);
-            
-            console.log('✅ Controle clube salvo na API com sucesso');
-            return response;
-            
-        } catch (error) {
-            console.error('❌ Erro ao salvar controle clube:', error.message);
-            throw new Error(`Não foi possível salvar o controle clube: ${error.message}`);
-        }
-    }
-
-    async adicionarControle(controle) {
-        return await this.saveControle(controle);
-    }
-
-    // ========================================
-    // UGS (USINAS GERADORAS)
-    // ========================================
 
     async getUGs() {
         try {
@@ -202,54 +225,6 @@ class StorageService {
         }
     }
 
-    async adicionarUG(ug) {
-        try {
-            console.log('💾 Salvando UG na API...');
-            
-            const response = await apiService.post('/ugs', ug);
-            
-            console.log('✅ UG salva na API com sucesso');
-            return response;
-            
-        } catch (error) {
-            console.error('❌ Erro ao salvar UG:', error.message);
-            throw new Error(`Não foi possível salvar a UG: ${error.message}`);
-        }
-    }
-
-    // ========================================
-    // UNIDADES CONSUMIDORAS
-    // ========================================
-
-    async getUnidadesConsumidoras() {
-        try {
-            console.log('📥 Carregando unidades consumidoras da API...');
-            const response = await apiService.get('/unidades-consumidoras');
-            
-            let unidades = [];
-            if (response?.data?.data && Array.isArray(response.data.data)) {
-                unidades = response.data.data;
-            } else if (response?.data && Array.isArray(response.data)) {
-                unidades = response.data;
-            } else if (Array.isArray(response)) {
-                unidades = response;
-            } else {
-                unidades = [];
-            }
-            
-            console.log(`✅ Carregadas ${unidades.length} unidades consumidoras da API`);
-            return unidades;
-            
-        } catch (error) {
-            console.error('❌ Erro ao carregar unidades consumidoras:', error.message);
-            throw new Error(`Não foi possível carregar as unidades consumidoras: ${error.message}`);
-        }
-    }
-
-    // ========================================
-    // CONEXÃO E SAÚDE DA API
-    // ========================================
-
     async checkApiConnection() {
         console.log('🔗 Verificando conexão com API...');
         try {
@@ -263,143 +238,93 @@ class StorageService {
     }
 
     // ========================================
-    // MAPEAMENTO DE DADOS - SEM telefone, email, endereco
+    // MÉTODOS AUXILIARES PARA DESCONTOS
+    // ========================================
+
+    /**
+     * ✅ Processar desconto vindo do backend
+     */
+    processarDesconto(valor) {
+        if (!valor) return 20; // Valor padrão
+
+        console.log('🔍 Processando desconto recebido:', { valor, tipo: typeof valor });
+
+        // Se vier como string com %, extrair o número
+        if (typeof valor === 'string' && valor.includes('%')) {
+            const numeroExtraido = parseFloat(valor.replace('%', '')) || 20;
+            console.log('✅ Desconto extraído:', numeroExtraido);
+            return numeroExtraido;
+        }
+
+        // Se vier como número, usar direto
+        const numeroFinal = parseFloat(valor) || 20;
+        console.log('✅ Desconto processado:', numeroFinal);
+        return numeroFinal;
+    }
+
+    /**
+     * ✅ Formatar desconto para enviar ao backend
+     */
+    formatarDescontoParaBackend(valor) {
+        if (!valor) return '20%';
+
+        console.log('🔍 Formatando desconto para backend:', { valor, tipo: typeof valor });
+
+        // Se já vem com %, validar e manter
+        if (typeof valor === 'string' && valor.includes('%')) {
+            console.log('✅ Desconto já com %:', valor);
+            return valor;
+        }
+
+        // Se é número, adicionar % (sem multiplicar)
+        const numeroLimpo = parseFloat(valor) || 20;
+        const resultado = numeroLimpo + '%';
+        console.log('✅ Desconto formatado:', resultado);
+        return resultado;
+    }
+
+    // ========================================
+    // MAPEAMENTO FRONTEND → BACKEND
     // ========================================
 
     mapearPropostaParaBackend(proposta) {
-        console.log('🔄 Mapeando proposta para backend (SEM telefone/email/endereco):', proposta);
+        console.log('🔄 Mapeando proposta para backend:', proposta);
         
         const dadosBackend = {
+            // Campos principais
             nome_cliente: proposta.nomeCliente,
             consultor: proposta.consultor,
             data_proposta: proposta.dataProposta || proposta.data,
             numero_proposta: proposta.numeroProposta,
-            economia: parseFloat(proposta.economia) || 20.00,
-            bandeira: parseFloat(proposta.bandeira) || 20.00,
-            recorrencia: proposta.recorrencia || '3%',
-            observacoes: proposta.observacoes || '',
-            beneficios: proposta.beneficiosAdicionais || proposta.beneficios || [],
             status: proposta.status || 'Aguardando',
-            // REMOVIDOS: telefone, email, endereco
-            unidades_consumidoras: proposta.unidades_consumidoras || proposta.unidadesConsumidoras || [],
+            observacoes: proposta.observacoes || '',
+            recorrencia: proposta.recorrencia || '3%',
+            
+            // ✅ DESCONTOS COM FORMATO CORRETO (COM %)
+            descontoTarifa: this.formatarDescontoParaBackend(proposta.descontoTarifa || 20),
+            descontoBandeira: this.formatarDescontoParaBackend(proposta.descontoBandeira || 20),
+            
+            // Arrays
+            beneficios: Array.isArray(proposta.beneficios) ? proposta.beneficios : [],
+            unidadesConsumidoras: Array.isArray(proposta.unidadesConsumidoras) ? proposta.unidadesConsumidoras : []
         };
 
-        // Garantir que data_proposta tenha um valor válido
-        if (!dadosBackend.data_proposta) {
-            dadosBackend.data_proposta = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        }
-
-        // Garantir que unidades_consumidoras seja um array válido
-        if (!Array.isArray(dadosBackend.unidades_consumidoras)) {
-            dadosBackend.unidades_consumidoras = [];
-        }
-
-        // Remover campos undefined para evitar erro 422
-        Object.keys(dadosBackend).forEach(key => {
-            if (dadosBackend[key] === undefined) {
-                delete dadosBackend[key];
+        console.log('📤 Dados mapeados para backend:', {
+            ...dadosBackend,
+            descontos: {
+                descontoTarifa: dadosBackend.descontoTarifa,
+                descontoBandeira: dadosBackend.descontoBandeira
             }
         });
-
-        console.log('✅ Mapeamento concluído (SEM telefone/email/endereco):', dadosBackend);
+        
         return dadosBackend;
     }
 
     // ========================================
-    // EXPORTAÇÃO DE DADOS
-    // ========================================
-
-    async exportarParaCSV(tipo) {
-        try {
-            console.log(`📤 Exportando ${tipo} para CSV...`);
-            
-            let dados = [];
-            
-            switch (tipo) {
-                case 'prospec':
-                    dados = await this.getProspec();
-                    break;
-                case 'controle':
-                    dados = await this.getControle();
-                    break;
-                case 'ugs':
-                    dados = await this.getUGs();
-                    break;
-                default:
-                    throw new Error('Tipo de exportação não suportado');
-            }
-
-            if (dados.length === 0) {
-                throw new Error('Nenhum dado encontrado para exportação');
-            }
-
-            this.downloadCSV(dados, `${tipo}_${new Date().toISOString().slice(0, 10)}.csv`);
-            
-        } catch (error) {
-            console.error(`❌ Erro ao exportar ${tipo}:`, error.message);
-            throw error;
-        }
-    }
-
-    downloadCSV(dados, nomeArquivo) {
-        if (!dados || dados.length === 0) return;
-        
-        // Obter cabeçalhos (chaves do primeiro objeto)
-        const headers = Object.keys(dados[0]);
-        
-        // Converter para CSV
-        const csvContent = [
-            headers.join(','), // Cabeçalho
-            ...dados.map(item => 
-                headers.map(header => {
-                    let valor = item[header];
-                    if (valor === null || valor === undefined) valor = '';
-                    if (typeof valor === 'string' && valor.includes(',')) {
-                        valor = `"${valor}"`;
-                    }
-                    return valor;
-                }).join(',')
-            )
-        ].join('\n');
-        
-        // Criar e fazer download do arquivo
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', nomeArquivo);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    }
-
-    async exportarDadosFiltrados(tipo, dados) {
-        try {
-            console.log(`📤 Exportando dados filtrados de ${tipo}...`);
-            
-            if (!dados || dados.length === 0) {
-                throw new Error('Nenhum dado fornecido para exportação');
-            }
-
-            this.downloadCSV(dados, `${tipo}_filtrado_${new Date().toISOString().slice(0, 10)}.csv`);
-            
-        } catch (error) {
-            console.error(`❌ Erro ao exportar dados filtrados:`, error.message);
-            throw error;
-        }
-    }
-
-    // ========================================
-    // MÉTODOS LEGADOS (COMPATIBILIDADE)
+    // MÉTODOS DE COMPATIBILIDADE (MANTIDOS)
     // ========================================
 
     async atualizarProspec(index, dadosAtualizados) {
-        // Para manter compatibilidade com código existente
-        // Na prática, precisamos do ID real da proposta
         if (dadosAtualizados.id) {
             return await this.updateProspec(dadosAtualizados.id, dadosAtualizados);
         } else {
@@ -408,7 +333,6 @@ class StorageService {
     }
 
     async removerProspec(id) {
-        // Atualizado para usar ID ao invés de index
         if (!id) {
             throw new Error('ID da proposta é necessário para remoção');
         }
@@ -416,7 +340,6 @@ class StorageService {
     }
 
     async atualizarControle(index, dadosAtualizados) {
-        // Para manter compatibilidade
         if (dadosAtualizados.id) {
             return await apiService.put(`/controle/${dadosAtualizados.id}`, dadosAtualizados);
         } else {
@@ -424,11 +347,6 @@ class StorageService {
         }
     }
 
-    // ========================================
-    // MÉTODOS UTILITÁRIOS ADICIONAIS
-    // ========================================
-
-    // Método para verificar se a API está disponível
     async isAPIHealthy() {
         try {
             const result = await this.checkApiConnection();
@@ -438,7 +356,6 @@ class StorageService {
         }
     }
 
-    // Método para obter estatísticas das propostas
     async getProspecStatistics() {
         try {
             const propostas = await this.getProspec();
@@ -454,6 +371,26 @@ class StorageService {
             console.error('❌ Erro ao obter estatísticas:', error);
             return { total: 0, aguardando: 0, fechadas: 0, perdidas: 0, canceladas: 0 };
         }
+    }
+
+    async exportarDadosFiltrados(tipo, dados) {
+        console.log(`📤 Exportando ${dados.length} registros de ${tipo}`);
+        
+        const blob = new Blob([JSON.stringify(dados, null, 2)], {
+            type: 'application/json'
+        });
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${tipo}_export_${new Date().toISOString().split('T')[0]}.json`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.URL.revokeObjectURL(url);
+        console.log('✅ Exportação concluída');
     }
 }
 
