@@ -181,25 +181,23 @@ const NovaPropostaPage = () => {
         distribuidora: uc.distribuidora || ''
       }));
 
-      // ESTRUTURA CORRETA PARA O BACKEND
+      // ESTRUTURA CORRETA PARA O BACKEND - SEM telefone, email, endereco
       const propostaParaBackend = {
-        nome_cliente: data.nomeCliente,
+        nomeCliente: data.nomeCliente,
         consultor: consultorFinal,
-        data_proposta: data.dataProposta,
-        numero_proposta: numeroProposta,
-        telefone: data.celular,
-        email: data.email,
-        endereco: data.endereco,
+        dataProposta: data.dataProposta,
+        numeroProposta: numeroProposta,
+        // REMOVIDOS: telefone, email, endereco
         status: 'Em Análise',
         economia: data.economia || 0,
         bandeira: data.bandeira || 0,
         recorrencia: data.recorrencia,
-        beneficios: beneficiosArray,
-        unidades_consumidoras: unidadesConsumidoras.length > 0 ? unidadesConsumidoras : null,
+        beneficiosAdicionais: beneficiosArray, // Usar beneficiosAdicionais para compatibilidade
+        unidadesConsumidoras: unidadesConsumidoras.length > 0 ? unidadesConsumidoras : [],
         observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim()
       };
 
-      console.log('📤 Enviando proposta para o backend:', propostaParaBackend);
+      console.log('📤 Enviando proposta para o backend (SEM telefone/email/endereco):', propostaParaBackend);
 
       // Tentar salvar via API
       const result = await storageService.adicionarProspec(propostaParaBackend);

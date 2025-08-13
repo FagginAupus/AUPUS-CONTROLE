@@ -1,4 +1,4 @@
-// src/services/storageService.js - Apenas API, sem localStorage
+// src/services/storageService.js - Baseado no seu código atual, SEM telefone/email/endereco
 import apiService from './apiService';
 
 class StorageService {
@@ -41,7 +41,7 @@ class StorageService {
     }
 
     // ========================================
-    // PROPOSTAS
+    // PROPOSTAS - SEM telefone, email, endereco
     // ========================================
 
     async getProspec() {
@@ -169,6 +169,10 @@ class StorageService {
         }
     }
 
+    async adicionarControle(controle) {
+        return await this.saveControle(controle);
+    }
+
     // ========================================
     // UGS (USINAS GERADORAS)
     // ========================================
@@ -259,21 +263,46 @@ class StorageService {
     }
 
     // ========================================
-    // MAPEAMENTO DE DADOS
+    // MAPEAMENTO DE DADOS - SEM telefone, email, endereco
     // ========================================
 
     mapearPropostaParaBackend(proposta) {
-        return {
+        console.log('🔄 Mapeando proposta para backend (SEM telefone/email/endereco):', proposta);
+        
+        const dadosBackend = {
             nome_cliente: proposta.nomeCliente,
             consultor: proposta.consultor,
-            data_proposta: proposta.dataProposta,
+            data_proposta: proposta.dataProposta || proposta.data,
             numero_proposta: proposta.numeroProposta,
             economia: parseFloat(proposta.economia) || 20.00,
             bandeira: parseFloat(proposta.bandeira) || 20.00,
             recorrencia: proposta.recorrencia || '3%',
             observacoes: proposta.observacoes || '',
-            beneficios: proposta.beneficiosAdicionais || []
+            beneficios: proposta.beneficiosAdicionais || proposta.beneficios || [],
+            status: proposta.status || 'Aguardando',
+            // REMOVIDOS: telefone, email, endereco
+            unidades_consumidoras: proposta.unidades_consumidoras || proposta.unidadesConsumidoras || [],
         };
+
+        // Garantir que data_proposta tenha um valor válido
+        if (!dadosBackend.data_proposta) {
+            dadosBackend.data_proposta = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+
+        // Garantir que unidades_consumidoras seja um array válido
+        if (!Array.isArray(dadosBackend.unidades_consumidoras)) {
+            dadosBackend.unidades_consumidoras = [];
+        }
+
+        // Remover campos undefined para evitar erro 422
+        Object.keys(dadosBackend).forEach(key => {
+            if (dadosBackend[key] === undefined) {
+                delete dadosBackend[key];
+            }
+        });
+
+        console.log('✅ Mapeamento concluído (SEM telefone/email/endereco):', dadosBackend);
+        return dadosBackend;
     }
 
     // ========================================
@@ -348,6 +377,22 @@ class StorageService {
         }
     }
 
+    async exportarDadosFiltrados(tipo, dados) {
+        try {
+            console.log(`📤 Exportando dados filtrados de ${tipo}...`);
+            
+            if (!dados || dados.length === 0) {
+                throw new Error('Nenhum dado fornecido para exportação');
+            }
+
+            this.downloadCSV(dados, `${tipo}_filtrado_${new Date().toISOString().slice(0, 10)}.csv`);
+            
+        } catch (error) {
+            console.error(`❌ Erro ao exportar dados filtrados:`, error.message);
+            throw error;
+        }
+    }
+
     // ========================================
     // MÉTODOS LEGADOS (COMPATIBILIDADE)
     // ========================================
@@ -362,9 +407,12 @@ class StorageService {
         }
     }
 
-    async removerProspec(index) {
-        // Para manter compatibilidade - precisa do ID
-        throw new Error('Método removerProspec requer implementação com ID da proposta');
+    async removerProspec(id) {
+        // Atualizado para usar ID ao invés de index
+        if (!id) {
+            throw new Error('ID da proposta é necessário para remoção');
+        }
+        return await this.deleteProspec(id);
     }
 
     async atualizarControle(index, dadosAtualizados) {
@@ -376,19 +424,35 @@ class StorageService {
         }
     }
 
-    async exportarDadosFiltrados(tipo, dados) {
-        try {
-            console.log(`📤 Exportando dados filtrados de ${tipo}...`);
-            
-            if (!dados || dados.length === 0) {
-                throw new Error('Nenhum dado fornecido para exportação');
-            }
+    // ========================================
+    // MÉTODOS UTILITÁRIOS ADICIONAIS
+    // ========================================
 
-            this.downloadCSV(dados, `${tipo}_filtrado_${new Date().toISOString().slice(0, 10)}.csv`);
-            
+    // Método para verificar se a API está disponível
+    async isAPIHealthy() {
+        try {
+            const result = await this.checkApiConnection();
+            return result.connected;
         } catch (error) {
-            console.error(`❌ Erro ao exportar dados filtrados:`, error.message);
-            throw error;
+            return false;
+        }
+    }
+
+    // Método para obter estatísticas das propostas
+    async getProspecStatistics() {
+        try {
+            const propostas = await this.getProspec();
+            
+            return {
+                total: propostas.length,
+                aguardando: propostas.filter(p => p.status === 'Aguardando').length,
+                fechadas: propostas.filter(p => p.status === 'Fechado').length,
+                perdidas: propostas.filter(p => p.status === 'Perdido').length,
+                emAnalise: propostas.filter(p => p.status === 'Em Análise').length
+            };
+        } catch (error) {
+            console.error('❌ Erro ao obter estatísticas:', error);
+            return { total: 0, aguardando: 0, fechadas: 0, perdidas: 0, emAnalise: 0 };
         }
     }
 }
