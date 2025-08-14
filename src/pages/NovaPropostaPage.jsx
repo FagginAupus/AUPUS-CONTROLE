@@ -223,7 +223,7 @@ const NovaPropostaPage = () => {
         observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim()
       };
 
-      console.log('📤 Enviando proposta para o backend (SEM telefone/email/endereco):', propostaParaBackend);
+      console.log('📤 Enviando proposta para o backend:', propostaParaBackend);
 
       // Tentar salvar via API
       const result = await storageService.adicionarProspec(propostaParaBackend);
@@ -316,16 +316,6 @@ const NovaPropostaPage = () => {
                 {errors.nomeCliente && <span className="error-message">{errors.nomeCliente.message}</span>}
               </div>
 
-              <div className="form-group">
-                <label>Celular do Cliente *</label>
-                <input 
-                  {...register('celular', { required: 'Celular é obrigatório' })} 
-                  type="tel" 
-                  placeholder="(62) 99999-9999"
-                  className={errors.celular ? 'error' : ''}
-                />
-                {errors.celular && <span className="error-message">{errors.celular.message}</span>}
-              </div>
             </div>
 
             {/* Segunda linha */}

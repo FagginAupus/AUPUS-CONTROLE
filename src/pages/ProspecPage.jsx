@@ -158,7 +158,7 @@ const ProspecPage = () => {
   const removerItem = async (index) => {
     const item = dadosFiltrados[index];
     const confirmacao = window.confirm(
-      `Tem certeza que deseja remover a proposta de ${item.nomeCliente} (${item.apelido || item.numeroUC})?`
+      `Tem certeza que deseja cancelar a proposta de ${item.nomeCliente} (${item.apelido || item.numeroUC})?`
     );
     
     if (!confirmacao) {
@@ -166,18 +166,24 @@ const ProspecPage = () => {
     }
 
     try {
-      const item = dadosFiltrados[index];
-      const indexReal = dados.findIndex(p => p.id === item.id);
+      const propostaId = item.propostaId || item.id;
       
-      if (indexReal === -1) {
-        showNotification('Item não encontrado para remoção', 'error');
+      if (!propostaId) {
+        showNotification('ID da proposta não encontrado', 'error');
         return;
       }
 
-      await storageService.removerProspec(indexReal);
+      console.log('🗑️ Removendo proposta com ID:', propostaId);
+
+      // ✅ ADICIONAR ESTAS LINHAS - Alterar status para "Cancelada" antes de excluir
+      console.log('📝 Cancelando proposta...');
+      await storageService.atualizarProspec(propostaId, { 
+        id: propostaId,
+        status: 'Cancelada' 
+      });
       await carregarDados();
       
-      showNotification('Proposta removida com sucesso!', 'success');
+      showNotification('Proposta cancelada com sucesso!', 'success');
       
     } catch (error) {
       console.error('❌ Erro ao remover:', error);
@@ -447,15 +453,7 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
     return `${numero.toFixed(1)}%`;
   };
 
-  const formatarTelefone = (telefone) => {
-    if (!telefone) return '-';
-    // Formatação básica para telefone brasileiro
-    const nums = telefone.replace(/\D/g, '');
-    if (nums.length === 11) {
-      return `(${nums.substr(0,2)}) ${nums.substr(2,5)}-${nums.substr(7,4)}`;
-    }
-    return telefone;
-  };
+
 
   const formatarData = (data) => {
     if (!data) return '-';
@@ -563,10 +561,6 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
                   <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
                     {item.status || 'Aguardando'}
                   </span>
-                </div>
-                <div className="detail-item">
-                  <label>Telefone:</label>
-                  <span className="telefone">{formatarTelefone(item.telefone)}</span>
                 </div>
                 <div className="detail-item">
                   <label>Consultor:</label>

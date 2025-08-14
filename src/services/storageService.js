@@ -396,8 +396,12 @@ class StorageService {
             return valor;
         }
 
-        // Se é número, adicionar % (sem multiplicar)
-        const numeroLimpo = parseFloat(valor) || 20;
+        // ✅ CORREÇÃO: Não usar || 20 como fallback
+        const numeroLimpo = parseFloat(valor);
+        if (isNaN(numeroLimpo)) {
+            return '20%'; // Só usar padrão se for NaN
+        }
+        
         const resultado = numeroLimpo + '%';
         console.log('✅ Desconto formatado:', resultado);
         return resultado;
@@ -517,8 +521,8 @@ class StorageService {
             recorrencia: proposta.recorrencia || '3%',
             
             // ✅ DESCONTOS COM FORMATO CORRETO (COM %)
-            economia: this.formatarDescontoParaBackend(proposta.descontoTarifa || 20),
-            bandeira: this.formatarDescontoParaBackend(proposta.descontoBandeira || 20),
+            economia: this.formatarDescontoParaBackend(proposta.economia || proposta.descontoTarifa),
+            bandeira: this.formatarDescontoParaBackend(proposta.bandeira || proposta.descontoBandeira),
             
             // Arrays
             beneficios: this.processarBeneficios(proposta),
