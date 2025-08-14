@@ -43,18 +43,51 @@ const ControlePage = () => {
       
       console.log('📥 Carregando dados do controle...');
       
-      const dadosControle = await storageService.getControle();
+      const dadosControle = await storageService.getPropostas();
+      const propostas = dadosControle.filter(proposta => {
+        // Verificar se todas UCs da proposta estão fechadas
+        return proposta.unidadesConsumidoras?.every(uc => (uc.status || 'Aguardando') === 'Fechada');
+      });
       
+      // Expandir propostas para UCs individuais (como está na prospecção)
+      let dadosExpandidos = [];
+
+      propostas.forEach(proposta => {
+        if (proposta.unidadesConsumidoras?.length > 0) {
+          proposta.unidadesConsumidoras.forEach(uc => {
+            dadosExpandidos.push({
+              id: `${proposta.id}-${uc.numero_unidade || uc.numeroUC}`,
+              numeroProposta: proposta.numeroProposta,
+              nomeCliente: proposta.nomeCliente,
+              consultor: proposta.consultor,
+              data: proposta.data,
+              
+              // Dados da UC específica
+              numeroUC: uc.numero_unidade || uc.numeroUC,
+              apelido: uc.apelido,
+              media: uc.consumo_medio || uc.media,
+              distribuidora: uc.distribuidora,
+              ligacao: uc.ligacao,
+              status: uc.status || 'Aguardando',
+              
+              // Dados de controle
+              ug: uc.ug || null,
+              calibragem: uc.calibragem || 0
+            });
+          });
+        }
+      });
+
       let dadosFiltradosPorEquipe = [];
 
       if (user?.role === 'admin') {
-        dadosFiltradosPorEquipe = dadosControle.map(item => ({
+        dadosFiltradosPorEquipe = dadosExpandidos.map(item => ({
           ...item,
           consultor: getConsultorName(item.consultor)
         }));
       } else {
         const teamNames = getMyTeam().map(member => member.name);
-        dadosFiltradosPorEquipe = dadosControle.filter(item => 
+        dadosFiltradosPorEquipe = dadosExpandidos.filter(item => 
           teamNames.includes(item.consultor)
         );
       }
@@ -177,7 +210,12 @@ const ControlePage = () => {
         ug: ugSelecionada
       };
 
-      await storageService.atualizarControle(indexReal, dadosAtualizados);
+      await storageService.atualizarProposta(item.id, {
+        ...proposta,
+        unidadesConsumidoras: proposta.unidadesConsumidoras.map(uc => 
+          uc.numero_unidade === item.numeroUC ? {...uc, ug: ugSelecionada} : uc
+        )
+      });
       await carregarDados();
       
       setModalUG({ show: false, item: null, index: -1 });

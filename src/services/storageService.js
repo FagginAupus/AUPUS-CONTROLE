@@ -487,7 +487,22 @@ class StorageService {
     mapearPropostaParaBackend(proposta) {
         console.log('🔄 Mapeando proposta para backend:', proposta);
         
+        // ✅ SE FOR CANCELAMENTO DE UC, ENVIAR APENAS OS CAMPOS NECESSÁRIOS
+        if (proposta.cancelar_uc && proposta.numero_uc) {
+            return {
+                cancelar_uc: true,
+                numero_uc: proposta.numero_uc
+            };
+        }
+        
         // ✅ PROCESSAR BENEFÍCIOS
+        if (proposta.cancelar_uc && proposta.numero_uc) {
+            console.log('🎯 Operação de cancelamento de UC detectada');
+            return {
+                cancelar_uc: true,
+                numero_uc: proposta.numero_uc
+            };
+        }
         let beneficiosArray = [];
         if (proposta.beneficios && Array.isArray(proposta.beneficios)) {
             beneficiosArray = proposta.beneficios;
@@ -501,6 +516,10 @@ class StorageService {
             unidadesArray = proposta.unidadesConsumidoras;
         } else if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
             unidadesArray = proposta.unidades_consumidoras;
+            unidadesArray = unidadesArray.map(uc => ({
+                ...uc,
+                status: uc.status || 'Aguardando'
+            }));
         }
 
         console.log('📋 Dados processados:', {
@@ -515,7 +534,6 @@ class StorageService {
             nome_cliente: proposta.nomeCliente,
             consultor: proposta.consultor,
             data_proposta: proposta.dataProposta || proposta.data,
-            numero_proposta: proposta.numeroProposta,
             status: proposta.status || 'Aguardando',
             observacoes: proposta.observacoes || '',
             recorrencia: proposta.recorrencia || '3%',
@@ -572,6 +590,10 @@ class StorageService {
             unidadesArray = proposta.unidadesConsumidoras;
         } else if (Array.isArray(proposta.unidades_consumidoras)) {
             unidadesArray = proposta.unidades_consumidoras;
+            unidadesArray = unidadesArray.map(uc => ({
+                ...uc,
+                status: uc.status || 'Aguardando'
+            }));
         }
         
         console.log('🏢 Unidades processadas:', {

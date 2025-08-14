@@ -175,11 +175,12 @@ const ProspecPage = () => {
 
       console.log('🗑️ Removendo proposta com ID:', propostaId);
 
-      // ✅ ADICIONAR ESTAS LINHAS - Alterar status para "Cancelada" antes de excluir
-      console.log('📝 Cancelando proposta...');
+      // ✅ CANCELAR UC ESPECÍFICA - Alterar status da UC para "Cancelada"
+      console.log('📝 Cancelando UC específica...');
       await storageService.atualizarProspec(propostaId, { 
         id: propostaId,
-        status: 'Cancelada' 
+        cancelar_uc: true,
+        numero_uc: item.numeroUC || item.numero_unidade
       });
       await carregarDados();
       
@@ -230,11 +231,15 @@ const ProspecPage = () => {
           </div>
           <div className="stat-card">
             <span className="stat-label">Aguardando</span>
-            <span className="stat-value">{dadosFiltrados.filter(p => p.status === 'Aguardando').length}</span>
+            <span className="stat-value">{dadosFiltrados.filter(p => 
+                p.unidadesConsumidoras?.some(uc => (uc.status || 'Aguardando') === 'Aguardando')
+            ).length}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Fechadas</span>
-            <span className="stat-value">{dadosFiltrados.filter(p => p.status === 'Fechado').length}</span>
+            <span className="stat-value">{dadosFiltrados.filter(p => 
+                p.unidadesConsumidoras?.every(uc => (uc.status || 'Aguardando') === 'Fechada')
+            ).length}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Valor Médio</span>
@@ -339,7 +344,7 @@ const ProspecPage = () => {
                   </thead>
                   <tbody>
                     {dadosFiltrados.map((item, index) => (
-                      <tr key={item.id}>
+                      <tr key={item.id} className={item.status === 'Cancelada' ? 'linha-cancelada' : ''}>
                         <td>{item.nomeCliente || '-'}</td>
                         <td>
                           <span className="numero-proposta">
@@ -366,8 +371,8 @@ const ProspecPage = () => {
                           </span>
                         </td>
                         <td>
-                          <span className={`status-badge ${item.status === 'Fechado' ? 'status-fechado' : 'status-aguardando'}`}>
-                            {item.status || 'Aguardando'}
+                          <span className={`status-badge status-${(item.status || 'Aguardando').toLowerCase()}`}>
+                              {item.status || 'Aguardando'}
                           </span>
                         </td>
                         <td>
@@ -1053,9 +1058,9 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   onChange={(e) => setDados({...dados, status: e.target.value})}
                 >
                   <option value="Aguardando">Aguardando</option>
-                  <option value="Não Fechado">Não Fechado</option>
-                  <option value="Cancelado">Cancelado</option>
-                  <option value="Fechado">Fechado</option>
+                  <option value="Fechada">Fechada</option>
+                  <option value="Cancelada">Cancelada</option>
+                  <option value="Recusada">Recusada</option>
                 </select>
               </div>
               <div className="form-group">
