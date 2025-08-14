@@ -115,7 +115,7 @@ class StorageService {
                         nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
                         consultor: proposta.consultor,
                         data: proposta.data_proposta || proposta.data,
-                        status: proposta.status,
+                        status: uc.status || proposta.status,
                         observacoes: proposta.observacoes,
                         recorrencia: proposta.recorrencia,
                         descontoTarifa: this.processarDesconto(proposta.descontoTarifa || proposta.economia),
@@ -609,8 +609,8 @@ class StorageService {
     // ========================================
 
     async atualizarProspec(index, dadosAtualizados) {
-        if (dadosAtualizados.id || dadosAtualizados.propostaId) {
-            const id = dadosAtualizados.id || dadosAtualizados.propostaId;
+        if (dadosAtualizados.propostaId || dadosAtualizados.id) {
+            const id = dadosAtualizados.propostaId || dadosAtualizados.id; // ✅ PRIORIZAR propostaId
             return await this.updateProspec(id, dadosAtualizados);
         } else {
             throw new Error('ID da proposta é necessário para atualização');

@@ -136,14 +136,21 @@ const ProspecPage = () => {
     try {
       const { item } = modalEdicao;
       
-      const indexReal = dados.findIndex(p => p.id === item.id);
+      // ✅ USAR propostaId em vez de indexReal
+      const propostaId = item.propostaId || item.id?.split('-')[0]; // Extrair ID real da proposta
       
-      if (indexReal === -1) {
-        showNotification('Item não encontrado para edição', 'error');
+      if (!propostaId) {
+        showNotification('ID da proposta não encontrado para edição', 'error');
         return;
       }
 
-      await storageService.atualizarProspec(indexReal, dadosAtualizados);
+      // ✅ ADICIONAR propostaId aos dados atualizados
+      const dadosComId = {
+        ...dadosAtualizados,
+        propostaId: propostaId
+      };
+
+      await storageService.atualizarProspec(propostaId, dadosComId);
       await carregarDados();
       
       setModalEdicao({ show: false, item: null, index: -1 });
