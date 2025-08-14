@@ -425,11 +425,26 @@ const ProspecPage = () => {
 
 // Componente Modal de Visualização - Disponível para todos os perfis
 const ModalVisualizacao = ({ item, user, onClose }) => {
-  const formatarPercentual = (valor) => {
-    if (!valor) return '0.0%';
+  const formatarPercentualModal = (valor) => {
+    if (!valor && valor !== 0) return '0.0%';
+    
+    // Se já é string com %, extrair número e formatar
+    if (typeof valor === 'string' && valor.includes('%')) {
+      const numero = parseFloat(valor.replace('%', ''));
+      return `${numero.toFixed(1)}%`;
+    }
+    
+    // Se é número, usar direto (SEM multiplicação)
     const numero = parseFloat(valor);
-    console.log('🔍 formatarPercentual:', { valor, numero, resultado: `${numero.toFixed(1)}%` });
-    return `${numero.toFixed(1)}%`; // ✅ SEM MULTIPLICAÇÃO
+    if (isNaN(numero)) return '0.0%';
+    
+    console.log('🔍 formatarPercentualModal:', { 
+      valor, 
+      numero, 
+      resultado: `${numero.toFixed(1)}%` 
+    });
+    
+    return `${numero.toFixed(1)}%`;
   };
 
   const formatarTelefone = (telefone) => {
@@ -598,11 +613,11 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
               <div className="details-grid">
                 <div className="detail-item">
                   <label>Desconto Tarifa:</label>
-                  <span className="desconto-valor">{formatarPercentual(item.descontoTarifa)}</span>
+                  <span className="desconto-valor">{formatarPercentualModal(item.descontoTarifa)}</span>
                 </div>
                 <div className="detail-item">
                   <label>Desconto Bandeira:</label>
-                  <span className="desconto-valor">{formatarPercentual(item.descontoBandeira)}</span>
+                  <span className="desconto-valor">{formatarPercentualModal(item.descontoBandeira)}</span>
                 </div>
               </div>
               

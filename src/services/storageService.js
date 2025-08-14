@@ -185,12 +185,9 @@ class StorageService {
         return Object.values(propostas)[0]; // Retorna a primeira proposta encontrada
     }
 
-    // ========================================
-    // PROPOSTAS - COM EXPANSÃO DE UCs
-    // ========================================
 
     /**
-     * ✅ MÉTODO PRINCIPAL: getProspec com expansão automática
+     * ✅ MÉTODO ORIGINAL: getProspec sem expansão (para casos específicos)
      */
     async getProspec() {
         try {
@@ -212,138 +209,34 @@ class StorageService {
                 propostas = [];
             }
 
+            console.log(`📊 Total de propostas recebidas: ${propostas.length}`);
+            
             // ✅ MAPEAR DADOS DO BACKEND COM DESCONTOS CORRETOS
             const propostasMapeadas = propostas.map((proposta, index) => {
-                console.log(`📋 Mapeando proposta ${index + 1}:`, {
-                    id: proposta.id,
-                    numero_proposta: proposta.numeroProposta || proposta.numero_proposta,
-                    nome_cliente: proposta.nomeCliente || proposta.nome_cliente,
-                    status: proposta.status,
-                    unidades_consumidoras: proposta.unidades_consumidoras
+                const propostaMapeada = this.mapearPropostaDoBackend(proposta);
+                
+                console.log(`📋 Proposta ${index + 1} mapeada:`, {
+                    id: propostaMapeada?.id,
+                    numeroProposta: propostaMapeada?.numeroProposta,
+                    descontos: {
+                        descontoTarifa: propostaMapeada?.descontoTarifa,
+                        descontoBandeira: propostaMapeada?.descontoBandeira
+                    }
                 });
-
-                return {
-                    // ✅ CAMPOS MAPEADOS CORRETAMENTE PARA EXPANSÃO
-                    id: proposta.id,
-                    numeroProposta: proposta.numero_proposta,    // ✅ NOME CORRETO
-                    nomeCliente: proposta.nome_cliente,         // ✅ NOME CORRETO
-                    consultor: proposta.consultor,
-                    data: proposta.data_proposta,                   // ✅ NOME CORRETO
-                    status: proposta.status,
-                    observacoes: proposta.observacoes,
-                    recorrencia: proposta.recorrencia,
-
-                    // ✅ DESCONTOS PROCESSADOS
-                    descontoTarifa: this.processarDesconto(proposta.economia),
-                    descontoBandeira: this.processarDesconto(proposta.bandeira),
-
-                    // Arrays
-                    beneficios: proposta.beneficios || [],
-                    unidades_consumidoras: proposta.unidades_consumidoras || [],
-
-                    // Timestamps
-                    created_at: proposta.created_at,
-                    updated_at: proposta.updated_at
-                };
-            });
+                
+                return propostaMapeada;
+            }).filter(Boolean); // Remove propostas inválidas
             
             // ✅ EXPANDIR PARA UCs
-            console.log(`🔍 Expandindo ${propostasMapeadas.length} propostas para UCs...`);
-            propostasMapeadas.forEach((proposta, i) => {
-                console.log(`Proposta ${i + 1}:`, {
-                    id: proposta.id,
-                    unidades_count: proposta.unidades_consumidoras?.length || 0,
-                    unidades: proposta.unidades_consumidoras
-                });
-            });
-
-            const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
-            console.log(`✅ Resultado da expansão: ${linhasExpandidas.length} linhas`);
-            
-            console.log(`✅ Retornadas ${linhasExpandidas.length} linhas expandidas de UC`);
-            return linhasExpandidas;
-            
-        } catch (error) {
-            console.error('❌ Erro ao carregar propostas expandidas:', error.message);
-            throw new Error(`Não foi possível carregar as propostas: ${error.message}`);
-        }
-    }
-
-    /**
-     * ✅ MÉTODO ORIGINAL: getProspec sem expansão (para casos específicos)
-     */
-    async getProspec() {
-        try {
-            console.log('📥 Carregando propostas da API para expansão...');
-            const response = await apiService.get('/propostas');
-            
-            let propostas = [];
-            if (response?.data?.data && Array.isArray(response.data.data)) {
-                propostas = response.data.data;
-            } else if (response?.data && Array.isArray(response.data)) {
-                propostas = response.data;
-            } else if (Array.isArray(response)) {
-                propostas = response;
-            } else {
-                console.warn('⚠️ Estrutura de resposta inesperada:', response);
-                propostas = [];
-            }
-
-            // ✅ DEBUG: Mostrar dados brutos do backend
-            console.log('🔍 DADOS BRUTOS DO BACKEND:', propostas[0]);
-
-            // ✅ MAPEAR COM DEBUG COMPLETO
-            const propostasMapeadas = propostas.map((proposta, index) => {
-                
-                const propostaMapeada = {
-                    // ✅ USAR OS NOMES QUE JÁ ESTÃO CORRETOS NO BACKEND
-                    id: proposta.id,
-                    numeroProposta: proposta.numeroProposta,        // ✅ JÁ VEM CORRETO
-                    nomeCliente: proposta.nomeCliente,              // ✅ JÁ VEM CORRETO
-                    consultor: proposta.consultor,
-                    data: proposta.data,                            // ✅ JÁ VEM CORRETO
-                    status: proposta.status,
-                    observacoes: proposta.observacoes,
-                    recorrencia: proposta.recorrencia,
-                    descontoTarifa: proposta.descontoTarifa || this.processarDesconto(proposta.economia),
-                    descontoBandeira: proposta.descontoBandeira || this.processarDesconto(proposta.bandeira),
-                    beneficios: proposta.beneficios || [],
-                    unidades_consumidoras: proposta.unidades_consumidoras || [],
-                    created_at: proposta.created_at,
-                    updated_at: proposta.updated_at
-                };
-
-                // ✅ DEBUG: Mostrar o que foi mapeado
-                console.log(`📋 Proposta ${index + 1} APÓS MAPEAMENTO:`, {
-                    id: propostaMapeada.id,
-                    numeroProposta: propostaMapeada.numeroProposta,
-                    nomeCliente: propostaMapeada.nomeCliente,
-                    data: propostaMapeada.data,
-                    ucs_count: propostaMapeada.unidades_consumidoras.length
-                });
-
-                return propostaMapeada;
-            });
-            
-            // ✅ EXPANDIR COM DEBUG
-            console.log(`🔍 Expandindo ${propostasMapeadas.length} propostas...`);
             const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
             
-            // ✅ DEBUG: Mostrar primeira linha expandida
-            console.log('🔍 PRIMEIRA LINHA EXPANDIDA:', {
-                id: linhasExpandidas[0]?.id,
-                numeroProposta: linhasExpandidas[0]?.numeroProposta,
-                nomeCliente: linhasExpandidas[0]?.nomeCliente,
-                data: linhasExpandidas[0]?.data,
-                apelido: linhasExpandidas[0]?.apelido
-            });
+            console.log(`🎯 Total de linhas expandidas: ${linhasExpandidas.length}`);
             
-            console.log(`✅ Retornadas ${linhasExpandidas.length} linhas expandidas de UC`);
             return linhasExpandidas;
-            
+
         } catch (error) {
-            console.error('❌ Erro ao carregar propostas expandidas:', error.message);
-            throw new Error(`Não foi possível carregar as propostas: ${error.message}`);
+            console.error('❌ Erro ao carregar propostas do storageService:', error);
+            return [];
         }
     }
 
@@ -510,6 +403,79 @@ class StorageService {
         return resultado;
     }
 
+    /**
+     * ✅ NOVO: Mapear proposta do backend para o frontend
+     * CORRIGE o problema dos descontos não aparecerem corretamente
+     */
+    mapearPropostaDoBackend(proposta) {
+        if (!proposta) {
+            console.warn('⚠️ Proposta vazia recebida para mapeamento');
+            return null;
+        }
+
+        // ✅ PROCESSAR DESCONTOS - PRIORIZAR descontoTarifa/descontoBandeira, depois economia/bandeira
+        let descontoTarifa = 20; // Padrão
+        let descontoBandeira = 20; // Padrão
+
+        // Verificar se vem com os nomes novos
+        if (proposta.descontoTarifa !== undefined) {
+            descontoTarifa = this.processarDesconto(proposta.descontoTarifa);
+        } else if (proposta.economia !== undefined) {
+            // Fallback para o nome antigo
+            descontoTarifa = this.processarDesconto(proposta.economia);
+        }
+
+        if (proposta.descontoBandeira !== undefined) {
+            descontoBandeira = this.processarDesconto(proposta.descontoBandeira);
+        } else if (proposta.bandeira !== undefined) {
+            // Fallback para o nome antigo
+            descontoBandeira = this.processarDesconto(proposta.bandeira);
+        }
+
+        const propostaMapeada = {
+            // Campos principais
+            id: proposta.id,
+            numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
+            nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
+            consultor: proposta.consultor,
+            data: proposta.data_proposta || proposta.data,
+            status: proposta.status,
+            observacoes: proposta.observacoes,
+            recorrencia: proposta.recorrencia,
+            
+            // ✅ DESCONTOS MAPEADOS CORRETAMENTE
+            descontoTarifa: descontoTarifa,
+            descontoBandeira: descontoBandeira,
+            
+            // Arrays
+            beneficios: proposta.beneficios || [],
+            unidades_consumidoras: proposta.unidades_consumidoras || [],
+            unidadesConsumidoras: proposta.unidades_consumidoras || [], // Compatibilidade
+            
+            // Dados da primeira UC para compatibilidade
+            apelido: proposta.apelido || '',
+            numeroUC: proposta.numeroUC || '',
+            numeroCliente: proposta.numeroCliente || '',
+            ligacao: proposta.ligacao || '',
+            media: proposta.media || 0,
+            distribuidora: proposta.distribuidora || '',
+            
+            // Timestamps
+            created_at: proposta.created_at,
+            updated_at: proposta.updated_at
+        };
+
+        console.log('🔄 Proposta mapeada do backend:', {
+            id: propostaMapeada.id,
+            numeroProposta: propostaMapeada.numeroProposta,
+            descontos: {
+                descontoTarifa: propostaMapeada.descontoTarifa,
+                descontoBandeira: propostaMapeada.descontoBandeira
+            }
+        });
+
+        return propostaMapeada;
+    }
     // ========================================
     // MAPEAMENTO FRONTEND → BACKEND
     // ========================================
