@@ -307,9 +307,9 @@ const ProspecPage = () => {
       // ✅ CANCELAR UC ESPECÍFICA - Alterar status da UC para "Cancelada"
       console.log('📝 Cancelando UC específica...');
       await storageService.atualizarProspec(propostaId, { 
-        id: propostaId,
-        cancelar_uc: true,
-        numero_uc: item.numeroUC || item.numero_unidade
+        propostaId: propostaId,
+        numeroUC: item.numeroUC || item.numero_unidade,
+        status: 'Cancelada'
       });
       await carregarDados();
       

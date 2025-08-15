@@ -53,6 +53,14 @@ class StorageService {
         const linhasExpandidas = [];
         
         propostas.forEach(proposta => {
+
+            console.log('🔍 Proposta original do backend:', {
+                id: proposta.id,
+                numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
+                documentacao_existe: !!proposta.documentacao,
+                documentacao_conteudo: proposta.documentacao
+            });
+            
             // Verificar se tem UCs no JSON
             let ucsArray = [];
             
@@ -309,15 +317,22 @@ class StorageService {
             } else if (Array.isArray(response)) {
                 controles = response;
             } else {
+                console.warn('⚠️ Formato inesperado de resposta do controle:', response);
                 controles = [];
             }
-            
-            console.log(`✅ Carregados ${controles.length} registros de controle da API`);
+
+            console.log(`✅ ${controles.length} controles carregados da API`);
             return controles;
             
         } catch (error) {
-            console.error('❌ Erro ao carregar controle clube:', error.message);
-            throw new Error(`Não foi possível carregar o controle clube: ${error.message}`);
+            console.error('❌ Erro ao carregar controle:', error.message);
+            
+            if (error.message.includes('404')) {
+                console.log('ℹ️ Nenhum controle encontrado - retornando array vazio');
+                return [];
+            }
+            
+            throw new Error(`Não foi possível carregar controle: ${error.message}`);
         }
     }
 
@@ -448,6 +463,8 @@ class StorageService {
             observacoes: proposta.observacoes,
             recorrencia: proposta.recorrencia,
             
+            documentacao: proposta.documentacao || {},
+
             // ✅ DESCONTOS MAPEADOS CORRETAMENTE
             descontoTarifa: descontoTarifa,
             descontoBandeira: descontoBandeira,
@@ -672,6 +689,59 @@ class StorageService {
         } catch (error) {
             console.error('❌ Erro ao obter estatísticas:', error);
             return { total: 0, aguardando: 0, fechadas: 0, perdidas: 0, canceladas: 0 };
+        }
+    }
+
+    async getPropostas() {
+        console.log('📡 Chamando endpoint: /propostas (getPropostas)');
+        
+        try {
+            const response = await apiService.get('/propostas');
+            
+            // ✅ DEBUG: Ver o que vem da API
+            console.log('🔍 Resposta da API propostas:', {
+                success: response.success,
+                total: response.data?.length,
+                primeira_proposta: response.data?.[0]
+            });
+            
+            let propostas = [];
+            if (response?.data?.data && Array.isArray(response.data.data)) {
+                // Resposta paginada
+                propostas = response.data.data;
+            } else if (response?.data && Array.isArray(response.data)) {
+                // Array direto
+                propostas = response.data;
+            } else if (Array.isArray(response)) {
+                // Array na raiz
+                propostas = response;
+            } else {
+                console.warn('⚠️ Estrutura de resposta inesperada:', response);
+                propostas = [];
+            }
+
+            console.log(`📊 Total de propostas recebidas: ${propostas.length}`);
+            
+            // ✅ MAPEAR DADOS DO BACKEND
+            const propostasMapeadas = propostas.map((proposta, index) => {
+                const propostaMapeada = this.mapearPropostaDoBackend(proposta);
+                
+                console.log(`📋 Proposta ${index + 1} mapeada:`, {
+                    id: propostaMapeada?.id,
+                    numeroProposta: propostaMapeada?.numeroProposta,
+                    documentacao_existe: !!propostaMapeada?.documentacao,
+                    documentacao: propostaMapeada?.documentacao
+                });
+                
+                return propostaMapeada;
+            }).filter(Boolean);
+            
+            // ✅ EXPANDIR PARA UCs
+            return this.expandirPropostasParaUCs(propostasMapeadas);
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar propostas:', error);
+            return [];
         }
     }
 

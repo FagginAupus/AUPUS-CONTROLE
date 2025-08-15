@@ -43,39 +43,50 @@ const ControlePage = () => {
       
       console.log('📥 Carregando dados do controle...');
       
-      const dadosControle = await storageService.getPropostas();
-      const propostas = dadosControle.filter(proposta => {
-        // Verificar se todas UCs da proposta estão fechadas
-        return proposta.unidadesConsumidoras?.every(uc => (uc.status || 'Aguardando') === 'Fechada');
-      });
+      // ✅ CARREGAR DADOS DO CONTROLE (propostas fechadas)
+      const dadosControle = await storageService.getControle();
+      const propostas = await storageService.getPropostas();
+
+      // Filtrar apenas propostas fechadas
+      const propostasFechadas = propostas.filter(proposta => 
+          proposta.status === 'Fechada'
+      );
+
+console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
       
       // Expandir propostas para UCs individuais (como está na prospecção)
       let dadosExpandidos = [];
+      propostasFechadas.forEach(proposta => {
+          if (proposta.unidadesConsumidoras?.length > 0) {
+              proposta.unidadesConsumidoras.forEach(uc => {
+                  // Encontrar controle correspondente
+                  const controleCorrespondente = dadosControle.find(ctrl => 
+                      ctrl.proposta_id === proposta.id && ctrl.uc_id === uc.id
+                  );
 
-      propostas.forEach(proposta => {
-        if (proposta.unidadesConsumidoras?.length > 0) {
-          proposta.unidadesConsumidoras.forEach(uc => {
-            dadosExpandidos.push({
-              id: `${proposta.id}-${uc.numero_unidade || uc.numeroUC}`,
-              numeroProposta: proposta.numeroProposta,
-              nomeCliente: proposta.nomeCliente,
-              consultor: proposta.consultor,
-              data: proposta.data,
-              
-              // Dados da UC específica
-              numeroUC: uc.numero_unidade || uc.numeroUC,
-              apelido: uc.apelido,
-              media: uc.consumo_medio || uc.media,
-              distribuidora: uc.distribuidora,
-              ligacao: uc.ligacao,
-              status: uc.status || 'Aguardando',
-              
-              // Dados de controle
-              ug: uc.ug || null,
-              calibragem: uc.calibragem || 0
-            });
-          });
-        }
+                  dadosExpandidos.push({
+                      id: `${proposta.id}-${uc.numero_unidade || uc.numeroUC}`,
+                      numeroProposta: proposta.numeroProposta,
+                      nomeCliente: proposta.nomeCliente,
+                      consultor: proposta.consultor,
+                      data: proposta.data,
+                      
+                      // Dados da UC específica
+                      numeroUC: uc.numero_unidade || uc.numeroUC,
+                      apelido: uc.apelido,
+                      media: uc.consumo_medio || uc.media,
+                      distribuidora: uc.distribuidora,
+                      ligacao: uc.ligacao,
+                      status: 'Fechada', // Todas são fechadas aqui
+                      
+                      // Dados de controle (se existir)
+                      ug: controleCorrespondente?.unidade_geradora?.nome_usina || null,
+                      calibragem: controleCorrespondente?.calibragem || 0,
+                      valor_calibrado: controleCorrespondente?.valor_calibrado || null,
+                      controle_id: controleCorrespondente?.id || null
+                  });
+              });
+          }
       });
 
       let dadosFiltradosPorEquipe = [];
