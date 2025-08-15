@@ -495,14 +495,6 @@ class StorageService {
             };
         }
         
-        // ✅ PROCESSAR BENEFÍCIOS
-        if (proposta.cancelar_uc && proposta.numero_uc) {
-            console.log('🎯 Operação de cancelamento de UC detectada');
-            return {
-                cancelar_uc: true,
-                numero_uc: proposta.numero_uc
-            };
-        }
         let beneficiosArray = [];
         if (proposta.beneficios && Array.isArray(proposta.beneficios)) {
             beneficiosArray = proposta.beneficios;
@@ -512,13 +504,22 @@ class StorageService {
         
         // ✅ PROCESSAR UNIDADES CONSUMIDORAS
         let unidadesArray = [];
-        if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
+        if (proposta.numeroUC && (proposta.apelido || proposta.ligacao || proposta.media || proposta.distribuidora)) { // Indica edição de UC específica
+            unidadesArray = [{
+                numero_unidade: proposta.numeroUC,
+                apelido: proposta.apelido,
+                ligacao: proposta.ligacao,
+                consumo_medio: proposta.media,
+                distribuidora: proposta.distribuidora,
+                status: proposta.status
+            }];
+        } else if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
             unidadesArray = proposta.unidadesConsumidoras;
         } else if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
             unidadesArray = proposta.unidades_consumidoras;
             unidadesArray = unidadesArray.map(uc => ({
                 ...uc,
-                status: uc.status || 'Aguardando'
+                status: uc.status
             }));
         }
 
@@ -529,6 +530,8 @@ class StorageService {
             unidades_count: unidadesArray.length
         });
         
+        const unidadesProcessadas = this.processarUnidadesConsumidoras(proposta);
+
         const dadosBackend = {
             // Campos principais
             nome_cliente: proposta.nomeCliente,
@@ -542,10 +545,9 @@ class StorageService {
             economia: this.formatarDescontoParaBackend(proposta.economia || proposta.descontoTarifa),
             bandeira: this.formatarDescontoParaBackend(proposta.bandeira || proposta.descontoBandeira),
             
-            // Arrays
+            // Arrays - USAR VARIÁVEL PROCESSADA
             beneficios: this.processarBeneficios(proposta),
-            unidades_consumidoras: this.processarUnidadesConsumidoras(proposta)
-
+            unidades_consumidoras: unidadesProcessadas // ✅ USAR A MESMA VARIÁVEL!
         };
 
         console.log('📤 Dados mapeados para backend:', {
@@ -560,13 +562,21 @@ class StorageService {
             }
         });
         
+        if (proposta.numeroUC) {
+            dadosBackend.numeroUC = proposta.numeroUC;
+        }
+
+        // ✅ NOVO: Incluir documentação se existir
+        if (proposta.documentacao) {
+            dadosBackend.documentacao = proposta.documentacao;
+        }
+
         return dadosBackend;
     }
 
     processarBeneficios(proposta) {
         let beneficiosArray = [];
         
-        // Verificar diferentes formatos possíveis
         if (Array.isArray(proposta.beneficios)) {
             beneficiosArray = proposta.beneficios;
         } else if (Array.isArray(proposta.beneficiosAdicionais)) {

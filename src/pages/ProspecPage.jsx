@@ -147,7 +147,24 @@ const ProspecPage = () => {
       // ✅ ADICIONAR propostaId aos dados atualizados
       const dadosComId = {
         ...dadosAtualizados,
-        propostaId: propostaId
+        propostaId: propostaId,
+        // 🆕 IMPLEMENTAR: Envio da documentação específica da UC
+        numeroUC: item.numeroUC || item.numero_unidade, // ✅ Identificar qual UC
+        documentacao: {
+          tipoDocumento: dadosAtualizados.tipoDocumento,
+          nomeRepresentante: dadosAtualizados.nomeRepresentante,
+          cpf: dadosAtualizados.cpf,
+          documentoPessoal: dadosAtualizados.documentoPessoal,
+          razaoSocial: dadosAtualizados.razaoSocial,
+          cnpj: dadosAtualizados.cnpj,
+          contratoSocial: dadosAtualizados.contratoSocial,
+          documentoPessoalRepresentante: dadosAtualizados.documentoPessoalRepresentante,
+          enderecoUC: dadosAtualizados.enderecoUC,
+          isArrendamento: dadosAtualizados.isArrendamento,
+          contratoLocacao: dadosAtualizados.contratoLocacao,
+          enderecoRepresentante: dadosAtualizados.enderecoRepresentante,
+          termoAdesao: dadosAtualizados.termoAdesao
+        }
       };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
