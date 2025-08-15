@@ -88,8 +88,7 @@ class StorageService {
                     descontoTarifa: this.processarDesconto(proposta.descontoTarifa || proposta.economia),
                     descontoBandeira: this.processarDesconto(proposta.descontoBandeira || proposta.bandeira),
                     beneficios: proposta.beneficios || [],
-                    
-                    // Dados da UC (vazios neste caso)
+                    documentacao: proposta.documentacao || {},
                     ucIndex: 0,
                     apelido: '-',
                     numeroUC: '-',
@@ -122,6 +121,8 @@ class StorageService {
                         descontoBandeira: this.processarDesconto(proposta.descontoBandeira || proposta.bandeira),
                         beneficios: proposta.beneficios || [],
                         
+                        documentacao: proposta.documentacao || {},
+
                         // Dados específicos da UC
                         ucIndex: index,
                         apelido: uc.apelido || `UC ${uc.numero_unidade || index + 1}`,

@@ -6,6 +6,7 @@ import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
+import apiService from '../services/apiService';
 import './ProspecPage.css';
 
 const ProspecPage = () => {
@@ -123,7 +124,46 @@ const ProspecPage = () => {
   const editarItem = (index) => {
     const item = dadosFiltrados[index];
     if (!item) return;
-    setModalEdicao({ show: true, item, index });
+    
+    // ✅ DEBUG: Ver como os dados chegam
+    console.log('🔍 Item completo:', item);
+    console.log('🔍 Documentação no item:', item.documentacao);
+    console.log('🔍 Número UC:', item.numeroUC || item.numero_unidade);
+    
+    // ✅ BUSCAR DOCUMENTAÇÃO ESPECÍFICA DA UC
+    const numeroUC = item.numeroUC || item.numero_unidade;
+    let documentacaoUC = {};
+    
+    // Se tem proposta expandida com documentação
+    if (item.documentacao && typeof item.documentacao === 'object') {
+      documentacaoUC = item.documentacao[numeroUC] || {};
+      console.log('🔍 Documentação da UC encontrada:', documentacaoUC);
+    } else {
+      console.log('🔍 Documentação não encontrada ou não é objeto');
+    }
+    
+    // Adicionar documentação específica da UC ao item
+    const itemComDocumentacao = {
+      ...item,
+      // Dados da documentação específica da UC
+      tipoDocumento: documentacaoUC.tipoDocumento || '',
+      nomeRepresentante: documentacaoUC.nomeRepresentante || '',
+      cpf: documentacaoUC.cpf || '',
+      documentoPessoal: documentacaoUC.documentoPessoal || null,
+      razaoSocial: documentacaoUC.razaoSocial || '',
+      cnpj: documentacaoUC.cnpj || '',
+      contratoSocial: documentacaoUC.contratoSocial || null,
+      documentoPessoalRepresentante: documentacaoUC.documentoPessoalRepresentante || null,
+      enderecoUC: documentacaoUC.enderecoUC || '',
+      isArrendamento: documentacaoUC.isArrendamento || false,
+      contratoLocacao: documentacaoUC.contratoLocacao || null,
+      enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
+      termoAdesao: documentacaoUC.termoAdesao || null
+    };
+    
+    console.log('🔍 Item final com documentação:', itemComDocumentacao);
+    
+    setModalEdicao({ show: true, item: itemComDocumentacao, index });
   };
 
   const visualizarItem = (index) => {
@@ -136,35 +176,100 @@ const ProspecPage = () => {
     try {
       const { item } = modalEdicao;
       
-      // ✅ USAR propostaId em vez de indexReal
-      const propostaId = item.propostaId || item.id?.split('-')[0]; // Extrair ID real da proposta
+      const propostaId = item.propostaId || item.id?.split('-')[0];
       
       if (!propostaId) {
         showNotification('ID da proposta não encontrado para edição', 'error');
         return;
       }
 
-      // ✅ ADICIONAR propostaId aos dados atualizados
-      const dadosComId = {
-        ...dadosAtualizados,
-        propostaId: propostaId,
-        // 🆕 IMPLEMENTAR: Envio da documentação específica da UC
-        numeroUC: item.numeroUC || item.numero_unidade, // ✅ Identificar qual UC
-        documentacao: {
-          tipoDocumento: dadosAtualizados.tipoDocumento,
-          nomeRepresentante: dadosAtualizados.nomeRepresentante,
-          cpf: dadosAtualizados.cpf,
-          documentoPessoal: dadosAtualizados.documentoPessoal,
-          razaoSocial: dadosAtualizados.razaoSocial,
-          cnpj: dadosAtualizados.cnpj,
-          contratoSocial: dadosAtualizados.contratoSocial,
-          documentoPessoalRepresentante: dadosAtualizados.documentoPessoalRepresentante,
-          enderecoUC: dadosAtualizados.enderecoUC,
-          isArrendamento: dadosAtualizados.isArrendamento,
-          contratoLocacao: dadosAtualizados.contratoLocacao,
-          enderecoRepresentante: dadosAtualizados.enderecoRepresentante,
-          termoAdesao: dadosAtualizados.termoAdesao
+      // ✅ DETECTAR CAMPOS DE ARQUIVO E FAZER UPLOAD
+      const camposArquivo = [
+        'documentoPessoal', 'contratoSocial', 'documentoPessoalRepresentante',
+        'contratoLocacao', 'termoAdesao'
+      ];
+      
+      const documentacaoFinal = { ...dadosAtualizados };
+      
+      // Fazer upload dos arquivos primeiro
+      for (const campo of camposArquivo) {
+        if (dadosAtualizados[campo] && dadosAtualizados[campo] instanceof File) {
+          try {
+
+            // ✅ DEBUG: Ver o que está sendo enviado
+            console.log('🔍 Dados do upload:', {
+              campo: campo,
+              arquivo: dadosAtualizados[campo],
+              nomeArquivo: dadosAtualizados[campo].name,
+              tamanho: dadosAtualizados[campo].size,
+              tipo: dadosAtualizados[campo].type,
+              numeroUC: item.numeroUC || item.numero_unidade,
+              tipoDocumento: campo
+            });
+
+            const formData = new FormData();
+            formData.append('arquivo', dadosAtualizados[campo]);
+            formData.append('numeroUC', item.numeroUC || item.numero_unidade);
+            formData.append('tipoDocumento', campo);
+
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/propostas/${propostaId}/upload-documento`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+                // NÃO incluir Content-Type - deixar o browser definir para FormData
+              },
+              body: formData
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('Erro na resposta:', errorText);
+              throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            const result = await response.json();
+            
+            documentacaoFinal[campo] = result.nomeArquivo;
+            showNotification(`${campo} enviado com sucesso!`, 'success');
+            
+          } catch (error) {
+            showNotification(`Erro ao enviar ${campo}: ${error.message}`, 'error');
+            return;
+          }
         }
+      }
+
+      // Agora salvar os dados com os nomes dos arquivos
+      const dadosUC = {
+        apelido: dadosAtualizados.apelido,
+        ligacao: dadosAtualizados.ligacao,
+        media: dadosAtualizados.media,
+        distribuidora: dadosAtualizados.distribuidora,
+        status: dadosAtualizados.status
+      };
+
+      // ✅ APENAS campos de documentação
+      const documentacaoLimpa = {
+        tipoDocumento: documentacaoFinal.tipoDocumento,
+        nomeRepresentante: documentacaoFinal.nomeRepresentante,
+        cpf: documentacaoFinal.cpf,
+        documentoPessoal: documentacaoFinal.documentoPessoal,
+        razaoSocial: documentacaoFinal.razaoSocial,
+        cnpj: documentacaoFinal.cnpj,
+        contratoSocial: documentacaoFinal.contratoSocial,
+        documentoPessoalRepresentante: documentacaoFinal.documentoPessoalRepresentante,
+        enderecoUC: documentacaoFinal.enderecoUC,
+        isArrendamento: documentacaoFinal.isArrendamento,
+        contratoLocacao: documentacaoFinal.contratoLocacao,
+        enderecoRepresentante: documentacaoFinal.enderecoRepresentante,
+        termoAdesao: documentacaoFinal.termoAdesao
+      };
+
+      const dadosComId = {
+        ...dadosUC,
+        propostaId: propostaId,
+        numeroUC: item.numeroUC || item.numero_unidade,
+        documentacao: documentacaoLimpa // ← AGORA SÓ OS DADOS DE DOCUMENTAÇÃO
       };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
@@ -255,14 +360,14 @@ const ProspecPage = () => {
           </div>
           <div className="stat-card">
             <span className="stat-label">Aguardando</span>
-            <span className="stat-value">{dadosFiltrados.filter(p => 
-                p.unidadesConsumidoras?.some(uc => (uc.status || 'Aguardando') === 'Aguardando')
+            <span className="stat-value">{dadosFiltrados.filter(item => 
+                (item.status || 'Aguardando') === 'Aguardando'
             ).length}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Fechadas</span>
-            <span className="stat-value">{dadosFiltrados.filter(p => 
-                p.unidadesConsumidoras?.every(uc => (uc.status || 'Aguardando') === 'Fechada')
+            <span className="stat-value">{dadosFiltrados.filter(item => 
+                (item.status || 'Aguardando') === 'Fechada'
             ).length}</span>
           </div>
           <div className="stat-card">
