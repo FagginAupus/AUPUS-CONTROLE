@@ -52,18 +52,49 @@ const ControlePage = () => {
       const dadosControle = await storageService.getControle();
       const propostas = await storageService.getPropostas();
 
-      // Filtrar apenas propostas fechadas
-      const propostasFechadas = propostas.filter(proposta => 
-          proposta.status === 'Fechada'
-    );
+      console.log('🔍 DEBUG - Dados recebidos:', {
+        totalPropostas: propostas.length,
+        totalControles: dadosControle.length,
+        primeiraPropostaSample: propostas[0]
+      });
 
-    console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
+      // ✅ FILTRAR PROPOSTAS QUE TÊM UC FECHADA
+      const propostasFechadas = propostas.filter(proposta => {
+        if (!proposta.unidadesConsumidoras?.length) return false;
+        
+        // Verificar se pelo menos uma UC tem status "Fechada"
+        const hasUcFechada = proposta.unidadesConsumidoras.some(uc => 
+            (uc.status || 'Aguardando') === 'Fechada'
+        );
+        
+        console.log(`🔍 Proposta ${proposta.numeroProposta}:`, {
+          hasUCs: !!proposta.unidadesConsumidoras?.length,
+          statusUCs: proposta.unidadesConsumidoras?.map(uc => ({
+            numeroUC: uc.numero_unidade || uc.numeroUC,
+            status: uc.status || 'Aguardando'
+          })),
+          hasUcFechada
+        });
+        
+        return hasUcFechada;
+      });
+
+      console.log(`📋 ${propostasFechadas.length} propostas com UCs fechadas encontradas`);
       
-      // Expandir propostas para UCs individuais (como está na prospecção)
+      // ✅ EXPANDIR PROPOSTAS PARA UCs INDIVIDUAIS
       let dadosExpandidos = [];
       propostasFechadas.forEach(proposta => {
           if (proposta.unidadesConsumidoras?.length > 0) {
               proposta.unidadesConsumidoras.forEach(uc => {
+                  // ✅ SÓ INCLUIR UCs QUE ESTÃO FECHADAS
+                  const statusUC = uc.status || 'Aguardando';
+                  if (statusUC !== 'Fechada') {
+                    console.log(`⏭️ Pulando UC ${uc.numero_unidade || uc.numeroUC} - Status: ${statusUC}`);
+                    return;
+                  }
+                  
+                  console.log(`✅ Incluindo UC ${uc.numero_unidade || uc.numeroUC} - Status: ${statusUC}`);
+                  
                   // Encontrar controle correspondente
                   const controleCorrespondente = dadosControle.find(ctrl => 
                       ctrl.proposta_id === proposta.id && ctrl.uc_id === uc.id
@@ -82,7 +113,7 @@ const ControlePage = () => {
                       media: uc.consumo_medio || uc.media,
                       distribuidora: uc.distribuidora,
                       ligacao: uc.ligacao,
-                      status: 'Fechada', // Todas são fechadas aqui
+                      status: statusUC, // ✅ Usar o status real da UC
                       
                       // Dados de controle (se existir)
                       ug: controleCorrespondente?.unidade_geradora?.nome_usina || null,
@@ -93,6 +124,8 @@ const ControlePage = () => {
               });
           }
       });
+
+      console.log(`🔍 Total de UCs expandidas: ${dadosExpandidos.length}`);
 
       let dadosFiltradosPorEquipe = [];
 
@@ -112,6 +145,8 @@ const ControlePage = () => {
         ...item,
         id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
       }));
+      
+      console.log(`🎯 Total final de dados para exibir: ${dadosComIds.length}`);
       
       setDados(dadosComIds);
       setDadosFiltrados(dadosComIds);
@@ -133,7 +168,7 @@ const ControlePage = () => {
       setLoading(false);
     }
   }, [loading, user?.id]);
-
+  
   const carregarUGs = useCallback(async () => {
     if (loading) return; // ✅ Evitar chamadas simultâneas
     

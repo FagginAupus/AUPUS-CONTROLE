@@ -434,6 +434,13 @@ class StorageService {
             descontoBandeira = this.processarDesconto(proposta.bandeira);
         }
 
+        const unidadesConsumidoras = proposta.unidades_consumidoras || [];
+
+        const unidadesProcessadas = unidadesConsumidoras.map(uc => ({
+            ...uc,
+            status: uc.status || 'Aguardando' // ✅ Garantir que cada UC tem status
+        }));
+
         const propostaMapeada = {
             // Campos principais
             id: proposta.id,
@@ -441,7 +448,7 @@ class StorageService {
             nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
             consultor: proposta.consultor,
             data: proposta.data_proposta || proposta.data,
-            status: proposta.status,
+            status: this.obterStatusProposta(unidadesProcessadas), // ✅ CALCULAR STATUS BASEADO NAS UCs
             observacoes: proposta.observacoes,
             recorrencia: proposta.recorrencia,
             
@@ -453,8 +460,8 @@ class StorageService {
             
             // Arrays
             beneficios: proposta.beneficios || [],
-            unidades_consumidoras: proposta.unidades_consumidoras || [],
-            unidadesConsumidoras: proposta.unidades_consumidoras || [], // Compatibilidade
+            unidades_consumidoras: unidadesProcessadas, // ✅ UCs PROCESSADAS
+            unidadesConsumidoras: unidadesProcessadas, // Compatibilidade
             
             // Dados da primeira UC para compatibilidade
             apelido: proposta.apelido || '',
@@ -469,6 +476,16 @@ class StorageService {
             updated_at: proposta.updated_at
         };
 
+        console.log('🔍 DEBUG - UCs da proposta:', {
+            numeroProposta: propostaMapeada.numeroProposta,
+            totalUCs: unidadesProcessadas.length,
+            statusUCs: unidadesProcessadas.map(uc => ({
+                numeroUC: uc.numero_unidade || uc.numeroUC,
+                status: uc.status
+            })),
+            statusCalculado: propostaMapeada.status
+        });
+        
         console.log('🔄 Proposta mapeada do backend:', {
             id: propostaMapeada.id,
             numeroProposta: propostaMapeada.numeroProposta,
@@ -737,6 +754,39 @@ class StorageService {
         
         window.URL.revokeObjectURL(url);
         console.log('✅ Exportação concluída');
+    }
+
+    /**
+     * ✅ OBTER STATUS DA PROPOSTA BASEADO NAS UCs
+     */
+    obterStatusProposta(unidades) {
+        if (!unidades || unidades.length === 0) {
+            return 'Aguardando';
+        }
+        
+        const statusArray = unidades.map(uc => uc.status || 'Aguardando');
+        const statusUnicos = [...new Set(statusArray)];
+        
+        // Se todas têm o mesmo status
+        if (statusUnicos.length === 1) {
+            return statusUnicos[0] === 'Fechada' ? 'Fechado' : statusUnicos[0];
+        }
+        
+        // Se tem pelo menos uma fechada
+        if (statusArray.includes('Fechada')) {
+            return 'Parcial';
+        }
+        
+        // Se tem apenas aguardando e outro status
+        if (statusArray.includes('Recusada')) {
+            return 'Recusada';
+        }
+        
+        if (statusArray.includes('Cancelada')) {
+            return 'Cancelada';
+        }
+        
+        return 'Aguardando';
     }
 }
 
