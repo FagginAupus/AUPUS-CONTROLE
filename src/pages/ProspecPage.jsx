@@ -104,9 +104,20 @@ const ProspecPage = () => {
   }, [dados, filtros]);
 
   useEffect(() => {
-    if (user?.id) {
-      carregarDados();
-    }
+    let isMounted = true;
+    
+    const loadData = async () => {
+      if (!isMounted || !user?.id) return;
+      
+      console.log('📥 Carregando dados do localStorage...');
+      await carregarDados();
+    };
+    
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
   useEffect(() => {

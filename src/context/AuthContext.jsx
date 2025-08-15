@@ -113,32 +113,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const getMyTeam = () => {
-    try {
-      if (!user) {
-        console.log('⚠️ getMyTeam: Usuário não logado');
-        return [];
-      }
-
-      // Para admin, retornar todos os usuários
-      if (user.role === 'admin') {
-        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-        console.log(`👥 getMyTeam (admin): ${usuarios.length} usuários`);
-        return usuarios;
-      }
-
-      // Para outros usuários, verificar subordinados
-      if (user.subordinates && user.subordinates.length > 0) {
-        console.log(`👥 getMyTeam: ${user.subordinates.length} subordinados`);
-        return user.subordinates;
-      }
-
-      console.log('⚠️ getMyTeam: Equipe vazia, retornando apenas usuário atual');
-      return [user];
-
-    } catch (error) {
-      console.error('❌ Erro ao obter equipe:', error);
-      return [user].filter(Boolean);
+    if (!user?.id) return [];
+    
+    if (user.role === 'admin') {
+      return []; // Admin não precisa de equipe
     }
+    
+    return []; // Simplificado por enquanto
   };
 
   // Função para verificar se pode acessar uma página

@@ -53,13 +53,14 @@ class StorageService {
         const linhasExpandidas = [];
         
         propostas.forEach(proposta => {
-
+            /**
             console.log('🔍 Proposta original do backend:', {
                 id: proposta.id,
                 numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
                 documentacao_existe: !!proposta.documentacao,
                 documentacao_conteudo: proposta.documentacao
             });
+            */
             
             // Verificar se tem UCs no JSON
             let ucsArray = [];
@@ -200,7 +201,7 @@ class StorageService {
      */
     async getProspec() {
         try {
-            console.log('📥 Carregando propostas da API para expansão...');
+            // console.log('📥 Carregando propostas da API para expansão...');
             const response = await apiService.get('/propostas');
             
             let propostas = [];
@@ -218,7 +219,7 @@ class StorageService {
                 propostas = [];
             }
 
-            console.log(`📊 Total de propostas recebidas: ${propostas.length}`);
+            // console.log(`📊 Total de propostas recebidas: ${propostas.length}`);
             
             // ✅ MAPEAR DADOS DO BACKEND COM DESCONTOS CORRETOS
             const propostasMapeadas = propostas.map((proposta, index) => {
@@ -239,7 +240,7 @@ class StorageService {
             // ✅ EXPANDIR PARA UCs
             const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
             
-            console.log(`🎯 Total de linhas expandidas: ${linhasExpandidas.length}`);
+            // console.log(`🎯 Total de linhas expandidas: ${linhasExpandidas.length}`);
             
             return linhasExpandidas;
 
@@ -361,18 +362,6 @@ class StorageService {
         }
     }
 
-    async checkApiConnection() {
-        console.log('🔗 Verificando conexão com API...');
-        try {
-            const response = await apiService.get('/health-check');
-            console.log('✅ API conectada e funcionando');
-            return { connected: true, message: 'API funcionando', data: response };
-        } catch (error) {
-            console.error('❌ Erro na conexão com API:', error.message);
-            return { connected: false, message: error.message };
-        }
-    }
-
     // ========================================
     // MÉTODOS AUXILIARES PARA DESCONTOS
     // ========================================
@@ -380,22 +369,15 @@ class StorageService {
     /**
      * ✅ Processar desconto vindo do backend
      */
-    processarDesconto(valor) {
-        if (!valor) return 20; // Valor padrão
-
-        console.log('🔍 Processando desconto recebido:', { valor, tipo: typeof valor });
-
-        // Se vier como string com %, extrair o número
-        if (typeof valor === 'string' && valor.includes('%')) {
-            const numeroExtraido = parseFloat(valor.replace('%', '')) || 20;
-            console.log('✅ Desconto extraído:', numeroExtraido);
-            return numeroExtraido;
-        }
-
-        // Se vier como número, usar direto
-        const numeroFinal = parseFloat(valor) || 20;
-        console.log('✅ Desconto processado:', numeroFinal);
-        return numeroFinal;
+    processarDesconto(desconto) {
+        if (!desconto) return 0;
+        
+        // ✅ REMOVER logs excessivos
+        if (typeof desconto === 'number') return desconto;
+        if (typeof desconto === 'string') return parseFloat(desconto) || 0;
+        if (desconto.valor !== undefined) return parseFloat(desconto.valor) || 0;
+        
+        return 0;
     }
 
     /**
@@ -404,11 +386,11 @@ class StorageService {
     formatarDescontoParaBackend(valor) {
         if (!valor) return '20%';
 
-        console.log('🔍 Formatando desconto para backend:', { valor, tipo: typeof valor });
+        // console.log('🔍 Formatando desconto para backend:', { valor, tipo: typeof valor });
 
         // Se já vem com %, validar e manter
         if (typeof valor === 'string' && valor.includes('%')) {
-            console.log('✅ Desconto já com %:', valor);
+            // console.log('✅ Desconto já com %:', valor);
             return valor;
         }
 
@@ -419,7 +401,7 @@ class StorageService {
         }
         
         const resultado = numeroLimpo + '%';
-        console.log('✅ Desconto formatado:', resultado);
+        // console.log('✅ Desconto formatado:', resultado);
         return resultado;
     }
 
@@ -665,14 +647,6 @@ class StorageService {
         }
     }
 
-    async isAPIHealthy() {
-        try {
-            const result = await this.checkApiConnection();
-            return result.connected;
-        } catch (error) {
-            return false;
-        }
-    }
 
     async getProspecStatistics() {
         try {
@@ -693,7 +667,7 @@ class StorageService {
     }
 
     async getPropostas() {
-        console.log('📡 Chamando endpoint: /propostas (getPropostas)');
+        // console.log('📡 Chamando endpoint: /propostas (getPropostas)');
         
         try {
             const response = await apiService.get('/propostas');

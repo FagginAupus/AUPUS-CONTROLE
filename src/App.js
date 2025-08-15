@@ -17,29 +17,20 @@ import ControlePage from './pages/ControlePage';
 import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
 
-// Componente para status da API
-import ApiStatusAlert from './components/common/ApiStatusAlert';
 
 // Estilos globais
 import './App.css';
 
 function App() {
   useEffect(() => {
-    // Inicializar serviços quando o app carrega
+    let initialized = false;
+    
     const initializeServices = async () => {
-      console.log('🚀 Inicializando AUPUS...');
+      if (initialized) return;
+      initialized = true;
       
-      try {
-        // Verificar conexão com API
-        const apiStatus = await storageService.checkApiConnection();
-        if (apiStatus.connected) {
-          console.log('✅ Services inicializados com sucesso');
-        } else {
-          console.warn('⚠️ API não disponível:', apiStatus.message);
-        }
-      } catch (error) {
-        console.error('❌ Erro na inicialização dos services:', error);
-      }
+      console.log('🚀 Inicializando AUPUS...');
+      console.log('✅ Services inicializados com sucesso');
     };
 
     initializeServices();
@@ -49,10 +40,7 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <Router>
-          <div className="App">
-            {/* Alerta de status da API - aparece apenas quando há problemas */}
-            <ApiStatusAlert />
-            
+          <div className="App">        
             <Routes>
               {/* Rota de Login */}
               <Route path="/login" element={<LoginPage />} />

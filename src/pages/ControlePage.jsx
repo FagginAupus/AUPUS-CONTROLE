@@ -1,5 +1,5 @@
 // src/pages/ControlePage.jsx - Com modal UG corrigido seguindo padrão PROSPEC
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
@@ -32,12 +32,17 @@ const ControlePage = () => {
   });
 
   const { showNotification } = useNotification();
+  const debouncedFiltros = useMemo(() => filtros, [
+    filtros.consultor,
+    filtros.ug,
+    filtros.busca
+  ]);
 
-  // ALTERAÇÃO: Verificar se deve mostrar calibragem (apenas admin)
   const isAdmin = user?.role === 'admin';
   const mostrarCalibragem = isAdmin;
 
   const carregarDados = useCallback(async () => {
+    if (loading) return;
     try {
       setLoading(true);
       
@@ -50,9 +55,9 @@ const ControlePage = () => {
       // Filtrar apenas propostas fechadas
       const propostasFechadas = propostas.filter(proposta => 
           proposta.status === 'Fechada'
-      );
+    );
 
-console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
+    console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
       
       // Expandir propostas para UCs individuais (como está na prospecção)
       let dadosExpandidos = [];
@@ -127,9 +132,11 @@ console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
     } finally {
       setLoading(false);
     }
-  }, [showNotification, user, getMyTeam, getConsultorName]);
+  }, [loading, user?.id]);
 
   const carregarUGs = useCallback(async () => {
+    if (loading) return; // ✅ Evitar chamadas simultâneas
+    
     try {
       if (!isAdmin) return; // Só admin pode gerenciar UGs
       
@@ -139,7 +146,7 @@ console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
       console.error('❌ Erro ao carregar UGs:', error);
       showNotification('Erro ao carregar UGs', 'error');
     }
-  }, [isAdmin, showNotification]);
+  }, [loading, isAdmin, showNotification]); // ✅ Adicionar 'loading' nas dependências
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
@@ -189,13 +196,29 @@ console.log(`📋 ${propostasFechadas.length} propostas fechadas encontradas`);
   };
 
   useEffect(() => {
-    carregarDados();
-    carregarUGs();
-  }, [carregarDados, carregarUGs]);
+    let isMounted = true; // ✅ Prevenir atualizações após unmount
+    
+    const loadData = async () => {
+      if (!isMounted || loading) return; // ✅ Evitar múltiplas chamadas
+      
+      try {
+        await carregarDados();
+        await carregarUGs();  // ✅ Adicionar esta linha também
+      } catch (error) {
+        console.error('Erro ao carregar:', error);
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      isMounted = false; // ✅ Cleanup
+    };
+  }, [user?.id]); // ✅ Dependência específica, não carregarDados
 
   useEffect(() => {
     filtrarDados();
-  }, [filtrarDados]);
+  }, [debouncedFiltros, dados]);
 
   const editarUG = (index) => {
     if (!isAdmin) return;
