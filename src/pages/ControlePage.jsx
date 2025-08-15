@@ -210,11 +210,14 @@ const ControlePage = () => {
         ug: ugSelecionada
       };
 
+      const propostaAtual = dados.find(p => p.id === item.id);
+      if (!propostaAtual) {
+        throw new Error('Proposta não encontrada');
+      }
+
       await storageService.atualizarProposta(item.id, {
-        ...proposta,
-        unidadesConsumidoras: proposta.unidadesConsumidoras.map(uc => 
-          uc.numero_unidade === item.numeroUC ? {...uc, ug: ugSelecionada} : uc
-        )
+        ...propostaAtual, // ✅ USAR propostaAtual
+        ug: ugSelecionada // ✅ SIMPLES: só atualizar a UG
       });
       await carregarDados();
       

@@ -564,6 +564,11 @@ class StorageService {
         
         if (proposta.numeroUC) {
             dadosBackend.numeroUC = proposta.numeroUC;
+            // 🆕 ADICIONAR CAMPOS DA UC COMO INDIVIDUAIS (igual ao status)
+            if (proposta.apelido) dadosBackend.apelido = proposta.apelido;
+            if (proposta.ligacao) dadosBackend.ligacao = proposta.ligacao;
+            if (proposta.media) dadosBackend.media = proposta.media;
+            if (proposta.distribuidora) dadosBackend.distribuidora = proposta.distribuidora;
         }
 
         // ✅ NOVO: Incluir documentação se existir
