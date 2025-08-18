@@ -1,4 +1,4 @@
-// src/services/apiService.js - SERVIÇO COMPLETO DE API
+// src/services/apiService.js - SERVIÇO COMPLETO DE API - CORRIGIDO
 
 class ApiService {
     constructor() {
@@ -30,7 +30,7 @@ class ApiService {
     }
 
     // ========================================
-    // MÉTODO BASE PARA REQUISIÇÕES
+    // MÉTODO BASE PARA REQUISIÇÕES - CORRIGIDO
     // ========================================
 
     async request(endpoint, options = {}) {
@@ -38,24 +38,46 @@ class ApiService {
         const token = this.getToken();
         
         const config = {
+            method: options.method || 'GET', // CORRIGIDO: method deve estar no config
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 ...options.headers,
             },
-            ...options,
+            ...options, // Spread options depois para sobrescrever se necessário
         };
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        console.log(`📡 ${config.method || 'GET'} ${url}`);
+        // CORRIGIDO: Se tiver body, usar o body do options
+        if (options.body) {
+            config.body = options.body;
+        }
+
+        // Log detalhado da requisição
+        console.log(`📡 ${config.method} ${url}`);
+        if (config.body && config.headers['Content-Type'] === 'application/json') {
+            try {
+                console.log('📤 Dados enviados:', JSON.parse(config.body));
+            } catch (e) {
+                console.log('📤 Dados enviados:', config.body);
+            }
+        }
 
         try {            
-            const response = await fetch(url, config);
+            const response = await fetch(url, config); // CORRIGIDO: url primeiro, config segundo
+            const responseData = await response.json();
             
             if (!response.ok) {
+                console.error(`❌ Erro ${response.status}:`, responseData);
+                
+                // MOSTRAR DETALHES DO ERRO DE VALIDAÇÃO
+                if (response.status === 422 && responseData.errors) {
+                    console.error('🚨 Erros de validação:', JSON.stringify(responseData.errors, null, 2));
+                }
+                
                 // ✅ CORREÇÃO: Só limpar token se for 401 E NÃO for uma tentativa de login
                 if (response.status === 401 && !endpoint.includes('/auth/login')) {
                     this.clearToken();
@@ -63,18 +85,15 @@ class ApiService {
                 }
                 
                 // Para outras rotas ou para login com 401, buscar mensagem do servidor
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
-                
+                const errorMessage = responseData.message || responseData.error || `HTTP ${response.status}`;
                 throw new Error(errorMessage);
             }
 
-            const data = await response.json();
-            console.log(`✅ Resposta recebida:`, data);
-            return data;
+            console.log(`✅ Resposta recebida:`, responseData);
+            return responseData;
 
         } catch (error) {
-            console.error(`❌ Erro na requisição ${config.method || 'GET'} ${url}:`, error);
+            console.error(`❌ Erro na requisição ${config.method} ${url}:`, error);
             throw error;
         }
     }
@@ -204,6 +223,45 @@ class ApiService {
     }
 
     // ========================================
+    // UGs (USINAS GERADORAS) - CORRIGIDO
+    // ========================================
+
+    async getUGs(filtros = {}) {
+        console.log('📥 Buscando UGs da API...');
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/ugs?${params}` : '/ugs';
+        return this.get(endpoint);
+    }
+
+    async getUG(id) {
+        console.log('📋 Buscando UG específica da API...', id);
+        return this.get(`/ugs/${id}`);
+    }
+
+    async criarUG(dadosUG) {
+        console.log('💾 Criando nova UG na API...', dadosUG.nomeUsina || dadosUG.nome_usina);
+        console.log('🔍 DADOS COMPLETOS ENVIADOS:', JSON.stringify(dadosUG, null, 2));
+        return this.post('/ugs', dadosUG);
+    }
+
+    async atualizarUG(id, dadosUG) {
+        console.log('📝 Atualizando UG na API...', id);
+        return this.put(`/ugs/${id}`, dadosUG);
+    }
+
+    async excluirUG(id) {
+        console.log('🗑️ Excluindo UG da API...', id);
+        return this.delete(`/ugs/${id}`);
+    }
+
+    async getUGStatistics(filtros = {}) {
+        console.log('📊 Buscando estatísticas das UGs...');
+        const params = new URLSearchParams(filtros).toString();
+        const endpoint = params ? `/ugs/statistics?${params}` : '/ugs/statistics';
+        return this.get(endpoint);
+    }
+
+    // ========================================
     // USUÁRIOS
     // ========================================
 
@@ -314,106 +372,6 @@ class ApiService {
     }
 
     // ========================================
-    // UNIDADES CONSUMIDORAS
-    // ========================================
-
-    async getUnidadesConsumidoras(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/unidades-consumidoras?${params}` : '/unidades-consumidoras';
-        return this.get(endpoint);
-    }
-
-    async getUnidadeConsumidora(id) {
-        return this.get(`/unidades-consumidoras/${id}`);
-    }
-
-    async criarUnidadeConsumidora(ucData) {
-        return this.post('/unidades-consumidoras', ucData);
-    }
-
-    async atualizarUnidadeConsumidora(id, ucData) {
-        return this.put(`/unidades-consumidoras/${id}`, ucData);
-    }
-
-    async excluirUnidadeConsumidora(id) {
-        return this.delete(`/unidades-consumidoras/${id}`);
-    }
-
-    async getEstatisticasUnidades(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/unidades-consumidoras/statistics?${params}` : '/unidades-consumidoras/statistics';
-        return this.get(endpoint);
-    }
-
-    async exportarUnidades(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/unidades-consumidoras/export?${params}` : '/unidades-consumidoras/export';
-        return this.get(endpoint);
-    }
-
-    async importarUnidades(file) {
-        return this.uploadFile('/unidades-consumidoras/import', file);
-    }
-
-    async bulkUpdateUnidades(updates) {
-        return this.post('/unidades-consumidoras/bulk-update', { updates });
-    }
-
-    async calcularEconomiaUnidade(id, parametros) {
-        return this.post(`/unidades-consumidoras/${id}/calculate-economy`, parametros);
-    }
-
-    // ========================================
-    // UGs (USINAS GERADORAS)
-    // ========================================
-
-    async getUGs(filtros = {}) {
-        console.log('📥 Buscando UGs da API...');
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/ugs?${params}` : '/ugs';
-        return this.get(endpoint);
-    }
-
-    async getUG(id) {
-        console.log('📋 Buscando UG específica da API...', id);
-        return this.get(`/ugs/${id}`);
-    }
-
-    async criarUG(dadosUG) {
-        console.log('💾 Criando nova UG na API...', dadosUG.nomeUsina);
-        return this.post('/ugs', dadosUG);
-    }
-
-    async atualizarUG(id, dadosUG) {
-        console.log('📝 Atualizando UG na API...', id);
-        return this.put(`/ugs/${id}`, dadosUG);
-    }
-
-    async excluirUG(id) {
-        console.log('🗑️ Excluindo UG da API...', id);
-        return this.delete(`/ugs/${id}`);
-    }
-
-    async getUGStatistics(filtros = {}) {
-        console.log('📊 Buscando estatísticas das UGs...');
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/ugs/statistics?${params}` : '/ugs/statistics';
-        return this.get(endpoint);
-    }
-
-    async getUCsAtribuidasUG(id) {
-        return this.get(`/ugs/${id}/ucs-atribuidas`);
-    }
-
-    async atribuirUCaUG(ugId, ucId) {
-        return this.post(`/ugs/${ugId}/atribuir-uc`, { uc_id: ucId });
-    }
-
-    async desatribuirUCdeUG(ugId, ucId) {
-        return this.post(`/ugs/${ugId}/desatribuir-uc`, { uc_id: ucId });
-    }
-
-    // ========================================
     // CONTROLE
     // ========================================
 
@@ -439,50 +397,6 @@ class ApiService {
         return this.delete(`/controle/${id}`);
     }
 
-    async linkUGControle(controleId, ugId) {
-        return this.post(`/controle/${controleId}/link-ug`, { ug_id: ugId });
-    }
-
-    async unlinkUGControle(controleId) {
-        return this.post(`/controle/${controleId}/unlink-ug`);
-    }
-
-    async deactivateControle(id) {
-        return this.post(`/controle/${id}/deactivate`);
-    }
-
-    async reactivateControle(id) {
-        return this.post(`/controle/${id}/reactivate`);
-    }
-
-    async calibrarControle(id, percentual) {
-        return this.post(`/controle/${id}/calibrar`, { percentual });
-    }
-
-    async aplicarCalibragemGlobal(percentual, filtros = {}) {
-        return this.post('/controle/calibragem-global', { percentual, filtros });
-    }
-
-    async getEstatisticasControle(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/controle/statistics?${params}` : '/controle/statistics';
-        return this.get(endpoint);
-    }
-
-    async exportarControle(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/controle/export?${params}` : '/controle/export';
-        return this.get(endpoint);
-    }
-
-    async bulkCalibrarControle(ids, percentual) {
-        return this.post('/controle/bulk-calibrar', { ids, percentual });
-    }
-
-    async bulkLinkUGControle(controleIds, ugId) {
-        return this.post('/controle/bulk-link-ug', { controle_ids: controleIds, ug_id: ugId });
-    }
-
     // ========================================
     // CONFIGURAÇÕES
     // ========================================
@@ -500,34 +414,6 @@ class ApiService {
         return this.post('/configuracoes', configData);
     }
 
-    async atualizarConfiguracao(chave, valor) {
-        return this.put(`/configuracoes/${chave}`, { valor });
-    }
-
-    async getCalibragemGlobal() {
-        return this.get('/configuracoes/calibragem-global/value');
-    }
-
-    async updateCalibragemGlobal(valor) {
-        return this.post('/configuracoes/calibragem-global/update', { valor });
-    }
-
-    async bulkUpdateConfiguracoes(configuracoes) {
-        return this.post('/configuracoes/bulk-update', { configuracoes });
-    }
-
-    async resetarConfiguracoes(chaves = null) {
-        return this.post('/configuracoes/reset-to-default', { chaves });
-    }
-
-    async exportarConfiguracoes() {
-        return this.get('/configuracoes/export');
-    }
-
-    async limparCacheConfiguracoes() {
-        return this.post('/configuracoes/clear-cache');
-    }
-
     // ========================================
     // NOTIFICAÇÕES
     // ========================================
@@ -538,40 +424,8 @@ class ApiService {
         return this.get(endpoint);
     }
 
-    async getNotificacao(id) {
-        return this.get(`/notificacoes/${id}`);
-    }
-
-    async criarNotificacao(notifData) {
-        return this.post('/notificacoes', notifData);
-    }
-
     async marcarComoLida(id) {
         return this.patch(`/notificacoes/${id}/mark-read`);
-    }
-
-    async marcarTodasComoLidas() {
-        return this.patch('/notificacoes/mark-all-read');
-    }
-
-    async excluirNotificacao(id) {
-        return this.delete(`/notificacoes/${id}`);
-    }
-
-    async limparNotificacoesAntigas() {
-        return this.delete('/notificacoes/cleanup-old');
-    }
-
-    async getUnreadCount() {
-        return this.get('/notificacoes/unread-count');
-    }
-
-    async broadcastNotificacao(dados) {
-        return this.post('/notificacoes/broadcast', dados);
-    }
-
-    async getEstatisticasNotificacoes() {
-        return this.get('/notificacoes/statistics');
     }
 
     // ========================================
@@ -583,60 +437,6 @@ class ApiService {
         const endpoint = params ? `/dashboard?${params}` : '/dashboard';
         return this.get(endpoint);
     }
-
-    async getDashboardResumo() {
-        return this.get('/dashboard/resumo');
-    }
-
-    async getSystemInfo() {
-        return this.get('/sistema/info');
-    }
-
-    async getSystemHealth() {
-        return this.get('/sistema/health');
-    }
-
-    // ========================================
-    // RELATÓRIOS
-    // ========================================
-
-    async getRelatorioGeral() {
-        return this.get('/relatorios/geral');
-    }
-
-    async getRelatorioVendas(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/relatorios/vendas?${params}` : '/relatorios/vendas';
-        return this.get(endpoint);
-    }
-
-    async getRelatorioPerformance(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/relatorios/performance?${params}` : '/relatorios/performance';
-        return this.get(endpoint);
-    }
-
-    async getRelatorioEconomias(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/relatorios/economias?${params}` : '/relatorios/economias';
-        return this.get(endpoint);
-    }
-
-    // ========================================
-    // UTILITÁRIOS
-    // ========================================
-
-    async uploadGenerico(file, tipo = 'documento') {
-        return this.uploadFile('/utils/upload', file, { type: tipo });
-    }
-
-    async validarDocumento(documento, tipo) {
-        return this.post('/utils/validate-document', { document: documento, type: tipo });
-    }
-
-    // ========================================
-    // TESTES E HEALTH CHECK
-    // ========================================
 
     async healthCheck() {
         return this.get('/health-check');

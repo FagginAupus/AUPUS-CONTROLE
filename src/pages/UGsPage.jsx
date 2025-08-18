@@ -27,17 +27,27 @@ const UGsPage = () => {
   const { showNotification } = useNotification();
 
   const carregarDados = useCallback(async () => {
+    console.log('🔄 carregarDados chamado, loading atual:', loading);
+    
+    // Evitar múltiplas chamadas simultâneas
+    if (loading) {
+      console.log('⏳ Já está carregando, ignorando...');
+      return;
+    }
+    
     try {
       setLoading(true);
+      console.log('🚀 Iniciando carregamento de UGs...');
       
       // Buscar UGs da API
       const ugs = await storageService.getUGs();
-      console.log('📋 UGs carregadas:', ugs);
+      console.log('📋 UGs carregadas da API:', ugs);
       
-      // Buscar controle para calcular UCs atribuídas (opcional)
+      // Buscar controle apenas uma vez
       let controle = [];
       try {
         controle = await storageService.getControle();
+        console.log('📊 Controles carregados:', controle.length);
       } catch (error) {
         console.warn('⚠️ Controle não disponível:', error.message);
         controle = [];
@@ -45,7 +55,6 @@ const UGsPage = () => {
       
       // Processar dados das UGs
       const ugsProcessadas = ugs.map(ug => {
-        // Buscar UCs atribuídas a esta UG no controle
         const ucsDestaUG = controle.filter(item => 
           item.ug === ug.nomeUsina || 
           item.ug === ug.nome_usina ||
@@ -73,28 +82,32 @@ const UGsPage = () => {
           dataCadastro: ug.created_at || ug.dataCadastro
         };
       });
-      
-      setDados(ugsProcessadas);
-      setDadosFiltrados(ugsProcessadas);
-      atualizarEstatisticas(ugsProcessadas);
-      
-      // Notificação baseada na quantidade
-      if (ugsProcessadas.length === 0) {
-        showNotification('Nenhuma UG cadastrada ainda.', 'info');
-      } else {
-        showNotification(`${ugsProcessadas.length} UGs carregadas!`, 'success');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar UGs:', error);
-      showNotification('Erro ao carregar UGs: ' + error.message, 'error');
-      setDados([]);
-      setDadosFiltrados([]);
-    } finally {
-      // IMPORTANTE: Sempre parar o loading, mesmo com erro
-      setLoading(false);
+    
+    console.log('✅ UGs processadas:', ugsProcessadas.length);
+    
+    setDados(ugsProcessadas);
+    setDadosFiltrados(ugsProcessadas);
+    atualizarEstatisticas(ugsProcessadas);
+    
+    // Notificação APENAS uma vez
+    if (ugsProcessadas.length === 0) {
+      console.log('ℹ️ Nenhuma UG encontrada');
+      showNotification('Nenhuma UG cadastrada ainda.', 'info');
+    } else {
+      console.log(`✅ ${ugsProcessadas.length} UGs carregadas com sucesso`);
+      showNotification(`${ugsProcessadas.length} UGs carregadas!`, 'success');
     }
-  }, [showNotification]);
+    
+  } catch (error) {
+    console.error('❌ Erro ao carregar UGs:', error);
+    showNotification('Erro ao carregar UGs: ' + error.message, 'error');
+    setDados([]);
+    setDadosFiltrados([]);
+  } finally {
+    console.log('🏁 Finalizando carregamento...');
+    setLoading(false);
+  }
+}, []);
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
@@ -121,12 +134,14 @@ const UGsPage = () => {
   };
 
   useEffect(() => {
+    console.log('🎬 useEffect carregarDados executado');
     carregarDados();
-  }, [carregarDados]);
+  }, []); // ❌ REMOVER carregarDados da dependência
 
   useEffect(() => {
+    console.log('🔍 useEffect filtrarDados executado');
     filtrarDados();
-  }, [filtrarDados]);
+  }, [dados, filtros]);
 
   const limparFiltros = () => {
     setFiltros({
@@ -135,31 +150,34 @@ const UGsPage = () => {
   };
 
   const criarNovaUG = async (dadosUG) => {
-  if (user?.role !== 'admin') {
-    showNotification('Apenas administradores podem criar UGs', 'warning');
-    return;
-  }
-
-  try {
-    if (!dadosUG.nomeUsina?.trim()) {
-      showNotification('Nome da usina é obrigatório', 'error');
+    if (user?.role !== 'admin') {
+      showNotification('Apenas administradores podem criar UGs', 'warning');
       return;
     }
 
-    console.log('📝 Dados da UG para criação:', dadosUG);
+    try {
+      if (!dadosUG.nomeUsina?.trim()) {
+        showNotification('Nome da usina é obrigatório', 'error');
+        return;
+      }
 
-    // Usar o método correto do storageService
-    await storageService.adicionarUG(dadosUG);
-    await carregarDados();
-    
-    setModalNovaUG({ show: false });
-    showNotification('UG criada com sucesso!', 'success');
-    
-  } catch (error) {
-    console.error('❌ Erro ao criar UG:', error);
-    showNotification('Erro ao criar UG: ' + error.message, 'error');
-  }
-};
+      console.log('📝 Dados da UG ANTES de enviar:', JSON.stringify(dadosUG, null, 2));
+      
+      // Usar o método correto do storageService
+      const result = await storageService.adicionarUG(dadosUG);
+      console.log('✅ UG criada com sucesso:', result);
+      
+      // Recarregar dados APENAS uma vez
+      await carregarDados();
+      
+      setModalNovaUG({ show: false });
+      showNotification('UG criada com sucesso!', 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar UG:', error);
+      showNotification('Erro ao criar UG: ' + error.message, 'error');
+    }
+  };
 
   const editarUG = (index) => {
     if (user?.role !== 'admin') return;
@@ -423,15 +441,49 @@ const UGsPage = () => {
 
 // Modal Nova UG - COM FUNDO SÓLIDO seguindo padrão PROSPEC
 const ModalNovaUG = ({ onSave, onClose }) => {
-  const [dados, setDados] = useState({
+  const [formData, setFormData] = useState({
     nomeUsina: '',
-    potenciaCA: 0,
-    potenciaCC: 0,
-    fatorCapacidade: 0.25
+    numero_unidade: '',
+    potenciaCA: 0,        // ✅ ADICIONAR
+    potenciaCC: 0,        // ✅ MUDAR de '' para 0
+    fatorCapacidade: 0.25, // ✅ MUDAR de '' para 0.25
+    localizacao: '',
+    observacoes: ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validar campos obrigatórios
+    if (!formData.nomeUsina?.trim()) {
+      alert('Nome da usina é obrigatório');
+      return;
+    }
+    
+    if (!formData.numero_unidade?.trim()) {
+      alert('Número da UC é obrigatório');
+      return;
+    }
+    
+    const dados = {
+      apelido: formData.nomeUsina.trim(),                    // ✅ REQUIRED
+      numero_unidade: parseInt(formData.numero_unidade) || 0, // ✅ REQUIRED + INTEGER
+      nome_usina: formData.nomeUsina.trim(),                 // ✅ REQUIRED para UG
+      potencia_cc: parseFloat(formData.potenciaCC) || 0,     // ✅ REQUIRED
+      fator_capacidade: parseFloat(formData.fatorCapacidade) || 0.25, // ✅ REQUIRED  
+      consumo_medio: 0,                                      // ✅ REQUIRED (dummy value)
+      distribuidora: 'EQUATORIAL',                                // ✅ DEFAULT
+      localizacao: formData.localizacao?.trim() || '',
+      observacoes_ug: formData.observacoes?.trim() || '',    // ✅ observacoes_ug não observacoes
+      is_ug: true,                                           // ✅ REQUIRED
+      nexus_clube: true,                                    // ✅ REQUIRED
+      nexus_cativo: false,                                   // ✅ REQUIRED
+      service: false,                                        // ✅ REQUIRED
+      project: false,                                        // ✅ REQUIRED  
+      gerador: true                                          // ✅ REQUIRED
+    };
+    
+    console.log('📝 Dados do modal sendo enviados:', dados);
     onSave(dados);
   };
 
@@ -449,10 +501,21 @@ const ModalNovaUG = ({ onSave, onClose }) => {
               <label>Nome da Usina *</label>
               <input
                 type="text"
-                value={dados.nomeUsina}
-                onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
+                value={formData.nomeUsina}
+                onChange={(e) => setFormData({...formData, nomeUsina: e.target.value})}
                 required
                 placeholder="Ex: Usina Solar ABC"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Número da UC *</label>
+              <input
+                type="text"
+                value={formData.numero_unidade}
+                onChange={(e) => setFormData({...formData, numero_unidade: e.target.value})}
+                required
+                placeholder="Ex: UG001"
               />
             </div>
 
@@ -462,8 +525,8 @@ const ModalNovaUG = ({ onSave, onClose }) => {
                 type="number"
                 step="0.01"
                 min="0"
-                value={dados.potenciaCA}
-                onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                value={formData.potenciaCA}
+                onChange={(e) => setFormData({...formData, potenciaCA: parseFloat(e.target.value) || 0})}
                 required
                 placeholder="Ex: 5000"
               />
@@ -475,8 +538,8 @@ const ModalNovaUG = ({ onSave, onClose }) => {
                 type="number"
                 step="0.01"
                 min="0"
-                value={dados.potenciaCC}
-                onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
+                value={formData.potenciaCC}
+                onChange={(e) => setFormData({...formData, potenciaCC: parseFloat(e.target.value) || 0})}
                 required
                 placeholder="Ex: 6000"
               />
@@ -489,8 +552,8 @@ const ModalNovaUG = ({ onSave, onClose }) => {
                 step="0.01"
                 min="0"
                 max="1"
-                value={dados.fatorCapacidade}
-                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0.25})}
+                value={formData.fatorCapacidade}
+                onChange={(e) => setFormData({...formData, fatorCapacidade: parseFloat(e.target.value) || 0.25})}
                 placeholder="Ex: 0.25"
               />
             </div>
@@ -498,7 +561,7 @@ const ModalNovaUG = ({ onSave, onClose }) => {
 
           <div className="info-ug">
             <div className="info-item">
-              <strong>Capacidade estimada:</strong> {(720 * dados.potenciaCC * (dados.fatorCapacidade / 100)).toFixed(0)} MWh/ano
+              <strong>Capacidade estimada:</strong> {(720 * formData.potenciaCC * (formData.fatorCapacidade / 100)).toFixed(0)} MWh/ano
             </div>
           </div>
 
@@ -519,10 +582,11 @@ const ModalNovaUG = ({ onSave, onClose }) => {
 // Modal Edição UG - COM FUNDO SÓLIDO seguindo padrão PROSPEC
 const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   const [dados, setDados] = useState({
-    nomeUsina: item?.nomeUsina || '',
-    potenciaCA: item?.potenciaCA || 0,
-    potenciaCC: item?.potenciaCC || 0,
-    fatorCapacidade: item?.fatorCapacidade || 0.25
+    nomeUsina: '',
+    potenciaCA: 0,
+    potenciaCC: 0,
+    fatorCapacidade: 0.25,
+    numero_unidade: ''  // ✅ ADICIONAR ESTA LINHA
   });
 
   const handleSubmit = (e) => {
