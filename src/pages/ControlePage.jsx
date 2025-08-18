@@ -16,9 +16,7 @@ const ControlePage = () => {
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [calibragemGlobal, setCalibragemGlobal] = useState(0);
-  const [calibragemAplicada, setCalibragemAplicada] = useState(0);
-  const [ugSelecionada, setUgSelecionada] = useState(''); // Estado para controlar o select
-  
+
   const [filtros, setFiltros] = useState({
     consultor: '',
     ug: '',
@@ -33,14 +31,9 @@ const ControlePage = () => {
   });
 
   const { showNotification } = useNotification();
-  const debouncedFiltros = useMemo(() => filtros, [
-    filtros.consultor,
-    filtros.ug,
-    filtros.busca
-  ]);
+  const debouncedFiltros = useMemo(() => filtros, [filtros]);
 
   const isAdmin = user?.role === 'admin';
-  const mostrarCalibragem = isAdmin;
 
   const carregarDados = useCallback(async () => {
     try {
@@ -62,12 +55,12 @@ const ControlePage = () => {
           propostas = response.data;
       }
 
-// Mapear propostas do backend
-const propostasMapeadas = propostas.map(proposta => 
-    storageService.mapearPropostaDoBackend(proposta)
-).filter(Boolean);
+      // Mapear propostas do backend
+      const propostasMapeadas = propostas.map(proposta => 
+          storageService.mapearPropostaDoBackend(proposta)
+      ).filter(Boolean);
 
-console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
+      console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
 
       console.log('🔍 DEBUG - Dados recebidos:', {
         totalPropostas: propostas.length,
@@ -79,7 +72,7 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
       
       // ✅ TODAS as propostas que têm UCs (não importa o status geral)
       const propostasComUCs = propostas.filter(proposta => 
-          proposta.unidades_consumidoras?.length > 0  // ✅ NOME CORRETO (com underscore)
+          proposta.unidades_consumidoras?.length > 0
       );
 
       console.log(`📋 ${propostasComUCs.length} propostas com UCs encontradas`);
@@ -89,9 +82,8 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
       // Expandir propostas para UCs individuais
       let dadosExpandidos = [];
       propostasComUCs.forEach(proposta => {
-        if (proposta.unidades_consumidoras?.length > 0) {  // ✅ CORRIGIR AQUI TAMBÉM
-            proposta.unidades_consumidoras.forEach(uc => {   // ✅ E AQUI
-                  // ✅ SÓ INCLUIR UCs QUE ESTÃO FECHADAS (individual)
+        if (proposta.unidades_consumidoras?.length > 0) {
+            proposta.unidades_consumidoras.forEach(uc => {
                   const statusUC = uc.status || 'Aguardando';
                   
                   console.log(`🔍 Processando UC:`, {
@@ -114,11 +106,12 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
                   );
 
                   dadosExpandidos.push({
-                      id: `${proposta.id}-${uc.numero_unidade || uc.numeroUC}`,
+                      id: controleCorrespondente?.id || `${proposta.id}-${uc.numero_unidade || uc.numeroUC}`,
                       numeroProposta: proposta.numeroProposta,
                       nomeCliente: proposta.nomeCliente,
                       consultor: proposta.consultor,
                       data: proposta.data,
+                      celular: proposta.celular || proposta.telefone,
                       
                       // Dados da UC específica
                       numeroUC: uc.numero_unidade || uc.numeroUC,
@@ -132,7 +125,12 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
                       ug: controleCorrespondente?.unidade_geradora?.nome_usina || null,
                       calibragem: controleCorrespondente?.calibragem || 0,
                       valor_calibrado: controleCorrespondente?.valor_calibrado || null,
-                      controle_id: controleCorrespondente?.id || null
+                      controle_id: controleCorrespondente?.id || null,
+                      
+                      // IDs para operações do backend
+                      proposta_id: proposta.id,
+                      uc_id: uc.id,
+                      ug_id: controleCorrespondente?.ug_id || null
                   });
               });
           }
@@ -164,7 +162,14 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
       setDados(dadosComIds);
       setDadosFiltrados(dadosComIds);
       
-      atualizarEstatisticas(dadosComIds);
+      // Atualizar estatísticas diretamente aqui
+      const stats = {
+        total: dadosComIds.length,
+        comUG: dadosComIds.filter(item => item.ug).length,
+        semUG: dadosComIds.filter(item => !item.ug).length,
+        calibradas: dadosComIds.filter(item => item.calibragem && parseFloat(item.calibragem) > 0).length
+      };
+      setEstatisticas(stats);
       
       if (dadosComIds.length === 0) {
         showNotification('Nenhuma proposta no controle para sua equipe.', 'info');
@@ -180,13 +185,13 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
     } finally {
       setLoading(false);
     }
-  }, [loading, user?.id]);
+  }, [user?.role, user?.id, showNotification, getMyTeam, getConsultorName]);
   
   const carregarUGs = useCallback(async () => {
-    if (loading) return; // ✅ Evitar chamadas simultâneas
+    if (loading) return;
     
     try {
-      if (!isAdmin) return; // Só admin pode gerenciar UGs
+      if (!isAdmin) return;
       
       const ugs = await storageService.getUGs();
       setUgsDisponiveis(ugs);
@@ -194,7 +199,7 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
       console.error('❌ Erro ao carregar UGs:', error);
       showNotification('Erro ao carregar UGs', 'error');
     }
-  }, [loading, isAdmin, showNotification]); // ✅ Adicionar 'loading' nas dependências
+  }, [loading, isAdmin, showNotification]);
 
   const filtrarDados = useCallback(() => {
     let dadosFiltrados = dados;
@@ -226,84 +231,61 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
     setDadosFiltrados(dadosFiltrados);
   }, [dados, filtros]);
 
-  const atualizarEstatisticas = (dados) => {
-    const stats = {
-      total: dados.length,
-      comUG: dados.filter(item => item.ug).length,
-      semUG: dados.filter(item => !item.ug).length,
-      calibradas: dados.filter(item => item.calibragem && parseFloat(item.calibragem) > 0).length
-    };
-    setEstatisticas(stats);
-  };
-
-  const calcularValorCalibrado = (media, calibragem) => {
-    if (!media || !calibragem) return 0;
+  const calcularValorCalibrado = useCallback((media, calibragem) => {
+    if (!media || !calibragem || calibragem === 0) return 0;
+    
     const mediaNum = parseFloat(media);
     const calibragemNum = parseFloat(calibragem);
-    return mediaNum + (mediaNum * calibragemNum / 100);
-  };
+    return mediaNum * (1 + calibragemNum / 100);
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadData = async () => {
-      if (!isMounted || !user?.id) return; // ✅ CORRIGIDO: só verificar user?.id
-      
-      console.log('🚀 ControlePage - Iniciando carregamento de dados...');
-      
-      try {
-        await carregarDados();
-        await carregarUGs();
-      } catch (error) {
-        console.error('❌ ControlePage - Erro ao carregar:', error);
+    if (user?.id) {
+      carregarDados();
+      if (isAdmin) {
+        carregarUGs();
       }
-    };
-    
-    loadData();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
+    }
+  }, [user?.id, isAdmin]);
 
   useEffect(() => {
     filtrarDados();
-  }, [debouncedFiltros, dados]);
+  }, [debouncedFiltros]);
 
-  const editarUG = (index) => {
+  const editarUG = useCallback((index) => {
     if (!isAdmin) return;
     
     const item = dadosFiltrados[index];
     if (!item) return;
     setModalUG({ show: true, item, index });
-  };
+  }, [isAdmin, dadosFiltrados]);
 
-  const salvarUG = async (ugSelecionada) => {
+  const salvarUG = useCallback(async (ugSelecionada) => {
     try {
       const { item } = modalUG;
       
-      const indexReal = dados.findIndex(p => p.id === item.id);
-      
-      if (indexReal === -1) {
-        showNotification('Item não encontrado', 'error');
-        return;
-      }
-
-      const dadosAtualizados = {
-        ...item,
-        ug: ugSelecionada
-      };
-
       const propostaAtual = dados.find(p => p.id === item.id);
       if (!propostaAtual) {
         throw new Error('Proposta não encontrada');
       }
 
       await storageService.atualizarProposta(item.id, {
-        ...propostaAtual, // ✅ USAR propostaAtual
-        ug: ugSelecionada // ✅ SIMPLES: só atualizar a UG
+        ...propostaAtual,
+        ug: ugSelecionada
       });
-      await carregarDados();
+      
+      // ✅ Atualizar dados localmente sem recarregar tudo
+      setDados(prevDados => 
+        prevDados.map(d => 
+          d.id === item.id ? { ...d, ug: ugSelecionada } : d
+        )
+      );
+      
+      setDadosFiltrados(prevDados => 
+        prevDados.map(d => 
+          d.id === item.id ? { ...d, ug: ugSelecionada } : d
+        )
+      );
       
       setModalUG({ show: false, item: null, index: -1 });
       showNotification('UG atribuída com sucesso!', 'success');
@@ -312,9 +294,9 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
       console.error('❌ Erro ao salvar UG:', error);
       showNotification('Erro ao salvar: ' + error.message, 'error');
     }
-  };
+  }, [modalUG, dados, showNotification]); // ✅ DEPENDÊNCIAS REDUZIDAS
 
-  const aplicarCalibragem = async () => {
+  const aplicarCalibragem = useCallback(async () => {
     if (!isAdmin) return;
     
     if (calibragemGlobal <= 0) {
@@ -327,29 +309,25 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
     }
 
     try {
-      // Aplicar calibragem a todos os dados
-      const dadosComCalibragem = dados.map(item => ({
-        ...item,
-        calibragem: calibragemGlobal
-      }));
-
-      // Salvar cada item individualmente
-      for (let i = 0; i < dadosComCalibragem.length; i++) {
-        await storageService.atualizarControle(i, dadosComCalibragem[i]);
-      }
-
-      setCalibragemAplicada(calibragemGlobal);
-      await carregarDados();
+      // Usar a API de calibragem em massa
+      const idsControle = dados.map(item => item.controle_id).filter(id => id);
       
-      showNotification(`Calibragem de ${calibragemGlobal}% aplicada com sucesso!`, 'success');
+      if (idsControle.length === 0) {
+        showNotification('Nenhum item de controle encontrado para aplicar calibragem', 'warning');
+        return;
+      }
+      
+      await apiService.bulkCalibrarControle(idsControle, calibragemGlobal);
+      
+      showNotification(`Calibragem de ${calibragemGlobal}% aplicada com sucesso a ${idsControle.length} itens!`, 'success');
       
     } catch (error) {
       console.error('❌ Erro ao aplicar calibragem:', error);
       showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
     }
-  };
+  }, [isAdmin, calibragemGlobal, dados, showNotification]);
 
-  const exportarDados = async () => {
+  const exportarDados = useCallback(async () => {
     try {
       await storageService.exportarParaCSV('controle');
       showNotification('Dados exportados com sucesso!', 'success');
@@ -357,11 +335,17 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
       console.error('❌ Erro ao exportar:', error);
       showNotification('Erro ao exportar: ' + error.message, 'error');
     }
-  };
+  }, [showNotification]);
 
   // Obter listas únicas para filtros
-  const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
-  const ugsUnicas = [...new Set(dados.map(item => item.ug).filter(Boolean))];
+  const consultoresUnicos = useMemo(() => 
+    [...new Set(dados.map(item => item.consultor).filter(Boolean))], 
+    [dados]
+  );
+  const ugsUnicas = useMemo(() => 
+    [...new Set(dados.map(item => item.ug).filter(Boolean))], 
+    [dados]
+  );
 
   return (
     <div className="page-container">
@@ -444,11 +428,16 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
                   <label>Calibragem Global (%):</label>
                   <input
                     type="number"
+                    step="0.01"
                     value={calibragemGlobal}
                     onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
                     placeholder="Ex: 10"
                   />
-                  <button onClick={aplicarCalibragem} className="btn btn-primary">
+                  <button 
+                    onClick={aplicarCalibragem} 
+                    className="btn btn-primary"
+                    disabled={!calibragemGlobal}
+                  >
                     Aplicar Calibragem
                   </button>
                 </div>
@@ -486,83 +475,80 @@ console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
                       <th>Distribuidora</th>
                       <th>UG</th>
                       <th>Média (kWh)</th>
-                      {/* ALTERAÇÃO: Coluna de calibragem só aparece para admin */}
-                      {mostrarCalibragem && <th>Calibrada (kWh)</th>}
+                      {/* Coluna Calibrada - só aparece para admin */}
+                      {isAdmin && <th>Calibrada (kWh)</th>}
                       {isAdmin && <th>Ações</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {dadosFiltrados.map((item, index) => {
-                      const valorCalibrado = calcularValorCalibrado(item.media, calibragemAplicada);
-                      
-                      return (
-                        <tr key={item.id || index}>
+                    {dadosFiltrados.map((item, index) => (
+                      <tr key={item.id || index}>
+                        <td>
+                          <span className="proposta-numero">{item.numeroProposta}</span>
+                        </td>
+                        <td>
+                          <strong>{item.nomeCliente}</strong>
+                          <br />
+                          <small style={{color: '#666'}}>{item.celular}</small>
+                        </td>
+                        <td>
+                          <span className="uc-numero">{item.numeroUC}</span>
+                          {item.apelido && (
+                            <>
+                              <br />
+                              <small style={{color: '#666'}}>{item.apelido}</small>
+                            </>
+                          )}
+                        </td>
+                        <td>
+                          <span className="consultor-nome">{item.consultor}</span>
+                        </td>
+                        <td>
+                          <span className="distribuidora-nome">{item.distribuidora}</span>
+                        </td>
+                        <td>
+                          {item.ug ? (
+                            <span className="ug-atribuida">{item.ug}</span>
+                          ) : (
+                            <span className="sem-ug">Sem UG</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="media-valor">
+                            {item.media ? parseFloat(item.media).toFixed(0) : '0'}
+                          </span>
+                        </td>
+                        {/* Valor calibrado - só para admin */}
+                        {isAdmin && (
                           <td>
-                            <span className="proposta-numero">{item.numeroProposta}</span>
-                          </td>
-                          <td>
-                            <strong>{item.nomeCliente}</strong>
-                            <br />
-                            <small style={{color: '#666'}}>{item.celular}</small>
-                          </td>
-                          <td>
-                            <span className="uc-numero">{item.numeroUC}</span>
-                            {item.apelido && (
-                              <>
-                                <br />
-                                <small style={{color: '#666'}}>{item.apelido}</small>
-                              </>
-                            )}
-                          </td>
-                          <td>
-                            <span className="consultor-nome">{item.consultor}</span>
-                          </td>
-                          <td>
-                            <span className="distribuidora-nome">{item.distribuidora}</span>
-                          </td>
-                          <td>
-                            {item.ug ? (
-                              <span className="ug-atribuida">{item.ug}</span>
-                            ) : (
-                              <span className="sem-ug">Sem UG</span>
-                            )}
-                          </td>
-                          <td>
-                            <span className="media-valor">
-                              {item.media ? parseFloat(item.media).toFixed(0) : '0'}
-                            </span>
-                          </td>
-                          {/* ALTERAÇÃO: Coluna de calibragem só aparece para admin */}
-                          {mostrarCalibragem && (
-                            <td>
-                              {calibragemAplicada > 0 && item.media ? (
-                                <div className="calibragem-info">
-                                  <span className="calibragem-resultado">
-                                    {valorCalibrado.toFixed(0)}
-                                  </span>
-                                  <small style={{color: '#666', fontSize: '0.8rem'}}>
-                                    (+{calibragemAplicada}%)
+                            {calibragemGlobal > 0 && item.media ? (
+                              <div className="calibragem-info">
+                                <div className="calibragem-calculada">
+                                  {calcularValorCalibrado(item.media, calibragemGlobal).toFixed(0)} kWh
+                                  <br />
+                                  <small style={{color: '#4CAF50', fontWeight: '600'}}>
+                                    (+{calibragemGlobal}% aplicado)
                                   </small>
                                 </div>
-                              ) : (
-                                <span className="sem-calibragem">Sem calibragem</span>
-                              )}
-                            </td>
-                          )}
-                          {isAdmin && (
-                            <td>
-                              <button
-                                onClick={() => editarUG(index)}
-                                className="btn btn-small btn-secondary"
-                                title="Editar UG"
-                              >
-                                ✏️ UG
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      );
-                    })}
+                              </div>
+                            ) : (
+                              <div className="sem-calibragem">-</div>
+                            )}
+                          </td>
+                        )}
+                        {isAdmin && (
+                          <td>
+                            <button
+                              onClick={() => editarUG(index)}
+                              className="btn btn-small btn-secondary"
+                              title="Editar UG"
+                            >
+                              ✏️ UG
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
