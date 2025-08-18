@@ -30,32 +30,59 @@ const UGsPage = () => {
     try {
       setLoading(true);
       
+      // Buscar UGs da API
       const ugs = await storageService.getUGs();
-      const controle = await storageService.getControle();
+      console.log('📋 UGs carregadas:', ugs);
       
-      // Calcular médias e UCs por UG
-      const ugsComCalculos = ugs.map(ug => {
-        const ucsDestaUG = controle.filter(uc => uc.ug === ug.nomeUsina);
-        const mediaTotal = ucsDestaUG.reduce((soma, uc) => soma + (parseFloat(uc.media) || 0), 0);
-        const mediaUG = ucsDestaUG.length > 0 ? Math.round(mediaTotal / ucsDestaUG.length) : 0;
+      // Buscar controle para calcular UCs atribuídas (opcional)
+      let controle = [];
+      try {
+        controle = await storageService.getControle();
+      } catch (error) {
+        console.warn('⚠️ Controle não disponível:', error.message);
+        controle = [];
+      }
+      
+      // Processar dados das UGs
+      const ugsProcessadas = ugs.map(ug => {
+        // Buscar UCs atribuídas a esta UG no controle
+        const ucsDestaUG = controle.filter(item => 
+          item.ug === ug.nomeUsina || 
+          item.ug === ug.nome_usina ||
+          item.ug_id === ug.id
+        );
+        
+        const mediaTotal = ucsDestaUG.reduce((soma, uc) => 
+          soma + (parseFloat(uc.media) || parseFloat(uc.consumo_medio) || 0), 0
+        );
+        
+        const mediaUG = ucsDestaUG.length > 0 ? 
+          Math.round(mediaTotal / ucsDestaUG.length) : 0;
         
         return {
-          ...ug,
-          media: mediaUG,
+          id: ug.id,
+          nomeUsina: ug.nome_usina || ug.nomeUsina,
+          potenciaCC: parseFloat(ug.potencia_cc || ug.potenciaCC || 0),
+          fatorCapacidade: parseFloat(ug.fator_capacidade || ug.fatorCapacidade || 0),
+          capacidade: parseFloat(ug.capacidade_calculada || ug.capacidade || 0),
+          localizacao: ug.localizacao,
+          observacoes: ug.observacoes_ug || ug.observacoes,
           ucsAtribuidas: ucsDestaUG.length,
-          mediaTotal: Math.round(mediaTotal)
+          media: mediaUG,
+          mediaTotal: Math.round(mediaTotal),
+          dataCadastro: ug.created_at || ug.dataCadastro
         };
       });
       
-      setDados(ugsComCalculos);
-      setDadosFiltrados(ugsComCalculos);
+      setDados(ugsProcessadas);
+      setDadosFiltrados(ugsProcessadas);
+      atualizarEstatisticas(ugsProcessadas);
       
-      atualizarEstatisticas(ugsComCalculos);
-      
-      if (ugsComCalculos.length === 0) {
+      // Notificação baseada na quantidade
+      if (ugsProcessadas.length === 0) {
         showNotification('Nenhuma UG cadastrada ainda.', 'info');
       } else {
-        showNotification(`${ugsComCalculos.length} UGs carregadas!`, 'success');
+        showNotification(`${ugsProcessadas.length} UGs carregadas!`, 'success');
       }
       
     } catch (error) {
@@ -64,6 +91,7 @@ const UGsPage = () => {
       setDados([]);
       setDadosFiltrados([]);
     } finally {
+      // IMPORTANTE: Sempre parar o loading, mesmo com erro
       setLoading(false);
     }
   }, [showNotification]);
@@ -107,39 +135,31 @@ const UGsPage = () => {
   };
 
   const criarNovaUG = async (dadosUG) => {
-    if (user?.role !== 'admin') {
-      showNotification('Apenas administradores podem criar UGs', 'warning');
+  if (user?.role !== 'admin') {
+    showNotification('Apenas administradores podem criar UGs', 'warning');
+    return;
+  }
+
+  try {
+    if (!dadosUG.nomeUsina?.trim()) {
+      showNotification('Nome da usina é obrigatório', 'error');
       return;
     }
 
-    try {
-      if (!dadosUG.nomeUsina?.trim()) {
-        showNotification('Nome da usina é obrigatório', 'error');
-        return;
-      }
+    console.log('📝 Dados da UG para criação:', dadosUG);
 
-      const capacidade = 720 * dadosUG.potenciaCC * (dadosUG.fatorCapacidade / 100);
-      
-      const novaUG = {
-        ...dadosUG,
-        capacidade,
-        media: 0,
-        ucsAtribuidas: 0,
-        dataCadastro: new Date().toISOString(),
-        id: Date.now().toString()
-      };
-
-      await storageService.adicionarUG(novaUG);
-      await carregarDados();
-      
-      setModalNovaUG({ show: false });
-      showNotification('UG criada com sucesso!', 'success');
-      
-    } catch (error) {
-      console.error('❌ Erro ao criar UG:', error);
-      showNotification('Erro ao criar UG: ' + error.message, 'error');
-    }
-  };
+    // Usar o método correto do storageService
+    await storageService.adicionarUG(dadosUG);
+    await carregarDados();
+    
+    setModalNovaUG({ show: false });
+    showNotification('UG criada com sucesso!', 'success');
+    
+  } catch (error) {
+    console.error('❌ Erro ao criar UG:', error);
+    showNotification('Erro ao criar UG: ' + error.message, 'error');
+  }
+};
 
   const editarUG = (index) => {
     if (user?.role !== 'admin') return;

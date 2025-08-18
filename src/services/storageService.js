@@ -362,10 +362,88 @@ class StorageService {
         }
     }
 
-    // ========================================
-    // MÉTODOS AUXILIARES PARA DESCONTOS
-    // ========================================
+    async adicionarUG(dadosUG) {
+        try {
+            console.log('💾 Criando nova UG via API...', dadosUG.nomeUsina);
+            
+            const response = await apiService.criarUG(dadosUG);
+            
+            if (response?.success) {
+                console.log('✅ UG criada com sucesso na API');
+                return response.data;
+            } else {
+                throw new Error(response?.message || 'Erro ao criar UG');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao criar UG:', error.message);
+            throw new Error(`Não foi possível criar a UG: ${error.message}`);
+        }
+    }
 
+    async atualizarUG(idOuIndex, dadosUG) {
+        try {
+            // Se for um índice (número), precisamos buscar o ID real
+            let ugId;
+            if (typeof idOuIndex === 'number') {
+                const ugs = await this.getUGs();
+                const ug = ugs[idOuIndex];
+                if (!ug) {
+                    throw new Error('UG não encontrada pelo índice');
+                }
+                ugId = ug.id;
+            } else {
+                ugId = idOuIndex;
+            }
+
+            console.log('📝 Atualizando UG via API...', ugId);
+            
+            const response = await apiService.atualizarUG(ugId, dadosUG);
+            
+            if (response?.success) {
+                console.log('✅ UG atualizada com sucesso na API');
+                return response.data;
+            } else {
+                throw new Error(response?.message || 'Erro ao atualizar UG');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao atualizar UG:', error.message);
+            throw new Error(`Não foi possível atualizar a UG: ${error.message}`);
+        }
+    }
+
+    async removerUG(idOuIndex) {
+        try {
+            // Se for um índice (número), precisamos buscar o ID real
+            let ugId;
+            if (typeof idOuIndex === 'number') {
+                const ugs = await this.getUGs();
+                const ug = ugs[idOuIndex];
+                if (!ug) {
+                    throw new Error('UG não encontrada pelo índice');
+                }
+                ugId = ug.id;
+            } else {
+                ugId = idOuIndex;
+            }
+
+            console.log('🗑️ Excluindo UG via API...', ugId);
+            
+            const response = await apiService.excluirUG(ugId);
+            
+            if (response?.success) {
+                console.log('✅ UG excluída com sucesso da API');
+                return true;
+            } else {
+                throw new Error(response?.message || 'Erro ao excluir UG');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao excluir UG:', error.message);
+            throw new Error(`Não foi possível excluir a UG: ${error.message}`);
+        }
+    }
     /**
      * ✅ Processar desconto vindo do backend
      */
