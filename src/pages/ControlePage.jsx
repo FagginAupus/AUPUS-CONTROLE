@@ -35,6 +35,12 @@ const ControlePage = () => {
 
   const isAdmin = user?.role === 'admin';
 
+  console.log('🔍 Debug apiService:', {
+    apiServiceDisponivel: !!apiService,
+    temMetodoAtualizar: typeof apiService.atualizarConfiguracao,
+    temMetodoGet: typeof apiService.getConfiguracao
+  });
+
   const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
@@ -161,6 +167,24 @@ const ControlePage = () => {
       
       setDados(dadosComIds);
       setDadosFiltrados(dadosComIds);
+      
+      // Atualizar estatísticas diretamente aqui
+      try {
+        console.log('🔄 Carregando calibragem global do banco...');
+        const calibragemResponse = await apiService.getConfiguracao('calibragem_global');
+        
+        if (calibragemResponse?.success && calibragemResponse?.data) {
+          const valorCalibragem = parseFloat(calibragemResponse.data.valor) || 0;
+          console.log('✅ Calibragem carregada do banco:', valorCalibragem);
+          setCalibragemGlobal(valorCalibragem);
+        } else {
+          console.log('⚠️ Calibragem não encontrada, usando valor 0');
+          setCalibragemGlobal(0);
+        }
+      } catch (calibragemError) {
+        console.warn('⚠️ Erro ao carregar calibragem das configurações:', calibragemError);
+        setCalibragemGlobal(0); // Valor padrão em caso de erro
+      }
       
       // Atualizar estatísticas diretamente aqui
       const stats = {
@@ -297,35 +321,52 @@ const ControlePage = () => {
   }, [modalUG, dados, showNotification]); // ✅ DEPENDÊNCIAS REDUZIDAS
 
   const aplicarCalibragem = useCallback(async () => {
-    if (!isAdmin) return;
+    console.log('🔄 aplicarCalibragem chamada!');
+    console.log('🔍 Debug - isAdmin:', isAdmin);
+    console.log('🔍 Debug - calibragemGlobal:', calibragemGlobal);
     
-    if (calibragemGlobal <= 0) {
-      showNotification('Informe um valor de calibragem válido', 'warning');
+    if (!isAdmin) {
+      console.log('❌ Usuário não é admin');
+      return;
+    }
+    
+    // ✅ CORREÇÃO: Permitir valor 0 e verificar se é um número válido
+    if (calibragemGlobal < 0 || calibragemGlobal > 100) {
+      console.log('❌ Calibragem inválida:', calibragemGlobal);
+      showNotification('Calibragem deve estar entre 0 e 100%', 'warning');
       return;
     }
 
-    if (!window.confirm(`Aplicar calibragem de ${calibragemGlobal}% a todas as propostas?`)) {
+    // ✅ CORREÇÃO: Permitir aplicar mesmo com valor 0
+    console.log('🔄 Mostrando confirmação...');
+    const mensagem = calibragemGlobal === 0 
+      ? `Resetar calibragem global para 0% (remover calibragem)?`
+      : `Aplicar calibragem de ${calibragemGlobal}% como padrão global do sistema?`;
+      
+    if (!window.confirm(mensagem)) {
+      console.log('❌ Usuário cancelou');
       return;
     }
 
     try {
-      // Usar a API de calibragem em massa
-      const idsControle = dados.map(item => item.controle_id).filter(id => id);
+      console.log('🔄 Iniciando chamada para API...');
       
-      if (idsControle.length === 0) {
-        showNotification('Nenhum item de controle encontrado para aplicar calibragem', 'warning');
-        return;
-      }
+      // Salvar a calibragem global nas configurações do sistema
+      const response = await apiService.atualizarConfiguracao('calibragem_global', calibragemGlobal);
       
-      await apiService.bulkCalibrarControle(idsControle, calibragemGlobal);
+      console.log('✅ Resposta da API:', response);
       
-      showNotification(`Calibragem de ${calibragemGlobal}% aplicada com sucesso a ${idsControle.length} itens!`, 'success');
+      const mensagemSucesso = calibragemGlobal === 0 
+        ? 'Calibragem global resetada para 0%!'
+        : `Calibragem global de ${calibragemGlobal}% salva com sucesso!`;
+        
+      showNotification(mensagemSucesso, 'success');
       
     } catch (error) {
       console.error('❌ Erro ao aplicar calibragem:', error);
       showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
     }
-  }, [isAdmin, calibragemGlobal, dados, showNotification]);
+  }, [isAdmin, calibragemGlobal, showNotification]);
 
   const exportarDados = useCallback(async () => {
     try {
@@ -436,7 +477,7 @@ const ControlePage = () => {
                   <button 
                     onClick={aplicarCalibragem} 
                     className="btn btn-primary"
-                    disabled={!calibragemGlobal}
+                    disabled={calibragemGlobal < 0 || calibragemGlobal > 100} // ✅ CORREÇÃO: Não desabilitar para valor 0
                   >
                     Aplicar Calibragem
                   </button>
@@ -521,18 +562,20 @@ const ControlePage = () => {
                         {/* Valor calibrado - só para admin */}
                         {isAdmin && (
                           <td>
-                            {calibragemGlobal > 0 && item.media ? (
+                            {calibragemGlobal !== 0 && item.media ? (
                               <div className="calibragem-info">
                                 <div className="calibragem-calculada">
                                   {calcularValorCalibrado(item.media, calibragemGlobal).toFixed(0)} kWh
                                   <br />
                                   <small style={{color: '#4CAF50', fontWeight: '600'}}>
-                                    (+{calibragemGlobal}% aplicado)
+                                    ({calibragemGlobal > 0 ? '+' : ''}{calibragemGlobal}% aplicado)
                                   </small>
                                 </div>
                               </div>
                             ) : (
-                              <div className="sem-calibragem">-</div>
+                              <div className="sem-calibragem">
+                                {calibragemGlobal === 0 ? 'Sem calibragem' : '-'}
+                              </div>
                             )}
                           </td>
                         )}
