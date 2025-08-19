@@ -106,11 +106,22 @@ class ApiService {
         return this.request(endpoint, { method: 'GET' });
     }
 
-    async post(endpoint, data) {
-        return this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(data),
+    async post(endpoint, data = {}) {
+        console.log('📤 apiService.post INICIADO:', {
+            endpoint: endpoint,
+            url: `${this.baseURL}${endpoint}`,
+            hasData: !!data,
+            hasToken: !!this.token,
+            dataKeys: Object.keys(data)
         });
+        
+        const response = await this.request(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        console.log('📥 apiService.post - Response:', response);
+        return response;
     }
 
     async put(endpoint, data) {
@@ -239,9 +250,18 @@ class ApiService {
     }
 
     async criarUG(dadosUG) {
-        console.log('💾 Criando nova UG na API...', dadosUG.nomeUsina || dadosUG.nome_usina);
+        console.log('🌐 apiService.criarUG INICIADO');
+        console.log('🌐 Nome da UG:', dadosUG.nome_usina);
         console.log('🔍 DADOS COMPLETOS ENVIADOS:', JSON.stringify(dadosUG, null, 2));
-        return this.post('/ugs', dadosUG);
+        
+        try {
+            const response = await this.post('/ugs', dadosUG);
+            console.log('✅ apiService.criarUG - Resposta recebida:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ apiService.criarUG - Erro:', error);
+            throw error;
+        }
     }
 
     async atualizarUG(id, dadosUG) {

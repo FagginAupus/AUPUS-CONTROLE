@@ -27,21 +27,18 @@ const UGsPage = () => {
   const { showNotification } = useNotification();
 
   const carregarDados = useCallback(async () => {
-    console.log('🔄 carregarDados chamado, loading atual:', loading);
-    
-    // Evitar múltiplas chamadas simultâneas
-    if (loading) {
-      console.log('⏳ Já está carregando, ignorando...');
-      return;
-    }
+    console.log('🔄 carregarDados INICIADO - loading atual:', loading);
     
     try {
       setLoading(true);
-      console.log('🚀 Iniciando carregamento de UGs...');
+      console.log('🚀 INICIANDO carregamento de UGs...');
       
       // Buscar UGs da API
       const ugs = await storageService.getUGs();
-      console.log('📋 UGs carregadas da API:', ugs);
+      console.log('📋 UGs RECEBIDAS da API:', {
+        quantidade: ugs?.length || 0,
+        primeiraUG: ugs?.[0] || 'nenhuma'
+      });
       
       // Buscar controle apenas uma vez
       let controle = [];
@@ -53,7 +50,7 @@ const UGsPage = () => {
         controle = [];
       }
       
-      // Processar dados das UGs
+      // Processar dados das UGs (mesmo se vazio)
       const ugsProcessadas = ugs.map(ug => {
         const ucsDestaUG = controle.filter(item => 
           item.ug === ug.nomeUsina || 
@@ -65,55 +62,49 @@ const UGsPage = () => {
           soma + (parseFloat(uc.media) || parseFloat(uc.consumo_medio) || 0), 0
         );
         
-        const mediaUG = ucsDestaUG.length > 0 ? 
-          Math.round(mediaTotal / ucsDestaUG.length) : 0;
+        const mediaUG = ucsDestaUG.length > 0 ? Math.round(mediaTotal / ucsDestaUG.length) : 0;
         
         return {
-          id: ug.id,
-          nomeUsina: ug.nome_usina || ug.nomeUsina,
-          potenciaCC: parseFloat(ug.potencia_cc || ug.potenciaCC || 0),
-          fatorCapacidade: parseFloat(ug.fator_capacidade || ug.fatorCapacidade || 0),
-          capacidade: parseFloat(ug.capacidade_calculada || ug.capacidade || 0),
-          localizacao: ug.localizacao,
-          observacoes: ug.observacoes_ug || ug.observacoes,
+          ...ug,
           ucsAtribuidas: ucsDestaUG.length,
-          media: mediaUG,
-          mediaTotal: Math.round(mediaTotal),
-          dataCadastro: ug.created_at || ug.dataCadastro
+          mediaUG,
+          potenciaCA: ug.potenciaCC ? Math.round(ug.potenciaCC * 0.8) : 0
         };
       });
-    
-    console.log('✅ UGs processadas:', ugsProcessadas.length);
-    
-    setDados(ugsProcessadas);
-    setDadosFiltrados(ugsProcessadas);
-    atualizarEstatisticas(ugsProcessadas);
-    
-    // Notificação APENAS uma vez
-    if (ugsProcessadas.length === 0) {
-      console.log('ℹ️ Nenhuma UG encontrada');
-      showNotification('Nenhuma UG cadastrada ainda.', 'info');
-    } else {
-      console.log(`✅ ${ugsProcessadas.length} UGs carregadas com sucesso`);
-      showNotification(`${ugsProcessadas.length} UGs carregadas!`, 'success');
+
+      // ✅ SEMPRE setar os dados (mesmo array vazio)
+      setDados(ugsProcessadas);
+      setDadosFiltrados(ugsProcessadas);
+      
+      if (ugsProcessadas.length === 0) {
+        console.log('ℹ️ Nenhuma UG encontrada');
+        showNotification('Nenhuma UG encontrada', 'info');
+      } else {
+        console.log(`✅ ${ugsProcessadas.length} UGs carregadas com sucesso`);
+        showNotification(`${ugsProcessadas.length} UGs carregadas!`, 'success');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar UGs:', error);
+      showNotification('Erro ao carregar UGs: ' + error.message, 'error');
+      setDados([]);
+      setDadosFiltrados([]);
+    } finally {
+      console.log('🏁 Finalizando carregamento...');
+      setLoading(false); // ✅ ESSENCIAL: sempre parar o loading
     }
-    
-  } catch (error) {
-    console.error('❌ Erro ao carregar UGs:', error);
-    showNotification('Erro ao carregar UGs: ' + error.message, 'error');
-    setDados([]);
-    setDadosFiltrados([]);
-  } finally {
-    console.log('🏁 Finalizando carregamento...');
-    setLoading(false);
-  }
-}, []);
+  }, []);
 
   const filtrarDados = useCallback(() => {
+    console.log('🔍 Executando filtrarDados...', { 
+      totalDados: dados.length, 
+      filtros: filtros 
+    });
+
     let dadosFiltrados = dados;
 
-    if (filtros.busca) {
-      const busca = filtros.busca.toLowerCase();
+    if (filtros.busca?.trim()) {
+      const busca = filtros.busca.toLowerCase().trim();
       dadosFiltrados = dadosFiltrados.filter(item =>
         item.nomeUsina?.toLowerCase().includes(busca)
       );
@@ -121,27 +112,38 @@ const UGsPage = () => {
 
     setDadosFiltrados(dadosFiltrados);
     atualizarEstatisticas(dadosFiltrados);
-  }, [dados, filtros]);
+  }, [dados, filtros.busca]);
 
-  const atualizarEstatisticas = (dadosFiltrados) => {
+  const atualizarEstatisticas = useCallback((dadosFiltrados) => {
     const total = dadosFiltrados.length;
-    const capacidadeTotal = dadosFiltrados.reduce((soma, item) => soma + (parseFloat(item.capacidade) || 0), 0);
+    const capacidadeTotal = dadosFiltrados.reduce((soma, item) => 
+      soma + (parseFloat(item.capacidade) || 0), 0
+    );
 
     setEstatisticas({
       total,
       capacidadeTotal: Math.round(capacidadeTotal)
     });
-  };
+  }, []);
 
   useEffect(() => {
-    console.log('🎬 useEffect carregarDados executado');
-    carregarDados();
-  }, []); // ❌ REMOVER carregarDados da dependência
+    console.log('🎬 useEffect MONTAGEM do componente');
+    console.log('🎬 user existe?', !!user?.id);
+    
+    if (user?.id) {
+      console.log('🎬 Chamando carregarDados pela primeira vez');
+      carregarDados();
+    } else {
+      console.log('⚠️ Aguardando usuário ser carregado...');
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    console.log('🔍 useEffect filtrarDados executado');
-    filtrarDados();
-  }, [dados, filtros]);
+    console.log('🔍 useEffect filtrarDados executado - dados:', dados.length, 'filtros:', filtros);
+    if (dados.length > 0 || Object.values(filtros).some(v => v)) {
+      filtrarDados();
+    }
+  }, [dados, filtros.busca]);
 
   const limparFiltros = () => {
     setFiltros({
@@ -150,24 +152,34 @@ const UGsPage = () => {
   };
 
   const criarNovaUG = async (dadosUG) => {
+    console.log('🚀 criarNovaUG INICIADA');
+    console.log('👤 User role:', user?.role);
+    
     if (user?.role !== 'admin') {
+      console.log('❌ Usuário não é admin, saindo...');
       showNotification('Apenas administradores podem criar UGs', 'warning');
       return;
     }
 
+    console.log('✅ Usuário é admin, continuando...');
+
     try {
-      if (!dadosUG.nomeUsina?.trim()) {
+      console.log('🔍 Verificando nome da usina...');
+      if (!dadosUG.nome_usina?.trim()) {
+        console.log('❌ Nome da usina vazio:', dadosUG.nome_usina);
         showNotification('Nome da usina é obrigatório', 'error');
         return;
       }
 
+      console.log('✅ Nome da usina válido:', dadosUG.nome_usina);
       console.log('📝 Dados da UG ANTES de enviar:', JSON.stringify(dadosUG, null, 2));
       
-      // Usar o método correto do storageService
+      console.log('🔗 CHAMANDO storageService.adicionarUG...');
+      
       const result = await storageService.adicionarUG(dadosUG);
       console.log('✅ UG criada com sucesso:', result);
       
-      // Recarregar dados APENAS uma vez
+      console.log('🔄 Recarregando dados...');
       await carregarDados();
       
       setModalNovaUG({ show: false });
@@ -175,6 +187,8 @@ const UGsPage = () => {
       
     } catch (error) {
       console.error('❌ Erro ao criar UG:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
       showNotification('Erro ao criar UG: ' + error.message, 'error');
     }
   };
@@ -475,7 +489,6 @@ const ModalNovaUG = ({ onSave, onClose }) => {
       distribuidora: 'EQUATORIAL',                                // ✅ DEFAULT
       localizacao: formData.localizacao?.trim() || '',
       observacoes_ug: formData.observacoes?.trim() || '',    // ✅ observacoes_ug não observacoes
-      is_ug: true,                                           // ✅ REQUIRED
       nexus_clube: true,                                    // ✅ REQUIRED
       nexus_cativo: false,                                   // ✅ REQUIRED
       service: false,                                        // ✅ REQUIRED

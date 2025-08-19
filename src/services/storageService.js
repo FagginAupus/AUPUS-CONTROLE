@@ -339,25 +339,41 @@ class StorageService {
 
     async getUGs() {
         try {
-            console.log('📥 Carregando UGs da API...');
+            console.log('🔗 storageService.getUGs() INICIADO');
+            console.log('🔗 Fazendo requisição para /api/ugs');
+            
             const response = await apiService.get('/ugs');
             
-            let ugs = [];
-            if (response?.data?.data && Array.isArray(response.data.data)) {
-                ugs = response.data.data;
-            } else if (response?.data && Array.isArray(response.data)) {
+            console.log('🔗 RESPOSTA RAW recebida:', {
+                hasResponse: !!response,
+                type: typeof response,
+                isArray: Array.isArray(response),
+                hasData: response?.data !== undefined,
+                hasSuccess: response?.success !== undefined,
+                keys: response ? Object.keys(response) : 'sem response'
+            });
+            
+            let ugs;
+            if (response?.success && response?.data) {
+                console.log('✅ Resposta tem success e data');
                 ugs = response.data;
             } else if (Array.isArray(response)) {
+                console.log('✅ Resposta é array direto');
                 ugs = response;
             } else {
+                console.log('❌ Formato de resposta inesperado:', response);
                 ugs = [];
             }
             
-            console.log(`✅ Carregadas ${ugs.length} UGs da API`);
+            console.log(`✅ storageService.getUGs() CONCLUÍDO - ${ugs.length} UGs`);
             return ugs;
             
         } catch (error) {
-            console.error('❌ Erro ao carregar UGs:', error.message);
+            console.error('❌ ERRO em storageService.getUGs():', {
+                message: error.message,
+                status: error.status,
+                response: error.response?.data || 'sem response data'
+            });
             throw new Error(`Não foi possível carregar as UGs: ${error.message}`);
         }
     }
@@ -368,16 +384,19 @@ class StorageService {
 
     async adicionarUG(dadosUG) {
         try {
-            console.log('💾 Criando nova UG via API...', dadosUG.nomeUsina);
+            console.log('💾 storageService.adicionarUG INICIADO');
+            console.log('💾 Nome da UG:', dadosUG.nome_usina);
+            console.log('💾 Dados completos:', JSON.stringify(dadosUG, null, 2));
             
-            // Usar o método storeUG do apiService
-            const response = await apiService.post('/ugs', dadosUG);
+            console.log('🌐 Chamando apiService.criarUG...');
+            const response = await apiService.criarUG(dadosUG);
             
-            console.log('✅ UG criada com sucesso:', response);
+            console.log('✅ storageService.adicionarUG - UG criada com sucesso:', response);
             return response;
             
         } catch (error) {
-            console.error('❌ Erro ao criar UG:', error.message);
+            console.error('❌ storageService.adicionarUG - Erro:', error.message);
+            console.error('❌ storageService.adicionarUG - Stack:', error.stack);
             throw new Error(`Não foi possível criar a UG: ${error.message}`);
         }
     }
