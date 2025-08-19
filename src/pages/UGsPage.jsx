@@ -479,24 +479,37 @@ const ModalNovaUG = ({ onSave, onClose }) => {
       return;
     }
     
+    // ✅ TRANSFORMAR para snake_case que o backend espera
     const dados = {
-      apelido: formData.nomeUsina.trim(),                    // ✅ REQUIRED
-      numero_unidade: parseInt(formData.numero_unidade) || 0, // ✅ REQUIRED + INTEGER
-      nome_usina: formData.nomeUsina.trim(),                 // ✅ REQUIRED para UG
-      potencia_cc: parseFloat(formData.potenciaCC) || 0,     // ✅ REQUIRED
-      fator_capacidade: parseFloat(formData.fatorCapacidade) || 0.25, // ✅ REQUIRED  
-      consumo_medio: 0,                                      // ✅ REQUIRED (dummy value)
-      distribuidora: 'EQUATORIAL',                                // ✅ DEFAULT
+      // ✅ CAMPOS OBRIGATÓRIOS EM SNAKE_CASE:
+      nome_usina: formData.nomeUsina.trim(),                        // ✅ CORRIGIDO
+      potencia_cc: parseFloat(formData.potenciaCC) || 0,            // ✅ CORRIGIDO
+      fator_capacidade: parseFloat(formData.fatorCapacidade) || 0.25, // ✅ CORRIGIDO
+      numero_unidade: String(formData.numero_unidade).trim(),       // ✅ CORRIGIDO - STRING
+      apelido: formData.nomeUsina.trim(),
+      
+      // ✅ CAMPOS OPCIONAIS:
       localizacao: formData.localizacao?.trim() || '',
-      observacoes_ug: formData.observacoes?.trim() || '',    // ✅ observacoes_ug não observacoes
-      nexus_clube: true,                                    // ✅ REQUIRED
-      nexus_cativo: false,                                   // ✅ REQUIRED
-      service: false,                                        // ✅ REQUIRED
-      project: false,                                        // ✅ REQUIRED  
-      gerador: true                                          // ✅ REQUIRED
+      observacoes_ug: formData.observacoes?.trim() || '',
+      
+      // ✅ FLAGS OBRIGATÓRIAS:
+      gerador: true,
+      nexus_clube: true,
+      nexus_cativo: false,
+      service: false,
+      project: false,
+      
+      // ✅ CAMPOS EXTRAS:
+      distribuidora: 'EQUATORIAL',
+      consumo_medio: 0,
+      tipo: 'UG',
+      classe: 'Comercial',
+      subclasse: 'Comercial',
+      grupo: 'A',
+      ligacao: 'Trifásico'
     };
-    
-    console.log('📝 Dados do modal sendo enviados:', dados);
+
+    console.log('📝 Dados da UG TRANSFORMADOS para snake_case:', dados);
     onSave(dados);
   };
 
