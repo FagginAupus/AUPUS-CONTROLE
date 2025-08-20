@@ -6,13 +6,16 @@ import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
+import { useData } from '../context/DataContext';
 import './ControlePage.css';
 
 const ControlePage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
-  const [dados, setDados] = useState([]);
-  const [dadosFiltrados, setDadosFiltrados] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    controle, 
+    loadControle 
+  } = useData();
+
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [calibragemGlobal, setCalibragemGlobal] = useState(0);
@@ -40,179 +43,9 @@ const ControlePage = () => {
     temMetodoAtualizar: typeof apiService.atualizarConfiguracao,
     temMetodoGet: typeof apiService.getConfiguracao
   });
-
-  const carregarDados = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      console.log('📥 Carregando dados do controle...');
-      
-      console.log('🔄 Buscando dados do controle...');
-      const dadosControle = await storageService.getControle();
-      console.log('✅ Dados controle carregados:', dadosControle?.length);
-      
-      console.log('🔄 Buscando propostas originais...');
-
-      const response = await apiService.get('/propostas');
-      let propostas = [];
-      if (response?.data?.data && Array.isArray(response.data.data)) {
-          propostas = response.data.data;
-      } else if (response?.data && Array.isArray(response.data)) {
-          propostas = response.data;
-      }
-
-      // Mapear propostas do backend
-      const propostasMapeadas = propostas.map(proposta => 
-          storageService.mapearPropostaDoBackend(proposta)
-      ).filter(Boolean);
-
-      console.log('✅ Propostas originais carregadas:', propostasMapeadas?.length);
-
-      console.log('🔍 DEBUG - Dados recebidos:', {
-        totalPropostas: propostas.length,
-        totalControles: dadosControle.length,
-        primeiraPropostaSample: propostas[0]
-      });
-
-      console.log('🔄 Iniciando filtro das propostas...');
-      
-      // ✅ TODAS as propostas que têm UCs (não importa o status geral)
-      const propostasComUCs = propostas.filter(proposta => 
-          proposta.unidades_consumidoras?.length > 0
-      );
-
-      console.log(`📋 ${propostasComUCs.length} propostas com UCs encontradas`);
-      
-      console.log('🔄 Processando UCs individuais...');
-      
-      // Expandir propostas para UCs individuais
-      let dadosExpandidos = [];
-      propostasComUCs.forEach(proposta => {
-        if (proposta.unidades_consumidoras?.length > 0) {
-            proposta.unidades_consumidoras.forEach(uc => {
-                  const statusUC = uc.status || 'Aguardando';
-                  
-                  console.log(`🔍 Processando UC:`, {
-                    proposta: proposta.numeroProposta,
-                    numeroUC: uc.numero_unidade || uc.numeroUC,
-                    status: statusUC,
-                    seraIncluida: statusUC === 'Fechada'
-                  });
-                  
-                  if (statusUC !== 'Fechada') {
-                      console.log(`⏭️ Pulando UC ${uc.numero_unidade || uc.numeroUC} - Status: ${statusUC}`);
-                      return;
-                  }
-                  
-                  console.log(`✅ UC incluída no controle!`);
-                  
-                  // Encontrar controle correspondente
-                  const controleCorrespondente = dadosControle.find(ctrl => 
-                      ctrl.proposta_id === proposta.id && ctrl.uc_id === uc.id
-                  );
-
-                  dadosExpandidos.push({
-                      id: controleCorrespondente?.id || `${proposta.id}-${uc.numero_unidade || uc.numeroUC}`,
-                      numeroProposta: proposta.numeroProposta,
-                      nomeCliente: proposta.nomeCliente,
-                      consultor: proposta.consultor,
-                      data: proposta.data,
-                      celular: proposta.celular || proposta.telefone,
-                      
-                      // Dados da UC específica
-                      numeroUC: uc.numero_unidade || uc.numeroUC,
-                      apelido: uc.apelido,
-                      media: uc.consumo_medio || uc.media,
-                      distribuidora: uc.distribuidora,
-                      ligacao: uc.ligacao,
-                      status: statusUC,
-                      
-                      // Dados de controle (se existir)
-                      ug: controleCorrespondente?.unidade_geradora?.nome_usina || null,
-                      calibragem: controleCorrespondente?.calibragem || 0,
-                      valor_calibrado: controleCorrespondente?.valor_calibrado || null,
-                      controle_id: controleCorrespondente?.id || null,
-                      
-                      // IDs para operações do backend
-                      proposta_id: proposta.id,
-                      uc_id: uc.id,
-                      ug_id: controleCorrespondente?.ug_id || null
-                  });
-              });
-          }
-      });
-
-      console.log(`🔍 Total de UCs expandidas: ${dadosExpandidos.length}`);
-
-      let dadosFiltradosPorEquipe = [];
-
-      if (user?.role === 'admin') {
-        dadosFiltradosPorEquipe = dadosExpandidos.map(item => ({
-          ...item,
-          consultor: getConsultorName(item.consultor)
-        }));
-      } else {
-        const teamNames = getMyTeam().map(member => member.name);
-        dadosFiltradosPorEquipe = dadosExpandidos.filter(item => 
-          teamNames.includes(item.consultor)
-        );
-      }
-      
-      const dadosComIds = dadosFiltradosPorEquipe.map((item, index) => ({
-        ...item,
-        id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
-      }));
-      
-      console.log(`🎯 Total final de dados para exibir: ${dadosComIds.length}`);
-      
-      setDados(dadosComIds);
-      setDadosFiltrados(dadosComIds);
-      
-      // Atualizar estatísticas diretamente aqui
-      try {
-        console.log('🔄 Carregando calibragem global do banco...');
-        const calibragemResponse = await apiService.getConfiguracao('calibragem_global');
-        
-        if (calibragemResponse?.success && calibragemResponse?.data) {
-          const valorCalibragem = parseFloat(calibragemResponse.data.valor) || 0;
-          console.log('✅ Calibragem carregada do banco:', valorCalibragem);
-          setCalibragemGlobal(valorCalibragem);
-        } else {
-          console.log('⚠️ Calibragem não encontrada, usando valor 0');
-          setCalibragemGlobal(0);
-        }
-      } catch (calibragemError) {
-        console.warn('⚠️ Erro ao carregar calibragem das configurações:', calibragemError);
-        setCalibragemGlobal(0); // Valor padrão em caso de erro
-      }
-      
-      // Atualizar estatísticas diretamente aqui
-      const stats = {
-        total: dadosComIds.length,
-        comUG: dadosComIds.filter(item => item.ug).length,
-        semUG: dadosComIds.filter(item => !item.ug).length,
-        calibradas: dadosComIds.filter(item => item.calibragem && parseFloat(item.calibragem) > 0).length
-      };
-      setEstatisticas(stats);
-      
-      if (dadosComIds.length === 0) {
-        showNotification('Nenhuma proposta no controle para sua equipe.', 'info');
-      } else {
-        showNotification(`${dadosComIds.length} propostas carregadas no controle!`, 'success');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error);
-      showNotification('Erro ao carregar dados: ' + error.message, 'error');
-      setDados([]);
-      setDadosFiltrados([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.role, user?.id, showNotification, getMyTeam, getConsultorName]);
   
   const carregarUGs = useCallback(async () => {
-    if (loading) return;
+    if (controle.loading) return;
     
     try {
       if (!isAdmin) return;
@@ -223,28 +56,28 @@ const ControlePage = () => {
       console.error('❌ Erro ao carregar UGs:', error);
       showNotification('Erro ao carregar UGs', 'error');
     }
-  }, [loading, isAdmin, showNotification]);
+  }, [controle.loading, isAdmin, showNotification]);
 
-  const filtrarDados = useCallback(() => {
-    let dadosFiltrados = dados;
+  const dadosFiltrados = useMemo(() => {
+    let dados = controle.data || [];
 
     if (filtros.consultor) {
-      dadosFiltrados = dadosFiltrados.filter(item =>
+      dados = dados.filter(item =>
         item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
       );
     }
 
     if (filtros.ug) {
       if (filtros.ug === 'sem-ug') {
-        dadosFiltrados = dadosFiltrados.filter(item => !item.ug);
+        dados = dados.filter(item => !item.ug);
       } else {
-        dadosFiltrados = dadosFiltrados.filter(item => item.ug === filtros.ug);
+        dados = dados.filter(item => item.ug === filtros.ug);
       }
     }
 
     if (filtros.busca) {
       const busca = filtros.busca.toLowerCase();
-      dadosFiltrados = dadosFiltrados.filter(item =>
+      dados = dados.filter(item =>
         item.nomeCliente?.toLowerCase().includes(busca) ||
         item.numeroProposta?.toLowerCase().includes(busca) ||
         item.numeroUC?.toLowerCase().includes(busca) ||
@@ -252,8 +85,8 @@ const ControlePage = () => {
       );
     }
 
-    setDadosFiltrados(dadosFiltrados);
-  }, [dados, filtros]);
+    return dados;
+  }, [controle.data, filtros]);
 
   const calcularValorCalibrado = useCallback((media, calibragem) => {
     if (!media || !calibragem || calibragem === 0) return 0;
@@ -262,19 +95,6 @@ const ControlePage = () => {
     const calibragemNum = parseFloat(calibragem);
     return mediaNum * (1 + calibragemNum / 100);
   }, []);
-
-  useEffect(() => {
-    if (user?.id) {
-      carregarDados();
-      if (isAdmin) {
-        carregarUGs();
-      }
-    }
-  }, [user?.id, isAdmin]);
-
-  useEffect(() => {
-    filtrarDados();
-  }, [debouncedFiltros]);
 
   const editarUG = useCallback((index) => {
     if (!isAdmin) return;
@@ -288,7 +108,7 @@ const ControlePage = () => {
     try {
       const { item } = modalUG;
       
-      const propostaAtual = dados.find(p => p.id === item.id);
+      const propostaAtual = controle.data.find(p => p.id === item.id);
       if (!propostaAtual) {
         throw new Error('Proposta não encontrada');
       }
@@ -298,19 +118,8 @@ const ControlePage = () => {
         ug: ugSelecionada
       });
       
-      // ✅ Atualizar dados localmente sem recarregar tudo
-      setDados(prevDados => 
-        prevDados.map(d => 
-          d.id === item.id ? { ...d, ug: ugSelecionada } : d
-        )
-      );
-      
-      setDadosFiltrados(prevDados => 
-        prevDados.map(d => 
-          d.id === item.id ? { ...d, ug: ugSelecionada } : d
-        )
-      );
-      
+      loadControle(1, controle.filters, true);
+
       setModalUG({ show: false, item: null, index: -1 });
       showNotification('UG atribuída com sucesso!', 'success');
       
@@ -318,7 +127,12 @@ const ControlePage = () => {
       console.error('❌ Erro ao salvar UG:', error);
       showNotification('Erro ao salvar: ' + error.message, 'error');
     }
-  }, [modalUG, dados, showNotification]); // ✅ DEPENDÊNCIAS REDUZIDAS
+  }, [modalUG, controle.data, showNotification, loadControle, controle.filters]);
+
+  const refreshDados = useCallback(() => {
+    console.log('🔄 Refresh manual dos dados');
+    loadControle(1, controle.filters, true);
+  }, [loadControle, controle.filters]);
 
   const aplicarCalibragem = useCallback(async () => {
     console.log('🔄 aplicarCalibragem chamada!');
@@ -380,12 +194,12 @@ const ControlePage = () => {
 
   // Obter listas únicas para filtros
   const consultoresUnicos = useMemo(() => 
-    [...new Set(dados.map(item => item.consultor).filter(Boolean))], 
-    [dados]
+    [...new Set((controle.data || []).map(item => item.consultor).filter(Boolean))], 
+    [controle.data]
   );
   const ugsUnicas = useMemo(() => 
-    [...new Set(dados.map(item => item.ug).filter(Boolean))], 
-    [dados]
+    [...new Set((controle.data || []).map(item => item.ug).filter(Boolean))], 
+    [controle.data]
   );
 
   return (
@@ -465,6 +279,14 @@ const ControlePage = () => {
 
             {isAdmin && (
               <div className="calibragem-controls">
+                <button 
+                  onClick={refreshDados}
+                  className="btn btn-secondary"
+                  disabled={controle.loading}
+                  title="Atualizar dados"
+                >
+                  {controle.loading ? '🔄' : '⟳'} Atualizar
+                </button>
                 <div className="calibragem-group">
                   <label>Calibragem Global (%):</label>
                   <input
@@ -493,7 +315,7 @@ const ControlePage = () => {
         {/* Tabela */}
         <section className="table-section">
           <div className="table-container">
-            {loading ? (
+            {controle.loading && controle.data.length === 0 ? (
               <div className="loading-container">
                 <div className="loading-spinner"></div>
                 <p>Carregando dados...</p>

@@ -1,17 +1,20 @@
 // UGsPage.jsx - CORRIGIDO com modais seguindo padrão PROSPEC
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
+import { useData } from '../context/DataContext';
 import './UGsPage.css';
 
 const UGsPage = () => {
   const { user } = useAuth();
-  const [dados, setDados] = useState([]);
-  const [dadosFiltrados, setDadosFiltrados] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    ugs, 
+    loadUgs, 
+    afterCreateUg 
+  } = useData();
   const [modalNovaUG, setModalNovaUG] = useState({ show: false });
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   
@@ -19,131 +22,32 @@ const UGsPage = () => {
     busca: ''
   });
 
-  const [estatisticas, setEstatisticas] = useState({
-    total: 0,
-    capacidadeTotal: 0
-  });
-
   const { showNotification } = useNotification();
 
-  const carregarDados = useCallback(async () => {
-    console.log('🔄 carregarDados INICIADO - loading atual:', loading);
-    
-    try {
-      setLoading(true);
-      console.log('🚀 INICIANDO carregamento de UGs...');
-      
-      // Buscar UGs da API
-      const ugs = await storageService.getUGs();
-      console.log('📋 UGs RECEBIDAS da API:', {
-        quantidade: ugs?.length || 0,
-        primeiraUG: ugs?.[0] || 'nenhuma'
-      });
-      
-      // Buscar controle apenas uma vez
-      let controle = [];
-      try {
-        controle = await storageService.getControle();
-        console.log('📊 Controles carregados:', controle.length);
-      } catch (error) {
-        console.warn('⚠️ Controle não disponível:', error.message);
-        controle = [];
-      }
-      
-      // Processar dados das UGs (mesmo se vazio)
-      const ugsProcessadas = ugs.map(ug => {
-        const ucsDestaUG = controle.filter(item => 
-          item.ug === ug.nomeUsina || 
-          item.ug === ug.nome_usina ||
-          item.ug_id === ug.id
-        );
-        
-        const mediaTotal = ucsDestaUG.reduce((soma, uc) => 
-          soma + (parseFloat(uc.media) || parseFloat(uc.consumo_medio) || 0), 0
-        );
-        
-        const mediaUG = ucsDestaUG.length > 0 ? Math.round(mediaTotal / ucsDestaUG.length) : 0;
-        
-        return {
-          ...ug,
-          ucsAtribuidas: ucsDestaUG.length,
-          mediaUG,
-          potenciaCA: ug.potenciaCC ? Math.round(ug.potenciaCC * 0.8) : 0
-        };
-      });
-
-      // ✅ SEMPRE setar os dados (mesmo array vazio)
-      setDados(ugsProcessadas);
-      setDadosFiltrados(ugsProcessadas);
-      
-      if (ugsProcessadas.length === 0) {
-        console.log('ℹ️ Nenhuma UG encontrada');
-        showNotification('Nenhuma UG encontrada', 'info');
-      } else {
-        console.log(`✅ ${ugsProcessadas.length} UGs carregadas com sucesso`);
-        showNotification(`${ugsProcessadas.length} UGs carregadas!`, 'success');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar UGs:', error);
-      showNotification('Erro ao carregar UGs: ' + error.message, 'error');
-      setDados([]);
-      setDadosFiltrados([]);
-    } finally {
-      console.log('🏁 Finalizando carregamento...');
-      setLoading(false); // ✅ ESSENCIAL: sempre parar o loading
-    }
-  }, []);
-
-  const filtrarDados = useCallback(() => {
-    console.log('🔍 Executando filtrarDados...', { 
-      totalDados: dados.length, 
-      filtros: filtros 
-    });
-
-    let dadosFiltrados = dados;
+  const dadosFiltrados = useMemo(() => {
+    let dados = ugs.data || [];
 
     if (filtros.busca?.trim()) {
       const busca = filtros.busca.toLowerCase().trim();
-      dadosFiltrados = dadosFiltrados.filter(item =>
+      dados = dados.filter(item =>
         item.nomeUsina?.toLowerCase().includes(busca)
       );
     }
 
-    setDadosFiltrados(dadosFiltrados);
-    atualizarEstatisticas(dadosFiltrados);
-  }, [dados, filtros.busca]);
+    return dados;
+  }, [ugs.data, filtros.busca]);
 
-  const atualizarEstatisticas = useCallback((dadosFiltrados) => {
+  const estatisticas = useMemo(() => {
     const total = dadosFiltrados.length;
     const capacidadeTotal = dadosFiltrados.reduce((soma, item) => 
       soma + (parseFloat(item.capacidade) || 0), 0
     );
 
-    setEstatisticas({
+    return {
       total,
       capacidadeTotal: Math.round(capacidadeTotal)
-    });
-  }, []);
-
-  useEffect(() => {
-    console.log('🎬 useEffect MONTAGEM do componente');
-    console.log('🎬 user existe?', !!user?.id);
-    
-    if (user?.id) {
-      console.log('🎬 Chamando carregarDados pela primeira vez');
-      carregarDados();
-    } else {
-      console.log('⚠️ Aguardando usuário ser carregado...');
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    console.log('🔍 useEffect filtrarDados executado - dados:', dados.length, 'filtros:', filtros);
-    if (dados.length > 0 || Object.values(filtros).some(v => v)) {
-      filtrarDados();
-    }
-  }, [dados, filtros.busca]);
+    };
+  }, [dadosFiltrados]);
 
   const limparFiltros = () => {
     setFiltros({
@@ -176,12 +80,10 @@ const UGsPage = () => {
       
       console.log('🔗 CHAMANDO storageService.adicionarUG...');
       
-      const result = await storageService.adicionarUG(dadosUG);
-      console.log('✅ UG criada com sucesso:', result);
-      
-      console.log('🔄 Recarregando dados...');
-      await carregarDados();
-      
+      await storageService.adicionarUG(dadosUG);
+      console.log('✅ UG criada - Invalidando cache');
+      afterCreateUg();
+            
       setModalNovaUG({ show: false });
       showNotification('UG criada com sucesso!', 'success');
       
@@ -205,7 +107,7 @@ const UGsPage = () => {
     try {
       const { item } = modalEdicao;
       
-      const indexReal = dados.findIndex(ug => ug.id === item.id);
+      const indexReal = ugs.data.findIndex(ug => ug.id === item.id);
       
       if (indexReal === -1) {
         showNotification('UG não encontrada para edição', 'error');
@@ -219,7 +121,7 @@ const UGsPage = () => {
       };
 
       await storageService.atualizarUG(indexReal, ugAtualizada);
-      await carregarDados();
+      loadUgs(ugs.filters, true);
       
       setModalEdicao({ show: false, item: null, index: -1 });
       showNotification('UG atualizada com sucesso!', 'success');
@@ -248,14 +150,15 @@ const UGsPage = () => {
     if (!window.confirm(`Deseja realmente excluir a UG "${item.nomeUsina}"?`)) return;
 
     try {
-      const indexReal = dados.findIndex(ug => ug.id === item.id);
+      const indexReal = ugs.data.findIndex(ug => ug.id === item.id);
       if (indexReal === -1) {
         showNotification('UG não encontrada para exclusão', 'error');
         return;
       }
 
       await storageService.removerUG(indexReal);
-      await carregarDados();
+      loadUgs(ugs.filters, true);
+
       showNotification('UG excluída com sucesso!', 'success');
       
     } catch (error) {
@@ -274,7 +177,13 @@ const UGsPage = () => {
     }
   };
 
+  const refreshDados = useCallback(() => {
+    console.log('🔄 Refresh manual dos dados');
+    loadUgs(ugs.filters, true);
+  }, [loadUgs, ugs.filters]);
+
   const isAdmin = user?.role === 'admin';
+
 
   return (
     <div className="page-container">
@@ -318,6 +227,14 @@ const UGsPage = () => {
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
+              <button 
+                onClick={refreshDados}
+                className="btn btn-secondary"
+                disabled={ugs.loading}
+                title="Atualizar dados"
+              >
+                {ugs.loading ? '🔄' : '⟳'} Atualizar
+              </button>
               <button onClick={exportarCSV} className="btn btn-secondary">
                 📊 Exportar CSV
               </button>
@@ -340,7 +257,7 @@ const UGsPage = () => {
           </div>
           
           <div className="table-wrapper">
-            {loading ? (
+            {ugs.loading && ugs.data.length === 0 ? (
               <div className="loading-state">
                 <div className="spinner"></div>
                 <p>Carregando UGs...</p>
@@ -350,7 +267,7 @@ const UGsPage = () => {
                 <div className="empty-icon">🏭</div>
                 <h3>Nenhuma UG encontrada</h3>
                 <p>
-                  {dados.length === 0 
+                  {ugs.data.length === 0
                     ? 'Não há UGs cadastradas ainda.'
                     : 'Nenhuma UG corresponde aos filtros aplicados.'
                   }
