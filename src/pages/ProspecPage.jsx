@@ -1,98 +1,51 @@
 // src/pages/ProspecPage.jsx - Com modal de visualização para todos os perfis
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
-import storageService from '../services/storageService';
-import apiService from '../services/apiService';
+import { useData } from '../context/DataContext';
+import storageService from '../services/storageService'; // ✅ ADICIONAR
 import './ProspecPage.css';
 
 const ProspecPage = () => {
   const navigate = useNavigate();
   const { user, getMyTeam, getConsultorName } = useAuth();
-  const [dados, setDados] = useState([]);
-  const [dadosFiltrados, setDadosFiltrados] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { showNotification } = useNotification();
+  const { 
+    propostas, 
+    loadPropostas, 
+    afterDeleteProposta,
+    afterUpdateProposta 
+  } = useData();
+  
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   const [modalVisualizacao, setModalVisualizacao] = useState({ show: false, item: null });
-  
+
   const [filtros, setFiltros] = useState({
     consultor: '',
     status: '',
     busca: ''
   });
 
-  const { showNotification } = useNotification();
 
-  const carregarDados = useCallback(async () => {
-    if (!user?.id) return; // Adicionar esta linha
-      try {
-        setLoading(true);
-        
-        console.log('📥 Carregando dados do localStorage...');
-        
-        // Carregar dados reais do localStorage
-        const dadosProspec = await storageService.getProspec();
-        
-        let dadosFiltradosPorEquipe = [];
-
-        if (user?.role === 'admin') {
-          // Admin vê todos os dados, mas com consultor responsável
-          dadosFiltradosPorEquipe = dadosProspec.map(item => ({
-            ...item,
-            consultor: getConsultorName(item.consultor) // Mostrar consultor responsável
-          }));
-        } else {
-          // Outros usuários veem apenas dados da sua equipe
-          const teamNames = getMyTeam().map(member => member.name);
-          dadosFiltradosPorEquipe = dadosProspec.filter(item => 
-            teamNames.includes(item.consultor)
-          );
-        }
-        
-        // Garantir IDs únicos para cada item
-        const dadosComIds = dadosFiltradosPorEquipe.map((item, index) => ({
-          ...item,
-          id: item.id || `${item.numeroProposta}-${item.numeroUC}-${index}-${Date.now()}`
-        }));
-        
-        setDados(dadosComIds);
-        setDadosFiltrados(dadosComIds);
-        
-        if (dadosComIds.length === 0) {
-          showNotification('Nenhuma proposta encontrada para sua equipe.', 'info');
-        } else {
-          showNotification(`${dadosComIds.length} propostas carregadas!`, 'success');
-        }
-        
-      } catch (error) {
-        console.error('❌ Erro ao carregar dados:', error);
-        showNotification('Erro ao carregar dados: ' + error.message, 'error');
-        setDados([]);
-        setDadosFiltrados([]);
-      } finally {
-        setLoading(false);
-      }
-  }, [user?.id, user?.role, getMyTeam, getConsultorName, showNotification]);
-
-  const filtrarDados = useCallback(() => {
-    let dadosFiltrados = dados;
+  const dadosFiltrados = useMemo(() => {
+    let dados = propostas.data || [];
 
     if (filtros.consultor) {
-      dadosFiltrados = dadosFiltrados.filter(item =>
+      dados = dados.filter(item =>
         item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
       );
     }
 
     if (filtros.status) {
-      dadosFiltrados = dadosFiltrados.filter(item => item.status === filtros.status);
+      dados = dados.filter(item => item.status === filtros.status);
     }
 
     if (filtros.busca) {
       const busca = filtros.busca.toLowerCase();
-      dadosFiltrados = dadosFiltrados.filter(item =>
+      dados = dados.filter(item =>
         item.nomeCliente?.toLowerCase().includes(busca) ||
         item.numeroProposta?.toLowerCase().includes(busca) ||
         item.numeroUC?.toLowerCase().includes(busca) ||
@@ -100,29 +53,8 @@ const ProspecPage = () => {
       );
     }
 
-    setDadosFiltrados(dadosFiltrados);
-  }, [dados, filtros]);
-
-  useEffect(() => {
-    let isMounted = true;
-    
-    const loadData = async () => {
-      if (!isMounted || !user?.id) return;
-      
-      console.log('📥 Carregando dados do localStorage...');
-      await carregarDados();
-    };
-    
-    loadData();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
-
-  useEffect(() => {
-    filtrarDados();
-  }, [filtrarDados]);
+    return dados;
+  }, [propostas.data, filtros]);
 
   const limparFiltros = () => {
     setFiltros({
@@ -284,8 +216,8 @@ const ProspecPage = () => {
       };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
-      await carregarDados();
-      
+      afterUpdateProposta(); 
+
       setModalEdicao({ show: false, item: null, index: -1 });
       showNotification('Proposta atualizada com sucesso!', 'success');
       
@@ -322,7 +254,7 @@ const ProspecPage = () => {
         numeroUC: item.numeroUC || item.numero_unidade,
         status: 'Cancelada'
       });
-      await carregarDados();
+      afterUpdateProposta();
       
       showNotification('Proposta cancelada com sucesso!', 'success');
       
@@ -338,7 +270,7 @@ const ProspecPage = () => {
 
   const exportarDados = async () => {
     try {
-      await storageService.exportarParaCSV('prospec');
+      await storageService.exportarDadosFiltrados('prospec', dadosFiltrados);
       showNotification('Dados exportados com sucesso!', 'success');
     } catch (error) {
       console.error('❌ Erro ao exportar:', error);
@@ -346,8 +278,13 @@ const ProspecPage = () => {
     }
   };
 
+  const refreshDados = useCallback(() => {
+    console.log('🔄 Refresh manual dos dados');
+    loadPropostas(1, propostas.filters, true); // forceReload = true
+  }, [loadPropostas, propostas.filters]);
+
   // Obter lista única de consultores para filtro
-  const consultoresUnicos = [...new Set(dados.map(item => item.consultor).filter(Boolean))];
+  const consultoresUnicos = [...new Set((propostas.data || []).map(item => item.consultor).filter(Boolean))];
 
   // Verificar se é admin para mostrar ações de admin
   const isAdmin = user?.role === 'admin';
@@ -435,6 +372,14 @@ const ProspecPage = () => {
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
+              <button 
+                onClick={refreshDados}
+                className="btn btn-secondary"
+                disabled={propostas.loading}
+                title="Atualizar dados"
+              >
+                {propostas.loading ? '🔄' : '⟳'} Atualizar
+              </button>
               <button onClick={criarNovaProposta} className="btn btn-success">
                 ➕ Nova Proposta
               </button>
@@ -453,7 +398,7 @@ const ProspecPage = () => {
               <span className="table-count">{dadosFiltrados.length} registros</span>
             </div>
 
-            {loading ? (
+            {propostas.loading && propostas.data.length === 0 ? (
               <div className="loading-container">
                 <div className="loading-spinner"></div>
                 <p>Carregando propostas...</p>
