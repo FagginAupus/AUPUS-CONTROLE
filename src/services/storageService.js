@@ -19,7 +19,10 @@ class StorageService {
             // Configurar token no apiService
             apiService.setToken(response.token);
             
-            // Não usar localStorage - retornar dados diretamente
+            // ADICIONAR estas linhas para salvar no localStorage:
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            
             console.log('✅ Login realizado com sucesso');
             return response.user;
         } else {
@@ -35,8 +38,13 @@ class StorageService {
     }
 
     logout() {
-        // Apenas limpar token do apiService
+        // Limpar token do apiService
         apiService.clearToken();
+        
+        // ADICIONAR estas linhas:
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
         console.log('🚪 Logout realizado');
     }
 

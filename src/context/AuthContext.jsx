@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx - CORRIGIDO PARA INTEGRAÇÃO COM API
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import storageService from '../services/storageService';
+import apiService from '../services/apiService';
 
 const AuthContext = createContext();
 
@@ -30,6 +31,8 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           console.log('👤 Usuário restaurado do localStorage:', userData.name || userData.nome);
         }
+        apiService.setToken(savedToken);
+
       } catch (error) {
         console.error('❌ Erro ao restaurar sessão:', error);
         // Limpar dados corrompidos

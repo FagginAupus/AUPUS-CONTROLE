@@ -279,14 +279,6 @@ const ControlePage = () => {
 
             {isAdmin && (
               <div className="calibragem-controls">
-                <button 
-                  onClick={refreshDados}
-                  className="btn btn-secondary"
-                  disabled={controle.loading}
-                  title="Atualizar dados"
-                >
-                  {controle.loading ? '🔄' : '⟳'} Atualizar
-                </button>
                 <div className="calibragem-group">
                   <label>Calibragem Global (%):</label>
                   <input
@@ -304,6 +296,14 @@ const ControlePage = () => {
                     Aplicar Calibragem
                   </button>
                 </div>
+                <button 
+                  onClick={refreshDados}
+                  className="btn btn-secondary"
+                  disabled={controle.loading}
+                  title="Atualizar dados"
+                >
+                  {controle.loading ? '🔄' : '⟳'} Atualizar
+                </button>
                 <button onClick={exportarDados} className="btn btn-secondary">
                   📊 Exportar Dados
                 </button>
