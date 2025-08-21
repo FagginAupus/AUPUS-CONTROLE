@@ -757,3 +757,9 @@
   font-weight: normal !important;
   background: transparent !important;
 }
+
+.ug-option-remover {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  font-weight: bold !important;
+}

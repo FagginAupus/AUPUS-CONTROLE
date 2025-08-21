@@ -39,6 +39,22 @@ const ControlePage = () => {
   const debouncedFiltros = useMemo(() => filtros, [filtros]);
 
   const isAdmin = user?.role === 'admin';
+    useEffect(() => {
+    const carregarCalibragem = async () => {
+      if (!isAdmin) return;
+      
+      try {
+        const response = await apiService.get('/configuracoes/calibragem-global/value');
+        if (response?.success) {
+          setCalibragemGlobal(parseFloat(response.valor) || 0);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar calibragem:', error);
+      }
+    };
+    
+    carregarCalibragem();
+  }, [isAdmin]);
 
   console.log('🔍 Debug apiService:', {
     apiServiceDisponivel: !!apiService,
@@ -129,18 +145,38 @@ const ControlePage = () => {
     try {
       const { item } = modalUG;
       
-      const response = await apiService.post(`/controle/${item.id}/atribuir-ug`, {
-        ug_id: ugSelecionada
-      });
+      console.log('🔍 UG selecionada:', ugSelecionada);
+      console.log('🔍 Item:', item);
+      
+      let response;
+      
+      if (ugSelecionada === 'remover') {
+        // Remover UG atual
+        response = await apiService.patch(`/controle/${item.id}/remover-ug`);
+      } else {
+        // Atribuir UG
+        response = await apiService.post(`/controle/${item.id}/atribuir-ug`, {
+          ug_id: ugSelecionada
+        });
+      }
 
       if (response?.success) {
-        loadControle(1, controle.filters, true); // Recarregar dados
+        loadControle(1, controle.filters, true);
         setModalUG({ show: false, item: null, index: -1 });
         showNotification(response.message, 'success');
+      } else if (response?.success === false) {
+        // Tratar resposta de erro de capacidade como warning
+        showNotification(response.message, 'warning');
       }
     } catch (error) {
-      console.error('❌ Erro ao atribuir UG:', error);
-      showNotification('Erro ao atribuir UG: ' + error.message, 'error');
+      console.error('❌ Erro ao processar UG:', error);
+      
+      // Verificar se é erro de capacidade (agora será tratado como warning)
+      if (error.message && error.message.includes('capacidade')) {
+        showNotification(error.message, 'warning');
+      } else {
+        showNotification('Erro ao processar UG: ' + error.message, 'error');
+      }
     }
   }, [modalUG, loadControle, controle.filters, showNotification]);
 
@@ -201,7 +237,9 @@ const ControlePage = () => {
       console.log('🔄 Iniciando chamada para API...');
       
       // Salvar a calibragem global nas configurações do sistema
-      const response = await apiService.atualizarConfiguracao('calibragem_global', calibragemGlobal);
+      const response = await apiService.put('/configuracoes/calibragem_global', { 
+          valor: calibragemGlobal 
+      });
       
       console.log('✅ Resposta da API:', response);
       
@@ -501,7 +539,7 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content modal-controle modal-ug-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header modal-header-controle">
-          <h3 className="modal-title-controle">📋 Gerenciar Status de Troca</h3>
+          <h3 className="modal-title-controle">🏭 Atribuir UG</h3>
           <button onClick={onClose} className="btn btn-close">✕</button>
         </div>
         
@@ -527,6 +565,9 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
                 className="ug-select"
               >
                 <option value="">Escolha uma UG...</option>
+                <option value="remover" className="ug-option-remover">
+                  🚫 Sem UG (Remover UG atual)
+                </option>
                 {ugsAnalise.map((ug) => (
                   <option 
                     key={ug.id} 
