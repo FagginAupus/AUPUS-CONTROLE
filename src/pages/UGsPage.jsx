@@ -150,13 +150,8 @@ const UGsPage = () => {
     if (!window.confirm(`Deseja realmente excluir a UG "${item.nomeUsina}"?`)) return;
 
     try {
-      const indexReal = ugs.data.findIndex(ug => ug.id === item.id);
-      if (indexReal === -1) {
-        showNotification('UG não encontrada para exclusão', 'error');
-        return;
-      }
-
-      await storageService.removerUG(indexReal);
+      // ✅ CORRIGIDO: Passar o ID da UG ao invés do index
+      await storageService.removerUG(item.id); // ✅ USAR item.id
       loadUgs(ugs.filters, true);
 
       showNotification('UG excluída com sucesso!', 'success');
@@ -166,6 +161,7 @@ const UGsPage = () => {
       showNotification('Erro ao excluir: ' + error.message, 'error');
     }
   };
+
 
   const exportarCSV = async () => {
     try {
@@ -302,7 +298,7 @@ const UGsPage = () => {
                         <span className="potencia-valor">{item.potenciaCC?.toLocaleString('pt-BR') || '0'}</span>
                       </td>
                       <td>
-                        <span className="fator-capacidade">{((item.fatorCapacidade || 0) * 100).toFixed(1)}%</span>
+                        <span className="fator-capacidade">{(item.fatorCapacidade || 0).toFixed(1)}%</span> {/* ✅ REMOVER * 100 */}
                       </td>
                       <td>
                         <span className="capacidade-valor">{(item.capacidade || 0).toLocaleString('pt-BR')}</span>
@@ -375,9 +371,9 @@ const ModalNovaUG = ({ onSave, onClose }) => {
   const [formData, setFormData] = useState({
     nomeUsina: '',
     numero_unidade: '',
-    potenciaCA: 0,        // ✅ ADICIONAR
-    potenciaCC: 0,        // ✅ MUDAR de '' para 0
-    fatorCapacidade: 0.25, // ✅ MUDAR de '' para 0.25
+    potenciaCA: 0,        
+    potenciaCC: 0,        
+    fatorCapacidade: 19,
     localizacao: '',
     observacoes: ''
   });
@@ -401,7 +397,7 @@ const ModalNovaUG = ({ onSave, onClose }) => {
       // ✅ CAMPOS OBRIGATÓRIOS EM SNAKE_CASE:
       nome_usina: formData.nomeUsina.trim(),                        // ✅ CORRIGIDO
       potencia_cc: parseFloat(formData.potenciaCC) || 0,            // ✅ CORRIGIDO
-      fator_capacidade: parseFloat(formData.fatorCapacidade) || 0.25, // ✅ CORRIGIDO
+      fator_capacidade: parseFloat(formData.fatorCapacidade) || 19, // ✅ CORRIGIDO
       numero_unidade: String(formData.numero_unidade).trim(),       // ✅ CORRIGIDO - STRING
       apelido: formData.nomeUsina.trim(),
       
@@ -489,22 +485,22 @@ const ModalNovaUG = ({ onSave, onClose }) => {
             </div>
 
             <div className="form-group">
-              <label>Fator de Capacidade</label>
+              <label>Fator de Capacidade (%)</label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
-                max="1"
+                max="100"
                 value={formData.fatorCapacidade}
-                onChange={(e) => setFormData({...formData, fatorCapacidade: parseFloat(e.target.value) || 0.25})}
-                placeholder="Ex: 0.25"
+                onChange={(e) => setFormData({...formData, fatorCapacidade: parseFloat(e.target.value) || 19})}
+                placeholder="Ex: 19"
               />
             </div>
           </div>
 
           <div className="info-ug">
             <div className="info-item">
-              <strong>Capacidade estimada:</strong> {(720 * formData.potenciaCC * (formData.fatorCapacidade / 100)).toFixed(0)} MWh/ano
+              <strong>Capacidade estimada:</strong> {(720 * formData.potenciaCC * (formData.fatorCapacidade / 100)).toFixed(0)} kWh/mês
             </div>
           </div>
 
@@ -528,7 +524,7 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
     nomeUsina: '',
     potenciaCA: 0,
     potenciaCC: 0,
-    fatorCapacidade: 0.25,
+    fatorCapacidade: 19,
     numero_unidade: ''  // ✅ ADICIONAR ESTA LINHA
   });
 
@@ -589,14 +585,14 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
                 min="0"
                 max="1"
                 value={dados.fatorCapacidade}
-                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 0.25})}
+                onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 19})}
               />
             </div>
           </div>
 
           <div className="info-ug">
             <div className="info-item">
-              <strong>Capacidade estimada:</strong> {(720 * dados.potenciaCC * (dados.fatorCapacidade / 100)).toFixed(0)} MWh/ano
+              <strong>Capacidade estimada:</strong> {(720 * dados.potenciaCC * (dados.fatorCapacidade / 100)).toFixed(0)} kWh/mês
             </div>
             <div className="info-item">
               <strong>UCs atribuídas:</strong> {item?.ucsAtribuidas || 0}

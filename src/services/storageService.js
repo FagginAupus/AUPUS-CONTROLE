@@ -429,13 +429,14 @@ class StorageService {
         }
     }
 
-    async removerUG(index) {
+    async removerUG(ugId) {
         try {
-            // Em um sistema real, você precisaria do ID
-            console.log('🗑️ Removendo UG...', index);
+            console.log('🗑️ Removendo UG via API:', ugId);
             
-            // Por enquanto, retornar sucesso
-            console.log('✅ UG removida (simulado)');
+            // ✅ CHAMADA REAL PARA API
+            await apiService.delete(`/ugs/${ugId}`);
+            
+            console.log('✅ UG removida com sucesso da API');
             return { success: true };
             
         } catch (error) {
