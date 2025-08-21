@@ -13,14 +13,14 @@ const ControlePage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
   const { 
     controle, 
-    loadControle 
+    loadControle,
+    ugs
   } = useData();
 
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [calibragemGlobal, setCalibragemGlobal] = useState(0);
   const [modalStatusTroca, setModalStatusTroca] = useState({ show: false, item: null, index: -1 });
-  const [ugsAnalise, setUgsAnalise] = useState([]);
 
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -98,17 +98,6 @@ const ControlePage = () => {
     return mediaNum * (1 + calibragemNum / 100);
   }, []);
 
-  const carregarUgsAnalise = useCallback(async () => {
-    try {
-      const response = await apiService.get('/controle/ugs-disponiveis');
-      if (response?.success) {
-        setUgsAnalise(response.data || []);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar análise das UGs:', error);
-    }
-  }, []);
-
   const editarStatusTroca = useCallback((index) => {
     console.log('🔍 editarStatusTroca chamada com index:', index);
     const item = dadosFiltrados[index];
@@ -133,11 +122,8 @@ const ControlePage = () => {
       return;
     }
     
-    // Apenas carregar análise das UGs (que já faz requisição própria)
-    carregarUgsAnalise();
-    
     setModalUG({ show: true, item, index });
-  }, [isAdmin, dadosFiltrados, showNotification, carregarUgsAnalise]);
+  }, [isAdmin, dadosFiltrados, showNotification]);
 
   const salvarUG = useCallback(async (ugSelecionada) => {
     try {
@@ -480,7 +466,7 @@ const ControlePage = () => {
         {modalUG.show && isAdmin && (
           <ModalUG 
             item={modalUG.item}
-            ugsAnalise={ugsAnalise}
+            ugsAnalise={ugs.data || []}
             onSave={salvarUG}
             onClose={() => setModalUG({ show: false, item: null, index: -1 })}
           />
@@ -513,13 +499,13 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-ug-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>🏭 Atribuir UG</h3>
+      <div className="modal-content modal-controle modal-ug-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header modal-header-controle">
+          <h3 className="modal-title-controle">📋 Gerenciar Status de Troca</h3>
           <button onClick={onClose} className="btn btn-close">✕</button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body">
+        <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
           <div className="proposta-info">
             <p><strong>Cliente:</strong> {item.nomeCliente}</p>
             <p><strong>UC:</strong> {item.numeroUC} - {item.apelido}</p>
@@ -529,9 +515,9 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
           
           <div className="form-group">
             <label>Selecionar UG:</label>
-            {ugsAnalise.length === 0 ? (
+            {!ugsAnalise || ugsAnalise.length === 0 ? (
               <div className="loading-ugs">
-                <p>Carregando UGs disponíveis...</p>
+                <p>Nenhuma UG disponível</p>
               </div>
             ) : (
               <select
@@ -546,10 +532,10 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
                     key={ug.id} 
                     value={ug.id}
                     disabled={ug.status === 'Cheia'}
-                    className={`ug-option ug-${ug.status_color}`}
+                    className={`ug-option ug-${ug.status_color || 'success'}`}
                   >
-                    {ug.nome_usina} - {ug.potencia_cc}kWp 
-                    ({ug.consumo_atribuido.toFixed(0)}/{ug.capacidade_total.toFixed(0)} kWh - {ug.status})
+                    {ug.nome_usina || ug.nomeUsina || 'UG'} - {ug.potencia_cc || ug.potenciaCC || 0}kWp 
+                    ({(ug.consumo_atribuido || 0).toFixed(0)}/{(ug.capacidade_total || ug.capacidade || 0).toFixed(0)} kWh - {ug.status || 'Disponível'})
                   </option>
                 ))}
               </select>
@@ -605,7 +591,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
         </div>
         
         {showConfirmacao ? (
-          <div className="modal-body confirmacao-body">
+          <div className="modal-body modal-body-controle confirmacao-body">
             <div className="alert alert-warning">
               <h4>⚠️ Confirmação Necessária</h4>
               <p>
@@ -624,7 +610,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="modal-body">
+          <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
             <div className="proposta-info">
               <p><strong>Cliente:</strong> {item.nomeCliente}</p>
               <p><strong>UC:</strong> {item.numeroUC} - {item.apelido}</p>
