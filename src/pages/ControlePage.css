@@ -716,3 +716,30 @@
     padding: 6px !important;
   }
 }
+
+/* Status de Troca */
+.status-troca-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-aguardando { background: #ffc107; color: #000; }
+.status-em-andamento { background: #17a2b8; color: white; }
+.status-finalizado { background: #28a745; color: white; }
+
+.modal-ug-content { max-width: 600px; }
+.ug-select option.ug-option { padding: 8px; }
+.ug-option.ug-danger { color: #dc3545; font-style: italic; }
+.ug-option.ug-warning { color: #ffc107; }
+.ug-option.ug-success { color: #28a745; }
+
+.confirmacao-body { text-align: center; padding: 20px; }
+.alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+.alert-warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+.form-help { color: #6c757d; font-size: 0.8rem; margin-top: 4px; }
+.status-finalizado { color: #28a745; font-weight: 600; }
