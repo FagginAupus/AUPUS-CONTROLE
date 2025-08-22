@@ -42,10 +42,14 @@ const UGsPage = () => {
     const capacidadeTotal = dadosFiltrados.reduce((soma, item) => 
       soma + (parseFloat(item.capacidade) || 0), 0
     );
+    const consumoTotal = dadosFiltrados.reduce((soma, item) => 
+      soma + (parseFloat(item.mediaConsumoAtribuido) || 0), 0
+    ); // ✅ ADICIONAR ESTA LINHA
 
     return {
       total,
-      capacidadeTotal: Math.round(capacidadeTotal)
+      capacidadeTotal: Math.round(capacidadeTotal),
+      consumoTotal: Math.round(consumoTotal) // ✅ ADICIONAR ESTA LINHA
     };
   }, [dadosFiltrados]);
 
@@ -202,6 +206,10 @@ const UGsPage = () => {
             <span className="stat-label">Capacidade Total</span>
             <span className="stat-value">{estatisticas.capacidadeTotal.toLocaleString('pt-BR')} MWh</span>
           </div>
+          <div className="stat-card">
+            <span className="stat-label">Consumo Atribuído</span>
+            <span className="stat-value">{estatisticas.consumoTotal.toLocaleString('pt-BR')} kWh</span>
+          </div>
         </section>
 
         {/* Filtros e Controles */}
@@ -310,7 +318,7 @@ const UGsPage = () => {
                       </td>
                       <td>
                         <span className="media-total">
-                          {(item.mediaTotal || 0).toLocaleString('pt-BR')}
+                          {(item.mediaConsumoAtribuido || 0).toLocaleString('pt-BR')}
                         </span>
                       </td>
                       {isAdmin && (

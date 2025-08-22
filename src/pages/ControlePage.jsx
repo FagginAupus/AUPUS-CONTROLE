@@ -40,21 +40,61 @@ const ControlePage = () => {
 
   const isAdmin = user?.role === 'admin';
     useEffect(() => {
-    const carregarCalibragem = async () => {
-      if (!isAdmin) return;
-      
-      try {
-        const response = await apiService.get('/configuracoes/calibragem-global/value');
-        if (response?.success) {
-          setCalibragemGlobal(parseFloat(response.valor) || 0);
+      const carregarCalibragem = async () => {
+        console.log('🚀 carregarCalibragem INICIADO');
+        console.log('👤 isAdmin:', isAdmin);
+        console.log('🔗 apiService disponível:', !!apiService);
+        
+        if (!isAdmin) {
+          console.log('❌ Não é admin, saindo...');
+          return;
         }
-      } catch (error) {
-        console.error('❌ Erro ao carregar calibragem:', error);
-      }
-    };
-    
-    carregarCalibragem();
-  }, [isAdmin]);
+        
+        try {
+          console.log('🔗 Fazendo requisição para /configuracoes/calibragem-global/value');
+          const response = await apiService.get('/configuracoes/calibragem-global/value');
+          
+          console.log('📥 Resposta COMPLETA da API:', {
+            response: response,
+            hasSuccess: response?.success,
+            hasValor: response?.valor !== undefined,
+            valorTipo: typeof response?.valor,
+            valorConteudo: response?.valor,
+            estruturaCompleta: JSON.stringify(response, null, 2)
+          });
+          
+          if (response?.success && response?.valor !== undefined) {
+            const valorCalibagem = parseFloat(response.valor) || 0;
+            console.log('✅ Calibragem carregada com sucesso:', valorCalibagem);
+            setCalibragemGlobal(valorCalibagem);
+          } else {
+            console.log('⚠️ Resposta não possui success=true ou valor está undefined:', {
+              success: response?.success,
+              valor: response?.valor,
+              valorExiste: 'valor' in (response || {})
+            });
+            setCalibragemGlobal(0); // Valor padrão
+          }
+        } catch (error) {
+          console.error('❌ ERRO ao carregar calibragem:', {
+            error: error,
+            message: error.message,
+            status: error.status,
+            response: error.response,
+            stack: error.stack
+          });
+          
+          // Se der 404, significa que o endpoint não existe
+          if (error.message?.includes('404')) {
+            console.log('🔍 Endpoint não encontrado - usando valor padrão 0');
+          }
+          
+          setCalibragemGlobal(0); // Valor padrão em caso de erro
+        }
+      };
+      
+      carregarCalibragem();
+    }, [isAdmin]);
 
   console.log('🔍 Debug apiService:', {
     apiServiceDisponivel: !!apiService,
@@ -160,23 +200,37 @@ const ControlePage = () => {
         });
       }
 
+      // ✅ ADICIONAR ESTES LOGS PARA DEBUG:
+      console.log('🔍 DEBUG - response completa:', response);
+      console.log('🔍 DEBUG - response.success:', response?.success);
+      console.log('🔍 DEBUG - response.errorType:', response?.errorType);
+      console.log('🔍 DEBUG - response.message:', response?.message);
+
+      // ✅ CORREÇÃO: Verificar se é erro de capacidade especificamente
+      if (response?.success === false && response?.errorType === 'capacity') {
+        console.log('✅ DEBUG - Entrando na condição de capacidade');
+        console.log('🟡 DEBUG - Chamando showNotification com WARNING');
+        showNotification(response.message, 'warning');
+        console.log('🔚 DEBUG - Executando return, não deve prosseguir');
+        // NÃO fechar o modal - deixar usuário escolher outra UG
+        return;
+      }
+
       if (response?.success) {
+        console.log('✅ DEBUG - Sucesso, fechando modal');
         loadControle(1, controle.filters, true);
         setModalUG({ show: false, item: null, index: -1 });
         showNotification(response.message, 'success');
       } else if (response?.success === false) {
-        // Tratar resposta de erro de capacidade como warning
-        showNotification(response.message, 'warning');
+        console.log('❌ DEBUG - Erro, fechando modal');
+        // Outros tipos de erro de resposta
+        showNotification(response.message, 'error');
+        setModalUG({ show: false, item: null, index: -1 });
       }
     } catch (error) {
       console.error('❌ Erro ao processar UG:', error);
-      
-      // Verificar se é erro de capacidade (agora será tratado como warning)
-      if (error.message && error.message.includes('capacidade')) {
-        showNotification(error.message, 'warning');
-      } else {
-        showNotification('Erro ao processar UG: ' + error.message, 'error');
-      }
+      showNotification('Erro ao processar UG: ' + error.message, 'error');
+      setModalUG({ show: false, item: null, index: -1 });
     }
   }, [modalUG, loadControle, controle.filters, showNotification]);
 

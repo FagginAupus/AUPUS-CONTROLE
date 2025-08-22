@@ -85,6 +85,17 @@ class ApiService {
                 }
                 
                 // Para outras rotas ou para login com 401, buscar mensagem do servidor
+                if (response.status === 400 && responseData.message && 
+                    (responseData.message.includes('capacidade') || responseData.message.includes('suficiente'))) {
+                    // Para erros de capacidade, retornar objeto ao invés de throw
+                    return {
+                        success: false,
+                        message: responseData.message,
+                        errorType: 'capacity'
+                    };
+                }
+
+                // Para outras rotas ou para login com 401, buscar mensagem do servidor
                 const errorMessage = responseData.message || responseData.error || `HTTP ${response.status}`;
                 throw new Error(errorMessage);
             }
