@@ -11,10 +11,11 @@ import './ControlePage.css';
 
 const ControlePage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
-  const { 
+    const { 
     controle, 
     loadControle,
-    ugs
+    ugs,
+    loadUgs 
   } = useData();
 
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
@@ -39,6 +40,13 @@ const ControlePage = () => {
   const debouncedFiltros = useMemo(() => filtros, [filtros]);
 
   const isAdmin = user?.role === 'admin';
+    useEffect(() => {
+      if (isAdmin && (!ugs.data || ugs.data.length === 0) && !ugs.loading) {
+        console.log('🔄 Carregando UGs para admin...');
+        loadUgs({}, true);
+      }
+    }, [isAdmin, ugs.data, ugs.loading, loadUgs]);
+
     useEffect(() => {
       const carregarCalibragem = async () => {
         console.log('🚀 carregarCalibragem INICIADO');
@@ -166,7 +174,7 @@ const ControlePage = () => {
     setModalStatusTroca({ show: true, item, index });
   }, [dadosFiltrados]);
 
-  const editarUG = useCallback((index) => {
+  const editarUG = useCallback(async (index) => {
     if (!isAdmin) return;
     
     const item = dadosFiltrados[index];
@@ -177,9 +185,76 @@ const ControlePage = () => {
       showNotification('Status deve ser "Finalizado" para atribuir UG', 'warning');
       return;
     }
-    
-    setModalUG({ show: true, item, index });
-  }, [isAdmin, dadosFiltrados, showNotification]);
+
+    try {
+      // ✅ USAR UGs do contexto se disponíveis, senão buscar
+      if (ugs.data && ugs.data.length > 0) {
+        console.log('📋 Usando UGs do contexto - abertura instantânea');
+        
+        // Calcular capacidade disponível para cada UG
+        const consumoUc = parseFloat(item.media) || 0;
+        const calibragem = calibragemGlobal || 0;
+        const consumoUcCalibrado = calibragem > 0 ? 
+          consumoUc * (1 + calibragem / 100) : consumoUc;
+        
+        const ugsProcessadas = ugs.data.map(ug => {
+          const capacidadeTotal = parseFloat(ug.capacidade) || 0;
+          const consumoAtribuido = parseFloat(ug.mediaConsumoAtribuido) || 0;
+          const consumoDisponivel = Math.max(0, capacidadeTotal - consumoAtribuido);
+          const podeReceberUc = consumoDisponivel >= consumoUcCalibrado;
+          
+          // Calcular status
+          const percentualUso = capacidadeTotal > 0 ? (consumoAtribuido / capacidadeTotal) * 100 : 0;
+          let status, statusColor;
+          
+          if (percentualUso >= 95) {
+            status = 'Cheia';
+            statusColor = 'danger';
+          } else if (percentualUso >= 80) {
+            status = 'Quase Cheia';
+            statusColor = 'warning';
+          } else {
+            status = 'Disponível';
+            statusColor = 'success';
+          }
+          
+          return {
+            id: ug.id,
+            nome_usina: ug.nomeUsina,
+            potencia_cc: parseFloat(ug.potenciaCC) || 0,
+            capacidade_total: capacidadeTotal,
+            consumo_atribuido: consumoAtribuido,
+            consumo_disponivel: consumoDisponivel,
+            ucs_atribuidas: ug.ucsAtribuidas || 0,
+            percentual_uso: Math.round(percentualUso * 10) / 10,
+            status,
+            status_color: statusColor,
+            pode_receber_uc: podeReceberUc,
+            consumo_uc_calibrado: consumoUcCalibrado
+          };
+        });
+        
+        setUgsDisponiveis(ugsProcessadas);
+        setModalUG({ show: true, item, index });
+        
+      } else {
+        console.log('📡 UGs não carregadas no contexto - buscando específicas');
+        
+        // Fallback: buscar UGs específicas se não estão no contexto
+        const response = await apiService.get(`/controle/ugs-disponiveis?uc_id=${item.ucId}`);
+        
+        if (response.success) {
+          setUgsDisponiveis(response.data || []);
+          setModalUG({ show: true, item, index });
+        } else {
+          showNotification('Erro ao carregar UGs disponíveis', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao processar UGs:', error);
+      showNotification('Erro ao carregar UGs disponíveis', 'error');
+    }
+  }, [isAdmin, dadosFiltrados, ugs.data, calibragemGlobal, showNotification]);
 
   const salvarUG = useCallback(async (ugSelecionada) => {
     try {
@@ -558,7 +633,7 @@ const ControlePage = () => {
         {modalUG.show && isAdmin && (
           <ModalUG 
             item={modalUG.item}
-            ugsAnalise={ugs.data || []}
+            ugsAnalise={ugsDisponiveis || []} // ✅ CORRIGIDO: usar ugsDisponiveis
             onSave={salvarUG}
             onClose={() => setModalUG({ show: false, item: null, index: -1 })}
           />
@@ -612,28 +687,43 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
                 <p>Nenhuma UG disponível</p>
               </div>
             ) : (
-              <select
-                value={ugSelecionada}
-                onChange={(e) => setUgSelecionada(e.target.value)}
-                required
-                className="ug-select"
-              >
-                <option value="">Escolha uma UG...</option>
-                <option value="remover" className="ug-option-remover">
-                  🚫 Sem UG (Remover UG atual)
-                </option>
-                {ugsAnalise.map((ug) => (
-                  <option 
-                    key={ug.id} 
-                    value={ug.id}
-                    disabled={ug.status === 'Cheia'}
-                    className={`ug-option ug-${ug.status_color || 'success'}`}
-                  >
-                    {ug.nome_usina || ug.nomeUsina || 'UG'} - {ug.potencia_cc || ug.potenciaCC || 0}kWp 
-                    ({(ug.consumo_atribuido || 0).toFixed(0)}/{(ug.capacidade_total || ug.capacidade || 0).toFixed(0)} kWh - {ug.status || 'Disponível'})
-                  </option>
-                ))}
-              </select>
+              <>
+                <div className="ugs-lista">
+                  {ugsAnalise.map((ug) => (
+                    <div 
+                      key={ug.id} 
+                      className={`ug-item ${ug.pode_receber_uc ? 'clickable' : 'disabled'} ${ugSelecionada === ug.id ? 'selected' : ''}`}
+                      onClick={ug.pode_receber_uc ? () => setUgSelecionada(ug.id) : null}
+                    >
+                      <div className="ug-info">
+                        <div className="ug-nome">{ug.nome_usina}</div>
+                        <div className="ug-detalhes">
+                          {ug.potencia_cc}kWp ({ug.consumo_atribuido.toFixed(0)}/{ug.capacidade_total.toFixed(0)} kWh - {ug.status})
+                        </div>
+                      </div>
+                      <div className={`ug-status ${ug.status_color}`}>
+                        {ug.pode_receber_uc ? '✅ Disponível' : '❌ Sem capacidade'}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Opção para remover UG - só aparece se a UC já tem UG */}
+                    {item.ug && item.ugNome && (
+                      <div 
+                        className={`ug-item clickable ${ugSelecionada === 'remover' ? 'selected' : ''}`}
+                        onClick={() => setUgSelecionada('remover')}
+                      >
+                        <div className="ug-info">
+                          <div className="ug-nome">🚫 Remover UG atual ({item.ugNome})</div>
+                          <div className="ug-detalhes">Desatribuir UG desta UC</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                
+                {/* Campo oculto para o formulário - FORA da div ugs-lista */}
+                <input type="hidden" value={ugSelecionada} required />
+              </>
             )}
           </div>
           

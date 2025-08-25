@@ -285,7 +285,7 @@ const UGsPage = () => {
                     <th>Potência CA (kW)</th>
                     <th>Potência CC (kW)</th>
                     <th>Fator de Capacidade</th>
-                    <th>Capacidade (MWh)</th>
+                    <th>Capacidade (KWh)</th>
                     <th>UCs Atribuídas</th>
                     <th>Média Total (kWh)</th>
                     {isAdmin && <th>Ações</th>}

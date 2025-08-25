@@ -23,14 +23,14 @@ const NovaPropostaPage = () => {
 
   const obterBeneficiosSelecionados = (data) => {
     const beneficios = [];
-    if (data.beneficio1) beneficios.push({ numero: 1, texto: 'Sem custo de adesão' });
-    if (data.beneficio2) beneficios.push({ numero: 2, texto: 'Sem fidelidade' });
-    if (data.beneficio3) beneficios.push({ numero: 3, texto: 'Energia 100% renovável' });
-    if (data.beneficio4) beneficios.push({ numero: 4, texto: 'Suporte técnico especializado' });
-    if (data.beneficio5) beneficios.push({ numero: 5, texto: 'Portal do cliente' });
-    if (data.beneficio6) beneficios.push({ numero: 6, texto: 'Relatórios mensais' });
-    if (data.beneficio7) beneficios.push({ numero: 7, texto: 'Compensação garantida' });
-    if (data.beneficio8) beneficios.push({ numero: 8, texto: 'Desconto na bandeira tarifária' });
+    if (data.beneficio1) beneficios.push({ numero: 1, texto: 'Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos' });
+    if (data.beneficio2) beneficios.push({ numero: 2, texto: 'A titularidade da fatura será transferida para o Consorcio Clube Aupus' });
+    if (data.beneficio3) beneficios.push({ numero: 3, texto: 'A Aupus Energia fornecerá consultoria energética para o condomínio' });
+    if (data.beneficio4) beneficios.push({ numero: 4, texto: 'Todo o processo será conduzido pela Aupus Energia, não se preocupe' });
+    if (data.beneficio5) beneficios.push({ numero: 5, texto: 'Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energia' });
+    if (data.beneficio6) beneficios.push({ numero: 6, texto: 'Contamos com uma moderna plataforma para te oferecer uma experiencia única!' });
+    if (data.beneficio7) beneficios.push({ numero: 7, texto: 'A proposta se aplica para todos os condominos que tiverem interesse' });
+    if (data.beneficio8) beneficios.push({ numero: 8, texto: 'Desconto em DOBRO no primeiro mês!!' });
     return beneficios;
   };
 
@@ -41,16 +41,19 @@ const NovaPropostaPage = () => {
       recorrencia: '3%',
       economia: 20,
       bandeira: 20,
+      inflacao: 2,
+      tarifaTributos: 0.98,
+      
       ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
       // Benefícios padrão
-      beneficio1: false,
-      beneficio2: false,
-      beneficio3: false,
-      beneficio4: false,
-      beneficio5: false,
-      beneficio6: false,
-      beneficio7: false,
-      beneficio8: false
+      beneficio1: true,
+      beneficio2: true,
+      beneficio3: true,
+      beneficio4: true,
+      beneficio5: true,
+      beneficio6: true,
+      beneficio7: true,
+      beneficio8: true
     }
   });
 
@@ -197,14 +200,14 @@ const NovaPropostaPage = () => {
 
       // Preparar benefícios como array
       const beneficiosArray = [];
-      if (data.beneficio1) beneficiosArray.push('Sem custo de adesão');
-      if (data.beneficio2) beneficiosArray.push('Sem fidelidade');
-      if (data.beneficio3) beneficiosArray.push('Energia 100% renovável');
-      if (data.beneficio4) beneficiosArray.push('Suporte técnico especializado');
-      if (data.beneficio5) beneficiosArray.push('Portal do cliente');
-      if (data.beneficio6) beneficiosArray.push('Relatórios mensais');
-      if (data.beneficio7) beneficiosArray.push('Compensação garantida');
-      if (data.beneficio8) beneficiosArray.push('Desconto na bandeira tarifária');
+      if (data.beneficio1) beneficiosArray.push('Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos');
+      if (data.beneficio2) beneficiosArray.push('A titularidade da fatura será transferida para o Consorcio Clube Aupus');
+      if (data.beneficio3) beneficiosArray.push('A Aupus Energia fornecerá consultoria energética para o condomínio');
+      if (data.beneficio4) beneficiosArray.push('Todo o processo será conduzido pela Aupus Energia, não se preocupe');
+      if (data.beneficio5) beneficiosArray.push('Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energia');
+      if (data.beneficio6) beneficiosArray.push('Contamos com uma moderna plataforma para te oferecer uma experiencia única!');
+      if (data.beneficio7) beneficiosArray.push('A proposta se aplica para todos os condominos que tiverem interesse');
+      if (data.beneficio8) beneficiosArray.push('Desconto em DOBRO no primeiro mês!!');
       
       // Adicionar benefícios extras
       beneficiosAdicionais.forEach(beneficio => {
@@ -407,6 +410,35 @@ const NovaPropostaPage = () => {
                 {errors.nomeCliente && <span className="error-message">{errors.nomeCliente.message}</span>}
               </div>
 
+              {/* ✅ NOVO: Div que ocupa o espaço de um campo mas tem dois inputs */}
+              <div className="form-group form-group-double">
+                <div className="double-inputs">
+                  <div className="input-half">
+                    <label>Inflação (%)</label>
+                    <input 
+                      {...register('inflacao')} 
+                      type="number" 
+                      step="0.01"
+                      min="0"
+                      max="20"
+                      placeholder="2.00"
+                      className={errors.inflacao ? 'error' : ''}
+                    />
+                  </div>
+                  <div className="input-half">
+                    <label>Tarifa (R$/kWh)</label>
+                    <input 
+                      {...register('tarifaTributos')} 
+                      type="number" 
+                      step="0.0001"
+                      min="0"
+                      placeholder="0.98765"
+                      className={errors.tarifaTributos ? 'error' : ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Segunda linha */}
@@ -579,7 +611,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio1"
                 />
-                <label htmlFor="beneficio1">Sem custo de adesão</label>
+                <label htmlFor="beneficio1">Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos</label>
               </div>
 
               <div className="beneficio-item">
@@ -588,7 +620,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio2"
                 />
-                <label htmlFor="beneficio2">Sem fidelidade</label>
+                <label htmlFor="beneficio2">A titularidade da fatura será transferida para o Consorcio Clube Aupus</label>
               </div>
 
               <div className="beneficio-item">
@@ -597,7 +629,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio3"
                 />
-                <label htmlFor="beneficio3">Energia 100% renovável</label>
+                <label htmlFor="beneficio3">A Aupus Energia fornecerá consultoria energética para o condomínio</label>
               </div>
 
               <div className="beneficio-item">
@@ -606,7 +638,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio4"
                 />
-                <label htmlFor="beneficio4">Suporte técnico especializado</label>
+                <label htmlFor="beneficio4">Todo o processo será conduzido pela Aupus Energia, não se preocupe</label>
               </div>
 
               <div className="beneficio-item">
@@ -615,7 +647,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio5"
                 />
-                <label htmlFor="beneficio5">Portal do cliente</label>
+                <label htmlFor="beneficio5">Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energia</label>
               </div>
 
               <div className="beneficio-item">
@@ -624,7 +656,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio6"
                 />
-                <label htmlFor="beneficio6">Relatórios mensais</label>
+                <label htmlFor="beneficio6">Contamos com uma moderna plataforma para te oferecer uma experiencia única!</label>
               </div>
 
               <div className="beneficio-item">
@@ -633,7 +665,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio7"
                 />
-                <label htmlFor="beneficio7">Compensação garantida</label>
+                <label htmlFor="beneficio7">A proposta se aplica para todos os condominos que tiverem interesse</label>
               </div>
 
               <div className="beneficio-item">
@@ -642,7 +674,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio8"
                 />
-                <label htmlFor="beneficio8">Desconto na bandeira tarifária</label>
+                <label htmlFor="beneficio8">Desconto em DOBRO no primeiro mês!!</label>
               </div>
             </div>
 
