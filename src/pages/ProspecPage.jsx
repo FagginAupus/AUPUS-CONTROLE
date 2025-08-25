@@ -226,6 +226,46 @@ const ProspecPage = () => {
       showNotification('Erro ao salvar: ' + error.message, 'error');
     }
   };
+  
+  // Adicionar esta função ANTES de removerItem
+  const gerarPDFProposta = async (item) => {
+    try {
+      console.log('📄 Gerando PDF da proposta...', item);
+
+      // Preparar dados para o PDF a partir do item da tabela
+      const dadosPDF = {
+        numeroProposta: item.numeroProposta,
+        nomeCliente: item.nomeCliente,
+        consultor: item.consultor,
+        data: item.data,
+        descontoTarifa: parseFloat(item.descontoTarifa) || 0.2,
+        descontoBandeira: parseFloat(item.descontoBandeira) || 0.2,
+        observacoes: item.observacoes || '',
+        ucs: [], // Buscar UCs da proposta se disponível
+        beneficios: []
+      };
+
+      // Se benefícios estão disponíveis no item, usar
+      if (item.beneficios && typeof item.beneficios === 'string') {
+        try {
+          dadosPDF.beneficios = JSON.parse(item.beneficios);
+        } catch (e) {
+          console.warn('Erro ao parsear benefícios:', e);
+        }
+      }
+
+      // Importar e usar o gerador de PDF
+      const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
+      await PDFGenerator.baixarPDF(dadosPDF, true);
+      
+      showNotification(`PDF da proposta ${item.numeroProposta} gerado com sucesso!`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro ao gerar PDF:', error);
+      showNotification(`Erro ao gerar PDF: ${error.message}`, 'error');
+    }
+  };
+
 
   const removerItem = async (index) => {
     const item = dadosFiltrados[index];
@@ -477,6 +517,14 @@ const ProspecPage = () => {
                               title="Editar"
                             >
                               ✏️
+                            </button>
+                            {/* BOTÃO PARA GERAR PDF */}
+                            <button
+                              onClick={() => gerarPDFProposta(item)}
+                              className="btn-icon pdf"
+                              title="Gerar PDF da proposta"
+                            >
+                              📄
                             </button>
                             {/* Todos os perfis podem remover */}
                             <button 

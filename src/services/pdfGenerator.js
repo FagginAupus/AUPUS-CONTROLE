@@ -291,6 +291,73 @@ class PDFGenerator {
     return `${proposta}_${cliente}_${timestamp}.pdf`;
   }
 
+  // ADICIONAR AQUI - Formatar dados para PDF
+  formatarDadosParaPDF(proposta) {
+    // Normalizar dados vindos de diferentes fontes
+    return {
+      numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
+      nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
+      consultor: proposta.consultor,
+      data: proposta.data_proposta || proposta.data,
+      descontoTarifa: parseFloat(proposta.desconto_tarifa || proposta.descontoTarifa) || 0.2,
+      descontoBandeira: parseFloat(proposta.desconto_bandeira || proposta.descontoBandeira) || 0.2,
+      observacoes: proposta.observacoes || '',
+      ucs: this.formatarUCs(proposta.unidades_consumidoras || proposta.ucs || []),
+      beneficios: this.formatarBeneficios(proposta.beneficios || [])
+    };
+  }
+
+  // Formatar UCs para o PDF
+  formatarUCs(ucs) {
+    if (typeof ucs === 'string') {
+      try {
+        ucs = JSON.parse(ucs);
+      } catch (e) {
+        return [];
+      }
+    }
+    
+    if (!Array.isArray(ucs)) return [];
+    
+    return ucs.map(uc => ({
+      apelido: uc.apelido || uc.numero_unidade || 'UC',
+      numeroUC: uc.numero_unidade || uc.numeroUC || '',
+      ligacao: uc.ligacao || uc.tipo_ligacao || 'Monofásica',
+      consumo: uc.consumo_medio || uc.consumo || 0
+    }));
+  }
+
+  // Formatar benefícios para o PDF
+  formatarBeneficios(beneficios) {
+    if (typeof beneficios === 'string') {
+      try {
+        beneficios = JSON.parse(beneficios);
+      } catch (e) {
+        return [];
+      }
+    }
+    
+    if (!Array.isArray(beneficios)) return [];
+    
+    return beneficios.map((beneficio, index) => ({
+      numero: beneficio.numero || (index + 1),
+      texto: beneficio.texto || beneficio.toString()
+    }));
+  }
+
+  // Método estático para facilitar o uso
+  static async baixarPDF(dadosProposta, autoDownload = true) {
+    const generator = new PDFGenerator();
+    return await generator.gerarPDF(dadosProposta, autoDownload);
+  }
+
+  // Método estático melhorado
+  static async baixarPDFDeProposta(proposta, autoDownload = true) {
+    const generator = new PDFGenerator();
+    const dadosFormatados = generator.formatarDadosParaPDF(proposta);
+    return await generator.gerarPDF(dadosFormatados, autoDownload);
+  }
+
   // Método estático para facilitar o uso
   static async baixarPDF(dadosProposta, autoDownload = true) {
     const generator = new PDFGenerator();

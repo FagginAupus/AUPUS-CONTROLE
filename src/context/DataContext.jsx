@@ -316,10 +316,19 @@ export const DataProvider = ({ children }) => {
   // ========================================
 
   const afterCreateProposta = useCallback(() => {
-    console.log('✅ Proposta criada - Invalidando cache de propostas');
+    console.log('✅ Proposta criada - Invalidando caches relacionados');
     invalidateCache('propostas');
+    
+    // Se a proposta foi criada como "Fechada", invalidar controle também
+    invalidateCache('controle');
+    
+    // Recarregar os dados automaticamente
     loadPropostas(1, propostas.filters, true);
-  }, [invalidateCache, loadPropostas, propostas.filters]);
+    
+    if (['admin', 'consultor', 'gerente'].includes(user?.role)) {
+      loadControle(1, controle.filters, true);
+    }
+  }, [invalidateCache, loadPropostas, propostas.filters, loadControle, controle.filters, user?.role]);
 
   const afterUpdateProposta = useCallback(() => {
     console.log('✅ Proposta atualizada - Invalidando cache de propostas');

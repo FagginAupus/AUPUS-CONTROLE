@@ -6,6 +6,7 @@ import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext'; // ADICIONAR ESTA LINHA
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import './NovaPropostaPage.css';
@@ -18,6 +19,20 @@ const NovaPropostaPage = () => {
   const [numeroProposta, setNumeroProposta] = useState('');
   const [beneficiosAdicionais, setBeneficiosAdicionais] = useState([]);
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
+  const { afterCreateProposta } = useData();
+
+  const obterBeneficiosSelecionados = (data) => {
+    const beneficios = [];
+    if (data.beneficio1) beneficios.push({ numero: 1, texto: 'Sem custo de adesão' });
+    if (data.beneficio2) beneficios.push({ numero: 2, texto: 'Sem fidelidade' });
+    if (data.beneficio3) beneficios.push({ numero: 3, texto: 'Energia 100% renovável' });
+    if (data.beneficio4) beneficios.push({ numero: 4, texto: 'Suporte técnico especializado' });
+    if (data.beneficio5) beneficios.push({ numero: 5, texto: 'Portal do cliente' });
+    if (data.beneficio6) beneficios.push({ numero: 6, texto: 'Relatórios mensais' });
+    if (data.beneficio7) beneficios.push({ numero: 7, texto: 'Compensação garantida' });
+    if (data.beneficio8) beneficios.push({ numero: 8, texto: 'Desconto na bandeira tarifária' });
+    return beneficios;
+  };
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -229,9 +244,47 @@ const NovaPropostaPage = () => {
       const result = await storageService.adicionarProspec(propostaParaBackend);
 
       console.log('✅ Proposta salva com sucesso:', result);
-      
-      showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
-      
+
+      // **NOVA FUNCIONALIDADE: GERAR PDF AUTOMATICAMENTE** 
+      try {
+        console.log('📄 Gerando PDF automaticamente...');
+        
+        // Obter benefícios selecionados
+        const beneficiosSelecionados = obterBeneficiosSelecionados(data);
+        
+        // Preparar dados para o PDF
+        const dadosPDF = {
+          numeroProposta: numeroProposta,
+          nomeCliente: data.nomeCliente,
+          consultor: data.consultor,
+          data: data.dataProposta || new Date().toISOString().split('T')[0],
+          descontoTarifa: (data.economia || 20) / 100,
+          descontoBandeira: (data.bandeira || 20) / 100,
+          observacoes: data.observacoes || '',
+          ucs: data.ucs || [],
+          beneficios: [
+            ...beneficiosSelecionados,
+            ...beneficiosAdicionais.map(b => ({ 
+              numero: beneficiosSelecionados.length + beneficiosAdicionais.indexOf(b) + 1, 
+              texto: b 
+            }))
+          ]
+        };
+
+        // Importar e usar o gerador de PDF
+        const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
+        await PDFGenerator.baixarPDF(dadosPDF, true);
+        
+        showNotification(`Proposta ${numeroProposta} criada e PDF gerado com sucesso!`, 'success');
+        
+      } catch (pdfError) {
+        console.error('⚠️ Erro ao gerar PDF (proposta foi salva):', pdfError);
+        showNotification(`Proposta ${numeroProposta} criada! PDF não pôde ser gerado: ${pdfError.message}`, 'warning');
+      }
+
+      // Invalidar cache do DataContext
+      afterCreateProposta();
+
       // Limpar formulário e navegar
       reset();
       setBeneficiosAdicionais([]);
@@ -269,6 +322,44 @@ const NovaPropostaPage = () => {
       
     } finally {
       setLoading(false);
+    }
+  };
+
+  const gerarPDFProposta = async (item) => {
+    try {
+      console.log('📄 Gerando PDF da proposta...', item);
+
+      // Preparar dados para o PDF a partir do item da tabela
+      const dadosPDF = {
+        numeroProposta: item.numeroProposta,
+        nomeCliente: item.nomeCliente,
+        consultor: item.consultor,
+        data: item.data,
+        descontoTarifa: parseFloat(item.descontoTarifa) || 0.2,
+        descontoBandeira: parseFloat(item.descontoBandeira) || 0.2,
+        observacoes: item.observacoes || '',
+        ucs: [], // Buscar UCs da proposta se disponível
+        beneficios: []
+      };
+
+      // Se benefícios estão disponíveis no item, usar
+      if (item.beneficios && typeof item.beneficios === 'string') {
+        try {
+          dadosPDF.beneficios = JSON.parse(item.beneficios);
+        } catch (e) {
+          console.warn('Erro ao parsear benefícios:', e);
+        }
+      }
+
+      // Importar e usar o gerador de PDF
+      const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
+      await PDFGenerator.baixarPDF(dadosPDF, true);
+      
+      showNotification(`PDF da proposta ${item.numeroProposta} gerado com sucesso!`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro ao gerar PDF:', error);
+      showNotification(`Erro ao gerar PDF: ${error.message}`, 'error');
     }
   };
 
