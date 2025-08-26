@@ -203,24 +203,24 @@ class PDFGenerator {
 
     // Uma linha só com os três dados - LETRAS MAIORES
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12); // Aumentado para 12
+    doc.setFontSize(10); 
     doc.text('Nome:', 25, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.text(dados.nomeCliente || '', 42, y);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.text('Proposta:', 110, y);
     doc.setFont('helvetica', 'normal'); 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.text(dados.numeroProposta || '', 133, y);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.text('Data:', 155, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     const dataFormatada = dados.data ? new Date(dados.data).toLocaleDateString('pt-BR') : '';
     doc.text(dataFormatada, 168, y);
 
@@ -231,7 +231,7 @@ class PDFGenerator {
     return y + 15;
   }
 
-  // Plano economia - ECONOMIA ESPERADA, SEM DESCONTO BANDEIRA
+  // Plano economia - MODIFICADO COM FIDELIDADE
   adicionarPlanoEconomiaCompacto(doc, dados, y, corTexto) {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
@@ -243,15 +243,23 @@ class PDFGenerator {
 
     const descontoTarifa = Math.round((dados.descontoTarifa || 0.2) * 100);
 
-    // APENAS Economia Esperada - SEM desconto bandeira
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...corTexto); // Preto para "Economia Esperada"
-    doc.setFontSize(14); // Aumentado para dar destaque
+    doc.setFontSize(10); // Diminuído de 14 para 12
     doc.text('Economia Esperada:', 25, y);
     
     doc.setTextColor(76, 175, 80); // Verde para o valor
-    doc.setFontSize(16); // Fonte ainda maior para o valor
+    doc.setFontSize(18); 
     doc.text(`${descontoTarifa}%`, 90, y);
+
+    // Adicionar Fidelidade: NÃO ao lado
+    doc.setTextColor(...corTexto); // Preto para "Fidelidade:"
+    doc.setFontSize(10);
+    doc.text('Fidelidade:', 120, y);
+    
+    doc.setTextColor(255, 0, 0); // Vermelho para "NÃO"
+    doc.setFont('helvetica', 'bold');
+    doc.text('NÃO', 150, y);
 
     // Voltar cor normal
     doc.setTextColor(...corTexto);
@@ -262,7 +270,7 @@ class PDFGenerator {
     return y + 15;
   }
 
-  // Tabela de UCs expandida - SEM DISTRIBUIDORA, COM UNIDADES NAS LINHAS
+  // Tabela de UCs expandida - COM LETRAS MAIORES
   adicionarTabelaUCs(doc, ucs, y, corTexto) {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
@@ -278,7 +286,7 @@ class PDFGenerator {
     doc.setFillColor(70, 100, 130);
     doc.rect(20, y, 170, 10, 'F');
 
-    doc.setFontSize(7);
+    doc.setFontSize(8); 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
 
@@ -319,7 +327,7 @@ class PDFGenerator {
       }
     };
 
-    doc.setFontSize(5.5);
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
 
     // Linhas da tabela com cálculos
@@ -510,7 +518,7 @@ class PDFGenerator {
     return y + 15;
   }
 
-  // Benefícios compactos - espaço fixo para até 10 benefícios
+  // Benefícios compactos - ALTERADO TÍTULO PARA "INFORMAÇÕES E BENEFÍCIOS"
   adicionarBeneficiosCompactos(doc, beneficios, y, corTexto) {
     // Se não há benefícios, pular esta seção
     if (!beneficios || beneficios.length === 0) {
@@ -520,7 +528,7 @@ class PDFGenerator {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Benefícios', 20, y);
+    doc.text('Informações e Benefícios', 20, y); // ALTERADO AQUI
     y += 6; 
 
     // Espaço fixo para benefícios
@@ -529,7 +537,7 @@ class PDFGenerator {
     const beneficiosParaMostrar = beneficios.slice(0, maxBeneficios);
 
     // Calcular tamanho da fonte baseado na quantidade
-    let fontSize = 8; // Aumentado de 7 para 8
+    let fontSize = 9; 
     if (beneficios.length > 8) fontSize = 7;
     if (beneficios.length > 12) fontSize = 6;
 
@@ -571,7 +579,7 @@ class PDFGenerator {
     return y + 5;
   }
 
-  // Rodapé
+  // Rodapé - MODIFICADO COM EMOJIS E IMAGEM ONDA
   async adicionarRodape(doc) {
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -579,7 +587,27 @@ class PDFGenerator {
       doc.setFontSize(8);
       doc.setTextColor(0, 0, 0);
       
-      // Slogan - IMAGEM CURSIVA ASSÍNCRONA
+      // Contatos à esquerda - COM SÍMBOLOS SIMPLES
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(7); // Diminuído de 8 para 6
+
+      // Posicionamento dos contatos à esquerda
+      const xContatos = 15;
+      let yContatos = 277; // Ajustado para baixo
+
+      // Website 
+      doc.text('site: www.aupusenergia.com.br', xContatos, yContatos);
+      yContatos += 3; // Menor espaçamento
+
+      // Email
+      doc.text('email: smart@aupusenergia.com.br', xContatos, yContatos);
+      yContatos += 3;
+
+      // WhatsApp
+      doc.text('whatsapp: (62) 9 9654-7888', xContatos, yContatos);
+      
+      // Slogan - IMAGEM CURSIVA CENTRALIZADA
       try {
         const sloganCarregado = await new Promise((resolve, reject) => {
           const sloganImg = new Image();
@@ -620,7 +648,7 @@ class PDFGenerator {
               
               const dataURL = canvas.toDataURL('image/png', 0.8);
               
-              // Dimensões para PDF
+              // Dimensões para PDF - centralizado
               const aspectRatio = newWidth / newHeight;
               const alturaDesejada = 10;
               const larguraProporcional = alturaDesejada * aspectRatio;
@@ -635,7 +663,7 @@ class PDFGenerator {
                 xCentralizado: xCentralizado.toFixed(1)
               });
               
-              resolve({ dataURL, x: xCentralizado, y: 281, w: larguraFinal, h: alturaFinal });
+              resolve({ dataURL, x: xCentralizado, y: 277, w: larguraFinal, h: alturaFinal });
               
             } catch (error) {
               console.warn('❌ Erro ao processar slogan:', error);
@@ -671,10 +699,88 @@ class PDFGenerator {
         doc.setTextColor(76, 175, 80);
         doc.text('Interligando você com o futuro!', 75, 285);
       }
-            
-      // Número da página
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Página ${i} de ${pageCount}`, 170, 285);
+      
+      // Imagem onda à direita - SUBSTITUINDO PAGINAÇÃO
+      try {
+        const ondaCarregada = await new Promise((resolve, reject) => {
+          const ondaImg = new Image();
+          ondaImg.crossOrigin = 'anonymous';
+          
+          ondaImg.onload = function() {
+            try {
+              console.log('🌊 Imagem onda original:', {
+                width: ondaImg.naturalWidth,
+                height: ondaImg.naturalHeight
+              });
+              
+              if (ondaImg.naturalWidth === 0 || ondaImg.naturalHeight === 0) {
+                throw new Error('Dimensões inválidas');
+              }
+              
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              const maxWidth = 400;
+              const originalWidth = ondaImg.naturalWidth;
+              const originalHeight = ondaImg.naturalHeight;
+              
+              let newWidth = originalWidth;
+              let newHeight = originalHeight;
+              
+              if (originalWidth > maxWidth) {
+                const ratio = maxWidth / originalWidth;
+                newWidth = maxWidth;
+                newHeight = originalHeight * ratio;
+              }
+              
+              canvas.width = newWidth;
+              canvas.height = newHeight;
+              ctx.drawImage(ondaImg, 0, 0, newWidth, newHeight);
+              
+              const dataURL = canvas.toDataURL('image/png', 0.8);
+              
+              // Posicionar à direita
+              const aspectRatio = newWidth / newHeight;
+              const alturaDesejada = 15;
+              const larguraProporcional = alturaDesejada * aspectRatio;
+              const larguraFinal = Math.min(larguraProporcional, 40);
+              const alturaFinal = larguraFinal / aspectRatio;
+              const xDireita = 210 - larguraFinal - 10; // 10mm da margem direita
+              
+              resolve({ dataURL, x: xDireita, y: 275, w: larguraFinal, h: alturaFinal });
+              
+            } catch (error) {
+              console.warn('❌ Erro ao processar onda:', error);
+              reject(error);
+            }
+          };
+          
+          ondaImg.onerror = function() {
+            console.error('❌ Erro ao carregar: /Onda.png');
+            reject(new Error('Falha ao carregar onda'));
+          };
+          
+          setTimeout(() => {
+            if (!ondaImg.complete) {
+              reject(new Error('Timeout ao carregar onda'));
+            }
+          }, 3000);
+          
+          console.log('🌊 Carregando Onda...');
+          ondaImg.src = '/Onda.png';
+        });
+        
+        // Adicionar imagem onda ao PDF
+        doc.addImage(ondaCarregada.dataURL, 'PNG', ondaCarregada.x, ondaCarregada.y, ondaCarregada.w, ondaCarregada.h);
+        console.log('✅ Imagem onda adicionada ao PDF!');
+        
+      } catch (error) {
+        console.warn('📝 Usando fallback para paginação:', error.message);
+        // Fallback - mostrar número da página
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Página ${i} de ${pageCount}`, 170, 285);
+      }
     }
   }
 
