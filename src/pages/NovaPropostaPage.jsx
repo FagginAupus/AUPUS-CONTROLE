@@ -263,6 +263,9 @@ const NovaPropostaPage = () => {
           data: data.dataProposta || new Date().toISOString().split('T')[0],
           descontoTarifa: (data.economia || 20) / 100,
           descontoBandeira: (data.bandeira || 20) / 100,
+          // ✅ ADICIONAR ESTES CAMPOS:
+          inflacao: (data.inflacao || 2) / 100,        // Converter % para decimal
+          tarifaTributos: data.tarifaTributos || 0.98, // Valor em R$/kWh
           observacoes: data.observacoes || '',
           ucs: data.ucs || [],
           beneficios: [
@@ -340,6 +343,9 @@ const NovaPropostaPage = () => {
         data: item.data,
         descontoTarifa: parseFloat(item.descontoTarifa) || 0.2,
         descontoBandeira: parseFloat(item.descontoBandeira) || 0.2,
+        // ✅ ADICIONAR ESTES CAMPOS:
+        inflacao: parseFloat(item.inflacao) / 100 || 0.02,        // Se vem em % do backend
+        tarifaTributos: parseFloat(item.tarifaTributos) || 0.98,  // Se disponível
         observacoes: item.observacoes || '',
         ucs: [], // Buscar UCs da proposta se disponível
         beneficios: []
