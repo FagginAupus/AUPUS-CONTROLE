@@ -425,11 +425,8 @@ const ControlePage = () => {
     <div className="page-container">
       <div className="container">
         <Header 
-          title="CONTROLE" 
-          subtitle="Propostas Fechadas e UGs" 
-          icon="⚙️" 
-        />
-        
+          title="Controle" 
+        />   
         <Navigation />
 
         {/* Estatísticas Rápidas */}

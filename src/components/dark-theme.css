@@ -1,0 +1,203 @@
+/* src/dark-theme.css - HIERARQUIA DE CORES CORRIGIDA */
+
+/* NÍVEL 1: Seções principais - um tom acima do fundo preto */
+.stat-card,
+.data-section, 
+.filters-section,
+.form-section,
+.modal,
+.table-wrapper {
+  background: #2d2d2d !important; /* ← Cinza escuro - meio termo */
+  border: 1px solid #444 !important;
+  color: #f0f0f0 !important;
+}
+
+/* NÍVEL 2: Inputs e elementos de formulário - mais claro que as seções */
+input, 
+select, 
+textarea,
+.filter-group input,
+.filter-group select,
+.form-group input,
+.form-group select {
+  background: #3d3d3d !important; /* ← Cinza mais claro para inputs */
+  border: 1.5px solid #555 !important;
+  color: #f0f0f0 !important;
+}
+
+/* NÍVEL 2.5: Placeholders */
+input::placeholder,
+select::placeholder,
+textarea::placeholder {
+  color: #b0b0b0 !important;
+}
+
+/* Estados de foco - destaque verde */
+input:focus, 
+select:focus, 
+textarea:focus {
+  border-color: #00d4aa !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2) !important;
+  background: #4d4d4d !important; /* ← Ainda mais claro quando focado */
+}
+
+/* Labels e textos */
+.stat-label,
+.filter-group label,
+.form-group label,
+h2, h3, h4 {
+  color: #f0f0f0 !important;
+}
+
+/* Valores em destaque */
+.stat-value {
+  color: #00d4aa !important;
+}
+
+/* Tables - seguindo a hierarquia */
+.table th {
+  background: #333 !important; /* ← Um pouco mais escuro que inputs */
+  color: #f0f0f0 !important;
+  border-bottom: 1px solid #555 !important;
+}
+
+.table td {
+  background: #2d2d2d !important; /* ← Mesmo tom das seções */
+  color: #f0f0f0 !important;
+  border-bottom: 1px solid #444 !important;
+}
+
+.table tr:hover {
+  background: #3d3d3d !important; /* ← Tom dos inputs no hover */
+}
+
+/* Botões seguindo o padrão */
+.btn-primary,
+.btn.btn-primary {
+  background: #00d4aa !important;
+  border-color: #00d4aa !important;
+  color: #1a1a1a !important;
+}
+
+.btn-primary:hover,
+.btn.btn-primary:hover {
+  background: #00c299 !important;
+  border-color: #00c299 !important;
+}
+
+.btn-secondary,
+.btn.btn-secondary {
+  background: #3d3d3d !important; /* ← Tom dos inputs */
+  border-color: #555 !important;
+  color: #f0f0f0 !important;
+}
+
+.btn-secondary:hover,
+.btn.btn-secondary:hover {
+  background: #4d4d4d !important;
+  border-color: #666 !important;
+}
+
+/* Navegação horizontal */
+.nav-container {
+  background: #2d2d2d !important; /* ← Mesmo tom das seções */
+  border: 1px solid #444 !important;
+}
+
+/* Modais */
+.modal-header {
+  background: #333 !important; /* ← Um tom mais escuro */
+  border-bottom: 1px solid #555 !important;
+  color: #f0f0f0 !important;
+}
+
+/* Loading e empty states */
+.loading-state,
+.empty-state {
+  background: #2d2d2d !important;
+  color: #f0f0f0 !important;
+  border: 1px solid #444 !important;
+}
+
+/* Checkboxes e radios */
+input[type="checkbox"],
+input[type="radio"] {
+  background: #3d3d3d !important;
+  border: 1px solid #555 !important;
+}
+
+/* Select arrows - melhorar visibilidade */
+select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23f0f0f0' d='m0 1 2 2 2-2z'/></svg>") !important;
+}
+
+/* Benefícios items (Nova Proposta) */
+.beneficio-item {
+  background: #3d3d3d !important; /* ← Tom dos inputs */
+  border: 1px solid #555 !important;
+  color: #f0f0f0 !important;
+}
+
+.beneficio-item:hover {
+  background: #4d4d4d !important;
+  border-color: #00d4aa !important;
+}
+
+/* UCs rows (Nova Proposta) */
+.uc-row {
+  background: #3d3d3d !important; /* ← Tom dos inputs */
+  border: 1px solid #555 !important;
+}
+
+/* Dividers e borders */
+.border-top,
+hr {
+  border-color: #444 !important;
+}
+
+/* OVERRIDE DEFINITIVO PARA LABELS - MÁXIMA ESPECIFICIDADE */
+html body .page-container .container .form-section label,
+html body .page-container .container .filter-group label,
+html body .page-container .container .form-group label,
+html body .page-container .container .input-half label,
+html body .page-container .container label,
+html body label,
+.form-section > * > label,
+.form-group > label,
+.filter-group > label,
+.beneficio-item > label {
+  color: #f0f0f0 !important;
+  font-weight: 600 !important;
+}
+
+/* OVERRIDE para títulos de seção */
+html body .page-container .container .form-section h2,
+html body .page-container .container h2,
+html body .page-container .container h3,
+html body h2:not(.header h2),
+html body h3:not(.header h3) {
+  color: #f0f0f0 !important;
+}
+
+/* APENAS o título principal H1 pode ser azul */
+.header h1,
+.header h1 span,
+.header h1::before {
+  color: #00d4aa !important;
+}
+
+/* Valores estatísticos podem ser azul */
+.stat-value {
+  color: #00d4aa !important;
+}
+
+/* Específico para input do número da proposta */
+input[disabled][style*="backgroundColor: '#f0f0f0'"],
+input[value][disabled],
+.form-group input:disabled {
+  background: #f5f5f5 !important;  /* ← Fundo quase branco */
+  color: #222222 !important;       /* ← Texto bem escuro */
+  border: 2px solid #ccc !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+}

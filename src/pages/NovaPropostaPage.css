@@ -148,12 +148,14 @@
   margin-top: 5px;
 }
 
-/* Campos desabilitados */
+/* Campos desabilitados - CORRIGIDO PARA TEMA ESCURO */
 .form-group input:disabled,
 .form-group select:disabled {
-  background-color: #f0f0f0 !important;
+  background-color: #e8e8e8 !important; /* ← Fundo mais claro */
+  color: #333333 !important;            /* ← Texto escuro bem visível */
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 1 !important;                /* ← Remover opacidade que deixava invisível */
+  font-weight: 600 !important;          /* ← Texto mais destacado */
 }
 
 /* =======================================================
@@ -573,11 +575,11 @@
 
 /* Específico para o campo de recorrência quando desabilitado */
 .form-group select:disabled {
-  background-color: #f0f0f0 !important;
-  color: #666 !important;
+  background-color: #e8e8e8 !important; /* ← Fundo mais claro */
+  color: #333333 !important;            /* ← Texto escuro bem visível */
   cursor: not-allowed !important;
+  font-weight: 600 !important;          /* ← Texto mais destacado */
 }
-
 /* Placeholder styling */
 .form-group input::placeholder {
   color: #999;
@@ -585,7 +587,7 @@
 }
 
 .form-group input:disabled::placeholder {
-  color: #ccc;
+  color: #666 !important; /* ← Placeholder mais escuro e visível */
 }
 
 .form-group-double {
@@ -653,4 +655,54 @@
   .input-half input {
     height: 44px;
   }
+}
+
+/* TEMA ESCURO ESPECÍFICO PARA NOVA PROPOSTA */
+.form-section {
+  background: #2d2d2d !important; /* ← Nível 1: Seções */
+  border-left: 4px solid #00d4aa !important;
+  color: #f0f0f0 !important;
+}
+
+.form-section h2 {
+  color: #f0f0f0 !important;
+}
+
+/* UCs - seguindo hierarquia */
+.uc-row {
+  background: #2d2d2d !important;
+  border: 1px solid #555 !important;
+}
+
+/* Benefícios */
+.beneficio-item {
+  background: #3d3d3d !important; /* ← Nível 2: Como inputs */
+  border: 1px solid #555 !important;
+  color: #f0f0f0 !important;
+}
+
+.beneficio-item label {
+  color: #f0f0f0 !important;
+}
+
+/* Benefícios adicionais */
+.beneficios-adicionais {
+  border-top: 2px solid #444 !important;
+}
+
+.beneficios-adicionais h3 {
+  color: #f0f0f0 !important;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  background: rgba(26, 26, 26, 0.9) !important;
+}
+
+.loading-content {
+  background: #2d2d2d !important;
+  color: #f0f0f0 !important;
+  border: 1px solid #444 !important;
+  border-radius: 8px;
+  padding: 20px;
 }

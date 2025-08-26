@@ -2,7 +2,7 @@
 
 .page-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+  background: #1a1a1a !important; /* ← MUDAR ESTA LINHA */
   background-attachment: fixed !important;
 }
 
@@ -12,6 +12,180 @@
   margin: 0 auto;
   padding: 20px;
 }
+
+/* =======================================================
+   TABELA - TEMA ESCURO
+   ======================================================= */
+
+.table-section {
+  background: #2d2d2d !important; /* ← Fundo escuro da seção */
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  border: 1px solid #444;
+}
+
+.table-wrapper,
+.table-container,
+.table-responsive {
+  overflow-x: auto;
+  max-height: 70vh;
+  background: #2d2d2d !important; /* ← Fundo escuro do wrapper */
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+  background: #2d2d2d !important; /* ← Fundo escuro da tabela */
+}
+
+.table th,
+.table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #444 !important; /* ← Borda escura */
+  color: #f0f0f0 !important; /* ← Texto claro */
+}
+
+.table th {
+  background: #333 !important; /* ← Cabeçalho um pouco mais escuro */
+  font-weight: 600;
+  color: #f0f0f0 !important; /* ← Texto claro no cabeçalho */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 2px solid #555 !important; /* ← Borda mais forte no cabeçalho */
+}
+
+.table tr:hover {
+  background: #3d3d3d !important; /* ← Hover um tom mais claro */
+}
+
+.table tbody tr {
+  background: #2d2d2d !important; /* ← Fundo das linhas */
+}
+
+/* =======================================================
+   ELEMENTOS ESPECÍFICOS DA TABELA - VISIBILIDADE
+   ======================================================= */
+
+/* Células específicas com melhor contraste */
+.cliente-info .nome-cliente,
+.proposta-numero,
+.uc-numero,
+.consultor-nome {
+  font-weight: 600;
+  color: #f0f0f0 !important; /* ← Texto bem claro */
+}
+
+.numero-proposta,
+.numero-uc {
+  font-family: monospace;
+  background: #3d3d3d !important; /* ← Fundo um tom mais claro */
+  color: #f0f0f0 !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #555;
+}
+
+.consultor {
+  color: #d0d0d0 !important; /* ← Cinza claro */
+  font-size: 0.9rem;
+}
+
+/* UG cells */
+.ug-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ug-text {
+  font-weight: 500;
+  color: #f0f0f0 !important;
+}
+
+.ug-vazio .ug-text {
+  color: #ff6b6b !important; /* ← Vermelho mais claro para tema escuro */
+  font-style: italic;
+}
+
+.ug-definido .ug-text {
+  color: #51cf66 !important; /* ← Verde mais claro para tema escuro */
+}
+
+.ug-status {
+  color: #51cf66 !important; /* ← Verde claro */
+  font-size: 0.8rem;
+}
+
+/* Valores numéricos */
+.media-valor {
+  font-family: monospace;
+  font-weight: 600;
+  color: #74c0fc !important; /* ← Azul claro para contraste */
+}
+
+.calibragem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calibragem-resultado {
+  font-family: monospace;
+  font-weight: 600;
+  color: #51cf66 !important; /* ← Verde claro */
+}
+
+.sem-calibragem {
+  color: #adb5bd !important; /* ← Cinza claro */
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Textos pequenos e elementos secundários */
+small {
+  color: #adb5bd !important; /* ← Cinza claro para textos pequenos */
+}
+
+/* Status badges - se existirem */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-ativo {
+  background: #51cf66 !important;
+  color: #1a1a1a !important;
+}
+
+.status-inativo {
+  background: #ff6b6b !important;
+  color: #1a1a1a !important;
+}
+
+/* Botões de ação na tabela */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #f0f0f0 !important;
+  transition: all 0.3s ease;
+}
+
 
 /* =======================================================
    ESTATÍSTICAS RÁPIDAS

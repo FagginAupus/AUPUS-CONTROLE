@@ -5,12 +5,12 @@
 }
 
 .nav-container {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(45, 45, 45, 0.95); /* ← MUDOU: Fundo escuro */
   border-radius: 15px;
   padding: 15px 25px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* ← MUDOU: Sombra mais forte */
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1); /* ← MUDOU: Borda sutil */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -26,31 +26,32 @@
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 6px; /* Reduzido de 8px para 6px */
-  padding: 10px 16px; /* Reduzido de 12px 20px para 10px 16px */
+  gap: 6px;
+  padding: 10px 16px;
   background: transparent;
   border: 2px solid transparent;
   border-radius: 12px;
-  color: #2c3e50;
+  color: #ffffff; /* ← MUDOU: Texto branco */
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.85rem; /* Reduzido de 0.9rem para 0.85rem */
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .nav-item:hover {
-  background: rgba(76, 175, 80, 0.1);
-  border-color: rgba(76, 175, 80, 0.2);
+  background: rgba(0, 212, 170, 0.15); /* ← MUDOU: Hover com a cor verde/azul */
+  border-color: rgba(0, 212, 170, 0.3);
   transform: translateY(-2px);
+  color: #ffffff; /* ← Manter branco no hover */
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
-  color: white;
-  border-color: #4CAF50;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  background: #00d4aa; /* ← MUDOU: Cor verde/azul moderna */
+  color: #1a1a1a; /* ← MUDOU: Texto escuro quando ativo */
+  border-color: #00d4aa;
+  box-shadow: 0 4px 15px rgba(0, 212, 170, 0.4);
 }
 
 .nav-icon {

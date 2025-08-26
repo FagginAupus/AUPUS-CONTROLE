@@ -1,0 +1,104 @@
+/* src/components/common/ModernCard.css */
+.modern-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.modern-card.clickable {
+  cursor: pointer;
+}
+
+.modern-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #f39c12, #e67e22);
+}
+
+.card-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+.card-subtitle {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.card-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 12px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.card-trend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.card-trend.up {
+  color: #27ae60;
+}
+
+.card-trend.down {
+  color: #e74c3c;
+}
+
+.trend-icon {
+  font-size: 16px;
+}
+
+.trend-value {
+  font-weight: 600;
+}
+
+/* Variações de cores */
+.modern-card.primary::before {
+  background: linear-gradient(90deg, #3498db, #2980b9);
+}
+
+.modern-card.success::before {
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+}
+
+.modern-card.warning::before {
+  background: linear-gradient(90deg, #f39c12, #e67e22);
+}
+
+.modern-card.danger::before {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+}

@@ -235,11 +235,8 @@ const RelatoriosPage = () => {
     <div className="page-container">
       <div className="container">
         <Header 
-          title="RELATÓRIOS" 
-          subtitle="Exportação e Análise de Dados" 
-          icon="📊" 
+          title="Exportação e Análise de Dados" 
         />
-        
         <Navigation />
 
         {/* Estatísticas Resumidas */}

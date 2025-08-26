@@ -2,7 +2,7 @@
 
 .page-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: #1a1a1a !important; /* ← MUDAR ESTA LINHA */
   background-attachment: fixed;
 }
 
@@ -204,7 +204,7 @@
    ======================================================= */
 
 .user-management {
-  background: rgba(255, 255, 255, 0.95);
+  background: #2d2d2d;
   border-radius: 15px;
   padding: 30px;
   margin-bottom: 35px;

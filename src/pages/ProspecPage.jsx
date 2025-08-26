@@ -399,11 +399,8 @@ const ProspecPage = () => {
     <div className="page-container">
       <div className="container">
         <Header 
-          title="PROSPECÇÃO" 
-          subtitle="Gerenciamento de Propostas" 
-          icon="📋" 
+          title="Gerenciamento de Propostas"  
         />
-        
         <Navigation />
 
         {/* Estatísticas Rápidas */}

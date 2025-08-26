@@ -189,11 +189,8 @@ const UGsPage = () => {
     <div className="page-container">
       <div className="container">
         <Header 
-          title="UNIDADES GERADORAS" 
-          subtitle="Cadastro e Gestão de UGs" 
-          icon="🏭" 
+          title="Cadastro e Gestão de UGs" 
         />
-        
         <Navigation />
 
         {/* Estatísticas */}

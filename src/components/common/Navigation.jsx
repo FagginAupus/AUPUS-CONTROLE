@@ -13,7 +13,7 @@ const Navigation = () => {
     { 
       id: 'inicio', 
       label: 'INÍCIO', 
-      icon: '🏠', 
+      icon: '', // ← REMOVER emoji
       path: '/',
       paths: ['/', '/dashboard'],
       requiredPage: 'dashboard'
@@ -21,35 +21,35 @@ const Navigation = () => {
     { 
       id: 'nova-proposta', 
       label: 'NOVA PROPOSTA', 
-      icon: '📝', 
+      icon: '', // ← REMOVER emoji
       path: '/nova-proposta',
-      requiredPage: 'prospec' // Usa a mesma permissão do prospec
+      requiredPage: 'prospec'
     },
     { 
       id: 'prospec', 
       label: 'PROSPEC', 
-      icon: '📋', 
+      icon: '', // ← REMOVER emoji
       path: '/prospec',
       requiredPage: 'prospec'
     },
     { 
       id: 'controle', 
       label: 'CONTROLE', 
-      icon: '⚙️', 
+      icon: '', // ← REMOVER emoji
       path: '/controle',
       requiredPage: 'controle'
     },
     { 
       id: 'ugs', 
       label: 'UGs', 
-      icon: '🏭', 
+      icon: '', // ← REMOVER emoji
       path: '/ugs',
       requiredPage: 'ugs'
     },
     { 
       id: 'relatorios', 
       label: 'RELATÓRIOS', 
-      icon: '📊', 
+      icon: '', // ← REMOVER emoji
       path: '/relatorios',
       requiredPage: 'relatorios'
     }

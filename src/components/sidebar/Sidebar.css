@@ -1,0 +1,218 @@
+/* src/components/sidebar/Sidebar.css - TEMA ESCURO NEXON */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  background: hsl(0, 0%, 0%); /* ← Card background preto */
+  color: hsl(210, 40%, 98%); /* ← Texto claro */
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5); /* ← Sombra forte */
+  border-right: 1px solid hsl(240, 3.7%, 15.9%); /* ← Borda escura */
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+/* Header da Sidebar */
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid hsl(240, 3.7%, 15.9%); /* ← Borda escura */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  background: hsl(224.3, 76.3%, 48%); /* ← Azul moderno */
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.brand-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: hsl(210, 40%, 98%); /* ← Texto claro */
+}
+
+.collapse-btn {
+  background: transparent;
+  border: none;
+  color: hsl(240, 4.8%, 95.9%); /* ← Cinza claro */
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+  background: hsl(240, 3.7%, 15.9%); /* ← Hover escuro */
+}
+
+/* Navegação */
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  margin: 2px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: hsl(240, 4.8%, 95.9%); /* ← Texto cinza claro */
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: calc(100% - 24px);
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: hsl(240, 3.7%, 15.9%); /* ← Hover escuro */
+  color: hsl(210, 40%, 98%);
+}
+
+.nav-item.active {
+  background: hsl(224.3, 76.3%, 48%); /* ← Azul moderno ativo */
+  color: white;
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 18px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.nav-label {
+  font-weight: 500;
+}
+
+/* Footer da Sidebar */
+.sidebar-footer {
+  padding: 15px 10px;
+  border-top: 1px solid hsl(240, 3.7%, 15.9%); /* ← Borda escura */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: hsl(224.3, 76.3%, 48%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(210, 40%, 98%); /* ← Texto claro */
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 10px;
+  color: hsl(240, 4.8%, 95.9%); /* ← Cinza claro */
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.logout-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}
+
+/* Estados colapsado */
+.sidebar.collapsed .sidebar-nav {
+  padding: 20px 0;
+}
+
+.sidebar.collapsed .nav-item {
+  padding: 15px;
+  justify-content: center;
+  margin: 2px 10px;
+}
+
+.sidebar.collapsed .user-details {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  flex-direction: column;
+  gap: 10px;
+}

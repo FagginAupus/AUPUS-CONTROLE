@@ -375,9 +375,10 @@ const NovaPropostaPage = () => {
   return (
     <div className="page-container">
       <div className="container">
-        <Header title="Nova Proposta" subtitle="Criar nova proposta comercial" icon="📝" />
+        <Header 
+          title="Nova Proposta"
+        />
         <Navigation />
-
         <form onSubmit={handleSubmit(onSubmit)} className="form-container">
           
           {/* INFORMAÇÕES BÁSICAS */}

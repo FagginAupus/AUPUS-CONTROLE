@@ -1,0 +1,35 @@
+/* src/components/layout/PageLayout.css - TEMA ESCURO */
+.page-layout {
+  display: flex;
+  min-height: 100vh;
+  background: hsl(225, 38%, 16%); /* ← Background escuro */
+}
+
+.page-content {
+  flex: 1;
+  margin-left: 280px;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: hsl(225, 38%, 16%); /* ← Background escuro */
+}
+
+.page-main {
+  flex: 1;
+  padding: 24px;
+  overflow-x: auto;
+  background: hsl(225, 38%, 16%); /* ← Background escuro */
+}
+
+/* Quando sidebar está colapsada */
+.sidebar.collapsed ~ .page-content {
+  margin-left: 70px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .page-content {
+    margin-left: 0;
+  }
+}

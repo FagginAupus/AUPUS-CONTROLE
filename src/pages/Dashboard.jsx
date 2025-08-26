@@ -199,17 +199,12 @@ const carregarDados = useCallback(async () => {
     <div className="page-container">
       <div className="container">
         <Header 
-          title="DASHBOARD" 
-          subtitle={`Bem-vindo(a), ${user?.name}!`}
-          icon="🏠" 
+          title={`Bem-vindo(a), ${user?.name}!`}
         />
-        
         <Navigation />
-
         {/* Estatísticas Rápidas */}
         <section className="quick-stats">
           <div className="stat-card">
-            <div className="stat-icon">📋</div>
             <div className="stat-content">
               <span className="stat-label">Total Propostas</span>
               <span className="stat-value">{estadisticas.totalPropostas}</span>
@@ -217,7 +212,6 @@ const carregarDados = useCallback(async () => {
           </div>
           
           <div className="stat-card">
-            <div className="stat-icon">⏳</div>
             <div className="stat-content">
               <span className="stat-label">Aguardando</span>
               <span className="stat-value">{estadisticas.aguardando}</span>
@@ -225,7 +219,6 @@ const carregarDados = useCallback(async () => {
           </div>
           
           <div className="stat-card">
-            <div className="stat-icon">✅</div>
             <div className="stat-content">
               <span className="stat-label">Fechadas</span>
               <span className="stat-value">{estadisticas.fechadas}</span>
@@ -233,7 +226,6 @@ const carregarDados = useCallback(async () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">🏢</div>
             <div className="stat-content">
               <span className="stat-label">Total UCs</span>
               <span className="stat-value">{estadisticas.totalUCs}</span>
@@ -242,7 +234,6 @@ const carregarDados = useCallback(async () => {
 
           {user?.role === 'admin' && (
             <div className="stat-card">
-              <div className="stat-icon">🏭</div>
               <div className="stat-content">
                 <span className="stat-label">UGs Cadastradas</span>
                 <span className="stat-value">{estadisticas.totalUGs}</span>

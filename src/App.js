@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { DataProvider } from './context/DataContext'; // ✅ NOVO
 import ProtectedRoute from './components/auth/ProtectedRoute';
-
+import './dark-theme.css';
 // Páginas
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';

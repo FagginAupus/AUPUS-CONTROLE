@@ -1,0 +1,107 @@
+/* src/dark-theme.css */
+.stat-card,
+.data-section, 
+.filters-section {
+  background: #2d2d2d !important;
+  border: 1px solid #444 !important;
+  color: #f0f0f0 !important; /* ← MUDOU: Texto mais suave */
+}
+
+/* Inputs escuros */
+input, select, textarea {
+  background: #3d3d3d !important;
+  border: 1.5px solid #555 !important;
+  color: #f0f0f0 !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #00d4aa !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2) !important;
+}
+
+/* Botões primários */
+.btn-primary,
+.btn.btn-primary {
+  background: #00d4aa !important;
+  border-color: #00d4aa !important;
+  color: #1a1a1a !important; /* ← Texto escuro em botão claro */
+}
+
+.btn-primary:hover,
+.btn.btn-primary:hover {
+  background: #00c299 !important;
+  border-color: #00c299 !important;
+}
+
+/* Tables escuras */
+.table th {
+  background: #333 !important;
+  color: #f0f0f0 !important;
+  border-bottom: 1px solid #555 !important;
+}
+
+.table td {
+  background: #2d2d2d !important;
+  color: #f0f0f0 !important;
+  border-bottom: 1px solid #444 !important;
+}
+
+.table tr:hover {
+  background: #3d3d3d !important;
+}
+
+/* Nav user area */
+.nav-user {
+  color: #f0f0f0 !important;
+}
+
+.logout-btn {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.logout-btn:hover {
+  background: #c82333 !important;
+}
+
+.stat-label,
+.filter-group label,
+h2, h3 {
+  color: #f0f0f0 !important; /* ← MUDOU: Texto claro suave */
+}
+
+.stat-value {
+  color: #00d4aa !important; /* ← MUDOU: Verde/azul para valores */
+}
+
+/* TABELA CONTROLE - OVERRIDE ESPECÍFICO */
+.table-section,
+.table-wrapper,
+.table-container,
+.table-responsive {
+  background: #2d2d2d !important;
+}
+
+.table {
+  background: #2d2d2d !important;
+}
+
+.table th {
+  background: #333 !important;
+  color: #f0f0f0 !important;
+  border-bottom: 2px solid #555 !important;
+}
+
+.table td {
+  background: #2d2d2d !important;
+  color: #f0f0f0 !important;
+  border-bottom: 1px solid #444 !important;
+}
+
+.table tr:hover {
+  background: #3d3d3d !important;
+}
+
+.table tr:hover td {
+  background: #3d3d3d !important;
+}
