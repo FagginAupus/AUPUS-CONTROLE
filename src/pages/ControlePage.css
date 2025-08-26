@@ -13,58 +13,7 @@
   padding: 20px;
 }
 
-/* =======================================================
-   TABELA - TEMA ESCURO
-   ======================================================= */
 
-.table-section {
-  background: #2d2d2d !important; /* ← Fundo escuro da seção */
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-  border: 1px solid #444;
-}
-
-.table-wrapper,
-.table-container,
-.table-responsive {
-  overflow-x: auto;
-  max-height: 70vh;
-  background: #2d2d2d !important; /* ← Fundo escuro do wrapper */
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1000px;
-  background: #2d2d2d !important; /* ← Fundo escuro da tabela */
-}
-
-.table th,
-.table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #444 !important; /* ← Borda escura */
-  color: #f0f0f0 !important; /* ← Texto claro */
-}
-
-.table th {
-  background: #333 !important; /* ← Cabeçalho um pouco mais escuro */
-  font-weight: 600;
-  color: #f0f0f0 !important; /* ← Texto claro no cabeçalho */
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  border-bottom: 2px solid #555 !important; /* ← Borda mais forte no cabeçalho */
-}
-
-.table tr:hover {
-  background: #3d3d3d !important; /* ← Hover um tom mais claro */
-}
-
-.table tbody tr {
-  background: #2d2d2d !important; /* ← Fundo das linhas */
-}
 
 /* =======================================================
    ELEMENTOS ESPECÍFICOS DA TABELA - VISIBILIDADE
@@ -319,113 +268,152 @@ small {
 }
 
 /* =======================================================
-   TABELA
+   TABELA - FORMATAÇÃO IDÊNTICA AO PROSPEC (CORRIGIDA)
    ======================================================= */
 
 .table-section {
   background: white;
   border-radius: 15px;
   overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  margin-top: 30px;
 }
 
+.table-header {
+  background: #2d2d2d !important;  /* ← Fundo escuro igual ao Prospec */
+  padding: 20px 25px;
+  border-bottom: 2px solid #e1e1e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-header h2 {
+  margin: 0;
+  color: #f0f0f0 !important;  /* ← Texto claro no título */
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-count {
+  background: #4CAF50;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* Container da tabela com scroll */
+.table-container {
+  overflow-x: auto;
+  max-height: 70vh;
+  position: relative;
+  background: #2d2d2d !important;
+}
+
+/* Tabela - OVERRIDE TOTAL com máxima especificidade */
+.page-container .container .table-section .table-container .table,
+.page-container .table-section .table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.85rem !important;
+  background: #2d2d2d !important;
+  min-width: 1000px !important;
+}
+
+/* Cabeçalho da tabela - OVERRIDE TOTAL */
+.page-container .container .table-section .table thead,
+.page-container .table-section .table thead {
+  position: sticky !important;
+  top: 0 !important;
+  background: #333 !important;
+  z-index: 10 !important;
+}
+
+.page-container .container .table-section .table th,
+.page-container .table-section .table th {
+  background: #333 !important;
+  padding: 15px 12px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #f0f0f0 !important;
+  border-bottom: 2px solid #555 !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap !important;
+  min-width: 100px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.page-container .container .table-section .table th:hover,
+.page-container .table-section .table th:hover {
+  background: #404040 !important;
+}
+
+/* Células da tabela - OVERRIDE TOTAL */
+.page-container .container .table-section .table td,
+.page-container .table-section .table td {
+  padding: 12px !important;
+  border-bottom: 1px solid #444 !important;
+  font-size: 0.85rem !important;
+  vertical-align: middle !important;
+  min-width: 80px !important;
+  color: #f0f0f0 !important;
+  background: #2d2d2d !important;
+}
+
+/* HOVER e ZEBRA - OVERRIDE TOTAL com todas as especificidades possíveis */
+.page-container .container .table-section .table tbody tr,
+.page-container .table-section .table tbody tr,
+.page-container .container .table-section .table tr,
+.page-container .table-section .table tr,
+.table-section .table tbody tr,
+.table tbody tr,
+.table tr {
+  background: #2d2d2d !important;
+}
+
+.page-container .container .table-section .table tbody tr:nth-child(even),
+.page-container .table-section .table tbody tr:nth-child(even),
+.page-container .container .table-section .table tr:nth-child(even),
+.page-container .table-section .table tr:nth-child(even),
+.table-section .table tbody tr:nth-child(even),
+.table tbody tr:nth-child(even),
+.table tr:nth-child(even) {
+  background: #2d2d2d !important;  /* ← MESMO fundo para todas as linhas */
+}
+
+.page-container .container .table-section .table tbody tr:hover,
+.page-container .table-section .table tbody tr:hover,
+.page-container .container .table-section .table tr:hover,
+.page-container .table-section .table tr:hover,
+.table-section .table tbody tr:hover,
+.table tbody tr:hover,
+.table tr:hover {
+  background: #3d3d3d !important;  /* ← MESMO hover para todas as linhas */
+}
+
+.page-container .container .table-section .table tbody tr:nth-child(even):hover,
+.page-container .table-section .table tbody tr:nth-child(even):hover,
+.page-container .container .table-section .table tr:nth-child(even):hover,
+.page-container .table-section .table tr:nth-child(even):hover,
+.table-section .table tbody tr:nth-child(even):hover,
+.table tbody tr:nth-child(even):hover,
+.table tr:nth-child(even):hover {
+  background: #3d3d3d !important;  /* ← MESMO hover para linhas pares */
+}
+
+/* Wrapper adicional para garantir fundo escuro */
 .table-wrapper {
   overflow-x: auto;
   max-height: 70vh;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1000px;
-}
-
-.table th,
-.table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #e1e1e1;
-}
-
-.table th {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-
-.table tr:hover {
-  background: #f8f9fa;
-}
-
-/* Células específicas */
-.cliente-info .nome-cliente {
-  font-weight: 600;
-  color: #333;
-}
-
-.numero-proposta,
-.numero-uc {
-  font-family: monospace;
-  background: #f8f9fa;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.consultor {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.ug-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ug-text {
-  font-weight: 500;
-}
-
-.ug-vazio .ug-text {
-  color: #dc3545;
-  font-style: italic;
-}
-
-.ug-definido .ug-text {
-  color: #28a745;
-}
-
-.ug-status {
-  color: #28a745;
-  font-size: 0.8rem;
-}
-
-.media-valor {
-  font-family: monospace;
-  font-weight: 600;
-  color: #007bff;
-}
-
-.calibragem-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.calibragem-resultado {
-  font-family: monospace;
-  font-weight: 600;
-  color: #28a745;
-}
-
-.sem-calibragem {
-  color: #666;
-  font-style: italic;
-  font-size: 0.9rem;
+  background: #2d2d2d !important;
 }
 
 /* =======================================================
@@ -1007,3 +995,23 @@ small {
 .ug-status.success { background: #d4edda; color: #155724; }
 .ug-status.warning { background: #fff3cd; color: #856404; }
 .ug-status.danger { background: #f8d7da; color: #721c24; }
+
+/* REMOVE O EFEITO ZEBRA - todas as linhas ficam escuras uniformes */
+.table tbody tr,
+.table tbody tr:nth-child(even),
+.table tbody tr:nth-child(odd) {
+  background: #2d2d2d !important; /* ← Todas as linhas com a mesma cor escura */
+}
+
+.table tbody tr:hover,
+.table tbody tr:nth-child(even):hover,
+.table tbody tr:nth-child(odd):hover {
+  background: #3d3d3d !important; /* ← Hover uniforme para todas as linhas */
+}
+
+/* OVERRIDE ESPECÍFICO PARA REMOVER ZEBRA NA TABELA CONTROLE */
+.table-section .table tr:nth-child(even),
+.table-responsive tr:nth-child(even),
+.table-container tr:nth-child(even) {
+  background: #2d2d2d !important; /* ← Remove o fundo claro das linhas pares */
+}

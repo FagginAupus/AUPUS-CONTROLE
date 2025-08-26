@@ -499,7 +499,7 @@ const ControlePage = () => {
                   <label>Calibragem Global (%):</label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={calibragemGlobal}
                     onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
                     placeholder="Ex: 10"
@@ -530,6 +530,13 @@ const ControlePage = () => {
 
         {/* Tabela */}
         <section className="table-section">
+          <div className="table-header">
+            <h2>
+              Controle de Propostas
+              <span className="table-count">{dadosFiltrados.length}</span>
+            </h2>
+          </div>
+          
           <div className="table-container">
             {controle.loading && controle.data.length === 0 ? (
               <div className="loading-container">
@@ -543,102 +550,100 @@ const ControlePage = () => {
                 <p>As propostas fechadas aparecerão aqui automaticamente.</p>
               </div>
             ) : (
-              <div className="table-responsive">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Proposta</th>
-                      <th>Cliente</th>
-                      <th>UC</th>
-                      <th>Consultor</th>
-                      <th>UG</th>
-                      <th>Média (kWh)</th>
-                      {/* Coluna Calibrada - só aparece para admin */}
-                      {isAdmin && <th>Calibrada (kWh)</th>}
-                      <th>Status Troca</th>
-                      {isAdmin && <th>Ações</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dadosFiltrados.map((item, index) => (
-                      <tr key={item.id || index}>
-                        <td>
-                          <span className="proposta-numero">{item.numeroProposta}</span>
-                        </td>
-                        <td>
-                          <strong>{item.nomeCliente}</strong>
-                          <br />
-                          <small style={{color: '#666'}}>{item.celular}</small>
-                        </td>
-                        <td>
-                          <span className="uc-numero">{item.numeroUC}</span>
-                          {item.apelido && (
-                            <>
-                              <br />
-                              <small style={{color: '#666'}}>{item.apelido}</small>
-                            </>
-                          )}
-                        </td>
-                        <td>
-                          <span className="consultor-nome">{item.consultor}</span>
-                        </td>
-                        <td>
-                          {item.ug ? (
-                            <span className="ug-atribuida">{item.ug}</span>
-                          ) : (
-                            <span className="sem-ug">Sem UG</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className="media-valor">
-                            {item.media ? parseFloat(item.media).toFixed(0) : '0'}
-                          </span>
-                        </td>
-                        {/* Valor calibrado - só para admin */}
-                        {isAdmin && (
-                          <td>
-                            {calibragemGlobal !== 0 && item.media ? (
-                              <div className="calibragem-info">
-                                <div className="calibragem-calculada">
-                                  {calcularValorCalibrado(item.media, calibragemGlobal).toFixed(0)} kWh
-                                  <br />
-                                  <small style={{color: '#4CAF50', fontWeight: '600'}}>
-                                    ({calibragemGlobal > 0 ? '+' : ''}{calibragemGlobal}% aplicado)
-                                  </small>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="sem-calibragem">
-                                {calibragemGlobal === 0 ? 'Sem calibragem' : '-'}
-                              </div>
-                            )}
-                          </td>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Proposta</th>
+                    <th>Cliente</th>
+                    <th>UC</th>
+                    <th>Consultor</th>
+                    <th>UG</th>
+                    <th>Média (kWh)</th>
+                    {/* Coluna Calibrada - só aparece para admin */}
+                    {isAdmin && <th>Calibrada (kWh)</th>}
+                    <th>Status Troca</th>
+                    {isAdmin && <th>Ações</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {dadosFiltrados.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td>
+                        <span className="proposta-numero">{item.numeroProposta}</span>
+                      </td>
+                      <td>
+                        <strong>{item.nomeCliente}</strong>
+                        <br />
+                        <small style={{color: '#666'}}>{item.celular}</small>
+                      </td>
+                      <td>
+                        <span className="uc-numero">{item.numeroUC}</span>
+                        {item.apelido && (
+                          <>
+                            <br />
+                            <small style={{color: '#666'}}>{item.apelido}</small>
+                          </>
                         )}
+                      </td>
+                      <td>
+                        <span className="consultor-nome">{item.consultor}</span>
+                      </td>
+                      <td>
+                        {item.ug ? (
+                          <span className="ug-atribuida">{item.ug}</span>
+                        ) : (
+                          <span className="sem-ug">Sem UG</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="media-valor">
+                          {item.media ? parseFloat(item.media).toFixed(0) : '0'}
+                        </span>
+                      </td>
+                      {/* Valor calibrado - só para admin */}
+                      {isAdmin && (
+                        <td>
+                          {calibragemGlobal !== 0 && item.media ? (
+                            <div className="calibragem-info">
+                              <div className="calibragem-calculada">
+                                {calcularValorCalibrado(item.media, calibragemGlobal).toFixed(0)} kWh
+                                <br />
+                                <small style={{color: '#4CAF50', fontWeight: '600'}}>
+                                  ({calibragemGlobal > 0 ? '+' : ''}{calibragemGlobal}% aplicado)
+                                </small>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="sem-calibragem">
+                              {calibragemGlobal === 0 ? 'Sem calibragem' : '-'}
+                            </div>
+                          )}
+                        </td>
+                      )}
+                      <td>
+                        <button
+                          onClick={() => editarStatusTroca(index)}
+                          className={`btn btn-small status-troca-btn status-${item.statusTroca?.toLowerCase().replace(' ', '-')}`}
+                          title="Clique para alterar status"
+                        >
+                          {item.statusTroca || 'Aguardando'}
+                        </button>
+                      </td>
+                      {isAdmin && (
                         <td>
                           <button
-                            onClick={() => editarStatusTroca(index)}
-                            className={`btn btn-small status-troca-btn status-${item.statusTroca?.toLowerCase().replace(' ', '-')}`}
-                            title="Clique para alterar status"
+                            onClick={() => editarUG(index)}
+                            className="btn btn-small btn-secondary"
+                            title="Editar UG"
                           >
-                            {item.statusTroca || 'Aguardando'}
+                            ✏️ UG
                           </button>
                         </td>
-                        {isAdmin && (
-                          <td>
-                            <button
-                              onClick={() => editarUG(index)}
-                              className="btn btn-small btn-secondary"
-                              title="Editar UG"
-                            >
-                              ✏️ UG
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </section>
