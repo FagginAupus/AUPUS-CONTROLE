@@ -40,6 +40,7 @@ const ControlePage = () => {
   const debouncedFiltros = useMemo(() => filtros, [filtros]);
 
   const isAdmin = user?.role === 'admin';
+    
     useEffect(() => {
       if (isAdmin && (!ugs.data || ugs.data.length === 0) && !ugs.loading) {
         console.log('🔄 Carregando UGs para admin...');
@@ -153,6 +154,22 @@ const ControlePage = () => {
 
     return dados;
   }, [controle.data, filtros]);
+
+  const calcularEstatisticas = useCallback(() => {
+    const dados = dadosFiltrados;
+    
+    setEstatisticas({
+      total: dados.length,
+      comUG: dados.filter(item => item.ug && item.ug !== '').length,
+      semUG: dados.filter(item => !item.ug || item.ug === '').length,
+      calibradas: dados.filter(item => item.valorCalibrado > 0).length
+    });
+  }, [dadosFiltrados]);
+
+  // UseEffect para recalcular estatísticas quando dados mudam
+  useEffect(() => {
+    calcularEstatisticas();
+  }, [calcularEstatisticas]);
 
   const calcularValorCalibrado = useCallback((media, calibragem) => {
     if (!media || !calibragem || calibragem === 0) return 0;

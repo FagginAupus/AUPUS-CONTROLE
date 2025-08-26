@@ -43,7 +43,7 @@ class PDFGenerator {
       const doc = new jsPDF('p', 'mm', 'a4');
 
       // Gerar conteúdo do PDF
-      this.criarLayoutPDF(doc, dadosProposta);
+      await this.criarLayoutPDF(doc, dadosProposta);
 
       // Gerar nome do arquivo
       const nomeArquivo = this.gerarNomeArquivo(dadosProposta);
@@ -68,7 +68,7 @@ class PDFGenerator {
   }
 
   // Criar layout otimizado do PDF
-  criarLayoutPDF(doc, dados) {
+  async criarLayoutPDF(doc, dados) {
     // Cores do tema
     const corAzul = [44, 62, 80];
     const corVerde = [76, 175, 80];
@@ -76,13 +76,13 @@ class PDFGenerator {
 
     // Faixa preta preenchendo toda a página
     doc.setDrawColor(...corAzul);
-    doc.setLineWidth(7);
+    doc.setLineWidth(12);
     doc.rect(1, 1, 208, 295, 'S');
 
     let y = 10;
 
     // === CABEÇALHO COM LOGO ===
-    y = this.adicionarCabecalhoComLogo(doc, y, corAzul);
+    y = await this.adicionarCabecalhoComLogo(doc, y, corAzul);
 
     // === INFORMAÇÕES DO CLIENTE (COMPACTO) ===
     y = this.adicionarInformacoesClienteCompacto(doc, dados, y, corTexto);
@@ -106,47 +106,74 @@ class PDFGenerator {
     }
 
     // === RODAPÉ ===
-    this.adicionarRodape(doc);
+    await this.adicionarRodape(doc);
   }
 
   // Cabeçalho com logo
-  adicionarCabecalhoComLogo(doc, y, corAzul) {
+  async adicionarCabecalhoComLogo(doc, y, corAzul) {
     // Fundo azul
     doc.setFillColor(...corAzul);
     doc.rect(0, 0, 210, 18, 'F');
 
-    // Carregar logo
+    // Carregar logo de forma síncrona
     try {
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      
-      logoImg.onload = function() {
-        try {
-          doc.addImage(logoImg, 'PNG', 10, 4, 30, 10);
-          console.log('✅ Logo carregada com sucesso!');
-        } catch (error) {
-          console.warn('Erro ao adicionar logo:', error);
+      // Criar promise para aguardar carregamento da imagem
+      const logoCarregada = await new Promise((resolve, reject) => {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        logoImg.onload = function() {
+          try {
+            console.log('✅ Logo carregada com sucesso!');
+            resolve(logoImg);
+          } catch (error) {
+            console.warn('Erro ao processar logo:', error);
+            reject(error);
+          }
+        };
+        
+        logoImg.onerror = function() {
+          console.error('❌ Erro ao carregar logo de: /Logo.png');
+          reject(new Error('Logo não encontrada'));
+        };
+        
+        // Definir timeout para evitar espera infinita
+        setTimeout(() => {
+          if (!logoImg.complete) {
+            reject(new Error('Timeout ao carregar logo'));
+          }
+        }, 3000);
+        
+        logoImg.src = '/Logo.png';
+        
+        // Se já estiver carregada (cache)
+        if (logoImg.complete && logoImg.naturalHeight !== 0) {
+          resolve(logoImg);
         }
-      };
+      });
       
-      logoImg.onerror = function() {
-        // Fallback se logo não carregar
-        console.error('❌ Erro ao carregar logo de: /Logo.png');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('AUPUS', 15, 12);
-      };
-      
-      logoImg.src = '/Logo.png';
-      
-      // Tentar carregar imediatamente se já estiver em cache
-      if (logoImg.complete && logoImg.naturalHeight !== 0) {
-        doc.addImage(logoImg, 'PNG', 10, 4, 30, 10);
-      }
+      // Adicionar logo ao PDF
+      // Calcular dimensões mantendo proporção
+      const logoWidth = logoCarregada.naturalWidth;
+      const logoHeight = logoCarregada.naturalHeight;
+      const aspectRatio = logoWidth / logoHeight;
+
+      // Definir altura desejada e calcular largura proporcional
+      const alturaDesejada = 10;
+      const larguraProporcional = alturaDesejada * aspectRatio;
+
+      // Limitar largura máxima para não ocupar muito espaço
+      const larguraMaxima = 35;
+      const larguraFinal = Math.min(larguraProporcional, larguraMaxima);
+      const alturaFinal = larguraFinal / aspectRatio;
+
+      // Adicionar logo ao PDF mantendo proporção
+      doc.addImage(logoCarregada, 'PNG', 10, 4, larguraFinal, alturaFinal);
+      console.log(`📐 Logo adicionada: ${larguraFinal.toFixed(1)}x${alturaFinal.toFixed(1)}mm (aspecto: ${aspectRatio.toFixed(2)})`);
       
     } catch (error) {
-      // Fallback
+      // Fallback - mostrar texto em vez da logo
+      console.warn('📝 Usando fallback de texto para logo:', error.message);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -162,7 +189,7 @@ class PDFGenerator {
     return 25;
   }
 
-  // Informações do cliente - versão compacta
+  // Informações do cliente - versão compacta COM LETRAS MAIORES
   adicionarInformacoesClienteCompacto(doc, dados, y, corTexto) {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
@@ -170,26 +197,30 @@ class PDFGenerator {
     doc.text('Cliente', 20, y);
     y += 6; 
 
-
-
-    y += 7; // Centralizado verticalmente (12/2 + altura_fonte/2)
-    doc.setFontSize(9); // Aumentado de 8 para 9
+    y += 7;
+    doc.setFontSize(11); // Aumentado de 9 para 11
     doc.setFont('helvetica', 'normal');
 
-    // Uma linha só com os três dados
+    // Uma linha só com os três dados - LETRAS MAIORES
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12); // Aumentado para 12
     doc.text('Nome:', 25, y);
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     doc.text(dados.nomeCliente || '', 42, y);
 
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
     doc.text('Proposta:', 110, y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'normal'); 
+    doc.setFontSize(11);
     doc.text(dados.numeroProposta || '', 133, y);
 
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
     doc.text('Data:', 155, y);
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     const dataFormatada = dados.data ? new Date(dados.data).toLocaleDateString('pt-BR') : '';
     doc.text(dataFormatada, 168, y);
 
@@ -200,32 +231,30 @@ class PDFGenerator {
     return y + 15;
   }
 
-  // Plano economia - versão compacta
+  // Plano economia - ECONOMIA ESPERADA, SEM DESCONTO BANDEIRA
   adicionarPlanoEconomiaCompacto(doc, dados, y, corTexto) {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('Plano Economia', 20, y);
-    y += 6; // Reduzido de 8 para 6
+    y += 6;
 
-    y += 6; // Centralizado verticalmente (10/2 + altura_fonte/2)
-    doc.setFontSize(9); // Aumentado de 8 para 9
-    doc.setFont('helvetica', 'normal');
+    y += 6;
 
     const descontoTarifa = Math.round((dados.descontoTarifa || 0.2) * 100);
-    const descontoBandeira = Math.round((dados.descontoBandeira || 0.2) * 100);
 
-    // Uma linha com os dois descontos
+    // APENAS Economia Esperada - SEM desconto bandeira
     doc.setFont('helvetica', 'bold');
-    doc.text('Desconto Tarifa:', 25, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${descontoTarifa}%`, 70, y);
+    doc.setTextColor(...corTexto); // Preto para "Economia Esperada"
+    doc.setFontSize(14); // Aumentado para dar destaque
+    doc.text('Economia Esperada:', 25, y);
+    
+    doc.setTextColor(76, 175, 80); // Verde para o valor
+    doc.setFontSize(16); // Fonte ainda maior para o valor
+    doc.text(`${descontoTarifa}%`, 90, y);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('Desconto Bandeira:', 100, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${descontoBandeira}%`, 150, y);
-
+    // Voltar cor normal
+    doc.setTextColor(...corTexto);
     doc.setDrawColor(160, 160, 160);
     doc.setLineWidth(0.5);
     doc.line(20, y + 8, 190, y + 8);
@@ -233,7 +262,7 @@ class PDFGenerator {
     return y + 15;
   }
 
-  // Tabela de UCs - espaço dinâmico baseado no conteúdo
+  // Tabela de UCs expandida - SEM DISTRIBUIDORA, COM UNIDADES NAS LINHAS
   adicionarTabelaUCs(doc, ucs, y, corTexto) {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
@@ -244,55 +273,87 @@ class PDFGenerator {
     const linhaAltura = 4;
     const maxLinhas = 10;
     const ucsParaMostrar = ucs.slice(0, maxLinhas);
-    const qtdLinhas = ucsParaMostrar.length;
 
-    doc.setFillColor(70, 100, 130); // Azul mais claro
-    doc.rect(20, y, 170, 6, 'F');
+    // Cabeçalho da tabela
+    doc.setFillColor(70, 100, 130);
+    doc.rect(20, y, 170, 10, 'F');
 
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // MOVER ESTA LINHA PARA DEPOIS do setFont
+    doc.setTextColor(255, 255, 255);
 
-    doc.text('Nome/Apelido', 22, y + 4);
-    doc.text('Número UC', 75, y + 4);
-    doc.text('Ligação', 125, y + 4);
-    doc.text('Consumo (kWh)', 155, y + 4);
+    // Cabeçalho com novos nomes
+    doc.text('Nome', 22, y + 3);
+    doc.text('Consumo', 55, y + 3);
+    doc.text('Sem', 85, y + 3);
+    doc.text('Com', 110, y + 3);  
+    doc.text('Taxa', 135, y + 3);
+    doc.text('Economia', 155, y + 3);
+    doc.text('Economia', 175, y + 3);
+
+    // Segunda linha do cabeçalho
+    doc.text('', 22, y + 7);
+    doc.text('', 55, y + 7);
+    doc.text('Assinatura', 85, y + 7);
+    doc.text('Assinatura', 110, y + 7);
+    doc.text('Fixa', 135, y + 7);
+    doc.text('Mensal', 155, y + 7);
+    doc.text('Anual', 175, y + 7);
 
     doc.setTextColor(...corTexto);
+    y += 10;
 
-    y += 6;
+    // Função para calcular taxa fixa (tarifa mínima)
+    const calcularTaxaFixa = (ligacao) => {
+      switch (ligacao?.toUpperCase()) {
+        case 'TRIFÁSICA':
+        case 'TRIFASICA':
+          return 112;
+        case 'BIFÁSICA':
+        case 'BIFASICA':
+          return 62;
+        case 'MONOFÁSICA':
+        case 'MONOFASICA':
+        default:
+          return 42;
+      }
+    };
 
-    // Calcular tamanho da fonte baseado na quantidade de UCs
-    let fontSize = 8; // Dados
-    if (ucs.length > 8) fontSize = 7;
-    if (ucs.length > 12) fontSize = 6;
-
-    doc.setFontSize(fontSize);
+    doc.setFontSize(5.5);
     doc.setFont('helvetica', 'normal');
 
-    // Linhas da tabela (apenas as necessárias)
+    // Linhas da tabela com cálculos
     ucsParaMostrar.forEach((uc, index) => {
-      // Linha alternada
       if (index % 2 === 1) {
         doc.setFillColor(248, 248, 248);
         doc.rect(20, y, 170, linhaAltura, 'F');
       }
 
-      // Dados da UC
-      const nomeUC = (uc.apelido || `UC ${index + 1}`).substring(0, 20);
-      const numeroUC = (uc.numeroUC || '').toString().substring(0, 15);
-      const ligacao = (uc.ligacao || 'N/I').substring(0, 10);
-      const consumo = (uc.consumo || 0).toString();
+      const consumo = parseFloat(uc.consumo) || 0;
+      const tarifa = 0.8;
+      const desconto = 0.2;
+      
+      // Cálculos
+      const semAssinatura = consumo * tarifa; // Valor Distribuidora
+      const economiaMensal = consumo * tarifa * desconto;
+      const economiaAnual = economiaMensal * 12;
+      const comAssinatura = consumo * tarifa * (1 - desconto); // Contribuição
+      const taxaFixa = calcularTaxaFixa(uc.ligacao);
 
+      const nomeUC = (uc.apelido || `UC ${index + 1}`).substring(0, 12);
+
+      // Dados COM UNIDADES nas linhas
       doc.text(nomeUC, 22, y + 3);
-      doc.text(numeroUC, 75, y + 3);
-      doc.text(ligacao, 125, y + 3);
-      doc.text(consumo, 155, y + 3);
+      doc.text(`${consumo.toFixed(0)} kWh`, 55, y + 3);
+      doc.text(`R$ ${semAssinatura.toFixed(0)}`, 85, y + 3);
+      doc.text(`R$ ${comAssinatura.toFixed(0)}`, 110, y + 3);
+      doc.text(`R$ ${taxaFixa}`, 135, y + 3);
+      doc.text(`R$ ${economiaMensal.toFixed(0)}`, 155, y + 3);
+      doc.text(`R$ ${economiaAnual.toFixed(0)}`, 175, y + 3);
 
       y += linhaAltura;
     });
 
-    // Mostrar aviso se houver mais UCs que o espaço disponível
     if (ucs.length > maxLinhas) {
       doc.setFontSize(6);
       doc.setTextColor(180, 0, 0);
@@ -300,7 +361,6 @@ class PDFGenerator {
       y += 4;
     }
 
-    // Adicionar linha cinza
     doc.setDrawColor(160, 160, 160);
     doc.setLineWidth(0.5);
     doc.line(20, y + 8, 190, y + 8);
@@ -392,38 +452,46 @@ class PDFGenerator {
       const y_barra = graficoDados.y + graficoDados.altura - 10 - alturaRelativa;
 
       // Barra
-      doc.setFillColor(44, 62, 80); // Cor azul direta
+      doc.setFillColor(44, 62, 80);
       doc.rect(x, y_barra, larguraBarra, alturaRelativa, 'F');
 
       // Contorno
-      doc.setDrawColor(30, 50, 70); // Azul mais escuro para contorno
+      doc.setDrawColor(30, 50, 70);
       doc.rect(x, y_barra, larguraBarra, alturaRelativa, 'S');
 
-      // Label do ano
+      // Label do ano - CENTRALIZADO E MAIOR
       doc.setTextColor(...corTexto);
-      doc.setFontSize(8); // Aumentado de 7 para 8
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Ano ${index + 1}`, x + 3, graficoDados.y + graficoDados.altura - 3);
+      doc.setFontSize(10); // Aumentado de 8 para 10
+      doc.setFont('helvetica', 'bold'); // Negrito para os anos
+      const textoAno = `Ano ${index + 1}`;
+      const larguraTextoAno = doc.getTextWidth(textoAno);
+      const xCentralizadoAno = x + (larguraBarra - larguraTextoAno) / 2;
+      doc.text(textoAno, xCentralizadoAno, graficoDados.y + graficoDados.altura - 3);
 
-      // Valor exato
+      // Valor exato - FONTE MAIOR E CENTRALIZADO
       if (alturaRelativa > 8) {
-        doc.setFontSize(6); // Aumentado de 5 para 6
+        doc.setFontSize(8);
         doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
         const valorFormatado = valor.toLocaleString('pt-BR', {
           style: 'currency',
           currency: 'BRL',
           minimumFractionDigits: 0,
           maximumFractionDigits: 0
         });
-        doc.text(valorFormatado, x + 1, y_barra + 5);
+        
+        // Centralizar o valor na barra
+        const larguraTextoValor = doc.getTextWidth(valorFormatado);
+        const xCentralizadoValor = x + (larguraBarra - larguraTextoValor) / 2;
+        doc.text(valorFormatado, xCentralizadoValor, y_barra + 6);
       }
     });
 
-    y = graficoDados.y + graficoDados.altura + 5;
+    y = graficoDados.y + graficoDados.altura + 10;
 
     // Economia total
     doc.setTextColor(...corVerde);
-    doc.setFontSize(11); // Aumentado de 9 para 11
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     
     const economiaFormatada = economiaData.economiaTotal.toLocaleString('pt-BR', {
@@ -444,6 +512,11 @@ class PDFGenerator {
 
   // Benefícios compactos - espaço fixo para até 10 benefícios
   adicionarBeneficiosCompactos(doc, beneficios, y, corTexto) {
+    // Se não há benefícios, pular esta seção
+    if (!beneficios || beneficios.length === 0) {
+      return y;
+    }
+    
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -499,21 +572,106 @@ class PDFGenerator {
   }
 
   // Rodapé
-  adicionarRodape(doc) {
+  async adicionarRodape(doc) {
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(0, 0, 0);
       
-      // Primeira parte em fonte normal
-      doc.setFont('helvetica', 'bold');
-      doc.text('Aupus Energia - ', 20, 285);
-      
-      // Segunda parte em fonte cursiva (simulando a fonte especial)
-      doc.setFont('helvetica', 'italic');
-      doc.text('Interligando você com o futuro!', 75, 285);
-      
+      // Slogan - IMAGEM CURSIVA ASSÍNCRONA
+      try {
+        const sloganCarregado = await new Promise((resolve, reject) => {
+          const sloganImg = new Image();
+          sloganImg.crossOrigin = 'anonymous';
+          
+          sloganImg.onload = function() {
+            try {
+              console.log('📊 Imagem original:', {
+                width: sloganImg.naturalWidth,
+                height: sloganImg.naturalHeight
+              });
+              
+              // Verificar dimensões válidas
+              if (sloganImg.naturalWidth === 0 || sloganImg.naturalHeight === 0) {
+                throw new Error('Dimensões inválidas');
+              }
+              
+              // REDIMENSIONAR IMAGEM
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              const maxWidth = 800;
+              const originalWidth = sloganImg.naturalWidth;
+              const originalHeight = sloganImg.naturalHeight;
+              
+              let newWidth = originalWidth;
+              let newHeight = originalHeight;
+              
+              if (originalWidth > maxWidth) {
+                const ratio = maxWidth / originalWidth;
+                newWidth = maxWidth;
+                newHeight = originalHeight * ratio;
+              }
+              
+              canvas.width = newWidth;
+              canvas.height = newHeight;
+              ctx.drawImage(sloganImg, 0, 0, newWidth, newHeight);
+              
+              const dataURL = canvas.toDataURL('image/png', 0.8);
+              
+              // Dimensões para PDF
+              const aspectRatio = newWidth / newHeight;
+              const alturaDesejada = 10;
+              const larguraProporcional = alturaDesejada * aspectRatio;
+              const larguraMaxPDF = 100;
+              const larguraFinal = Math.min(larguraProporcional, larguraMaxPDF);
+              const alturaFinal = larguraFinal / aspectRatio;
+              const xCentralizado = (210 - larguraFinal) / 2;
+              
+              console.log('📐 Dimensões finais:', {
+                larguraFinal: larguraFinal.toFixed(1),
+                alturaFinal: alturaFinal.toFixed(1),
+                xCentralizado: xCentralizado.toFixed(1)
+              });
+              
+              resolve({ dataURL, x: xCentralizado, y: 281, w: larguraFinal, h: alturaFinal });
+              
+            } catch (error) {
+              console.warn('❌ Erro ao processar slogan:', error);
+              reject(error);
+            }
+          };
+          
+          sloganImg.onerror = function() {
+            console.error('❌ Erro ao carregar: /Frase_interligando.png');
+            reject(new Error('Falha ao carregar slogan'));
+          };
+          
+          // Timeout para evitar espera infinita
+          setTimeout(() => {
+            if (!sloganImg.complete) {
+              reject(new Error('Timeout ao carregar slogan'));
+            }
+          }, 3000);
+          
+          console.log('🔄 Carregando slogan...');
+          sloganImg.src = '/Frase_interligando.png';
+        });
+        
+        // Adicionar imagem ao PDF
+        doc.addImage(sloganCarregado.dataURL, 'PNG', sloganCarregado.x, sloganCarregado.y, sloganCarregado.w, sloganCarregado.h);
+        console.log('✅ Slogan cursivo adicionado ao PDF!');
+        
+      } catch (error) {
+        console.warn('📝 Usando fallback de texto para slogan:', error.message);
+        // Fallback
+        doc.setFont('times', 'italic');
+        doc.setFontSize(11);
+        doc.setTextColor(76, 175, 80);
+        doc.text('Interligando você com o futuro!', 75, 285);
+      }
+            
       // Número da página
       doc.setFont('helvetica', 'normal');
       doc.text(`Página ${i} de ${pageCount}`, 170, 285);

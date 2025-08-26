@@ -227,7 +227,79 @@ const ProspecPage = () => {
     }
   };
   
-  // Adicionar esta função ANTES de removerItem
+  // Formatar UCs a partir do item da tabela
+  const formatarUCsDoItem = (item) => {
+    if (item.unidades_consumidoras) {
+      try {
+        const ucs = JSON.parse(item.unidades_consumidoras);
+        return ucs.map(uc => ({
+          apelido: uc.apelido || uc.numero_unidade || 'UC',
+          numeroUC: uc.numero_unidade || uc.numeroUC || '',
+          ligacao: uc.ligacao || uc.tipo_ligacao || 'Monofásica',
+          consumo: uc.consumo_medio || uc.media || 0,
+          distribuidora: uc.distribuidora || item.distribuidora || 'N/I' // Adicionar distribuidora
+        }));
+      } catch (e) {
+        console.warn('Erro ao parsear UCs:', e);
+      }
+    }
+    
+    return [{
+      apelido: item.apelido || item.numeroUC || 'UC',
+      numeroUC: item.numeroUC || item.numero_unidade || '',
+      ligacao: item.ligacao || item.tipo_ligacao || 'Monofásica',
+      consumo: item.media || item.consumo_medio || item.consumo || 0,
+      distribuidora: item.distribuidora || 'N/I' // Adicionar distribuidora do item
+    }];
+  };
+
+  // Formatar benefícios a partir do item da tabela    
+  const formatarBeneficiosDoItem = (item) => {
+    // Se já é um array direto (caso atual)
+    if (Array.isArray(item.beneficios)) {
+      return item.beneficios.map((texto, index) => ({
+        numero: index + 1,
+        texto: texto
+      }));
+    }
+    
+    // Se é string JSON (caso antigo)  
+    if (item.beneficios && typeof item.beneficios === 'string') {
+      try {
+        const beneficios = JSON.parse(item.beneficios);
+        
+        // Se é array de strings
+        if (Array.isArray(beneficios) && typeof beneficios[0] === 'string') {
+          return beneficios.map((texto, index) => ({
+            numero: index + 1,
+            texto: texto
+          }));
+        }
+        
+        // Se é array de objetos
+        if (Array.isArray(beneficios) && typeof beneficios[0] === 'object') {
+          return beneficios.map((beneficio, index) => ({
+            numero: beneficio.numero || (index + 1),
+            texto: beneficio.texto || beneficio.toString()
+          }));
+        }
+        
+      } catch (e) {
+        console.warn('Erro ao parsear benefícios:', e);
+      }
+    }
+    
+    // Retornar array vazio se não conseguir processar
+    return [];
+  };
+
+  const extrairValorDesconto = (desconto) => {
+    if (typeof desconto === 'string' && desconto.includes('%')) {
+      return parseFloat(desconto.replace('%', ''));
+    }
+    return parseFloat(desconto) || 20;
+  };
+
   const gerarPDFProposta = async (item) => {
     try {
       console.log('📄 Gerando PDF da proposta...', item);
@@ -237,22 +309,17 @@ const ProspecPage = () => {
         numeroProposta: item.numeroProposta,
         nomeCliente: item.nomeCliente,
         consultor: item.consultor,
-        data: item.data,
-        descontoTarifa: parseFloat(item.descontoTarifa) || 0.2,
-        descontoBandeira: parseFloat(item.descontoBandeira) || 0.2,
+        data: item.data || item.dataProposta,
+        descontoTarifa: extrairValorDesconto(item.descontoTarifa) / 100 || 0.2,
+        descontoBandeira: extrairValorDesconto(item.descontoBandeira) / 100 || 0.2,
+        inflacao: (parseFloat(item.inflacao) || 2) / 100,        
+        tarifaTributos: parseFloat(item.tarifaTributos) || 0.98,
         observacoes: item.observacoes || '',
-        ucs: [], // Buscar UCs da proposta se disponível
-        beneficios: []
+        ucs: formatarUCsDoItem(item) || [],
+        beneficios: formatarBeneficiosDoItem(item) || []  // ✅ USAR APENAS ESTA LINHA
       };
 
-      // Se benefícios estão disponíveis no item, usar
-      if (item.beneficios && typeof item.beneficios === 'string') {
-        try {
-          dadosPDF.beneficios = JSON.parse(item.beneficios);
-        } catch (e) {
-          console.warn('Erro ao parsear benefícios:', e);
-        }
-      }
+      // REMOVER TODO O BLOCO DE "Se benefícios estão disponíveis..."
 
       // Importar e usar o gerador de PDF
       const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
@@ -265,7 +332,6 @@ const ProspecPage = () => {
       showNotification(`Erro ao gerar PDF: ${error.message}`, 'error');
     }
   };
-
 
   const removerItem = async (index) => {
     const item = dadosFiltrados[index];

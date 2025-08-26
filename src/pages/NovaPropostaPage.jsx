@@ -221,6 +221,7 @@ const NovaPropostaPage = () => {
         numero_unidade: parseInt(uc.numeroUC),
         apelido: uc.apelido || `UC ${uc.numeroUC}`,
         ligacao: uc.ligacao || '',
+        distribuidora: uc.distribuidora || 'EQUATORIAL GO',
         consumo_medio: parseInt(uc.consumo) || 0,
         distribuidora: uc.distribuidora || ''
       }));
@@ -263,7 +264,6 @@ const NovaPropostaPage = () => {
           data: data.dataProposta || new Date().toISOString().split('T')[0],
           descontoTarifa: (data.economia || 20) / 100,
           descontoBandeira: (data.bandeira || 20) / 100,
-          // ✅ ADICIONAR ESTES CAMPOS:
           inflacao: (data.inflacao || 2) / 100,        // Converter % para decimal
           tarifaTributos: data.tarifaTributos || 0.98, // Valor em R$/kWh
           observacoes: data.observacoes || '',
