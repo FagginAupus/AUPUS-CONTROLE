@@ -28,6 +28,14 @@ const ControlePage = () => {
   } = useData();
 
   const calibragemGlobal = calibragem.valor;
+  const isAdmin = user?.role === 'admin';  // ← MOVER PARA CIMA
+
+  const [calibragemTemp, setCalibragemTemp] = useState(calibragemGlobal);
+
+  // Sincronizar valor temporário quando carrega do banco
+  useEffect(() => {
+    setCalibragemTemp(calibragemGlobal);
+  }, [calibragemGlobal]);
 
   // ✅ ADICIONAR useEffect para carregar calibragem quando necessário
   useEffect(() => {
@@ -57,16 +65,12 @@ const ControlePage = () => {
   const { showNotification } = useNotification();
   const debouncedFiltros = useMemo(() => filtros, [filtros]);
 
-  const isAdmin = user?.role === 'admin';
-    
-    useEffect(() => {
-      if (isAdmin && (!ugs.data || ugs.data.length === 0) && !ugs.loading) {
-        console.log('🔄 Carregando UGs para admin...');
-        loadUgs({}, true);
-      }
-    }, [isAdmin, ugs.data, ugs.loading, loadUgs]);
-
-    
+  useEffect(() => {
+    if (isAdmin && (!ugs.data || ugs.data.length === 0) && !ugs.loading) {
+      console.log('🔄 Carregando UGs para admin...');
+      loadUgs({}, true);
+    }
+  }, [isAdmin, ugs.data, ugs.loading, loadUgs]);  
 
   console.log('🔍 Debug apiService:', {
     apiServiceDisponivel: !!apiService,
@@ -380,6 +384,50 @@ const ControlePage = () => {
       showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
     }
   }, [isAdmin, calibragemGlobal, loadCalibragem, showNotification]);
+
+  const aplicarCalibragemComValor = useCallback(async (novoValor) => {
+    if (!isAdmin) return;
+    
+    if (novoValor < 0 || novoValor > 100) {
+      showNotification('Calibragem deve estar entre 0 e 100%', 'warning');
+      return;
+    }
+
+    const mensagem = novoValor === 0 
+      ? `Resetar calibragem global para 0%?`
+      : `Aplicar calibragem de ${novoValor}% como padrão global?`;
+      
+    if (!window.confirm(mensagem)) return;
+
+    try {
+      const response = await apiService.put('/configuracoes/calibragem_global', { 
+        valor: novoValor 
+      });
+      
+      if (response?.success) {
+        // ✅ REFRESH COMPLETO DOS DADOS
+        console.log('🔄 Refresh completo após aplicar calibragem...');
+        
+        // 1. Recarregar calibragem do banco
+        await loadCalibragem(true);
+        
+        // 2. Recarregar dados de controle (força reload)
+        await loadControle(1, controle.filters, true);
+        
+        // 3. Recarregar UGs (força reload)
+        await loadUgs({}, true);
+        
+        const mensagemSucesso = novoValor === 0 
+          ? 'Calibragem global resetada e dados atualizados!'
+          : `Calibragem global de ${novoValor}% aplicada e dados atualizados!`;
+          
+        showNotification(mensagemSucesso, 'success');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao aplicar calibragem:', error);
+      showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
+    }
+  }, [isAdmin, loadCalibragem, loadControle, loadUgs, controle.filters, showNotification]);
   
   const exportarDados = useCallback(async () => {
     try {
@@ -500,16 +548,30 @@ const ControlePage = () => {
                   <input
                     type="number"
                     step="1"
-                    value={calibragemGlobal}
-                    onChange={(e) => setCalibragemGlobal(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    max="100"
+                    value={calibragemTemp}
+                    onChange={(e) => setCalibragemTemp(parseFloat(e.target.value) || 0)}
                     placeholder="Ex: 10"
                   />
+                  {/* ✅ ADICIONAR INDICADOR VISUAL */}
+                  <small style={{ 
+                    color: calibragemTemp !== calibragemGlobal ? '#ffa500' : '#51cf66',
+                    fontWeight: '600',
+                    fontSize: '0.8rem'
+                  }}>
+                    {calibragemTemp !== calibragemGlobal 
+                      ? `Preview: ${calibragemTemp}% (DB: ${calibragemGlobal}%)` 
+                      : `Aplicado: ${calibragemGlobal}%`
+                    }
+                  </small>
+                  
                   <button 
-                    onClick={aplicarCalibragem} 
+                    onClick={() => aplicarCalibragemComValor(calibragemTemp)} 
                     className="btn btn-primary"
-                    disabled={calibragemGlobal < 0 || calibragemGlobal > 100} // ✅ CORREÇÃO: Não desabilitar para valor 0
+                    disabled={calibragemTemp < 0 || calibragemTemp > 100}
                   >
-                    Aplicar Calibragem
+                    Aplicar {calibragemTemp}%
                   </button>
                 </div>
                 <button 
@@ -603,19 +665,19 @@ const ControlePage = () => {
                       {/* Valor calibrado - só para admin */}
                       {isAdmin && (
                         <td>
-                          {calibragemGlobal !== 0 && item.media ? (
+                          {calibragemTemp !== 0 && item.media ? (
                             <div className="calibragem-info">
                               <div className="calibragem-calculada">
-                                {calcularValorCalibrado(item.media, calibragemGlobal).toFixed(0)} kWh
+                                {calcularValorCalibrado(item.media, calibragemTemp).toFixed(0)} kWh
                                 <br />
-                                <small style={{color: '#4CAF50', fontWeight: '600'}}>
-                                  ({calibragemGlobal > 0 ? '+' : ''}{calibragemGlobal}% aplicado)
+                                <small style={{color: calibragemTemp !== calibragemGlobal ? '#ffa500' : '#4CAF50', fontWeight: '600'}}>
+                                  ({calibragemTemp > 0 ? '+' : ''}{calibragemTemp}% {calibragemTemp !== calibragemGlobal ? 'preview' : 'aplicado'})
                                 </small>
                               </div>
                             </div>
                           ) : (
                             <div className="sem-calibragem">
-                              {calibragemGlobal === 0 ? 'Sem calibragem' : '-'}
+                              {calibragemTemp === 0 ? 'Sem calibragem' : '-'}
                             </div>
                           )}
                         </td>
