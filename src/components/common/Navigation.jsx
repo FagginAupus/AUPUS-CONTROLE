@@ -59,13 +59,14 @@ const Navigation = () => {
       path: '/ugs',
       requiredPage: 'ugs'
     },
-    { 
-      id: 'relatorios', 
-      label: 'RELATÓRIOS', 
-      icon: FileBarChart,
-      path: '/relatorios',
-      requiredPage: 'relatorios'
-    }
+  // TEMPORARIAMENTE COMENTADO
+  // { 
+  //   id: 'relatorios', 
+  //   label: 'RELATÓRIOS', 
+  //   icon: FileBarChart,
+  //   path: '/relatorios',
+  //   requiredPage: 'relatorios'
+  // }
   ];
 
   // Filtrar itens baseado nas permissões do usuário

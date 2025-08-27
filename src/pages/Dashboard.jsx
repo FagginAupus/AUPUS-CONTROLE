@@ -5,6 +5,7 @@ import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { useData } from '../context/DataContext';
 import { 
   FileText, 
   Clock, 
@@ -26,6 +27,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, createUser, canCreateUser, getMyTeam } = useAuth();
   const { showNotification } = useNotification();
+  const { dashboard, loadDashboard, afterCreateUser } = useData(); // USAR DATACONTEXT
   
   const [estadisticas, setEstatisticas] = useState({
     totalPropostas: 0,
@@ -40,74 +42,7 @@ const Dashboard = () => {
   const [equipe, setEquipe] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user?.id) {
-      carregarDados();
-      carregarEquipe();
-    }
-  }, [user?.id]);
 
-  const carregarDados = useCallback(async () => {
-    if (!user?.id) return;
-    
-    try {
-      setLoading(true);
-      
-      let dadosProspec = [];
-      let dadosControle = [];
-      let dadosUGs = [];
-
-      dadosProspec = await storageService.getProspec();
-
-      try {
-        dadosControle = await storageService.getControle();
-      } catch (error) {
-        console.warn('⚠️ Controle clube não disponível:', error.message);
-        dadosControle = [];
-      }
-
-      if (user?.role === 'admin') {
-        try {
-          dadosUGs = await storageService.getUGs();
-        } catch (error) {
-          console.warn('⚠️ UGs não disponíveis:', error.message);
-          dadosUGs = [];
-        }
-      }
-
-      if (user.role !== 'admin') {
-        const teamMembers = getMyTeam();
-        const teamNames = teamMembers.map(member => member.name);
-        
-        dadosProspec = dadosProspec.filter(item => 
-          teamNames.includes(item.consultor) || 
-          teamNames.includes(item.nomeCliente) ||
-          item.usuario_id === user.id
-        );
-        
-        dadosControle = dadosControle.filter(item => 
-          teamNames.includes(item.consultor) || 
-          teamNames.includes(item.nomeCliente) ||
-          item.usuario_id === user.id
-        );
-      }
-
-      setEstatisticas({
-        totalPropostas: dadosProspec.length,
-        aguardando: dadosProspec.filter(p => p.status === 'Aguardando').length,
-        fechadas: dadosProspec.filter(p => p.status === 'Fechado').length,
-        totalUCs: new Set(dadosProspec.map(p => p.numeroUC).filter(Boolean)).size,
-        totalControle: dadosControle.length,
-        totalUGs: dadosUGs.length
-      });
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados do dashboard:', error);
-      showNotification('Erro ao carregar estatísticas do dashboard', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, user?.role, getMyTeam, showNotification]);
 
   const carregarEquipe = useCallback(() => {
     if (!user?.id) return;
@@ -148,6 +83,11 @@ const Dashboard = () => {
         showNotification(`${getTipoLabel(modalCadastro.type)} criado(a) com sucesso!`, 'success');
         fecharModalCadastro();
         carregarEquipe();
+        
+        // Notificar DataContext sobre novo usuário
+        if (afterCreateUser) {
+          afterCreateUser(result.data);
+        }
       } else {
         showNotification(result.message || 'Erro ao criar usuário', 'error');
       }
@@ -380,11 +320,19 @@ const Dashboard = () => {
 };
 
 // Modal de Cadastro - TEMA CLARO
+// Modal de Cadastro - TEMA CLARO
 const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
   const [dados, setDados] = useState({
-    name: '',
-    username: '',
-    password: '',
+    nome: '',
+    email: '',
+    telefone: '',
+    cpf_cnpj: '',
+    endereco: '',
+    cidade: '',
+    estado: '',
+    cep: '',
+    pix: '',
+    password: '00000000', // Senha padrão
     managerId: ''
   });
   const [loading, setLoading] = useState(false);
@@ -392,7 +340,14 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!dados.name.trim() || !dados.username.trim() || !dados.password.trim()) {
+    if (!dados.nome.trim() || !dados.email.trim() || !dados.telefone.trim() || 
+        !dados.cpf_cnpj.trim() || !dados.endereco.trim() || !dados.cidade.trim() || 
+        !dados.estado.trim() || !dados.cep.trim()) {
+      return;
+    }
+
+    // Validar PIX obrigatório para consultor
+    if (tipo === 'consultor' && !dados.pix.trim()) {
       return;
     }
 
@@ -409,6 +364,8 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
     };
     return labels[type] || type;
   };
+
+  const isPixObrigatorio = tipo === 'consultor';
 
   if (loading) {
     return (
@@ -435,35 +392,109 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
         
         <form onSubmit={handleSubmit} className="modal-body-light">
           <div className="form-group-light">
-            <label>Nome Completo:</label>
+            <label>Nome Completo <span style={{color: 'red'}}>*</span>:</label>
             <input
               type="text"
-              value={dados.name}
-              onChange={(e) => setDados({...dados, name: e.target.value})}
+              value={dados.nome}
+              onChange={(e) => setDados({...dados, nome: e.target.value})}
               placeholder="Digite o nome completo"
               required
             />
           </div>
 
           <div className="form-group-light">
-            <label>Nome de Usuário:</label>
+            <label>Email <span style={{color: 'red'}}>*</span>:</label>
             <input
-              type="text"
-              value={dados.username}
-              onChange={(e) => setDados({...dados, username: e.target.value})}
-              placeholder="Digite o nome de usuário"
+              type="email"
+              value={dados.email}
+              onChange={(e) => setDados({...dados, email: e.target.value})}
+              placeholder="Digite o email"
               required
             />
           </div>
 
           <div className="form-group-light">
-            <label>Senha:</label>
+            <label>Celular <span style={{color: 'red'}}>*</span>:</label>
             <input
-              type="password"
-              value={dados.password}
-              onChange={(e) => setDados({...dados, password: e.target.value})}
-              placeholder="Digite a senha"
+              type="text"
+              value={dados.telefone}
+              onChange={(e) => setDados({...dados, telefone: e.target.value})}
+              placeholder="Digite o celular"
               required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>CPF <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.cpf_cnpj}
+              onChange={(e) => setDados({...dados, cpf_cnpj: e.target.value})}
+              placeholder="Digite o CPF"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Endereço <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.endereco}
+              onChange={(e) => setDados({...dados, endereco: e.target.value})}
+              placeholder="Digite o endereço completo"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Cidade <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.cidade}
+              onChange={(e) => setDados({...dados, cidade: e.target.value})}
+              placeholder="Digite a cidade"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Estado <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.estado}
+              onChange={(e) => setDados({...dados, estado: e.target.value})}
+              placeholder="Ex: GO"
+              maxLength={2}
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>CEP <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.cep}
+              onChange={(e) => setDados({...dados, cep: e.target.value})}
+              placeholder="Digite o CEP"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>
+              Chave PIX 
+              {isPixObrigatorio ? (
+                <span style={{color: 'red'}}> *</span>
+              ) : (
+                <span style={{color: '#666', fontSize: '0.9em'}}> (Opcional)</span>
+              )}:
+            </label>
+            <input
+              type="text"
+              value={dados.pix}
+              onChange={(e) => setDados({...dados, pix: e.target.value})}
+              placeholder="Digite a chave PIX"
+              required={isPixObrigatorio}
             />
           </div>
 

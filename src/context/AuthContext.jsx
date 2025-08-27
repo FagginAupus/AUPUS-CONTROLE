@@ -177,19 +177,36 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Você não tem permissão para criar este tipo de usuário');
       }
 
-      // Por enquanto, simular criação
-      console.log('👤 Criando usuário:', userData);
+      console.log('👤 Criando usuário via API:', userData);
       
-      return { 
-        success: true, 
-        message: 'Usuário criado com sucesso (simulado)' 
-      };
+      // Chamar API real
+      const response = await apiService.criarUsuario({
+        nome: userData.nome,
+        email: userData.email,
+        password: userData.password,
+        telefone: userData.telefone,
+        cpf_cnpj: userData.cpf_cnpj,
+        endereco: userData.endereco,
+        cidade: userData.cidade,
+        estado: userData.estado,
+        cep: userData.cep,
+        pix: userData.pix,
+        role: userData.role,
+        manager_id: userData.managerId
+      });
+
+      if (response?.success) {
+        console.log('✅ Usuário criado com sucesso:', response);
+        return response;
+      } else {
+        throw new Error(response?.message || 'Erro ao criar usuário');
+      }
       
     } catch (error) {
       console.error('❌ Erro ao criar usuário:', error);
       return { 
         success: false, 
-        message: error.message 
+        message: error.message || 'Erro interno do sistema'
       };
     }
   };

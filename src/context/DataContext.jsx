@@ -1,5 +1,5 @@
-// src/context/DataContext.jsx - Context centralizado com paginação e hierarquia
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+// src/context/DataContext.jsx - Context centralizado SIMPLIFICADO (sem loops)
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import apiService from '../services/apiService';
@@ -17,6 +17,10 @@ export const useData = () => {
 export const DataProvider = ({ children }) => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
+  
+  // Ref para controlar se já foi inicializado
+  const initializedRef = useRef(false);
+  const loadingRef = useRef(false);
 
   // ========================================
   // ESTADOS DOS DADOS
@@ -65,12 +69,68 @@ export const DataProvider = ({ children }) => {
     }
   });
 
+  const [dashboard, setDashboard] = useState({
+    statistics: {
+      totalPropostas: 0,
+      aguardando: 0,
+      fechadas: 0,
+      totalUCs: 0,
+      totalControle: 0,
+      totalUGs: 0,
+      statusTroca: {
+        aguardando: 0,
+        emAndamento: 0,
+        realizada: 0
+      }
+    },
+    loading: false,
+    error: null,
+    lastUpdated: 0
+  });
+
   // Cache timestamps para invalidação
   const [cacheTimestamps, setCacheTimestamps] = useState({
     propostas: 0,
     controle: 0,
-    ugs: 0
+    ugs: 0,
+    dashboard: 0
   });
+
+  // ========================================
+  // FUNÇÃO PARA CALCULAR ESTATÍSTICAS
+  // ========================================
+
+  const updateDashboardStats = useCallback((propostasData, controleData, ugsData) => {
+    // Usar dados passados como parâmetro ou usar os estados atuais
+    const currentPropostas = propostasData || propostas.data;
+    const currentControle = controleData || controle.data;
+    const currentUgs = ugsData || ugs.data;
+
+    // Calcular status da troca de titularidade
+    const statusTroca = {
+      aguardando: currentControle.filter(item => item.status_troca === 'Aguardando').length,
+      emAndamento: currentControle.filter(item => item.status_troca === 'Em andamento').length,
+      realizada: currentControle.filter(item => item.status_troca === 'Finalizado').length
+    };
+
+    const stats = {
+      totalPropostas: currentPropostas.length,
+      aguardando: currentPropostas.filter(p => p.status === 'Aguardando').length,
+      fechadas: currentPropostas.filter(p => p.status === 'Fechado').length,
+      totalUCs: new Set(currentPropostas.map(p => p.numeroUC).filter(Boolean)).size,
+      totalControle: currentControle.length,
+      totalUGs: currentUgs.length,
+      statusTroca: statusTroca
+    };
+
+    setDashboard(prev => ({
+      ...prev,
+      statistics: stats,
+      lastUpdated: Date.now()
+    }));
+
+    console.log('✅ Estatísticas atualizadas:', stats);
+  }, [propostas.data, controle.data, ugs.data]);
 
   // ========================================
   // FUNÇÕES DE CARREGAMENTO - PROPOSTAS
@@ -83,7 +143,6 @@ export const DataProvider = ({ children }) => {
     const now = Date.now();
     const isExpired = (now - cacheTimestamps.propostas) > cacheTimeout;
 
-    // Se não força reload e cache não expirou, não carregar
     if (!forceReload && !isExpired && propostas.data.length > 0 && page === 1) {
       console.log('📋 Usando cache de propostas');
       return;
@@ -93,14 +152,13 @@ export const DataProvider = ({ children }) => {
       setPropostas(prev => ({ ...prev, loading: true, error: null }));
       console.log(`📡 Carregando propostas - Página ${page} - Role: ${user.role}`);
 
-      // Preparar filtros com hierarquia automática aplicada no backend
       const params = {
         page,
         per_page: propostas.perPage,
         ...filters
       };
 
-      const response = await apiService.get('/propostas', { params });
+      const response = await apiService.getPropostas(params);
 
       if (response?.success && response?.data) {
         const newData = page === 1 ? response.data : [...propostas.data, ...response.data];
@@ -117,15 +175,15 @@ export const DataProvider = ({ children }) => {
           filters: filters
         }));
 
-        // Atualizar timestamp do cache
         setCacheTimestamps(prev => ({
           ...prev,
           propostas: now
         }));
 
-        console.log(`✅ ${response.data.length} propostas carregadas (${user.role})`);
-      } else {
-        throw new Error('Resposta inválida da API');
+        console.log(`✅ ${response.data.length} propostas carregadas`);
+        
+        // Atualizar estatísticas após carregar - passar os novos dados
+        setTimeout(() => updateDashboardStats(newData), 100);
       }
 
     } catch (error) {
@@ -137,7 +195,7 @@ export const DataProvider = ({ children }) => {
       }));
       showNotification('Erro ao carregar propostas: ' + error.message, 'error');
     }
-  }, [user, propostas.perPage, propostas.data, cacheTimestamps.propostas, showNotification]);
+  }, [user?.id, user?.role, propostas.perPage, showNotification, cacheTimestamps.propostas, updateDashboardStats]);
 
   // ========================================
   // FUNÇÕES DE CARREGAMENTO - CONTROLE
@@ -146,7 +204,7 @@ export const DataProvider = ({ children }) => {
   const loadControle = useCallback(async (page = 1, filters = {}, forceReload = false) => {
     if (!user?.id) return;
 
-    const cacheTimeout = 60000; // 1 minuto
+    const cacheTimeout = 60000;
     const now = Date.now();
     const isExpired = (now - cacheTimestamps.controle) > cacheTimeout;
 
@@ -165,7 +223,7 @@ export const DataProvider = ({ children }) => {
         ...filters
       };
 
-      const response = await apiService.get('/controle', { params });
+      const response = await apiService.getControle(params);
 
       if (response?.success && response?.data) {
         const newData = page === 1 ? response.data : [...controle.data, ...response.data];
@@ -187,9 +245,10 @@ export const DataProvider = ({ children }) => {
           controle: now
         }));
 
-        console.log(`✅ ${response.data.length} controles carregados (${user.role})`);
-      } else {
-        throw new Error('Resposta inválida da API');
+        console.log(`✅ ${response.data.length} controles carregados`);
+        
+        // Atualizar estatísticas após carregar - passar os novos dados
+        setTimeout(() => updateDashboardStats(null, newData), 100);
       }
 
     } catch (error) {
@@ -201,7 +260,7 @@ export const DataProvider = ({ children }) => {
       }));
       showNotification('Erro ao carregar controle: ' + error.message, 'error');
     }
-  }, [user, controle.perPage, controle.data, cacheTimestamps.controle, showNotification]);
+  }, [user?.id, user?.role, controle.perPage, showNotification, cacheTimestamps.controle, updateDashboardStats]);
 
   // ========================================
   // FUNÇÕES DE CARREGAMENTO - UGS
@@ -213,7 +272,7 @@ export const DataProvider = ({ children }) => {
       return;
     }
 
-    const cacheTimeout = 120000; // 2 minutos (UGs mudam menos)
+    const cacheTimeout = 120000;
     const now = Date.now();
     const isExpired = (now - cacheTimestamps.ugs) > cacheTimeout;
 
@@ -224,13 +283,9 @@ export const DataProvider = ({ children }) => {
 
     try {
       setUgs(prev => ({ ...prev, loading: true, error: null }));
-      console.log('📡 Carregando UGs - Admin');
+      console.log(`📡 Carregando UGs - Role: ${user.role}`);
 
-      const params = {
-        ...filters
-      };
-
-      const response = await apiService.get('/ugs', { params });
+      const response = await apiService.getUGs(filters);
 
       if (response?.success && response?.data) {
         setUgs(prev => ({
@@ -247,8 +302,9 @@ export const DataProvider = ({ children }) => {
         }));
 
         console.log(`✅ ${response.data.length} UGs carregadas`);
-      } else {
-        throw new Error('Resposta inválida da API');
+        
+        // Atualizar estatísticas após carregar - passar os novos dados
+        setTimeout(() => updateDashboardStats(null, null, response.data), 100);
       }
 
     } catch (error) {
@@ -260,42 +316,31 @@ export const DataProvider = ({ children }) => {
       }));
       showNotification('Erro ao carregar UGs: ' + error.message, 'error');
     }
-  }, [user, cacheTimestamps.ugs, showNotification]);
+  }, [user?.id, user?.role, cacheTimestamps.ugs, showNotification, updateDashboardStats]);
 
   // ========================================
-  // FUNÇÕES DE INVALIDAÇÃO DE CACHE
+  // FUNÇÃO DE CARREGAMENTO DO DASHBOARD
+  // ========================================
+
+  const loadDashboard = useCallback(async (forceReload = false) => {
+    if (!user?.id) return;
+
+    console.log('📊 Carregando dashboard...');
+    setDashboard(prev => ({ ...prev, loading: true }));
+    
+    updateDashboardStats();
+    
+    setDashboard(prev => ({ ...prev, loading: false }));
+    return dashboard.statistics;
+  }, [user?.id, updateDashboardStats, dashboard.statistics]);
+
+  // ========================================
+  // FUNÇÕES DE INVALIDAÇÃO
   // ========================================
 
   const invalidateCache = useCallback((type) => {
     console.log(`🗑️ Invalidando cache: ${type}`);
-    setCacheTimestamps(prev => ({
-      ...prev,
-      [type]: 0
-    }));
-
-    // Resetar dados correspondentes
-    if (type === 'propostas') {
-      setPropostas(prev => ({
-        ...prev,
-        data: [],
-        page: 1,
-        hasMore: true,
-        total: 0
-      }));
-    } else if (type === 'controle') {
-      setControle(prev => ({
-        ...prev,
-        data: [],
-        page: 1,
-        hasMore: true,
-        total: 0
-      }));
-    } else if (type === 'ugs') {
-      setUgs(prev => ({
-        ...prev,
-        data: []
-      }));
-    }
+    setCacheTimestamps(prev => ({ ...prev, [type]: 0 }));
   }, []);
 
   const invalidateAll = useCallback(() => {
@@ -303,72 +348,123 @@ export const DataProvider = ({ children }) => {
     setCacheTimestamps({
       propostas: 0,
       controle: 0,
-      ugs: 0
+      ugs: 0,
+      dashboard: 0
     });
-
-    setPropostas(prev => ({ ...prev, data: [], page: 1, hasMore: true, total: 0 }));
-    setControle(prev => ({ ...prev, data: [], page: 1, hasMore: true, total: 0 }));
-    setUgs(prev => ({ ...prev, data: [] }));
   }, []);
 
   // ========================================
-  // FUNÇÕES PARA CRUD (INVALIDAÇÃO INTELIGENTE)
+  // FUNÇÕES PARA CRUD
   // ========================================
 
   const afterCreateProposta = useCallback(() => {
-    console.log('✅ Proposta criada - Invalidando caches relacionados');
     invalidateCache('propostas');
-    
-    // Se a proposta foi criada como "Fechada", invalidar controle também
-    invalidateCache('controle');
-    
-    // Recarregar os dados automaticamente
-    loadPropostas(1, propostas.filters, true);
-    
-    if (['admin', 'consultor', 'gerente'].includes(user?.role)) {
-      loadControle(1, controle.filters, true);
-    }
-  }, [invalidateCache, loadPropostas, propostas.filters, loadControle, controle.filters, user?.role]);
+    invalidateCache('dashboard');
+  }, [invalidateCache]);
 
   const afterUpdateProposta = useCallback(() => {
-    console.log('✅ Proposta atualizada - Invalidando cache de propostas');
     invalidateCache('propostas');
-    // Controle também pode ser afetado se proposta mudou de status
-    invalidateCache('controle');
+    invalidateCache('dashboard');
   }, [invalidateCache]);
 
   const afterDeleteProposta = useCallback(() => {
-    console.log('✅ Proposta excluída - Invalidando caches relacionados');
     invalidateCache('propostas');
-    invalidateCache('controle');
+    invalidateCache('dashboard');
   }, [invalidateCache]);
 
   const afterCreateUg = useCallback(() => {
-    console.log('✅ UG criada - Invalidando cache de UGs');
     invalidateCache('ugs');
-    loadUgs(ugs.filters, true);
-  }, [invalidateCache, loadUgs, ugs.filters]);
+    invalidateCache('dashboard');
+  }, [invalidateCache]);
+
+  const afterCreateUser = useCallback(() => {
+    invalidateCache('dashboard');
+  }, [invalidateCache]);
 
   // ========================================
-  // CARREGAMENTO INICIAL
+  // CARREGAMENTO INICIAL - SIMPLIFICADO
   // ========================================
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !initializedRef.current && !loadingRef.current) {
       console.log(`🚀 DataContext inicializando para usuário: ${user.name} (${user.role})`);
       
-      // Carregar dados baseado nas permissões do usuário
-      loadPropostas(1, {}, true);
+      initializedRef.current = true;
+      loadingRef.current = true;
       
-      if (['admin', 'consultor', 'gerente'].includes(user.role)) {
-        loadControle(1, {}, true);
-      }
-      
-      if (user.role === 'admin') {
-        loadUgs({}, true);
-      }
+      const initData = async () => {
+        try {
+          let finalPropostas = [];
+          let finalControle = [];
+          let finalUgs = [];
+
+          // Carregar propostas
+          const propostasResponse = await apiService.getPropostas({
+            page: 1,
+            per_page: propostas.perPage
+          });
+          
+          if (propostasResponse?.success && propostasResponse?.data) {
+            finalPropostas = propostasResponse.data;
+            setPropostas(prev => ({
+              ...prev,
+              data: finalPropostas,
+              loading: false,
+              total: propostasResponse.total || finalPropostas.length
+            }));
+            console.log(`✅ ${finalPropostas.length} propostas carregadas na inicialização`);
+          }
+          
+          // Carregar controle se permitido
+          if (['admin', 'consultor', 'gerente'].includes(user.role)) {
+            const controleResponse = await apiService.getControle({
+              page: 1,
+              per_page: controle.perPage
+            });
+            
+            if (controleResponse?.success && controleResponse?.data) {
+              finalControle = controleResponse.data;
+              setControle(prev => ({
+                ...prev,
+                data: finalControle,
+                loading: false,
+                total: controleResponse.total || finalControle.length
+              }));
+              console.log(`✅ ${finalControle.length} controles carregados na inicialização`);
+            }
+          }
+          
+          // Carregar UGs se admin
+          if (user.role === 'admin') {
+            const ugsResponse = await apiService.getUGs({});
+            
+            if (ugsResponse?.success && ugsResponse?.data) {
+              finalUgs = ugsResponse.data;
+              setUgs(prev => ({
+                ...prev,
+                data: finalUgs,
+                loading: false
+              }));
+              console.log(`✅ ${finalUgs.length} UGs carregadas na inicialização`);
+            }
+          }
+
+          // Atualizar estatísticas com todos os dados carregados
+          setTimeout(() => {
+            updateDashboardStats(finalPropostas, finalControle, finalUgs);
+            loadingRef.current = false;
+            console.log('🎯 Inicialização completa!');
+          }, 200);
+          
+        } catch (error) {
+          console.error('❌ Erro na inicialização:', error);
+          loadingRef.current = false;
+        }
+      };
+
+      initData();
     }
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.name, user?.role, loadPropostas, loadControle, loadUgs, updateDashboardStats]);
 
   // ========================================
   // PROVIDER VALUE
@@ -379,11 +475,13 @@ export const DataProvider = ({ children }) => {
     propostas,
     controle,
     ugs,
+    dashboard,
     
     // Funções de carregamento
     loadPropostas,
     loadControle, 
     loadUgs,
+    loadDashboard,
     
     // Funções de invalidação
     invalidateCache,
@@ -394,10 +492,12 @@ export const DataProvider = ({ children }) => {
     afterUpdateProposta,
     afterDeleteProposta,
     afterCreateUg,
+    afterCreateUser,
     
     // Utilidades
-    isLoading: propostas.loading || controle.loading || ugs.loading,
-    hasAnyError: !!(propostas.error || controle.error || ugs.error)
+    isLoading: propostas.loading || controle.loading || ugs.loading || dashboard.loading,
+    hasAnyError: !!(propostas.error || controle.error || ugs.error || dashboard.error),
+    initialized: initializedRef.current
   };
 
   return (
