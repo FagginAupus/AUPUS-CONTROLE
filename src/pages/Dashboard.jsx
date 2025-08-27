@@ -29,20 +29,18 @@ const Dashboard = () => {
   const { showNotification } = useNotification();
   const { dashboard, loadDashboard, afterCreateUser } = useData(); // USAR DATACONTEXT
   
-  const [estadisticas, setEstatisticas] = useState({
-    totalPropostas: 0,
-    aguardando: 0,
-    fechadas: 0,
-    totalUCs: 0,
-    totalControle: 0,
-    totalUGs: 0
-  });
-  
   const [modalCadastro, setModalCadastro] = useState({ show: false, type: '' });
   const [equipe, setEquipe] = useState([]);
-  const [loading, setLoading] = useState(true);
 
+  // USAR DIRETAMENTE AS ESTATISTICAS DO DATACONTEXT - SEM ESTADO LOCAL
+  const estadisticas = dashboard.statistics;
+  const loading = dashboard.loading;
 
+  useEffect(() => {
+    if (user?.id) {
+      carregarEquipe();
+    }
+  }, [user?.id]);
 
   const carregarEquipe = useCallback(() => {
     if (!user?.id) return;
@@ -320,8 +318,9 @@ const Dashboard = () => {
 };
 
 // Modal de Cadastro - TEMA CLARO
-// Modal de Cadastro - TEMA CLARO
 const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
+  const [loading, setLoading] = useState(false); // ADICIONAR ESTA LINHA
+  
   const [dados, setDados] = useState({
     nome: '',
     email: '',
@@ -332,10 +331,9 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
     estado: '',
     cep: '',
     pix: '',
-    password: '00000000', // Senha padrão
+    password: '00000000',
     managerId: ''
   });
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
