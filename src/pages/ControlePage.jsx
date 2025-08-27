@@ -22,12 +22,23 @@ const ControlePage = () => {
     controle, 
     loadControle,
     ugs,
-    loadUgs 
+    loadUgs,
+    calibragem, 
+    loadCalibragem 
   } = useData();
+
+  const calibragemGlobal = calibragem.valor;
+
+  // ✅ ADICIONAR useEffect para carregar calibragem quando necessário
+  useEffect(() => {
+    if (isAdmin && calibragem.valor === 0 && !calibragem.loading) {
+      loadCalibragem();
+    }
+  }, [isAdmin, calibragem.valor, calibragem.loading, loadCalibragem]);
+
 
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
-  const [calibragemGlobal, setCalibragemGlobal] = useState(0);
   const [modalStatusTroca, setModalStatusTroca] = useState({ show: false, item: null, index: -1 });
 
   const [filtros, setFiltros] = useState({
@@ -55,62 +66,7 @@ const ControlePage = () => {
       }
     }, [isAdmin, ugs.data, ugs.loading, loadUgs]);
 
-    useEffect(() => {
-      const carregarCalibragem = async () => {
-        console.log('🚀 carregarCalibragem INICIADO');
-        console.log('👤 isAdmin:', isAdmin);
-        console.log('🔗 apiService disponível:', !!apiService);
-        
-        if (!isAdmin) {
-          console.log('❌ Não é admin, saindo...');
-          return;
-        }
-        
-        try {
-          console.log('🔗 Fazendo requisição para /configuracoes/calibragem-global/value');
-          const response = await apiService.get('/configuracoes/calibragem-global/value');
-          
-          console.log('📥 Resposta COMPLETA da API:', {
-            response: response,
-            hasSuccess: response?.success,
-            hasValor: response?.valor !== undefined,
-            valorTipo: typeof response?.valor,
-            valorConteudo: response?.valor,
-            estruturaCompleta: JSON.stringify(response, null, 2)
-          });
-          
-          if (response?.success && response?.valor !== undefined) {
-            const valorCalibagem = parseFloat(response.valor) || 0;
-            console.log('✅ Calibragem carregada com sucesso:', valorCalibagem);
-            setCalibragemGlobal(valorCalibagem);
-          } else {
-            console.log('⚠️ Resposta não possui success=true ou valor está undefined:', {
-              success: response?.success,
-              valor: response?.valor,
-              valorExiste: 'valor' in (response || {})
-            });
-            setCalibragemGlobal(0); // Valor padrão
-          }
-        } catch (error) {
-          console.error('❌ ERRO ao carregar calibragem:', {
-            error: error,
-            message: error.message,
-            status: error.status,
-            response: error.response,
-            stack: error.stack
-          });
-          
-          // Se der 404, significa que o endpoint não existe
-          if (error.message?.includes('404')) {
-            console.log('🔍 Endpoint não encontrado - usando valor padrão 0');
-          }
-          
-          setCalibragemGlobal(0); // Valor padrão em caso de erro
-        }
-      };
-      
-      carregarCalibragem();
-    }, [isAdmin]);
+    
 
   console.log('🔍 Debug apiService:', {
     apiServiceDisponivel: !!apiService,
@@ -405,25 +361,26 @@ const ControlePage = () => {
     try {
       console.log('🔄 Iniciando chamada para API...');
       
-      // Salvar a calibragem global nas configurações do sistema
       const response = await apiService.put('/configuracoes/calibragem_global', { 
           valor: calibragemGlobal 
       });
       
-      console.log('✅ Resposta da API:', response);
-      
-      const mensagemSucesso = calibragemGlobal === 0 
-        ? 'Calibragem global resetada para 0%!'
-        : `Calibragem global de ${calibragemGlobal}% salva com sucesso!`;
+      if (response?.success) {
+        // ✅ ADICIONAR: Atualizar o DataContext após salvar
+        await loadCalibragem(true); // Force reload
         
-      showNotification(mensagemSucesso, 'success');
-      
+        const mensagemSucesso = calibragemGlobal === 0 
+          ? 'Calibragem global resetada para 0%!'
+          : `Calibragem global de ${calibragemGlobal}% salva com sucesso!`;
+          
+        showNotification(mensagemSucesso, 'success');
+      }
     } catch (error) {
       console.error('❌ Erro ao aplicar calibragem:', error);
       showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
     }
-  }, [isAdmin, calibragemGlobal, showNotification]);
-
+  }, [isAdmin, calibragemGlobal, loadCalibragem, showNotification]);
+  
   const exportarDados = useCallback(async () => {
     try {
       await storageService.exportarParaCSV('controle');

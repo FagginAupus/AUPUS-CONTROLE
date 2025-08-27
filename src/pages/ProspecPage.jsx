@@ -553,8 +553,7 @@ const ProspecPage = () => {
         <section className="table-section">
           <div className="table-container">
             <div className="table-header">
-              <h2>Lista de Propostas</h2>
-              <span className="table-count">{dadosFiltrados.length} registros</span>
+              <h2><FileText /> Propostas <span className="table-count">{dadosFiltrados.length}</span></h2>
             </div>
 
             {propostas.loading && propostas.data.length === 0 ? (

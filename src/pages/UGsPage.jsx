@@ -276,7 +276,7 @@ const UGsPage = () => {
         {/* Tabela */}
         <section className="data-section">
           <div className="table-header">
-            <h2>📋 Lista de UGs ({dadosFiltrados.length})</h2>
+           <h2><Factory /> Usinas Geradoras <span className="table-count">{dadosFiltrados.length}</span></h2>
           </div>
           
           <div className="table-wrapper">
@@ -545,19 +545,51 @@ const ModalNovaUG = ({ onSave, onClose }) => {
   );
 };
 
-// Modal Edição UG - COM FUNDO SÓLIDO seguindo padrão PROSPEC
+// Modal Edição UG - CORRIGIDO PARA USAR OS DADOS DA API
 const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   const [dados, setDados] = useState({
     nomeUsina: '',
-    potenciaCA: 0,
     potenciaCC: 0,
     fatorCapacidade: 19,
-    numero_unidade: ''  // ✅ ADICIONAR ESTA LINHA
+    numero_unidade: ''
   });
+
+  // ✅ CARREGAR DADOS QUANDO O ITEM MUDAR
+  useEffect(() => {
+    if (item) {
+      console.log('🔍 Item recebido no modal:', item); // Debug
+      
+      setDados({
+        nomeUsina: item.nomeUsina || '',
+        potenciaCC: parseFloat(item.potenciaCC) || 0,
+        fatorCapacidade: parseFloat(item.fatorCapacidade) || 19,
+        numero_unidade: item.numeroUnidade || '' // ✅ USAR numeroUnidade da API
+      });
+    }
+  }, [item]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(dados);
+    
+    // Validação
+    if (!dados.nomeUsina?.trim()) {
+      alert('Nome da usina é obrigatório');
+      return;
+    }
+    
+    if (!dados.numero_unidade?.trim()) {
+      alert('Número da UC é obrigatório');
+      return;
+    }
+    
+    // Preparar dados para envio
+    const dadosParaEnvio = {
+      nomeUsina: dados.nomeUsina.trim(),
+      potenciaCC: parseFloat(dados.potenciaCC) || 0,
+      fatorCapacidade: parseFloat(dados.fatorCapacidade) || 19
+    };
+    
+    onSave(dadosParaEnvio);
   };
 
   return (
@@ -577,18 +609,18 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
                 value={dados.nomeUsina}
                 onChange={(e) => setDados({...dados, nomeUsina: e.target.value})}
                 required
+                placeholder="Nome da usina"
               />
             </div>
 
             <div className="form-group">
-              <label>Potência CA (kW) *</label>
+              <label>Número da UC *</label>
               <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={dados.potenciaCA}
-                onChange={(e) => setDados({...dados, potenciaCA: parseFloat(e.target.value) || 0})}
+                type="text"
+                value={dados.numero_unidade}
+                onChange={(e) => setDados({...dados, numero_unidade: e.target.value})}
                 required
+                placeholder="Ex: 12345678"
               />
             </div>
 
@@ -601,18 +633,20 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
                 value={dados.potenciaCC}
                 onChange={(e) => setDados({...dados, potenciaCC: parseFloat(e.target.value) || 0})}
                 required
+                placeholder="Ex: 6000"
               />
             </div>
 
             <div className="form-group">
-              <label>Fator de Capacidade</label>
+              <label>Fator de Capacidade (%)</label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
-                max="1"
+                max="100"
                 value={dados.fatorCapacidade}
                 onChange={(e) => setDados({...dados, fatorCapacidade: parseFloat(e.target.value) || 19})}
+                placeholder="Ex: 19"
               />
             </div>
           </div>

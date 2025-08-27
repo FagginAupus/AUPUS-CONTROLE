@@ -262,10 +262,68 @@ export const DataProvider = ({ children }) => {
     }
   }, [user?.id, user?.role, controle.perPage, showNotification, cacheTimestamps.controle, updateDashboardStats]);
 
+  // Adicione junto com os outros estados
+  const [calibragem, setCalibragem] = useState({
+    valor: 0,
+    loading: false,
+    error: null,
+    lastLoaded: 0
+  });
+
+  // Adicione esta função de carregamento
+  const loadCalibragem = useCallback(async (forceReload = false) => {
+    if (!user?.id || user.role !== 'admin') return;
+
+    const cacheTimeout = 300000; // 5 minutos
+    const now = Date.now();
+    const isExpired = (now - calibragem.lastLoaded) > cacheTimeout;
+
+    if (!forceReload && !isExpired && calibragem.valor !== null) {
+      console.log('📐 Usando calibragem do cache');
+      return calibragem.valor;
+    }
+
+    try {
+      setCalibragem(prev => ({ ...prev, loading: true, error: null }));
+      
+      const response = await apiService.get('/configuracoes/calibragem-global/value');
+      
+      if (response?.success && response?.valor !== undefined) {
+        const valor = parseFloat(response.valor) || 0;
+        setCalibragem({
+          valor,
+          loading: false,
+          error: null,
+          lastLoaded: now
+        });
+        console.log('✅ Calibragem carregada com sucesso:', valor);
+        return valor;
+      } else {
+        setCalibragem(prev => ({ 
+          ...prev, 
+          valor: 0, 
+          loading: false, 
+          lastLoaded: now 
+        }));
+        return 0;
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar calibragem:', error);
+      setCalibragem(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: error.message,
+        valor: 0,
+        lastLoaded: now 
+      }));
+      return 0;
+    }
+  }, [user?.id, user?.role, calibragem.lastLoaded, calibragem.valor]);
+
   // ========================================
   // FUNÇÕES DE CARREGAMENTO - UGS
   // ========================================
-
+  
   const loadUgs = useCallback(async (filters = {}, forceReload = false) => {
     if (!user?.id || user.role !== 'admin') {
       console.log('⚠️ UGs disponíveis apenas para admin');
@@ -476,13 +534,15 @@ export const DataProvider = ({ children }) => {
     controle,
     ugs,
     dashboard,
+    calibragem, // ✅ ADICIONAR
     
     // Funções de carregamento
     loadPropostas,
     loadControle, 
     loadUgs,
     loadDashboard,
-    
+    loadCalibragem,
+      
     // Funções de invalidação
     invalidateCache,
     invalidateAll,

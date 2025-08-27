@@ -138,9 +138,12 @@
 
 .table-header h2 {
   margin: 0;
-  color: #333;
-  font-size: 1.2rem;
+  color: #f0f0f0 !important;  /* ← ALTERAR DE #333 para #f0f0f0 */
+  font-size: 1.3rem;           /* ← ALTERAR DE 1.2rem para 1.3rem */
   font-weight: 600;
+  display: flex;               /* ← ADICIONAR */
+  align-items: center;         /* ← ADICIONAR */
+  gap: 10px;                   /* ← ADICIONAR */
 }
 
 .table-wrapper {
