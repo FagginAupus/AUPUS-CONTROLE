@@ -1015,3 +1015,29 @@ small {
 .table-container tr:nth-child(even) {
   background: #2d2d2d !important; /* ← Remove o fundo claro das linhas pares */
 }
+
+/* Estilos para indicadores com ícones */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Botão de ação com ícone */
+.btn-small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

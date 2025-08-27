@@ -8,6 +8,16 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import storageService from '../services/storageService'; // ✅ ADICIONAR
 import './ProspecPage.css';
+import { 
+  FileText, 
+  Clock, 
+  CheckCircle, 
+  TrendingUp,
+  Edit,
+  Eye,
+  Trash2,
+  X
+} from 'lucide-react';
 
 const ProspecPage = () => {
   const navigate = useNavigate();
@@ -406,28 +416,48 @@ const ProspecPage = () => {
         {/* Estatísticas Rápidas */}
         <section className="quick-stats">
           <div className="stat-card">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{dadosFiltrados.length}</span>
+            <div className="stat-icon">
+              <FileText size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Total</span>
+              <span className="stat-value">{dadosFiltrados.length}</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Aguardando</span>
-            <span className="stat-value">{dadosFiltrados.filter(item => 
-                (item.status || 'Aguardando') === 'Aguardando'
-            ).length}</span>
+            <div className="stat-icon">
+              <Clock size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Aguardando</span>
+              <span className="stat-value">{dadosFiltrados.filter(item => 
+                  (item.status || 'Aguardando') === 'Aguardando'
+              ).length}</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Fechadas</span>
-            <span className="stat-value">{dadosFiltrados.filter(item => 
-                (item.status || 'Aguardando') === 'Fechada'
-            ).length}</span>
+            <div className="stat-icon">
+              <CheckCircle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Fechadas</span>
+              <span className="stat-value">{dadosFiltrados.filter(item => 
+                  (item.status || 'Aguardando') === 'Fechada'
+              ).length}</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Valor Médio</span>
-            <span className="stat-value">
-              {dadosFiltrados.length > 0 
-                ? Math.round(dadosFiltrados.reduce((acc, item) => acc + (parseFloat(item.media) || 0), 0) / dadosFiltrados.length).toLocaleString('pt-BR')
-                : '0'} kWh
-            </span>
+            <div className="stat-icon">
+              <TrendingUp size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Valor Médio</span>
+              <span className="stat-value">
+                {dadosFiltrados.length > 0 
+                  ? Math.round(dadosFiltrados.reduce((acc, item) => acc + (parseFloat(item.media) || 0), 0) / dadosFiltrados.length).toLocaleString('pt-BR')
+                  : '0'} kWh
+              </span>
+            </div>
           </div>
         </section>
 
@@ -565,37 +595,33 @@ const ProspecPage = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            {/* Todos os perfis podem ver detalhes */}
-                            <button
-                              onClick={() => visualizarItem(index)}
+                            <button 
+                              onClick={() => visualizarItem(index)} 
                               className="btn-icon view"
-                              title="Visualizar detalhes"
+                              title="Visualizar"
                             >
-                              👁️
+                              <Eye size={16} />
                             </button>
-                            {/* Todos os perfis podem editar */}
-                            <button
-                              onClick={() => editarItem(index)}
+                            <button 
+                              onClick={() => editarItem(index)} 
                               className="btn-icon edit"
                               title="Editar"
                             >
-                              ✏️
+                              <Edit size={16} />
                             </button>
-                            {/* BOTÃO PARA GERAR PDF */}
-                            <button
-                              onClick={() => gerarPDFProposta(item)}
-                              className="btn-icon pdf"
-                              title="Gerar PDF da proposta"
-                            >
-                              📄
-                            </button>
-                            {/* Todos os perfis podem remover */}
                             <button 
-                              onClick={() => removerItem(index)}
-                              className="btn-icon delete"
-                              title="Remover"
+                              onClick={() => gerarPDFProposta(item)} 
+                              className="btn-icon pdf"
+                              title="Gerar PDF"
                             >
-                              🗑️
+                              <FileText size={16} />
+                            </button>
+                            <button 
+                              onClick={() => removerItem(index)} 
+                              className="btn-icon delete"
+                              title="Excluir"
+                            >
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>

@@ -1,10 +1,24 @@
-// src/pages/Dashboard.jsx - Dashboard corrigido com equipe para admin
+// src/pages/Dashboard.jsx - Corrigido hierarquia e modais claros
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { 
+  FileText, 
+  Clock, 
+  CheckCircle, 
+  Users, 
+  Database, 
+  Zap,
+  Crown,
+  Briefcase,
+  User,
+  UserPlus,
+  X,
+  Calendar
+} from 'lucide-react';
 import storageService from '../services/storageService';
 import './Dashboard.css';
 
@@ -26,80 +40,74 @@ const Dashboard = () => {
   const [equipe, setEquipe] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Carregar dados do dashboard
-
   useEffect(() => {
     if (user?.id) {
       carregarDados();
       carregarEquipe();
     }
-  }, [user?.id]); // Apenas user.id como dependency
+  }, [user?.id]);
 
-const carregarDados = useCallback(async () => {
-  if (!user?.id) return; // Evitar carregar se user não existe
-  
-  try {
-    setLoading(true);
+  const carregarDados = useCallback(async () => {
+    if (!user?.id) return;
     
-    let dadosProspec = [];
-    let dadosControle = [];
-    let dadosUGs = [];
-
-    // Admin vê todos os dados
-    dadosProspec = await storageService.getProspec();
-
-    // Tentar carregar controle clube apenas se necessário
     try {
-      dadosControle = await storageService.getControle();
-    } catch (error) {
-      console.warn('⚠️ Controle clube não disponível:', error.message);
-      dadosControle = [];
-    }
+      setLoading(true);
+      
+      let dadosProspec = [];
+      let dadosControle = [];
+      let dadosUGs = [];
 
-    // Carregar UGs apenas para admin
-    if (user?.role === 'admin') {
+      dadosProspec = await storageService.getProspec();
+
       try {
-        dadosUGs = await storageService.getUGs();
+        dadosControle = await storageService.getControle();
       } catch (error) {
-        console.warn('⚠️ UGs não disponíveis:', error.message);
-        dadosUGs = [];
+        console.warn('⚠️ Controle clube não disponível:', error.message);
+        dadosControle = [];
       }
-    }
 
-    // Filtrar dados por hierarquia apenas se não for admin
-    if (user.role !== 'admin') {
-      const teamMembers = getMyTeam();
-      const teamNames = teamMembers.map(member => member.name);
-      
-      dadosProspec = dadosProspec.filter(item => 
-        teamNames.includes(item.consultor) || 
-        teamNames.includes(item.nomeCliente) ||
-        item.usuario_id === user.id
-      );
-      
-      dadosControle = dadosControle.filter(item => 
-        teamNames.includes(item.consultor) || 
-        teamNames.includes(item.nomeCliente) ||
-        item.usuario_id === user.id
-      );
-    }
+      if (user?.role === 'admin') {
+        try {
+          dadosUGs = await storageService.getUGs();
+        } catch (error) {
+          console.warn('⚠️ UGs não disponíveis:', error.message);
+          dadosUGs = [];
+        }
+      }
 
-    setEstatisticas({
-      totalPropostas: dadosProspec.length,
-      aguardando: dadosProspec.filter(p => p.status === 'Aguardando').length,
-      fechadas: dadosProspec.filter(p => p.status === 'Fechado').length,
-      totalUCs: new Set(dadosProspec.map(p => p.numeroUC).filter(Boolean)).size,
-      totalControle: dadosControle.length,
-      totalUGs: dadosUGs.length
-    });
-    
-  } catch (error) {
-    console.error('❌ Erro ao carregar dados do dashboard:', error);
-    showNotification('Erro ao carregar estatísticas do dashboard', 'error');
-  } finally {
-    setLoading(false);
-  }
-}, [user?.id, user?.role, getMyTeam, showNotification]);
+      if (user.role !== 'admin') {
+        const teamMembers = getMyTeam();
+        const teamNames = teamMembers.map(member => member.name);
+        
+        dadosProspec = dadosProspec.filter(item => 
+          teamNames.includes(item.consultor) || 
+          teamNames.includes(item.nomeCliente) ||
+          item.usuario_id === user.id
+        );
+        
+        dadosControle = dadosControle.filter(item => 
+          teamNames.includes(item.consultor) || 
+          teamNames.includes(item.nomeCliente) ||
+          item.usuario_id === user.id
+        );
+      }
+
+      setEstatisticas({
+        totalPropostas: dadosProspec.length,
+        aguardando: dadosProspec.filter(p => p.status === 'Aguardando').length,
+        fechadas: dadosProspec.filter(p => p.status === 'Fechado').length,
+        totalUCs: new Set(dadosProspec.map(p => p.numeroUC).filter(Boolean)).size,
+        totalControle: dadosControle.length,
+        totalUGs: dadosUGs.length
+      });
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados do dashboard:', error);
+      showNotification('Erro ao carregar estatísticas do dashboard', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, user?.role, getMyTeam, showNotification]);
 
   const carregarEquipe = useCallback(() => {
     if (!user?.id) return;
@@ -108,10 +116,8 @@ const carregarDados = useCallback(async () => {
       const team = getMyTeam();
       
       if (user?.role === 'admin') {
-        // Admin vê apenas consultores
         setEquipe(team.filter(member => member.role === 'consultor'));
       } else {
-        // Outros roles veem sua equipe completa (exceto eles mesmos)
         setEquipe(team.filter(member => member.id !== user?.id));
       }
     } catch (error) {
@@ -162,13 +168,12 @@ const carregarDados = useCallback(async () => {
 
   const getRoleIcon = (role) => {
     const icons = {
-      admin: '👑',
-      consultor: '👔',
-      gerente: '👨‍💼',
-      vendedor: '👨‍💻'
+      admin: Crown,
+      consultor: Briefcase,
+      gerente: Users,
+      vendedor: User
     };
-
-    return icons[role] || '👤';
+    return icons[role] || User;
   };
 
   const formatarData = (dateString) => {
@@ -176,12 +181,10 @@ const carregarDados = useCallback(async () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  // Obter gerentes disponíveis para atribuir vendedores
   const getGerentesDisponiveis = () => {
     return equipe.filter(member => member.role === 'gerente');
   };
 
-  // Função para obter o título da seção baseado no role
   const getTituloEquipe = () => {
     switch (user?.role) {
       case 'admin':
@@ -195,6 +198,74 @@ const carregarDados = useCallback(async () => {
     }
   };
 
+  // Função para determinar quais botões mostrar baseado na hierarquia
+  const getBotoesDisponiveis = () => {
+    const botoes = [];
+    
+    switch (user?.role) {
+      case 'admin':
+        // Admin só cadastra consultor
+        if (canCreateUser('consultor')) {
+          botoes.push({
+            tipo: 'consultor',
+            icon: Briefcase,
+            label: 'Cadastrar Consultor'
+          });
+        }
+        break;
+      
+      case 'consultor':
+        // Consultor cadastra gerente e vendedor
+        if (canCreateUser('gerente')) {
+          botoes.push({
+            tipo: 'gerente',
+            icon: Users,
+            label: 'Cadastrar Gerente'
+          });
+        }
+        if (canCreateUser('vendedor')) {
+          botoes.push({
+            tipo: 'vendedor',
+            icon: User,
+            label: 'Cadastrar Vendedor'
+          });
+        }
+        break;
+      
+      case 'gerente':
+        // Gerente só cadastra vendedor
+        if (canCreateUser('vendedor')) {
+          botoes.push({
+            tipo: 'vendedor',
+            icon: User,
+            label: 'Cadastrar Vendedor'
+          });
+        }
+        break;
+      
+      case 'vendedor':
+        // Vendedor não cadastra ninguém
+        break;
+    }
+    
+    return botoes;
+  };
+
+  const StatCard = ({ icon: Icon, label, value }) => (
+    <div className="stat-card">
+      <div className="stat-icon">
+        <Icon size={32} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+      </div>
+      <div className="stat-content">
+        <span className="stat-label">{label}</span>
+        <span className="stat-value">{value}</span>
+      </div>
+    </div>
+  );
+
+  const RoleIcon = getRoleIcon(user?.role);
+  const botoesDisponiveis = getBotoesDisponiveis();
+
   return (
     <div className="page-container">
       <div className="container">
@@ -202,109 +273,93 @@ const carregarDados = useCallback(async () => {
           title={`Bem-vindo(a), ${user?.name}!`}
         />
         <Navigation />
+        
         {/* Estatísticas Rápidas */}
         <section className="quick-stats">
-          <div className="stat-card">
-            <div className="stat-content">
-              <span className="stat-label">Total Propostas</span>
-              <span className="stat-value">{estadisticas.totalPropostas}</span>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-content">
-              <span className="stat-label">Aguardando</span>
-              <span className="stat-value">{estadisticas.aguardando}</span>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-content">
-              <span className="stat-label">Fechadas</span>
-              <span className="stat-value">{estadisticas.fechadas}</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-content">
-              <span className="stat-label">Total UCs</span>
-              <span className="stat-value">{estadisticas.totalUCs}</span>
-            </div>
-          </div>
-
+          <StatCard 
+            icon={FileText} 
+            label="Total Propostas" 
+            value={estadisticas.totalPropostas}
+          />
+          <StatCard 
+            icon={Clock} 
+            label="Aguardando" 
+            value={estadisticas.aguardando}
+          />
+          <StatCard 
+            icon={CheckCircle} 
+            label="Fechadas" 
+            value={estadisticas.fechadas}
+          />
+          <StatCard 
+            icon={Database} 
+            label="Total UCs" 
+            value={estadisticas.totalUCs}
+          />
           {user?.role === 'admin' && (
-            <div className="stat-card">
-              <div className="stat-content">
-                <span className="stat-label">UGs Cadastradas</span>
-                <span className="stat-value">{estadisticas.totalUGs}</span>
-              </div>
-            </div>
+            <StatCard 
+              icon={Zap} 
+              label="UGs Cadastradas" 
+              value={estadisticas.totalUGs}
+            />
           )}
         </section>
 
-        {/* Cadastro de Usuários */}
-        {(canCreateUser('consultor') || canCreateUser('gerente') || canCreateUser('vendedor')) && (
+        {/* Cadastro de Usuários - Hierarquia Correta */}
+        {botoesDisponiveis.length > 0 && (
           <section className="user-management">
-            <h2>👥 Gerenciar Equipe</h2>
+            <h2>
+              <Users size={24} />
+              Gerenciar Equipe
+            </h2>
             
             <div className="management-actions">
-              {canCreateUser('consultor') && (
-                <button 
-                  onClick={() => abrirModalCadastro('consultor')}
-                  className="create-user-btn consultor"
-                >
-                  <span className="btn-icon">👔</span>
-                  <span className="btn-label">Cadastrar Consultor</span>
-                </button>
-              )}
-
-              {canCreateUser('gerente') && (
-                <button 
-                  onClick={() => abrirModalCadastro('gerente')}
-                  className="create-user-btn gerente"
-                >
-                  <span className="btn-icon">👨‍💼</span>
-                  <span className="btn-label">Cadastrar Gerente</span>
-                </button>
-              )}
-
-              {canCreateUser('vendedor') && (
-                <button 
-                  onClick={() => abrirModalCadastro('vendedor')}
-                  className="create-user-btn vendedor"
-                >
-                  <span className="btn-icon">👨‍💻</span>
-                  <span className="btn-label">Cadastrar Vendedor</span>
-                </button>
-              )}
+              {botoesDisponiveis.map((botao) => {
+                const IconComponent = botao.icon;
+                return (
+                  <button 
+                    key={botao.tipo}
+                    onClick={() => abrirModalCadastro(botao.tipo)}
+                    className={`create-user-btn ${botao.tipo}`}
+                  >
+                    <span className="btn-icon">
+                      <IconComponent size={20} />
+                    </span>
+                    <span className="btn-label">{botao.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </section>
         )}
 
-        {/* Lista da Equipe - ALTERAÇÃO: Mostrar para todos os roles que têm equipe */}
+        {/* Lista da Equipe */}
         {equipe.length > 0 && (
           <section className="user-management">
             <div className="team-list">
               <h3>{getTituloEquipe()} ({equipe.length})</h3>
               <div className="team-grid">
-                {equipe.map(member => (
-                  <div key={member.id} className="team-member">
-                    <div className="member-avatar">
-                      <span className="member-icon">{getRoleIcon(member.role)}</span>
-                    </div>
-                    <div className="member-info">
-                      <h4>{member.name}</h4>
-                      <p className="member-role">{getTipoLabel(member.role)}</p>
-                      <p className="member-username">@{member.username}</p>
-                      <p className="member-date">Criado em {formatarData(member.createdAt)}</p>
-                      {member.managerId && (
-                        <p className="member-manager">
-                          Gerente: {equipe.find(g => g.id === member.managerId)?.name || 'N/A'}
+                {equipe.map(member => {
+                  const MemberIcon = getRoleIcon(member.role);
+                  return (
+                    <div key={member.id} className="team-member">
+                      <div className="member-avatar">
+                        <span className="member-icon">
+                          <MemberIcon size={24} />
+                        </span>
+                      </div>
+                      <div className="member-info">
+                        <h4>{member.name}</h4>
+                        <p className="member-role">{getTipoLabel(member.role)}</p>
+                        <p className="member-email">{member.email}</p>
+                        <p className="member-date">
+                          <Calendar size={14} />
+                          Desde: {formatarData(member.created_at)}
                         </p>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -312,11 +367,11 @@ const carregarDados = useCallback(async () => {
 
         {/* Modal de Cadastro */}
         {modalCadastro.show && (
-          <ModalCadastroUsuario
+          <ModalCadastroUsuario 
             tipo={modalCadastro.type}
-            gerentes={getGerentesDisponiveis()}
-            onSave={handleCriarUsuario}
             onClose={fecharModalCadastro}
+            onSubmit={handleCriarUsuario}
+            gerentes={getGerentesDisponiveis()}
           />
         )}
       </div>
@@ -324,31 +379,25 @@ const carregarDados = useCallback(async () => {
   );
 };
 
-// Componente Modal de Cadastro de Usuário
-const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
+// Modal de Cadastro - TEMA CLARO
+const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
   const [dados, setDados] = useState({
     name: '',
     username: '',
     password: '',
-    managerId: '' // ID do gerente para vendedores
+    managerId: ''
   });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!dados.name || !dados.username || !dados.password) {
-      alert('Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    if (dados.password.length < 3) {
-      alert('Senha deve ter pelo menos 3 caracteres');
+    if (!dados.name.trim() || !dados.username.trim() || !dados.password.trim()) {
       return;
     }
 
     setLoading(true);
-    await onSave(dados);
+    await onSubmit(dados);
     setLoading(false);
   };
 
@@ -363,34 +412,29 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
 
   if (loading) {
     return (
-      <div className="page-container">
-        <div className="container">
-          <Header 
-            title="DASHBOARD" 
-            subtitle="Painel de Controle" 
-            icon="📊" 
-          />
-          <Navigation />
-          
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Carregando dados do dashboard...</p>
-          </div>
+      <div className="modal-overlay-light">
+        <div className="modal-light loading-modal">
+          <p>Criando usuário...</p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>➕ Cadastrar {getTipoLabel(tipo)}</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="modal-overlay-light" onClick={onClose}>
+      <div className="modal-light" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header-light">
+          <h3>
+            <UserPlus size={20} />
+            Cadastrar {getTipoLabel(tipo)}
+          </h3>
+          <button onClick={onClose} className="btn-close-light">
+            <X size={18} />
+          </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-group">
+        <form onSubmit={handleSubmit} className="modal-body-light">
+          <div className="form-group-light">
             <label>Nome Completo:</label>
             <input
               type="text"
@@ -401,7 +445,7 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group-light">
             <label>Nome de Usuário:</label>
             <input
               type="text"
@@ -412,7 +456,7 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group-light">
             <label>Senha:</label>
             <input
               type="password"
@@ -424,7 +468,7 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
           </div>
 
           {tipo === 'vendedor' && gerentes.length > 0 && (
-            <div className="form-group">
+            <div className="form-group-light">
               <label>Gerente Responsável:</label>
               <select
                 value={dados.managerId}
@@ -440,11 +484,11 @@ const ModalCadastroUsuario = ({ tipo, gerentes, onSave, onClose }) => {
             </div>
           )}
 
-          <div className="modal-footer">
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+          <div className="modal-footer-light">
+            <button type="button" onClick={onClose} className="btn-secondary-light">
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary-light" disabled={loading}>
               {loading ? 'Salvando...' : `Criar ${getTipoLabel(tipo)}`}
             </button>
           </div>

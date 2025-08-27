@@ -1,69 +1,57 @@
-// src/pages/LoginPage.jsx - CORRIGIDO PARA NAVEGAÇÃO AUTOMÁTICA
+// src/pages/LoginPage.jsx - Tema escuro com logo oficial
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import './LoginPage.css';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, user } = useAuth();
+  const { showNotification } = useNotification();
+  
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated, user } = useAuth();
-  const { showNotification } = useNotification();
-  const navigate = useNavigate();
 
-  // CORREÇÃO: Redirecionar quando isAuthenticated mudar
   useEffect(() => {
-    console.log('👤 LoginPage - isAuthenticated:', isAuthenticated, 'user:', user?.name);
-    
-    if (isAuthenticated && user) {
-      console.log('🔄 Redirecionando para dashboard...');
-      navigate('/dashboard', { replace: true });
+    if (user) {
+      navigate('/dashboard');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
-      showNotification('Preencha todos os campos', 'warning');
-      return;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      showNotification('Digite um email válido', 'warning');
+      showNotification('Por favor, preencha todos os campos', 'error');
       return;
     }
 
     setLoading(true);
-    console.log('🔐 LoginPage - Iniciando processo de login...');
-
+    
     try {
-      const result = await login(formData.email, formData.password);
-      console.log('🔐 LoginPage - Resultado do login:', result);
+      console.log('🔐 Tentando fazer login com:', { email: formData.email });
       
+      const result = await login(formData.email, formData.password);
+
       if (result.success) {
-        console.log('✅ LoginPage - Login bem-sucedido, usuário:', result.user);
-        showNotification(`Bem-vindo(a), ${result.user.name || result.user.nome}!`, 'success');
+        console.log('✅ Login realizado com sucesso!');
+        showNotification('Login realizado com sucesso!', 'success');
         
-        // CORREÇÃO: Navegação imediata se ainda não foi redirecionado
-        setTimeout(() => {
-          if (!isAuthenticated) {
-            console.log('🔄 LoginPage - Forçando navegação manual...');
-            navigate('/dashboard', { replace: true });
-          }
-        }, 100);
+        const redirectTo = location.state?.from?.pathname || '/dashboard';
+        navigate(redirectTo, { replace: true });
       } else {
-        console.log('❌ LoginPage - Falha no login:', result.message);
-        showNotification(result.message || 'Email ou senha incorretos', 'error');
+        console.error('❌ Erro no login:', result.message);
+        showNotification(result.message || 'Erro ao fazer login', 'error');
       }
     } catch (error) {
-      console.error('❌ LoginPage - Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       showNotification('Erro interno do sistema', 'error');
     } finally {
       setLoading(false);
@@ -84,30 +72,30 @@ const LoginPage = () => {
     }
   };
 
-  // Pré-preencher com dados de teste - REMOVIDO
-
   return (
     <div className="login-container">
       <div className="login-background">
-        <div className="background-shapes">
-          <div className="shape shape-1"></div>
-          <div className="shape shape-2"></div>
-          <div className="shape shape-3"></div>
-        </div>
+        <div className="background-particles"></div>
       </div>
 
       <div className="login-card">
         <div className="login-header">
           <div className="company-logo">
-            <span className="logo-icon">⚡</span>
-            <h1>Aupus Energia</h1>
+            <img 
+              src="/Logo.png" 
+              alt="Aupus Energia" 
+              className="logo-image"
+            />
           </div>
           <p className="login-subtitle">Sistema de Gestão Comercial</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">
+              <Mail size={16} />
+              Email
+            </label>
             <input
               type="email"
               id="email"
@@ -123,19 +111,32 @@ const LoginPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Senha</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua senha"
-              autoComplete="current-password"
-              disabled={loading}
-              required
-            />
+            <label htmlFor="password">
+              <Lock size={16} />
+              Senha
+            </label>
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Digite sua senha"
+                autoComplete="current-password"
+                disabled={loading}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button 
@@ -144,43 +145,15 @@ const LoginPage = () => {
             disabled={loading}
           >
             {loading ? (
-              <>
-                <span className="loading-spinner"></span>
-                Entrando...
-              </>
+              <span>Entrando...</span>
             ) : (
-              'Entrar'
+              <>
+                <LogIn size={18} />
+                Entrar
+              </>
             )}
           </button>
         </form>
-
-        <div className="login-info">
-          <div className="info-section">
-            <h4>Tipos de Acesso:</h4>
-            <div className="access-types">
-              <div className="access-type">
-                <span className="access-name">Administrador</span>
-                <span className="access-desc">Acesso completo ao sistema</span>
-              </div>
-              <div className="access-type">
-                <span className="access-name">Consultor</span>
-                <span className="access-desc">Gestão de equipe e propostas</span>
-              </div>
-              <div className="access-type">
-                <span className="access-name">Gerente</span>
-                <span className="access-desc">Supervisão de vendedores</span>
-              </div>
-              <div className="access-type">
-                <span className="access-name">Vendedor</span>
-                <span className="access-desc">Gestão de propostas próprias</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="login-footer">
-          <p>&copy; 2025 Aupus Energia - Entre nessa onda!</p>
-        </div>
       </div>
     </div>
   );

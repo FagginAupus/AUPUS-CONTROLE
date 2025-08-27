@@ -7,7 +7,14 @@ import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import { useData } from '../context/DataContext';
 import './UGsPage.css';
-
+import { 
+  Factory, 
+  Zap, 
+  Users, 
+  TrendingUp,
+  Edit,
+  Trash2
+} from 'lucide-react';
 const UGsPage = () => {
   const { user } = useAuth();
   const { 
@@ -196,16 +203,31 @@ const UGsPage = () => {
         {/* Estatísticas */}
         <section className="quick-stats">
           <div className="stat-card">
-            <span className="stat-label">Total UGs</span>
-            <span className="stat-value">{estatisticas.total}</span>
+            <div className="stat-icon">
+              <Factory size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Total UGs</span>
+              <span className="stat-value">{estatisticas.total}</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Capacidade Total</span>
-            <span className="stat-value">{estatisticas.capacidadeTotal.toLocaleString('pt-BR')} MWh</span>
+            <div className="stat-icon">
+              <TrendingUp size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Capacidade Total</span>
+              <span className="stat-value">{estatisticas.capacidadeTotal.toLocaleString('pt-BR')} MWh</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Consumo Atribuído</span>
-            <span className="stat-value">{estatisticas.consumoTotal.toLocaleString('pt-BR')} kWh</span>
+            <div className="stat-icon">
+              <Users size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Consumo Atribuído</span>
+              <span className="stat-value">{estatisticas.consumoTotal.toLocaleString('pt-BR')} kWh</span>
+            </div>
           </div>
         </section>
 
@@ -326,7 +348,7 @@ const UGsPage = () => {
                               className="action-btn edit"
                               title="Editar UG"
                             >
-                              ✏️
+                              <Edit size={16} />
                             </button>
                             <button
                               onClick={() => excluirUG(index)}
@@ -338,7 +360,7 @@ const UGsPage = () => {
                                 cursor: item.ucsAtribuidas > 0 ? 'not-allowed' : 'pointer'
                               }}
                             >
-                              🗑️
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>

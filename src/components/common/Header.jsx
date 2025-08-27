@@ -1,16 +1,16 @@
-// src/components/common/Header.jsx
+// src/components/common/Header.jsx - Atualizada com ícones Lucide React
 import React from 'react';
+import { Zap } from 'lucide-react';
 import './Header.css';
 
-const Header = ({ title, subtitle, icon }) => {
+const Header = ({ title, subtitle, icon: IconComponent }) => {
   return (
     <header className="header">
       <div className="header-content">
         <h1>
-          <span className="header-icon" style={{ color: 'white' }}>{icon}</span> 
           {title}
         </h1>
-        <p>{subtitle}</p>
+        {subtitle && <p>{subtitle}</p>}
       </div>
     </header>
   );

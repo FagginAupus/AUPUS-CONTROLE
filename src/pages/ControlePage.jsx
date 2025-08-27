@@ -7,6 +7,13 @@ import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import { useData } from '../context/DataContext';
+import { 
+  Database, 
+  Users, 
+  AlertTriangle, 
+  CheckCircle,
+  Edit
+} from 'lucide-react';
 import './ControlePage.css';
 
 const ControlePage = () => {
@@ -432,21 +439,41 @@ const ControlePage = () => {
         {/* Estatísticas Rápidas */}
         <section className="quick-stats">
           <div className="stat-card">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{estatisticas.total}</span>
+            <div className="stat-icon">
+              <Database size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Total</span>
+              <span className="stat-value">{estatisticas.total}</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Com UG</span>
-            <span className="stat-value">{estatisticas.comUG}</span>
+            <div className="stat-icon">
+              <CheckCircle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Com UG</span>
+              <span className="stat-value">{estatisticas.comUG}</span>
+            </div>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Sem UG</span>
-            <span className="stat-value">{estatisticas.semUG}</span>
+            <div className="stat-icon">
+              <AlertTriangle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Sem UG</span>
+              <span className="stat-value">{estatisticas.semUG}</span>
+            </div>
           </div>
           {isAdmin && (
             <div className="stat-card">
-              <span className="stat-label">Calibradas</span>
-              <span className="stat-value">{estatisticas.calibradas}</span>
+              <div className="stat-icon">
+                <Users size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+              </div>
+              <div className="stat-content">
+                <span className="stat-label">Calibradas</span>
+                <span className="stat-value">{estatisticas.calibradas}</span>
+              </div>
             </div>
           )}
         </section>
@@ -636,7 +663,7 @@ const ControlePage = () => {
                             className="btn btn-small btn-secondary"
                             title="Editar UG"
                           >
-                            ✏️ UG
+                            <Edit size={16} /> UG
                           </button>
                         </td>
                       )}

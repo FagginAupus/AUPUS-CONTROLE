@@ -1,7 +1,20 @@
-// src/components/common/Navigation.jsx - Com Nova Proposta no menu horizontal
+// src/components/common/Navigation.jsx - Atualizada com ícones Lucide React
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { 
+  Home, 
+  Plus, 
+  FileSearch, 
+  Settings, 
+  Zap, 
+  FileBarChart, 
+  LogOut,
+  Crown,
+  Briefcase,
+  User,
+  Users
+} from 'lucide-react';
 import './Navigation.css';
 
 const Navigation = () => {
@@ -13,7 +26,7 @@ const Navigation = () => {
     { 
       id: 'inicio', 
       label: 'INÍCIO', 
-      icon: '', // ← REMOVER emoji
+      icon: Home,
       path: '/',
       paths: ['/', '/dashboard'],
       requiredPage: 'dashboard'
@@ -21,35 +34,35 @@ const Navigation = () => {
     { 
       id: 'nova-proposta', 
       label: 'NOVA PROPOSTA', 
-      icon: '', // ← REMOVER emoji
+      icon: Plus,
       path: '/nova-proposta',
       requiredPage: 'prospec'
     },
     { 
       id: 'prospec', 
       label: 'PROSPEC', 
-      icon: '', // ← REMOVER emoji
+      icon: FileSearch,
       path: '/prospec',
       requiredPage: 'prospec'
     },
     { 
       id: 'controle', 
       label: 'CONTROLE', 
-      icon: '', // ← REMOVER emoji
+      icon: Settings,
       path: '/controle',
       requiredPage: 'controle'
     },
     { 
       id: 'ugs', 
       label: 'UGs', 
-      icon: '', // ← REMOVER emoji
+      icon: Zap,
       path: '/ugs',
       requiredPage: 'ugs'
     },
     { 
       id: 'relatorios', 
       label: 'RELATÓRIOS', 
-      icon: '', // ← REMOVER emoji
+      icon: FileBarChart,
       path: '/relatorios',
       requiredPage: 'relatorios'
     }
@@ -81,12 +94,12 @@ const Navigation = () => {
 
   const getRoleIcon = (role) => {
     const icons = {
-      admin: '👑',
-      consultor: '👔',
-      gerente: '👨‍💼',
-      vendedor: '👨‍💻'
+      admin: Crown,
+      consultor: Briefcase,
+      gerente: Users,
+      vendedor: User
     };
-    return icons[role] || '👤';
+    return icons[role] || User;
   };
 
   const getRoleLabel = (role) => {
@@ -99,29 +112,38 @@ const Navigation = () => {
     return labels[role] || role;
   };
 
+  const RoleIcon = getRoleIcon(user?.role);
+
   return (
     <nav className="navigation">
       <div className="nav-container">
         {/* Menu Items */}
         <div className="nav-menu">
-          {visibleMenuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item.path)}
-              className={`nav-item ${isActive(item) ? 'active' : ''}`}
-              title={item.label} // Para tooltip em mobile
-              data-id={item.id}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-            </button>
-          ))}
+          {visibleMenuItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavigation(item.path)}
+                className={`nav-item ${isActive(item) ? 'active' : ''}`}
+                title={item.label}
+                data-id={item.id}
+              >
+                <span className="nav-icon">
+                  <IconComponent size={20} />
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Apenas Logout */}
-        <div className="nav-user">
+        {/* User Info e Logout */}
+        <div className="nav-user">  
           <button onClick={handleLogout} className="logout-btn" title="Sair do sistema">
-            <span className="logout-icon">🚪</span>
+            <span className="logout-icon">
+              <LogOut size={18} />
+            </span>
             <span className="logout-label">Sair</span>
           </button>
         </div>
@@ -131,3 +153,8 @@ const Navigation = () => {
 };
 
 export default Navigation;
+
+{/* Apenas Logout */}
+        <div className="nav-user">
+          
+        </div>

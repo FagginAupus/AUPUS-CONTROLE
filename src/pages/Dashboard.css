@@ -626,3 +626,245 @@
     font-size: 1.2rem;
   }
 }
+
+/* ADICIONAR AO FINAL DO src/pages/Dashboard.css - Estilos para modais claros */
+
+/* =======================================================
+   MODAL TEMA CLARO - DASHBOARD
+   ======================================================= */
+
+.modal-overlay-light {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-light {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header-light {
+  padding: 24px 24px 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 0;
+  padding-bottom: 16px;
+}
+
+.modal-header-light h3 {
+  margin: 0;
+  color: #1a1a1a !important;
+  font-size: 1.25rem;
+  font-weight: 700 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Override específico para títulos de modais */
+.modal-overlay-light .modal-header-light h3,
+.modal-light .modal-header-light h3 {
+  color: #1a1a1a !important;
+  font-weight: 700 !important;
+}
+
+.modal-header-light h3 svg {
+  color: #007bff;
+}
+
+.btn-close-light {
+  background: #f8f9fa;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: #6c757d;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close-light:hover {
+  background: #e9ecef;
+  color: #495057;
+  transform: scale(1.1);
+}
+
+.modal-body-light {
+  padding: 24px;
+}
+
+.form-group-light {
+  margin-bottom: 20px;
+}
+
+.form-group-light label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.form-group-light input,
+.form-group-light select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  color: #495057;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.form-group-light input:focus,
+.form-group-light select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group-light input::placeholder {
+  color: #adb5bd;
+}
+
+.modal-footer-light {
+  padding: 16px 24px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-primary-light {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary-light:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.btn-primary-light:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary-light {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary-light:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.loading-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.loading-modal p {
+  color: #495057;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .modal-light {
+    margin: 10px;
+    max-width: none;
+  }
+  
+  .modal-header-light,
+  .modal-body-light {
+    padding: 20px;
+  }
+  
+  .modal-footer-light {
+    padding: 16px 20px 20px 20px;
+    flex-direction: column;
+  }
+  
+  .btn-primary-light,
+  .btn-secondary-light {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay-light {
+    padding: 10px;
+  }
+  
+  .modal-light {
+    border-radius: 12px;
+  }
+  
+  .form-group-light input,
+  .form-group-light select {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+}
+
+/* OVERRIDE FORÇADO para inputs do modal - máxima especificidade */
+.modal-light .form-group-light input,
+.modal-light .form-group-light select,
+.modal-overlay-light .form-group-light input,
+.modal-overlay-light .form-group-light select {
+  background: white !important;
+  color: #495057 !important;
+  border: 2px solid #e9ecef !important;
+}
+
+.modal-light .form-group-light input:focus,
+.modal-light .form-group-light select:focus,
+.modal-overlay-light .form-group-light input:focus,
+.modal-overlay-light .form-group-light select:focus {
+  background: white !important;
+  color: #495057 !important;
+  border-color: #007bff !important;
+}
