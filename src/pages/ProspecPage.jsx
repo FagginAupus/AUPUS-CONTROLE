@@ -13,7 +13,7 @@ import {
   Clock, 
   CheckCircle, 
   TrendingUp,
-  Edit,
+  Edit, 
   Eye,
   Trash2,
   X
@@ -27,9 +27,11 @@ const ProspecPage = () => {
     propostas, 
     loadPropostas, 
     afterDeleteProposta,
-    afterUpdateProposta 
+    afterUpdateProposta,
+    loadControle // ← ADICIONAR esta importação
   } = useData();
   
+  const [loading, setLoading] = useState(false); // ← ADICIONAR ESTA LINHA
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   const [modalVisualizacao, setModalVisualizacao] = useState({ show: false, item: null });
 
@@ -126,6 +128,8 @@ const ProspecPage = () => {
   };
 
   const salvarEdicao = async (dadosAtualizados) => {
+    setLoading(true); // ← ADICIONAR no início
+    
     try {
       const { item } = modalEdicao;
       
@@ -226,7 +230,15 @@ const ProspecPage = () => {
       };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
-      afterUpdateProposta(); 
+    
+      // ✅ CHAMADAS DIRETAS DE REFRESH - ESTAS SÃO AS LINHAS IMPORTANTES
+      console.log('🔄 Atualizando dados automaticamente após salvamento...');
+      
+      // Atualizar propostas (força reload)
+      await loadPropostas(1, propostas.filters, true);
+      
+      // Atualizar controle também (força reload)  
+      await loadControle(1, {}, true);
 
       setModalEdicao({ show: false, item: null, index: -1 });
       showNotification('Proposta atualizada com sucesso!', 'success');
@@ -234,6 +246,8 @@ const ProspecPage = () => {
     } catch (error) {
       console.error('❌ Erro ao salvar edição:', error);
       showNotification('Erro ao salvar: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -353,6 +367,8 @@ const ProspecPage = () => {
       return;
     }
 
+    setLoading(true); // ← ADICIONAR loading no início
+
     try {
       const propostaId = item.propostaId || item.id;
       
@@ -370,13 +386,23 @@ const ProspecPage = () => {
         numeroUC: item.numeroUC || item.numero_unidade,
         status: 'Cancelada'
       });
-      afterUpdateProposta();
+
+      // ✅ Refresh automático após cancelar
+      console.log('🔄 Atualizando dados automaticamente após cancelamento...');
+      
+      // Atualizar propostas (força reload)
+      await loadPropostas(1, propostas.filters, true);
+      
+      // Atualizar controle também (força reload)  
+      await loadControle(1, {}, true);
       
       showNotification('Proposta cancelada com sucesso!', 'success');
       
     } catch (error) {
       console.error('❌ Erro ao remover:', error);
       showNotification('Erro ao remover: ' + error.message, 'error');
+    } finally {
+      setLoading(false); // ← ADICIONAR loading no finally
     }
   };
 
@@ -620,8 +646,13 @@ const ProspecPage = () => {
                               onClick={() => removerItem(index)} 
                               className="btn-icon delete"
                               title="Excluir"
+                              disabled={loading} // ← Desabilitar durante loading
                             >
-                              <Trash2 size={16} />
+                              {loading ? (
+                                <div className="loading-spinner-inline"></div>
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -645,10 +676,12 @@ const ProspecPage = () => {
 
         {/* Modal de Edição - Para todos os perfis */}
         {modalEdicao.show && (
-          <ModalEdicao 
+          <ModalEdicao
             item={modalEdicao.item}
             onSave={salvarEdicao}
             onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
+            loading={loading} // ← ADICIONAR
+            setLoading={setLoading} // ← ADICIONAR
           />
         )}
       </div>
@@ -695,15 +728,14 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 
   // Lista de benefícios padrão com seus textos originais
   const beneficiosPadrao = [
-    "A Aupus Energia irá oferecer uma economia na energia elétrica, sem impostos",
-    "A Aupus Energia irá oferecer uma economia no valor referente à bandeira tarifária, sem impostos", 
-    "Isenção de taxa de adesão",
-    "Não há cobrança de taxa de cancelamento",
-    "Não há fidelidade contratual",
-    "O cliente pode cancelar a qualquer momento",
-    "Atendimento personalizado",
-    "Suporte técnico especializado",
-    "Economia imediata na primeira fatura"
+    "Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos",
+    "A titularidade da fatura será transferida para o Consorcio Clube Aupus", 
+    "A Aupus Energia fornecerá consultoria energética para o condomínio",
+    "Todo o processo será conduzido pela Aupus Energia, não se preocupe",
+    "Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energial",
+    "Contamos com uma moderna plataforma para te oferecer uma experiencia única!",
+    "A proposta se aplica para todos os condominos que tiverem interesse",
+    "Desconto em DOBRO no primeiro mês!!"
   ];
 
   // Obter benefícios reais marcados na proposta
@@ -869,6 +901,7 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 
 // Componente Modal de Edição - ATUALIZADO com novos campos
 const ModalEdicao = ({ item, onSave, onClose }) => {
+  const [loading, setLoading] = useState(false); 
   const [dados, setDados] = useState({ 
     ...item,
     // Novos campos para documentação
@@ -887,7 +920,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     termoAdesao: item.termoAdesao || null
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -916,7 +949,14 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
       }
     }
     
-    onSave(dados);
+    setLoading(true); // ← ADICIONAR
+    try {
+      await onSave(dados); // ← Usar await
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+    } finally {
+      setLoading(false); // ← ADICIONAR
+    }
   };
 
   const handleClose = (e) => {
@@ -951,7 +991,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content modal-edicao-expandido" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header modal-header-solido">
-          <h3>✏️ Editar Proposta</h3>
+          <h3><Edit size={18} /> Editar Proposta</h3>
           <button onClick={handleClose} className="btn btn-close">✕</button>
         </div>
         
@@ -1296,10 +1336,26 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
           </div>
 
           <div className="modal-footer">
-            <button type="submit" className="btn btn-primary">
-              💾 Salvar Alterações
+            <button 
+              type="submit" 
+              className={`btn btn-primary ${loading ? 'btn-loading' : ''}`}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="loading-spinner-inline"></div>
+                  Salvando...
+                </>
+              ) : (
+                <>💾 Salvar Alterações</>
+              )}
             </button>
-            <button type="button" onClick={handleClose} className="btn btn-secondary">
+            <button 
+              type="button" 
+              onClick={handleClose} 
+              className="btn btn-secondary"
+              disabled={loading}
+            >
               ❌ Cancelar
             </button>
           </div>

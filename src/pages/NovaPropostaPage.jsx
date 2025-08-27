@@ -6,7 +6,7 @@ import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext'; // ADICIONAR ESTA LINHA
+import { useData } from '../context/DataContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import './NovaPropostaPage.css';
@@ -19,7 +19,11 @@ const NovaPropostaPage = () => {
   const [numeroProposta, setNumeroProposta] = useState('');
   const [beneficiosAdicionais, setBeneficiosAdicionais] = useState([]);
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
-  const { afterCreateProposta } = useData();
+  const { 
+    afterCreateProposta, 
+    loadPropostas, 
+    loadControle 
+  } = useData();
 
   const obterBeneficiosSelecionados = (data) => {
     const beneficios = [];
@@ -45,7 +49,7 @@ const NovaPropostaPage = () => {
       tarifaTributos: 0.98,
       
       ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-      // Benefícios padrão
+      // Benefícios padrão (não obrigatórios)
       beneficio1: true,
       beneficio2: true,
       beneficio3: true,
@@ -53,7 +57,7 @@ const NovaPropostaPage = () => {
       beneficio5: true,
       beneficio6: true,
       beneficio7: true,
-      beneficio8: true
+      beneficio8: false
     }
   });
 
@@ -157,7 +161,10 @@ const NovaPropostaPage = () => {
         recorrencia: '3%',
         economia: 20,
         bandeira: 20,
+        inflacao: 2,
+        tarifaTributos: 0.98,
         ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
+        // Benefícios continuam como false (não obrigatórios)
         beneficio1: false,
         beneficio2: false,
         beneficio3: false,
@@ -187,10 +194,37 @@ const NovaPropostaPage = () => {
     setBeneficiosAdicionais(beneficiosAdicionais.filter((_, i) => i !== index));
   };
 
+  // 4. VALIDAÇÃO ADICIONAL - Adicionar antes do onSubmit
+  const validarFormulario = (data) => {
+    const erros = [];
+    
+    // Validar se pelo menos uma UC está preenchida
+    if (!data.ucs || data.ucs.length === 0) {
+      erros.push('Pelo menos uma Unidade Consumidora deve ser informada');
+    }
+    
+    // Validar se todas as UCs têm dados obrigatórios
+    data.ucs.forEach((uc, index) => {
+      if (!uc.distribuidora) erros.push(`UC ${index + 1}: Distribuidora é obrigatória`);
+      if (!uc.numeroUC) erros.push(`UC ${index + 1}: Número UC é obrigatório`);
+      if (!uc.apelido) erros.push(`UC ${index + 1}: Apelido é obrigatório`);
+      if (!uc.ligacao) erros.push(`UC ${index + 1}: Ligação é obrigatória`);
+      if (!uc.consumo || uc.consumo <= 0) erros.push(`UC ${index + 1}: Consumo é obrigatório e deve ser maior que 0`);
+    });
+    
+    return erros;
+  };
   // FUNÇÃO PRINCIPAL - COMPLETA E CORRIGIDA
   const onSubmit = async (data) => {
     try {
       setLoading(true);
+
+      // Validação extra
+      const errosValidacao = validarFormulario(data);
+      if (errosValidacao.length > 0) {
+        showNotification(`Erro de validação: ${errosValidacao[0]}`, 'error');
+        return;
+      }
 
       // Ajustar nome do consultor
       let consultorFinal = data.consultor;
@@ -246,8 +280,13 @@ const NovaPropostaPage = () => {
 
       // Tentar salvar via API
       const result = await storageService.adicionarProspec(propostaParaBackend);
-
       console.log('✅ Proposta salva com sucesso:', result);
+
+      // ✅ ADICIONAR: Refresh automático após criar nova proposta
+      console.log('🔄 Atualizando dados automaticamente após criação...');
+      
+      // Atualizar propostas (força reload)
+      await loadPropostas(1, {}, true);
 
       // **NOVA FUNCIONALIDADE: GERAR PDF AUTOMATICAMENTE** 
       try {
@@ -388,13 +427,13 @@ const NovaPropostaPage = () => {
             {/* Primeira linha */}
             <div className="form-grid-uniform">
               <div className="form-group">
-                <label>Número da Proposta</label>
-                <input
-                  type="text"
-                  value={numeroProposta}
-                  disabled
-                  style={{ backgroundColor: '#f0f0f0' }}
+                <label>Data da Proposta *</label>
+                <input 
+                  {...register('dataProposta', { required: 'Data da proposta é obrigatória' })} 
+                  type="date" 
+                  className={errors.dataProposta ? 'error' : ''}
                 />
+                {errors.dataProposta && <span className="error-message">{errors.dataProposta.message}</span>}
               </div>
 
               <div className="form-group">
@@ -421,9 +460,13 @@ const NovaPropostaPage = () => {
               <div className="form-group form-group-double">
                 <div className="double-inputs">
                   <div className="input-half">
-                    <label>Inflação (%)</label>
+                    <label>Inflação (%) *</label>
                     <input 
-                      {...register('inflacao')} 
+                      {...register('inflacao', { 
+                        required: 'Inflação é obrigatória',
+                        min: { value: 0, message: 'Valor mínimo 0' },
+                        max: { value: 20, message: 'Valor máximo 20' }
+                      })} 
                       type="number" 
                       step="0.01"
                       min="0"
@@ -431,17 +474,22 @@ const NovaPropostaPage = () => {
                       placeholder="2.00"
                       className={errors.inflacao ? 'error' : ''}
                     />
+                    {errors.inflacao && <span className="error-message">{errors.inflacao.message}</span>}
                   </div>
                   <div className="input-half">
-                    <label>Tarifa (R$/kWh)</label>
+                    <label>Tarifa (R$/kWh) *</label>
                     <input 
-                      {...register('tarifaTributos')} 
+                      {...register('tarifaTributos', { 
+                        required: 'Tarifa é obrigatória',
+                        min: { value: 0.01, message: 'Valor mínimo 0.01' }
+                      })} 
                       type="number" 
                       step="0.0001"
                       min="0"
                       placeholder="0.98765"
                       className={errors.tarifaTributos ? 'error' : ''}
                     />
+                    {errors.tarifaTributos && <span className="error-message">{errors.tarifaTributos.message}</span>}
                   </div>
                 </div>
               </div>
@@ -476,15 +524,18 @@ const NovaPropostaPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Recorrência</label>
+                <label>Recorrência *</label>
                 <input 
-                  {...register('recorrencia')} 
+                  {...register('recorrencia', { 
+                    required: 'Recorrência é obrigatória'
+                  })} 
                   type="text" 
                   style={{ backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#f0f0f0' : 'white' }}
                   readOnly={watchConsultor === 'Sem consultor (AUPUS direto)'}
+                  className={errors.recorrencia ? 'error' : ''}
                 />
+                {errors.recorrencia && <span className="error-message">{errors.recorrencia.message}</span>}
               </div>
-
               <div className="form-group">
                 <label>Desconto Tarifa (%)</label>
                 <input 
@@ -543,8 +594,13 @@ const NovaPropostaPage = () => {
 
                   <div className="uc-inputs-row">
                     <div className="form-group">
-                      <label>Distribuidora</label>
-                      <select {...register(`ucs.${index}.distribuidora`)}>
+                      <label>Distribuidora *</label>
+                      <select 
+                        {...register(`ucs.${index}.distribuidora`, { 
+                          required: 'Distribuidora é obrigatória' 
+                        })}
+                        className={errors.ucs?.[index]?.distribuidora ? 'error' : ''}
+                      >
                         <option value="">Selecione...</option>
                         <option value="ENEL GO">ENEL GO</option>
                         <option value="EQUATORIAL GO">EQUATORIAL GO</option>
@@ -554,44 +610,75 @@ const NovaPropostaPage = () => {
                         <option value="LIGHT">LIGHT</option>
                         <option value="OUTRAS">OUTRAS</option>
                       </select>
+                      {errors.ucs?.[index]?.distribuidora && (
+                        <span className="error-message">{errors.ucs[index].distribuidora.message}</span>
+                      )}
                     </div>
 
                     <div className="form-group">
-                      <label>Número UC</label>
+                      <label>Número UC *</label>
                       <input 
-                        {...register(`ucs.${index}.numeroUC`)} 
+                        {...register(`ucs.${index}.numeroUC`, { 
+                          required: 'Número UC é obrigatório',
+                          minLength: { value: 3, message: 'Mínimo 3 caracteres' }
+                        })} 
                         type="text" 
                         placeholder="Ex: 123456789"
+                        className={errors.ucs?.[index]?.numeroUC ? 'error' : ''}
                       />
+                      {errors.ucs?.[index]?.numeroUC && (
+                        <span className="error-message">{errors.ucs[index].numeroUC.message}</span>
+                      )}
                     </div>
 
                     <div className="form-group">
-                      <label>Apelido</label>
+                      <label>Apelido *</label>
                       <input 
-                        {...register(`ucs.${index}.apelido`)} 
+                        {...register(`ucs.${index}.apelido`, { 
+                          required: 'Apelido é obrigatório' 
+                        })} 
                         type="text" 
                         placeholder="Ex: Casa, Loja..."
+                        className={errors.ucs?.[index]?.apelido ? 'error' : ''}
                       />
+                      {errors.ucs?.[index]?.apelido && (
+                        <span className="error-message">{errors.ucs[index].apelido.message}</span>
+                      )}
                     </div>
 
                     <div className="form-group">
-                      <label>Ligação</label>
-                      <select {...register(`ucs.${index}.ligacao`)}>
+                      <label>Ligação *</label>
+                      <select 
+                        {...register(`ucs.${index}.ligacao`, { 
+                          required: 'Tipo de ligação é obrigatório' 
+                        })}
+                        className={errors.ucs?.[index]?.ligacao ? 'error' : ''}
+                      >
                         <option value="">Selecione...</option>
                         <option value="MONOFÁSICA">MONOFÁSICA</option>
                         <option value="BIFÁSICA">BIFÁSICA</option>
                         <option value="TRIFÁSICA">TRIFÁSICA</option>
                       </select>
+                      {errors.ucs?.[index]?.ligacao && (
+                        <span className="error-message">{errors.ucs[index].ligacao.message}</span>
+                      )}
                     </div>
 
                     <div className="form-group">
-                      <label>Consumo (kWh)</label>
+                      <label>Consumo (kWh) *</label>
                       <input 
-                        {...register(`ucs.${index}.consumo`)} 
+                        {...register(`ucs.${index}.consumo`, { 
+                          required: 'Consumo é obrigatório',
+                          min: { value: 1, message: 'Consumo deve ser maior que 0' }
+                        })} 
                         type="number" 
-                        min="0"
+                        min="1"
                         placeholder="Ex: 500"
+                        className={errors.ucs?.[index]?.consumo ? 'error' : ''}
                       />
+                      {errors.ucs?.[index]?.consumo && (
+                        <span className="error-message">{errors.ucs[index].consumo.message}</span>
+                      )}
                     </div>
                   </div>
                 </div>

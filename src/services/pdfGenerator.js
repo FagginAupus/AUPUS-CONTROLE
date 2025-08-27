@@ -231,7 +231,7 @@ class PDFGenerator {
     return y + 15;
   }
 
-  // Plano economia - MODIFICADO COM FIDELIDADE
+  // Plano economia - MODIFICADO COM FIDELIDADE E DESCONTO MAIS PRÓXIMO
   adicionarPlanoEconomiaCompacto(doc, dados, y, corTexto) {
     doc.setTextColor(...corTexto);
     doc.setFontSize(12);
@@ -245,12 +245,12 @@ class PDFGenerator {
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...corTexto); // Preto para "Economia Esperada"
-    doc.setFontSize(10); // Diminuído de 14 para 12
+    doc.setFontSize(10);
     doc.text('Economia Esperada:', 25, y);
     
     doc.setTextColor(76, 175, 80); // Verde para o valor
-    doc.setFontSize(18); 
-    doc.text(`${descontoTarifa}%`, 90, y);
+    doc.setFontSize(20); 
+    doc.text(`${descontoTarifa}%`, 73, y); // ALTERADO: de 90 para 73 (mais próximo)
 
     // Adicionar Fidelidade: NÃO ao lado
     doc.setTextColor(...corTexto); // Preto para "Fidelidade:"
@@ -590,22 +590,22 @@ class PDFGenerator {
       // Contatos à esquerda - COM SÍMBOLOS SIMPLES
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(7); // Diminuído de 8 para 6
+      doc.setFontSize(8);
 
       // Posicionamento dos contatos à esquerda
       const xContatos = 15;
       let yContatos = 277; // Ajustado para baixo
 
       // Website 
-      doc.text('site: www.aupusenergia.com.br', xContatos, yContatos);
+      doc.text('*  www.aupusenergia.com.br', xContatos, yContatos);
       yContatos += 3; // Menor espaçamento
 
       // Email
-      doc.text('email: smart@aupusenergia.com.br', xContatos, yContatos);
+      doc.text('@ smart@aupusenergia.com.br', xContatos, yContatos);
       yContatos += 3;
 
       // WhatsApp
-      doc.text('whatsapp: (62) 9 9654-7888', xContatos, yContatos);
+      doc.text('#  (62) 9 9654-7888', xContatos, yContatos);
       
       // Slogan - IMAGEM CURSIVA CENTRALIZADA
       try {
@@ -720,7 +720,7 @@ class PDFGenerator {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
               
-              const maxWidth = 400;
+              const maxWidth = 300;
               const originalWidth = ondaImg.naturalWidth;
               const originalHeight = ondaImg.naturalHeight;
               
@@ -741,11 +741,11 @@ class PDFGenerator {
               
               // Posicionar à direita
               const aspectRatio = newWidth / newHeight;
-              const alturaDesejada = 15;
+              const alturaDesejada = 12;
               const larguraProporcional = alturaDesejada * aspectRatio;
-              const larguraFinal = Math.min(larguraProporcional, 40);
+              const larguraFinal = Math.min(larguraProporcional, 30);
               const alturaFinal = larguraFinal / aspectRatio;
-              const xDireita = 210 - larguraFinal - 10; // 10mm da margem direita
+              const xDireita = 210 - larguraFinal - 8; // 8mm da margem direita
               
               resolve({ dataURL, x: xDireita, y: 275, w: larguraFinal, h: alturaFinal });
               

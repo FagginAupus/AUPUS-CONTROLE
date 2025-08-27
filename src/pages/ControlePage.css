@@ -1041,3 +1041,210 @@ small {
   align-items: center;
   gap: 6px;
 }
+
+/* ===============================================
+   CALIBRAGEM GLOBAL - CORREÇÃO DE VISIBILIDADE
+   =============================================== */
+
+.calibragem-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  padding: 15px !important;
+  border-radius: 8px !important;
+  border: 1px solid #444 !important;
+  margin-bottom: 20px;
+}
+
+.calibragem-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calibragem-group label {
+  color: #f0f0f0 !important; /* ← TEXTO BRANCO VISÍVEL */
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+
+.calibragem-group input[type="number"] {
+  width: 100px !important;
+  padding: 8px 12px !important;
+  background: #3d3d3d !important; /* ← FUNDO ESCURO VISÍVEL */
+  color: #f0f0f0 !important; /* ← TEXTO BRANCO */
+  border: 2px solid #555 !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+}
+
+.calibragem-group input[type="number"]:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25) !important;
+  background: #4d4d4d !important;
+}
+
+/* ===============================================
+   CALIBRAGEM GLOBAL - CORREÇÃO DE VISIBILIDADE
+   =============================================== */
+
+.calibragem-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  padding: 15px !important;
+  border-radius: 8px !important;
+  border: 1px solid #444 !important;
+  margin-bottom: 20px;
+}
+
+.calibragem-group label {
+  color: #f0f0f0 !important; /* ← TEXTO BRANCO VISÍVEL */
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+
+.calibragem-group input[type="number"] {
+  width: 100px !important;
+  padding: 8px 12px !important;
+  background: #3d3d3d !important; /* ← FUNDO ESCURO VISÍVEL */
+  color: #f0f0f0 !important; /* ← TEXTO BRANCO */
+  border: 2px solid #555 !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+}
+
+.calibragem-group input[type="number"]:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25) !important;
+  background: #4d4d4d !important;
+}
+
+/* ===============================================
+   MODAL STATUS DE TROCA - CORREÇÃO COMPLETA
+   =============================================== */
+
+/* Header do modal com fundo azul e texto branco */
+.modal-header-controle {
+  background: #007bff !important; /* ← FUNDO AZUL VISÍVEL */
+  color: white !important; /* ← TEXTO BRANCO */
+  border-bottom: none !important;
+  padding: 20px 24px !important;
+  border-radius: 12px 12px 0 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.modal-header-controle h3 {
+  margin: 0 !important;
+  color: white !important; /* ← FORÇA TEXTO BRANCO */
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+/* Inputs do modal com contraste adequado */
+.modal-body-controle input[type="date"],
+.modal-body-controle input[type="text"],
+.modal-body-controle select {
+  background: white !important; /* ← FUNDO BRANCO */
+  color: #333 !important; /* ← TEXTO ESCURO */
+  border: 2px solid #e9ecef !important;
+  border-radius: 6px !important;
+  padding: 12px 15px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-body-controle input[type="date"]:focus,
+.modal-body-controle input[type="text"]:focus,
+.modal-body-controle select:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+  outline: none !important;
+  background: white !important; /* ← MANTER FUNDO BRANCO */
+  color: #333 !important; /* ← MANTER TEXTO ESCURO */
+}
+
+/* Labels com texto escuro */
+.modal-body-controle label {
+  color: #333 !important; /* ← TEXTO ESCURO VISÍVEL */
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+/* ===============================================
+   MODAL STATUS DE TROCA - CORREÇÃO COMPLETA
+   =============================================== */
+
+/* Modal com fundo sólido branco */
+.modal-content {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  max-width: 600px !important;
+  width: 90% !important;
+}
+
+/* Header do modal com fundo azul e texto branco */
+.modal-header {
+  background: #007bff !important; /* ← FUNDO AZUL VISÍVEL */
+  color: white !important; /* ← TEXTO BRANCO */
+  border-bottom: none !important;
+  padding: 20px 24px !important;
+  border-radius: 12px 12px 0 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.modal-header h3 {
+  margin: 0 !important;
+  color: white !important; /* ← FORÇA TEXTO BRANCO */
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Botão X do modal */
+.modal-header .btn-close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: none !important;
+  font-size: 1.5rem !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-header .btn-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+/* Texto de ajuda mais visível */
+.form-help {
+  color: #495057 !important; /* ← TEXTO ESCURO VISÍVEL */
+  font-size: 0.8rem !important;
+  margin-top: 4px !important;
+  font-weight: 500 !important; /* ← TEXTO MAIS DESTACADO */
+  background: rgba(108, 117, 125, 0.1) !important; /* ← FUNDO SUTIL */
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  display: block !important;
+}

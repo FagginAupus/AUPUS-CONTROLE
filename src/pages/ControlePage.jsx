@@ -299,13 +299,12 @@ const ControlePage = () => {
         });
       }
 
-      // ✅ ADICIONAR ESTES LOGS PARA DEBUG:
       console.log('🔍 DEBUG - response completa:', response);
       console.log('🔍 DEBUG - response.success:', response?.success);
       console.log('🔍 DEBUG - response.errorType:', response?.errorType);
       console.log('🔍 DEBUG - response.message:', response?.message);
 
-      // ✅ CORREÇÃO: Verificar se é erro de capacidade especificamente
+      // Verificar se é erro de capacidade especificamente
       if (response?.success === false && response?.errorType === 'capacity') {
         console.log('✅ DEBUG - Entrando na condição de capacidade');
         console.log('🟡 DEBUG - Chamando showNotification com WARNING');
@@ -317,7 +316,16 @@ const ControlePage = () => {
 
       if (response?.success) {
         console.log('✅ DEBUG - Sucesso, fechando modal');
-        loadControle(1, controle.filters, true);
+        
+        // ✅ ADICIONAR: Refresh automático após atribuir/remover UG
+        console.log('🔄 Atualizando dados automaticamente após processar UG...');
+        
+        // Atualizar controle (força reload)
+        await loadControle(1, controle.filters, true);
+        
+        // Atualizar UGs também (força reload)
+        await loadUgs({}, true);
+
         setModalUG({ show: false, item: null, index: -1 });
         showNotification(response.message, 'success');
       } else if (response?.success === false) {
@@ -331,7 +339,7 @@ const ControlePage = () => {
       showNotification('Erro ao processar UG: ' + error.message, 'error');
       setModalUG({ show: false, item: null, index: -1 });
     }
-  }, [modalUG, loadControle, controle.filters, showNotification]);
+  }, [modalUG, loadControle, controle.filters, loadUgs, showNotification]);
 
   const salvarStatusTroca = useCallback(async (novoStatus, novaData) => {
     try {
@@ -343,7 +351,15 @@ const ControlePage = () => {
       });
 
       if (response?.success) {
-        loadControle(1, controle.filters, true); // Recarregar dados
+        // ✅ ADICIONAR: Refresh automático após alterar status
+        console.log('🔄 Atualizando dados automaticamente após alterar status...');
+        
+        // Atualizar controle (força reload)
+        await loadControle(1, controle.filters, true);
+        
+        // Atualizar UGs também (força reload)
+        await loadUgs({}, true);
+
         setModalStatusTroca({ show: false, item: null, index: -1 });
         showNotification(response.message, 'success');
       }
@@ -351,7 +367,7 @@ const ControlePage = () => {
       console.error('❌ Erro ao atualizar status:', error);
       showNotification('Erro ao atualizar status: ' + error.message, 'error');
     }
-  }, [modalStatusTroca, loadControle, controle.filters, showNotification]);
+  }, [modalStatusTroca, loadControle, controle.filters, loadUgs, showNotification]);
 
   const refreshDados = useCallback(() => {
     console.log('🔄 Refresh manual dos dados');
@@ -698,6 +714,7 @@ const ControlePage = () => {
 };
 
 // Modal para seleção de UG
+// Modal para seleção de UG
 const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
   const [ugSelecionada, setUgSelecionada] = useState(item.ugId || '');
 
@@ -754,18 +771,18 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
                   ))}
                   
                   {/* Opção para remover UG - só aparece se a UC já tem UG */}
-                    {item.ug && item.ugNome && (
-                      <div 
-                        className={`ug-item clickable ${ugSelecionada === 'remover' ? 'selected' : ''}`}
-                        onClick={() => setUgSelecionada('remover')}
-                      >
-                        <div className="ug-info">
-                          <div className="ug-nome">🚫 Remover UG atual ({item.ugNome})</div>
-                          <div className="ug-detalhes">Desatribuir UG desta UC</div>
-                        </div>
+                  {item.ug && item.ugNome && (
+                    <div 
+                      className={`ug-item clickable ${ugSelecionada === 'remover' ? 'selected' : ''}`}
+                      onClick={() => setUgSelecionada('remover')}
+                    >
+                      <div className="ug-info">
+                        <div className="ug-nome">🚫 Remover UG atual ({item.ugNome})</div>
+                        <div className="ug-detalhes">Desatribuir UG desta UC</div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Campo oculto para o formulário - FORA da div ugs-lista */}
                 <input type="hidden" value={ugSelecionada} required />
@@ -794,6 +811,17 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
   );
   const [showConfirmacao, setShowConfirmacao] = useState(false);
 
+  // ✅ ADICIONAR: Limpar data quando status muda
+  useEffect(() => {
+    // Limpar data quando status não for "Finalizado"
+    if (statusTroca !== 'Finalizado') {
+      setDataTitularidade('');
+    } else if (statusTroca === 'Finalizado' && !dataTitularidade) {
+      // Definir data atual quando selecionar "Finalizado" pela primeira vez
+      setDataTitularidade(new Date().toISOString().split('T')[0]);
+    }
+  }, [statusTroca, dataTitularidade]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
@@ -803,7 +831,12 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
       return;
     }
     
-    onSave(statusTroca, dataTitularidade);
+    // Sempre enviar uma data - atual se não for "Finalizado", ou a selecionada se for "Finalizado"
+    const dataFinal = statusTroca === 'Finalizado' 
+      ? dataTitularidade 
+      : new Date().toISOString().split('T')[0]; // Data atual como fallback
+    
+    onSave(statusTroca, dataFinal);
   };
 
   const confirmarMudanca = () => {
@@ -817,7 +850,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>📋 Gerenciar Status de Troca</h3>
+          <h3><Edit size={18} /> Gerenciar Status de Troca</h3>
           <button onClick={onClose} className="btn btn-close">✕</button>
         </div>
         
@@ -861,17 +894,20 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
               </select>
             </div>
             
-            <div className="form-group">
-              <label>Data da Titularidade:</label>
-              <input
-                type="date"
-                value={dataTitularidade}
-                onChange={(e) => setDataTitularidade(e.target.value)}
-                max={dataMaxima}
-                required
-              />
-              <small className="form-help">Não é possível selecionar datas futuras</small>
-            </div>
+            {/* Campo Data - só aparece quando status é "Finalizado" */}
+            {statusTroca === 'Finalizado' && (
+              <div className="form-group">
+                <label>Data da Titularidade:</label>
+                <input
+                  type="date"
+                  value={dataTitularidade}
+                  onChange={(e) => setDataTitularidade(e.target.value)}
+                  max={dataMaxima}
+                  required
+                />
+                <small className="form-help">Não é possível selecionar datas futuras</small>
+              </div>
+            )}
             
             <div className="modal-footer">
               <button type="button" onClick={onClose} className="btn btn-secondary">
