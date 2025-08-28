@@ -327,23 +327,37 @@ const Dashboard = () => {
               </div>
               
               <div className="team-grid">
-                {equipe
-                  .filter(member => member.name.toLowerCase().includes(filtroNome.toLowerCase()))
-                  .map(member => {
-                    const MemberIcon = getRoleIcon(member.role);
-                    return (
-                      <div key={member.id} className="team-member">
-                        <div className="member-icon-svg">
-                          <MemberIcon size={24} />
-                        </div>
-                        <div className="member-info">
-                          <h4>{member.name}</h4>
-                          <p className="member-role">{getTipoLabel(member.role)}</p>
-                          <p className="member-email">{member.email}</p>
-                        </div>
+                {equipe.filter(member => 
+                  member.name.toLowerCase().includes(filtroNome.toLowerCase())
+                ).map((member) => {
+                  const IconComponent = getRoleIcon(member.role);
+                  return (
+                    <div key={member.id} className="team-member">
+                      <div className="member-icon-svg">
+                        <IconComponent size={32} />
                       </div>
-                    );
-                  })}
+                      <div className="member-info">
+                        <div className="member-name">{member.name}</div>
+                        <div className="member-role">
+                          {getTipoLabel(member.role)}
+                        </div>
+                        <div className="member-email">{member.email}</div>
+                        
+                        {/* 👇 CORREÇÃO: Tag do Gerente só para vendedores quando consultor está logado */}
+                        {user?.role === 'consultor' && 
+                        member.role === 'vendedor' && 
+                        member.manager_name && 
+                        member.manager_role === 'gerente' && 
+                        member.manager_id !== user.id && (
+                          <div className="manager-tag">
+                            <Users size={12} />
+                            <span>Gerente: {member.manager_name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>

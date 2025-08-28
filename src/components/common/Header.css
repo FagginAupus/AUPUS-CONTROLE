@@ -13,15 +13,35 @@
   z-index: 2;
 }
 
+/* 👇 ADICIONAR ESTES ESTILOS PARA A LOGO */
+.header-with-logo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px; /* 👈 MUDANÇA: de 15px para 20px */
+  margin-bottom: 8px;
+  padding-left: 0;
+}
+
+.header-logo {
+  height: 40px; /* Ajustar altura conforme necessário */
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+}
+/* 👆 ATÉ AQUI */
+
 .header h1 {
   font-size: 2.2rem;
   font-weight: 900;
-  margin-bottom: 8px;
+  margin-bottom: 0; /* Remover margin-bottom já que está no container */
   text-shadow: 0 4px 20px rgba(0,0,0,0.3);
   color: white !important;
   animation: glow 3s ease-in-out infinite alternate;
   letter-spacing: -1px;
   line-height: 1.1;
+  flex: 1; /* Para que o título não centralize */
+  text-align: left; /* Alinhar texto à esquerda */
 }
 
 .header-icon {
@@ -40,6 +60,7 @@
   margin-bottom: 10px;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.9);
+  text-align: center; /* Manter subtitle centralizado */
 }
 
 @keyframes glow {
@@ -60,10 +81,17 @@
     margin-bottom: 15px;
   }
   
+  .header-with-logo {
+    gap: 10px;
+  }
+  
+  .header-logo {
+    height: 32px; /* Logo menor em mobile */
+  }
+  
   .header h1 {
     font-size: 1.8rem;
     letter-spacing: -1px;
-    margin-bottom: 5px;
   }
   
   .header p {
@@ -73,9 +101,20 @@
 }
 
 @media (max-width: 480px) {
+  .header-with-logo {
+    gap: 15px;
+    flex-direction: column; /* Logo acima do título em telas muito pequenas */
+    align-items: flex-start;
+  }
+  
+  .header-logo {
+    height: 28px;
+  }
+  
   .header h1 {
     font-size: 1.6rem;
-    margin-bottom: 3px;
+    text-align: center;
+    width: 100%;
   }
   
   .header p {
