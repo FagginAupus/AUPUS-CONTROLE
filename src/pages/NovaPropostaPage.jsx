@@ -72,8 +72,8 @@ const NovaPropostaPage = () => {
   // Carregar consultores disponíveis
   const carregarConsultores = useCallback(async () => {
     try {
-      // ✅ SEMPRE buscar equipe atualizada
-      const team = await refreshTeam();
+
+      const team = getMyTeam();
       
       if (user?.role === 'admin') {
         const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);

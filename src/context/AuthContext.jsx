@@ -59,7 +59,8 @@ export const AuthProvider = ({ children }) => {
   // ✅ FUNÇÃO PARA BUSCAR EQUIPE DA API (SEMPRE ATUALIZADA)
   const refreshTeam = async () => {
     try {
-      if (!user?.id) {
+      if (!user?.id || !isAuthenticated) {
+        console.log('⚠️ refreshTeam: Usuário não autenticado, limpando cache');
         setTeamCache([]);
         return [];
       }
@@ -87,38 +88,28 @@ export const AuthProvider = ({ children }) => {
         name: usuario.nome || usuario.name,
         email: usuario.email,
         role: usuario.role,
-        manager_id: usuario.manager_id, // ✅ INCLUIR MANAGER_ID
+        manager_id: usuario.manager_id,
         status: usuario.status,
         telefone: usuario.telefone
       }));
 
-      let equipeAtual = [];
-
-      if (user.role === 'admin') {
-        // Admin vê todos os usuários
-        equipeAtual = usuariosFormatados;
-      } else if (user.role === 'consultor') {
-        // ✅ Consultor vê: subordinados diretos + todos os consultores
-        const subordinados = usuariosFormatados.filter(u => u.manager_id === user.id);
-        const consultores = usuariosFormatados.filter(u => u.role === 'consultor');
-        
-        equipeAtual = [...subordinados, ...consultores, user];
-        // Remover duplicatas
-        equipeAtual = equipeAtual.filter((item, index, self) => 
-          self.findIndex(u => u.id === item.id) === index
-        );
-        
-        console.log(`👥 Consultor: ${equipeAtual.length} membros (${subordinados.length} subordinados, ${consultores.length} consultores)`);
-      } else {
-        // Outros roles: subordinados diretos + usuário atual
-        const subordinados = usuariosFormatados.filter(u => u.manager_id === user.id);
-        equipeAtual = [...subordinados, user];
-        console.log(`👥 ${user.role}: ${subordinados.length} subordinados diretos`);
+      // ✅ SEMPRE INCLUIR O USUÁRIO ATUAL SE NÃO ESTIVER NA LISTA
+      const usuarioAtualNaLista = usuariosFormatados.find(u => u.id === user.id);
+      if (!usuarioAtualNaLista) {
+        usuariosFormatados.push({
+          id: user.id,
+          name: user.name || user.nome,
+          email: user.email,
+          role: user.role,
+          manager_id: user.manager_id,
+          status: 'Ativo',
+          telefone: user.telefone
+        });
       }
 
-      setTeamCache(equipeAtual);
-      console.log(`✅ Equipe atualizada: ${equipeAtual.length} membros`);
-      return equipeAtual;
+      setTeamCache(usuariosFormatados);
+      console.log(`✅ Equipe atualizada: ${usuariosFormatados.length} membros`);
+      return usuariosFormatados;
       
     } catch (error) {
       console.error('❌ Erro ao atualizar equipe da API:', error);
@@ -146,7 +137,10 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ AuthContext - Definindo usuário:', userData);
         setUser(userData);
         setIsAuthenticated(true);
-        console.log('✅ AuthContext - Estados atualizados');
+        setTimeout(() => {
+          refreshTeam();
+        }, 500); // Pequeno delay para garantir que o estado foi atualizado
+
         return { success: true, user: userData };
       }
       
@@ -304,7 +298,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     getMyTeam,
-    refreshTeam,        // ✅ ADICIONAR FUNÇÃO DE REFRESH
+    refreshTeam,        
     canAccessPage,
     canCreateUser,
     createUser,

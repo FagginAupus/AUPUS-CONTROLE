@@ -25,7 +25,7 @@ import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, createUser, canCreateUser, getMyTeam } = useAuth();
+  const { user, createUser, canCreateUser, getMyTeam, refreshTeam } = useAuth();
   const { showNotification } = useNotification();
   const { dashboard, loadDashboard, afterCreateUser } = useData(); // USAR DATACONTEXT
   
@@ -40,13 +40,33 @@ const Dashboard = () => {
     if (user?.id) {
       carregarEquipe();
     }
-  }, [user?.id]);
+  }, [user?.id, getMyTeam]); 
+
+  useEffect(() => {
+    const team = getMyTeam();
+    console.log('🏠 Dashboard detectou mudança na equipe:', team.length, 'membros');
+    
+    if (user?.id && team.length > 0) {
+      if (user?.role === 'admin') {
+        setEquipe(team.filter(member => member.role === 'consultor'));
+      } else {
+        setEquipe(team.filter(member => member.id !== user?.id));
+      }
+    }
+  }, [getMyTeam, user?.id, user?.role]); // ✅ REAGIR A MUDANÇAS NA EQUIPE
 
   const carregarEquipe = useCallback(() => {
     if (!user?.id) return;
     
     try {
       const team = getMyTeam();
+      console.log('🏠 Dashboard carregando equipe:', team.length, 'membros');
+      
+      if (team.length === 0) {
+        console.log('⚠️ Equipe vazia no Dashboard, forçando refresh...');
+        refreshTeam(); // ✅ FORÇAR REFRESH SE EQUIPE ESTIVER VAZIA
+        return;
+      }
       
       if (user?.role === 'admin') {
         setEquipe(team.filter(member => member.role === 'consultor'));
@@ -56,7 +76,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error('❌ Erro ao carregar equipe:', error);
     }
-  }, [user?.id, user?.role, getMyTeam]);
+  }, [user?.id, user?.role, getMyTeam, refreshTeam]);
 
   const abrirModalCadastro = (type) => {
     if (!canCreateUser(type)) {
