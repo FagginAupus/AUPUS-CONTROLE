@@ -1,3 +1,4 @@
+// src/context/AuthContext.jsx - CORRIGIDO PARA SEMPRE BUSCAR DA API
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
@@ -16,12 +17,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [teamCache, setTeamCache] = useState([]); // ✅ Cache da equipe
 
   // Verificar se há usuário salvo ao inicializar
   useEffect(() => {
     const initAuth = () => {
       try {
-        const savedUser = localStorage.getItem('user'); // Usar 'user' como no storageService
+        const savedUser = localStorage.getItem('user');
         const savedToken = localStorage.getItem('token');
         
         if (savedUser && savedToken) {
@@ -45,94 +47,101 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // Carregar usuários para admins
+  // ✅ ATUALIZAR EQUIPE QUANDO USUÁRIO MUDA
   useEffect(() => {
-    const loadUsers = async () => {
-      if (user && isAuthenticated) {
-        try {
-          console.log('👥 Carregando usuários para admin...');
-          const response = await apiService.getUsuarios();
-          
-          if (response?.success && response?.data) {
-            let usuarios = [];
-            
-            // Verificar se data é paginado ou array direto
-            if (response.data.data && Array.isArray(response.data.data)) {
-              // Resposta paginada
-              usuarios = response.data.data;
-            } else if (Array.isArray(response.data)) {
-              // Array direto
-              usuarios = response.data;
-            } else {
-              console.warn('⚠️ Estrutura de usuários inesperada:', response.data);
-              return;
-            }
-            
-            const usuariosFormatados = usuarios.map(usuario => ({
-              id: usuario.id,
-              name: usuario.nome || usuario.name,
-              email: usuario.email,
-              role: usuario.role,
-              status: usuario.status,
-              telefone: usuario.telefone
-            }));
-            
-            localStorage.setItem('usuarios', JSON.stringify(usuariosFormatados));
-            console.log(`✅ ${usuariosFormatados.length} usuários carregados na inicialização`);
-          }
-        } catch (error) {
-          console.error('❌ Erro ao carregar usuários na inicialização:', error);
-        }
-      }
-    };
+    if (user && isAuthenticated) {
+      refreshTeam();
+    } else {
+      setTeamCache([]);
+    }
+  }, [user?.id, isAuthenticated]);
 
-    loadUsers();
-  }, [user?.role, isAuthenticated]);
-
-  const loadTeamFromAPI = async () => {
+  // ✅ FUNÇÃO PARA BUSCAR EQUIPE DA API (SEMPRE ATUALIZADA)
+  const refreshTeam = async () => {
     try {
-      console.log('👥 Carregando equipe da API...');
+      if (!user?.id) {
+        setTeamCache([]);
+        return [];
+      }
+
+      console.log('🔄 Atualizando equipe da API para:', user.role);
       const response = await apiService.getUsuarios();
       
-      if (response?.success && response?.data) {
-        let usuarios = [];
-        
-        // Verificar se data é paginado ou array direto
-        if (response.data.data && Array.isArray(response.data.data)) {
-          usuarios = response.data.data;
-        } else if (Array.isArray(response.data)) {
-          usuarios = response.data;
-        }
-        
-        const usuariosFormatados = usuarios.map(usuario => ({
-          id: usuario.id,
-          name: usuario.nome || usuario.name,
-          email: usuario.email,
-          role: usuario.role,
-          status: usuario.status,
-          telefone: usuario.telefone
-        }));
-        
-        localStorage.setItem('usuarios', JSON.stringify(usuariosFormatados));
-        console.log(`✅ ${usuariosFormatados.length} usuários carregados para equipe`);
+      if (!response?.success || !response?.data) {
+        console.warn('⚠️ API não retornou usuários válidos');
+        const fallback = [user];
+        setTeamCache(fallback);
+        return fallback;
       }
+
+      let usuarios = [];
+      if (response.data.data && Array.isArray(response.data.data)) {
+        usuarios = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        usuarios = response.data;
+      }
+
+      // ✅ MAPEAR USUÁRIOS COM MANAGER_ID
+      const usuariosFormatados = usuarios.map(usuario => ({
+        id: usuario.id,
+        name: usuario.nome || usuario.name,
+        email: usuario.email,
+        role: usuario.role,
+        manager_id: usuario.manager_id, // ✅ INCLUIR MANAGER_ID
+        status: usuario.status,
+        telefone: usuario.telefone
+      }));
+
+      let equipeAtual = [];
+
+      if (user.role === 'admin') {
+        // Admin vê todos os usuários
+        equipeAtual = usuariosFormatados;
+      } else if (user.role === 'consultor') {
+        // ✅ Consultor vê: subordinados diretos + todos os consultores
+        const subordinados = usuariosFormatados.filter(u => u.manager_id === user.id);
+        const consultores = usuariosFormatados.filter(u => u.role === 'consultor');
+        
+        equipeAtual = [...subordinados, ...consultores, user];
+        // Remover duplicatas
+        equipeAtual = equipeAtual.filter((item, index, self) => 
+          self.findIndex(u => u.id === item.id) === index
+        );
+        
+        console.log(`👥 Consultor: ${equipeAtual.length} membros (${subordinados.length} subordinados, ${consultores.length} consultores)`);
+      } else {
+        // Outros roles: subordinados diretos + usuário atual
+        const subordinados = usuariosFormatados.filter(u => u.manager_id === user.id);
+        equipeAtual = [...subordinados, user];
+        console.log(`👥 ${user.role}: ${subordinados.length} subordinados diretos`);
+      }
+
+      setTeamCache(equipeAtual);
+      console.log(`✅ Equipe atualizada: ${equipeAtual.length} membros`);
+      return equipeAtual;
+      
     } catch (error) {
-      console.error('❌ Erro ao carregar equipe da API:', error);
+      console.error('❌ Erro ao atualizar equipe da API:', error);
+      const fallback = [user].filter(Boolean);
+      setTeamCache(fallback);
+      return fallback;
     }
   };
 
-  
+  // ✅ FUNÇÃO SÍNCRONA PARA OBTER EQUIPE (USA CACHE)
+  const getMyTeam = () => {
+    return teamCache.filter(Boolean);
+  };
+
   const login = async (email, password) => {
     setLoading(true);
     console.log('🔐 Iniciando login...');
     
     try {
-      // CORREÇÃO: storageService.login retorna userData diretamente, não um objeto {success, user}
       const userData = await storageService.login(email, password);
       
       console.log('🔐 AuthContext - Resposta do storageService:', userData);
       
-      // CORREÇÃO: storageService.login retorna userData ou lança erro
       if (userData && (userData.id || userData.name || userData.nome)) {
         console.log('✅ AuthContext - Definindo usuário:', userData);
         setUser(userData);
@@ -141,7 +150,6 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: userData };
       }
       
-      // Se chegou aqui, userData é inválido
       throw new Error('Dados de usuário inválidos');
       
     } catch (error) {
@@ -158,12 +166,12 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🚪 Fazendo logout...');
       
-      // Usar logout do storageService
       storageService.logout();
       
       // Resetar estado
       setUser(null);
       setIsAuthenticated(false);
+      setTeamCache([]); // ✅ LIMPAR CACHE DA EQUIPE
       
       console.log('✅ Logout realizado com sucesso');
       return { success: true };
@@ -174,6 +182,7 @@ export const AuthProvider = ({ children }) => {
       // Forçar limpeza mesmo com erro
       setUser(null);
       setIsAuthenticated(false);
+      setTeamCache([]);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       
@@ -191,42 +200,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const getMyTeam = () => {
-    try {
-      if (!user?.id) return [];
-
-      if (user.role === 'admin') {
-        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-        return usuarios;
-      }
-
-      // ✅ CORREÇÃO: Filtrar por manager_id, não por role
-      const todosUsuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-      
-      // Subordinados diretos (onde manager_id = user.id)
-      const subordinadosDirectos = todosUsuarios.filter(u => u.manager_id === user.id);
-      
-      console.log(`👥 getMyTeam (${user.role}): ${subordinadosDirectos.length} subordinados diretos`);
-      return [...subordinadosDirectos, user]; // Incluir usuário atual
-      
-    } catch (error) {
-      console.error('❌ Erro ao obter equipe:', error);
-      return [user].filter(Boolean);
-    }
-  };
-
   // Função para verificar se pode acessar uma página
   const canAccessPage = (pageName) => {
     if (!user) {
       return false;
     }
 
-    // ✅ LÓGICA SIMPLIFICADA - baseada no role
     const pagePermissions = {
-      'dashboard': true, // Todos podem acessar dashboard
+      'dashboard': true,
       'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
       'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
-      'ugs': ['admin'].includes(user.role), // Apenas admin
+      'ugs': ['admin'].includes(user.role),
       'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
     };
 
@@ -260,16 +244,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Função para criar usuário (simplificada)
+  // ✅ FUNÇÃO PARA CRIAR USUÁRIO COM RECARREGAMENTO AUTOMÁTICO DA EQUIPE
   const createUser = async (userData) => {
     try {
-      // ✅ CORREÇÃO: Determinar manager_id automaticamente
+      if (!canCreateUser(userData.role)) {
+        throw new Error('Você não tem permissão para criar este tipo de usuário');
+      }
+
+      // ✅ DEFINIR manager_id AUTOMATICAMENTE
       let managerId = null;
-      
       if (userData.role === 'gerente' || userData.role === 'vendedor') {
-        // Se for gerente/vendedor, o manager é o usuário logado
         managerId = user.id;
       }
+      
+      console.log('👤 Criando usuário via API:', userData);
       
       const response = await apiService.criarUsuario({
         nome: userData.nome,
@@ -283,12 +271,17 @@ export const AuthProvider = ({ children }) => {
         cep: userData.cep,
         pix: userData.pix,
         role: userData.role,
-        manager_id: managerId  
+        manager_id: managerId  // ✅ ENVIAR MANAGER_ID CORRETO
       });
-
 
       if (response?.success) {
         console.log('✅ Usuário criado com sucesso:', response);
+        
+        // ✅ RECARREGAR EQUIPE APÓS CRIAR USUÁRIO
+        setTimeout(() => {
+          refreshTeam();
+        }, 1000);
+        
         return response;
       } else {
         throw new Error(response?.message || 'Erro ao criar usuário');
@@ -311,6 +304,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     getMyTeam,
+    refreshTeam,        // ✅ ADICIONAR FUNÇÃO DE REFRESH
     canAccessPage,
     canCreateUser,
     createUser,

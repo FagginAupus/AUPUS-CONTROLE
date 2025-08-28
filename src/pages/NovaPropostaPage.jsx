@@ -13,12 +13,13 @@ import './NovaPropostaPage.css';
 
 const NovaPropostaPage = () => {
   const navigate = useNavigate();
-  const { user, getMyTeam } = useAuth();
+  const { user, getMyTeam, refreshTeam } = useAuth();
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [numeroProposta, setNumeroProposta] = useState('');
   const [beneficiosAdicionais, setBeneficiosAdicionais] = useState([]);
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
+  
   const { 
     afterCreateProposta, 
     loadPropostas, 
@@ -69,9 +70,10 @@ const NovaPropostaPage = () => {
   const watchConsultor = watch('consultor');
 
   // Carregar consultores disponíveis
-  const carregarConsultores = useCallback(() => {
+  const carregarConsultores = useCallback(async () => {
     try {
-      const team = getMyTeam();
+      // ✅ SEMPRE buscar equipe atualizada
+      const team = await refreshTeam();
       
       if (user?.role === 'admin') {
         const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
@@ -96,7 +98,7 @@ const NovaPropostaPage = () => {
       console.error('Erro ao carregar consultores:', error);
       setConsultoresDisponiveis([user?.name || 'Erro']);
     }
-  }, [getMyTeam, user, setValue]);
+  }, [user, setValue, refreshTeam]); 
 
   // Gerar número da proposta
   const gerarNumeroProposta = async () => {
