@@ -46,6 +46,50 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
+  // Carregar usuários para admins
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (user?.role === 'admin' && isAuthenticated) {
+        try {
+          console.log('👥 Carregando usuários para admin...');
+          const response = await apiService.getUsuarios();
+          
+          if (response?.success && response?.data) {
+            let usuarios = [];
+            
+            // Verificar se data é paginado ou array direto
+            if (response.data.data && Array.isArray(response.data.data)) {
+              // Resposta paginada
+              usuarios = response.data.data;
+            } else if (Array.isArray(response.data)) {
+              // Array direto
+              usuarios = response.data;
+            } else {
+              console.warn('⚠️ Estrutura de usuários inesperada:', response.data);
+              return;
+            }
+            
+            const usuariosFormatados = usuarios.map(usuario => ({
+              id: usuario.id,
+              name: usuario.nome || usuario.name,
+              email: usuario.email,
+              role: usuario.role,
+              status: usuario.status,
+              telefone: usuario.telefone
+            }));
+            
+            localStorage.setItem('usuarios', JSON.stringify(usuariosFormatados));
+            console.log(`✅ ${usuariosFormatados.length} usuários carregados na inicialização`);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao carregar usuários na inicialização:', error);
+        }
+      }
+    };
+
+    loadUsers();
+  }, [user?.role, isAuthenticated]);
+
   const login = async (email, password) => {
     setLoading(true);
     console.log('🔐 Iniciando login...');
@@ -116,13 +160,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const getMyTeam = () => {
-    if (!user?.id) return [];
-    
-    if (user.role === 'admin') {
-      return []; // Admin não precisa de equipe
+    try {
+      if (!user?.id) {
+        console.log('⚠️ getMyTeam: Usuário não logado');
+        return [];
+      }
+
+      // Para admin, buscar todos os usuários via localStorage
+      if (user.role === 'admin') {
+        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+        console.log(`👥 getMyTeam (admin): ${usuarios.length} usuários do localStorage`);
+        return usuarios;
+      }
+
+      // Para outros usuários, verificar subordinados
+      if (user.subordinates && user.subordinates.length > 0) {
+        console.log(`👥 getMyTeam: ${user.subordinates.length} subordinados`);
+        return user.subordinates;
+      }
+
+      console.log('⚠️ getMyTeam: Equipe vazia, retornando apenas usuário atual');
+      return [user];
+
+    } catch (error) {
+      console.error('❌ Erro ao obter equipe:', error);
+      return [user].filter(Boolean);
     }
-    
-    return []; // Simplificado por enquanto
   };
 
   // Função para verificar se pode acessar uma página
