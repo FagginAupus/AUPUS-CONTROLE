@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       console.log('🔄 Atualizando equipe da API para:', user.role);
-      const response = await apiService.getUsuarios();
+      const response = await apiService.get('/usuarios/equipe');
       
       if (!response?.success || !response?.data) {
         console.warn('⚠️ API não retornou usuários válidos');
