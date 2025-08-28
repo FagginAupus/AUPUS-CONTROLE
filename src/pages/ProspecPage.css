@@ -1530,3 +1530,15 @@
   cursor: not-allowed;
   pointer-events: none;
 }
+
+.input-readonly {
+  background-color: #f8f9fa !important;
+  cursor: not-allowed !important;
+  color: #6c757d !important;
+  border-color: #dee2e6 !important;
+}
+
+.input-readonly:focus {
+  box-shadow: none !important;
+  border-color: #dee2e6 !important;
+}

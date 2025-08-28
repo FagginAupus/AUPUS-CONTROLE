@@ -34,13 +34,46 @@ const ProspecPage = () => {
   const [loading, setLoading] = useState(false); // ← ADICIONAR ESTA LINHA
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   const [modalVisualizacao, setModalVisualizacao] = useState({ show: false, item: null });
-
+  const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
+  
   const [filtros, setFiltros] = useState({
     consultor: '',
     status: '',
     busca: ''
   });
 
+  const carregarConsultores = useCallback(async () => {
+    try {
+      const team = getMyTeam();
+      
+      if (user?.role === 'admin') {
+        const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
+        setConsultoresDisponiveis([...consultores, 'Sem consultor (AUPUS direto)']);
+      } else if (user?.role === 'consultor') {
+        const consultorNome = user.name;
+        const funcionarios = team.filter(member => 
+          member.role === 'gerente' || member.role === 'vendedor'
+        ).map(member => member.name);
+        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
+      } else if (user?.role === 'gerente') {
+        const gerenteNome = user.name;
+        const vendedores = team.filter(member => 
+          member.role === 'vendedor'
+        ).map(member => member.name);
+        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
+      } else if (user?.role === 'vendedor') {
+        setConsultoresDisponiveis([user.name]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar consultores:', error);
+      setConsultoresDisponiveis([user?.name || 'Erro']);
+    }
+  }, [user, getMyTeam]);
+
+  // Carregar consultores quando o modal abre
+  useEffect(() => {
+    carregarConsultores();
+  }, [carregarConsultores]);
 
   const dadosFiltrados = useMemo(() => {
     let dados = propostas.data || [];
@@ -224,6 +257,7 @@ const ProspecPage = () => {
 
       const dadosComId = {
         ...dadosUC,
+        consultor: dadosAtualizados.consultor,
         propostaId: propostaId,
         numeroUC: item.numeroUC || item.numero_unidade,
         documentacao: documentacaoLimpa // ← AGORA SÓ OS DADOS DE DOCUMENTAÇÃO
@@ -900,7 +934,9 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 
 // Componente Modal de Edição - ATUALIZADO com novos campos
 const ModalEdicao = ({ item, onSave, onClose }) => {
-  const [loading, setLoading] = useState(false); 
+  const { user, getMyTeam } = useAuth(); 
+  const [loading, setLoading] = useState(false);
+  const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
   const [dados, setDados] = useState({ 
     ...item,
     // Novos campos para documentação
@@ -919,6 +955,39 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     termoAdesao: item.termoAdesao || null
   });
 
+  const carregarConsultores = useCallback(async () => {
+    try {
+      const team = getMyTeam();
+      
+      if (user?.role === 'admin') {
+        const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
+        setConsultoresDisponiveis([...consultores, 'Sem consultor (AUPUS direto)']);
+      } else if (user?.role === 'consultor') {
+        const consultorNome = user.name;
+        const funcionarios = team.filter(member => 
+          member.role === 'gerente' || member.role === 'vendedor'
+        ).map(member => member.name);
+        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
+      } else if (user?.role === 'gerente') {
+        const gerenteNome = user.name;
+        const vendedores = team.filter(member => 
+          member.role === 'vendedor'
+        ).map(member => member.name);
+        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
+      } else if (user?.role === 'vendedor') {
+        setConsultoresDisponiveis([user.name]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar consultores:', error);
+      setConsultoresDisponiveis([user?.name || 'Erro']);
+    }
+  }, [user, getMyTeam]);
+
+  // ✅ ADICIONAR ESTE useEffect:
+  useEffect(() => {
+    carregarConsultores();
+  }, [carregarConsultores]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -930,6 +999,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
       if (!dados.nomeCliente) camposObrigatorios.push('Nome do Cliente');
       if (!dados.apelido) camposObrigatorios.push('Apelido UC');
       if (!dados.numeroUC) camposObrigatorios.push('Número UC');
+      if (!dados.consultor) camposObrigatorios.push('Consultor Responsável'); // ✅ ADICIONAR VALIDAÇÃO
       if (!dados.enderecoUC) camposObrigatorios.push('Endereço da UC');
       if (!dados.enderecoRepresentante) camposObrigatorios.push('Endereço do Representante');
       
@@ -948,13 +1018,34 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
       }
     }
     
-    setLoading(true); // ← ADICIONAR
+    setLoading(true);
+    
     try {
-      await onSave(dados); // ← Usar await
+      // ✅ LOG PARA DEBUG - Ver o que está sendo enviado
+      console.log('📤 Dados enviados no handleSubmit:', {
+        id: dados.id || dados.propostaId,
+        consultor: dados.consultor,
+        nomeCliente: dados.nomeCliente,
+        status: dados.status
+      });
+
+      // ✅ GARANTIR QUE TODOS OS DADOS ESTÃO COMPLETOS
+      const dadosCompletos = {
+        ...dados,
+        consultor: dados.consultor || '', // ✅ Garantir que consultor não seja undefined
+        // Garantir outros campos importantes
+        id: dados.id || dados.propostaId,
+        propostaId: dados.propostaId || dados.id
+      };
+
+      await onSave(dadosCompletos);
+      
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      console.error('❌ Erro ao salvar proposta:', error);
+      // Mostrar erro mais amigável
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
     } finally {
-      setLoading(false); // ← ADICIONAR
+      setLoading(false);
     }
   };
 
@@ -1025,6 +1116,8 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   type="text"
                   value={dados.numeroUC || ''}
                   onChange={(e) => setDados({...dados, numeroUC: e.target.value})}
+                  readOnly
+                  className="input-readonly"
                 />
               </div>
               <div className="form-group">
@@ -1071,15 +1164,29 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
 
             <div className="form-row">
               <div className="form-group">
+                <label>Consultor Responsável</label>
+                <select
+                  value={dados.consultor || ''}
+                  onChange={(e) => {
+                    console.log('🔧 Alterando consultor:', e.target.value);
+                    setDados({...dados, consultor: e.target.value});
+                  }}
+                >
+                  <option value="">Selecione um consultor...</option>
+                  {consultoresDisponiveis.map(consultor => (
+                    <option key={consultor} value={consultor}>
+                      {consultor}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
                 <label>Média (kWh)</label>
                 <input
                   type="number"
                   value={dados.media || ''}
                   onChange={(e) => setDados({...dados, media: parseFloat(e.target.value) || 0})}
                 />
-              </div>
-              <div className="form-group">
-                {/* Espaço vazio para manter layout */}
               </div>
             </div>
           </div>

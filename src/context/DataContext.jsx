@@ -116,7 +116,7 @@ export const DataProvider = ({ children }) => {
     const stats = {
       totalPropostas: currentPropostas.length,
       aguardando: currentPropostas.filter(p => p.status === 'Aguardando').length,
-      fechadas: currentPropostas.filter(p => p.status === 'Fechado').length,
+      fechadas: currentPropostas.filter(p => p.status === 'Fechada').length,
       totalUCs: new Set(currentPropostas.map(p => p.numeroUC).filter(Boolean)).size,
       totalControle: currentControle.length,
       totalUGs: currentUgs.length,

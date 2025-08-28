@@ -118,20 +118,24 @@ const UGsPage = () => {
     try {
       const { item } = modalEdicao;
       
-      const indexReal = ugs.data.findIndex(ug => ug.id === item.id);
-      
-      if (indexReal === -1) {
+      if (!item || !item.id) {
         showNotification('UG não encontrada para edição', 'error');
         return;
       }
 
       const capacidade = 720 * dadosAtualizados.potenciaCC * (dadosAtualizados.fatorCapacidade / 100);
+      
+      // ✅ INCLUIR O ID DA UG NOS DADOS
       const ugAtualizada = {
+        id: item.id, // ✅ ADICIONAR O ID
         ...dadosAtualizados,
         capacidade
       };
 
-      await storageService.atualizarUG(indexReal, ugAtualizada);
+      console.log('🔍 Dados para atualização:', ugAtualizada);
+
+      // ✅ PASSAR O ID DIRETAMENTE E OS DADOS COMPLETOS
+      await storageService.atualizarUG(item.id, ugAtualizada);
       loadUgs(ugs.filters, true);
       
       setModalEdicao({ show: false, item: null, index: -1 });
@@ -557,13 +561,21 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   // ✅ CARREGAR DADOS QUANDO O ITEM MUDAR
   useEffect(() => {
     if (item) {
-      console.log('🔍 Item recebido no modal:', item); // Debug
+      console.log('🔍 Item recebido no modal (com ID):', {
+        id: item.id,
+        nomeUsina: item.nomeUsina,
+        numeroUnidade: item.numeroUnidade
+      });
+      
+      if (!item.id) {
+        console.error('❌ ITEM SEM ID:', item);
+      }
       
       setDados({
         nomeUsina: item.nomeUsina || '',
         potenciaCC: parseFloat(item.potenciaCC) || 0,
         fatorCapacidade: parseFloat(item.fatorCapacidade) || 19,
-        numero_unidade: item.numeroUnidade || '' // ✅ USAR numeroUnidade da API
+        numero_unidade: String(item.numeroUnidade || item.numero_unidade || '').trim()
       });
     }
   }, [item]);
@@ -571,13 +583,14 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validação
+    // ✅ VALIDAÇÃO SEGURA - CONVERTER PARA STRING ANTES DE USAR .trim()
     if (!dados.nomeUsina?.trim()) {
       alert('Nome da usina é obrigatório');
       return;
     }
     
-    if (!dados.numero_unidade?.trim()) {
+    // ✅ VALIDAÇÃO SEGURA PARA numero_unidade
+    if (!String(dados.numero_unidade || '').trim()) {
       alert('Número da UC é obrigatório');
       return;
     }
@@ -586,7 +599,8 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
     const dadosParaEnvio = {
       nomeUsina: dados.nomeUsina.trim(),
       potenciaCC: parseFloat(dados.potenciaCC) || 0,
-      fatorCapacidade: parseFloat(dados.fatorCapacidade) || 19
+      fatorCapacidade: parseFloat(dados.fatorCapacidade) || 19,
+      numero_unidade: String(dados.numero_unidade || '').trim() // ✅ ADICIONAR CAMPO SEGURO
     };
     
     onSave(dadosParaEnvio);
@@ -617,10 +631,11 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
               <label>Número da UC *</label>
               <input
                 type="text"
-                value={dados.numero_unidade}
+                value={String(dados.numero_unidade || '')} // ✅ FORÇAR STRING NO VALUE
                 onChange={(e) => setDados({...dados, numero_unidade: e.target.value})}
                 required
-                placeholder="Ex: 12345678"
+                placeholder="Número da unidade"
+                readOnly // ✅ OPCIONAL: Tornar readonly se não deve ser editado
               />
             </div>
 

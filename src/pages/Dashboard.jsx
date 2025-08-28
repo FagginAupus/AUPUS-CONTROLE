@@ -31,6 +31,7 @@ const Dashboard = () => {
   
   const [modalCadastro, setModalCadastro] = useState({ show: false, type: '' });
   const [equipe, setEquipe] = useState([]);
+  const [filtroNome, setFiltroNome] = useState('');
 
   // USAR DIRETAMENTE AS ESTATISTICAS DO DATACONTEXT - SEM ESTADO LOCAL
   const estadisticas = dashboard.statistics;
@@ -126,10 +127,10 @@ const Dashboard = () => {
 
   const getRoleIcon = (role) => {
     const icons = {
-      admin: Crown,
-      consultor: Briefcase,
-      gerente: Users,
-      vendedor: User
+      admin: Crown,           // Coroa para admin
+      consultor: Briefcase,   // Maleta para consultor  
+      gerente: Users,         // Grupo de usuários para gerente
+      vendedor: User          // Usuário individual para vendedor
     };
     return icons[role] || User;
   };
@@ -295,29 +296,54 @@ const Dashboard = () => {
         {equipe.length > 0 && (
           <section className="user-management">
             <div className="team-list">
-              <h3>{getTituloEquipe()} ({equipe.length})</h3>
+              <h3>
+                {getTituloEquipe()} 
+                <span className="table-count">
+                  ({equipe.filter(member => 
+                    member.name.toLowerCase().includes(filtroNome.toLowerCase())
+                  ).length})
+                </span>
+              </h3>
+              
+              {/* Campo de filtro por nome */}
+              <div style={{ marginBottom: '20px' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Filtrar por nome..."
+                  value={filtroNome}
+                  onChange={(e) => setFiltroNome(e.target.value)}
+                  style={{
+                    width: '100%',
+                    maxWidth: '300px',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '2px solid #e9ecef',
+                    fontSize: '14px',
+                    transition: 'border-color 0.3s ease'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#4CAF50'}
+                  onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                />
+              </div>
+              
               <div className="team-grid">
-                {equipe.map(member => {
-                  const MemberIcon = getRoleIcon(member.role);
-                  return (
-                    <div key={member.id} className="team-member">
-                      <div className="member-avatar">
-                        <span className="member-icon">
+                {equipe
+                  .filter(member => member.name.toLowerCase().includes(filtroNome.toLowerCase()))
+                  .map(member => {
+                    const MemberIcon = getRoleIcon(member.role);
+                    return (
+                      <div key={member.id} className="team-member">
+                        <div className="member-icon-svg">
                           <MemberIcon size={24} />
-                        </span>
+                        </div>
+                        <div className="member-info">
+                          <h4>{member.name}</h4>
+                          <p className="member-role">{getTipoLabel(member.role)}</p>
+                          <p className="member-email">{member.email}</p>
+                        </div>
                       </div>
-                      <div className="member-info">
-                        <h4>{member.name}</h4>
-                        <p className="member-role">{getTipoLabel(member.role)}</p>
-                        <p className="member-email">{member.email}</p>
-                        <p className="member-date">
-                          <Calendar size={14} />
-                          Desde: {formatarData(member.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </section>

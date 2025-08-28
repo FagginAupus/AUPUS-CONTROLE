@@ -409,17 +409,30 @@ class StorageService {
         }
     }
 
-    async atualizarUG(index, dadosUG) {
+    async atualizarUG(ugId, dadosUG) {
         try {
-            console.log('✏️ Atualizando UG via API...', dadosUG);
+            console.log('✏️ Atualizando UG via API...', {id: ugId, dados: dadosUG});
             
-            // Se temos um ID válido, usar ele
-            const id = dadosUG.id || dadosUG.ugId;
-            if (!id) {
-                throw new Error('ID da UG é necessário para atualização');
+            if (!ugId) {
+            throw new Error('ID da UG é necessário para atualização');
             }
             
-            const response = await apiService.put(`/ugs/${id}`, dadosUG);
+            // ✅ MANTER OS NOMES ORIGINAIS DO FRONTEND PARA O BACKEND
+            const dadosLimpos = {
+            nomeUsina: dadosUG.nomeUsina,
+            potenciaCC: parseFloat(dadosUG.potenciaCC) || 0,
+            fatorCapacidade: parseFloat(dadosUG.fatorCapacidade) || 19,  // ✅ MANTER COMO ESTÁ
+            numero_unidade: String(dadosUG.numero_unidade || '').trim(),
+            };
+
+            console.log('📝 Dados limpos para API:', dadosLimpos);
+            console.log('🔍 Especificamente fatorCapacidade:', {
+            original: dadosUG.fatorCapacidade,
+            processado: dadosLimpos.fatorCapacidade,
+            tipo: typeof dadosLimpos.fatorCapacidade
+            });
+            
+            const response = await apiService.put(`/ugs/${ugId}`, dadosLimpos);
             console.log('✅ UG atualizada com sucesso');
             return response;
             
@@ -427,7 +440,7 @@ class StorageService {
             console.error('❌ Erro ao atualizar UG:', error.message);
             throw new Error(`Não foi possível atualizar a UG: ${error.message}`);
         }
-    }
+        }
 
     async removerUG(ugId) {
         try {
