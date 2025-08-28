@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx - CORRIGIDO PARA INTEGRAÇÃO COM API
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
@@ -49,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   // Carregar usuários para admins
   useEffect(() => {
     const loadUsers = async () => {
-      if (user?.role === 'admin' && isAuthenticated) {
+      if (user && isAuthenticated) {
         try {
           console.log('👥 Carregando usuários para admin...');
           const response = await apiService.getUsuarios();
@@ -90,6 +89,39 @@ export const AuthProvider = ({ children }) => {
     loadUsers();
   }, [user?.role, isAuthenticated]);
 
+  const loadTeamFromAPI = async () => {
+    try {
+      console.log('👥 Carregando equipe da API...');
+      const response = await apiService.getUsuarios();
+      
+      if (response?.success && response?.data) {
+        let usuarios = [];
+        
+        // Verificar se data é paginado ou array direto
+        if (response.data.data && Array.isArray(response.data.data)) {
+          usuarios = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          usuarios = response.data;
+        }
+        
+        const usuariosFormatados = usuarios.map(usuario => ({
+          id: usuario.id,
+          name: usuario.nome || usuario.name,
+          email: usuario.email,
+          role: usuario.role,
+          status: usuario.status,
+          telefone: usuario.telefone
+        }));
+        
+        localStorage.setItem('usuarios', JSON.stringify(usuariosFormatados));
+        console.log(`✅ ${usuariosFormatados.length} usuários carregados para equipe`);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar equipe da API:', error);
+    }
+  };
+
+  
   const login = async (email, password) => {
     setLoading(true);
     console.log('🔐 Iniciando login...');
@@ -161,27 +193,22 @@ export const AuthProvider = ({ children }) => {
 
   const getMyTeam = () => {
     try {
-      if (!user?.id) {
-        console.log('⚠️ getMyTeam: Usuário não logado');
-        return [];
-      }
+      if (!user?.id) return [];
 
-      // Para admin, buscar todos os usuários via localStorage
       if (user.role === 'admin') {
         const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-        console.log(`👥 getMyTeam (admin): ${usuarios.length} usuários do localStorage`);
         return usuarios;
       }
 
-      // Para outros usuários, verificar subordinados
-      if (user.subordinates && user.subordinates.length > 0) {
-        console.log(`👥 getMyTeam: ${user.subordinates.length} subordinados`);
-        return user.subordinates;
-      }
-
-      console.log('⚠️ getMyTeam: Equipe vazia, retornando apenas usuário atual');
-      return [user];
-
+      // ✅ CORREÇÃO: Filtrar por manager_id, não por role
+      const todosUsuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+      
+      // Subordinados diretos (onde manager_id = user.id)
+      const subordinadosDirectos = todosUsuarios.filter(u => u.manager_id === user.id);
+      
+      console.log(`👥 getMyTeam (${user.role}): ${subordinadosDirectos.length} subordinados diretos`);
+      return [...subordinadosDirectos, user]; // Incluir usuário atual
+      
     } catch (error) {
       console.error('❌ Erro ao obter equipe:', error);
       return [user].filter(Boolean);
@@ -236,13 +263,14 @@ export const AuthProvider = ({ children }) => {
   // Função para criar usuário (simplificada)
   const createUser = async (userData) => {
     try {
-      if (!canCreateUser(userData.role)) {
-        throw new Error('Você não tem permissão para criar este tipo de usuário');
-      }
-
-      console.log('👤 Criando usuário via API:', userData);
+      // ✅ CORREÇÃO: Determinar manager_id automaticamente
+      let managerId = null;
       
-      // Chamar API real
+      if (userData.role === 'gerente' || userData.role === 'vendedor') {
+        // Se for gerente/vendedor, o manager é o usuário logado
+        managerId = user.id;
+      }
+      
       const response = await apiService.criarUsuario({
         nome: userData.nome,
         email: userData.email,
@@ -255,8 +283,9 @@ export const AuthProvider = ({ children }) => {
         cep: userData.cep,
         pix: userData.pix,
         role: userData.role,
-        manager_id: userData.managerId
+        manager_id: managerId  
       });
+
 
       if (response?.success) {
         console.log('✅ Usuário criado com sucesso:', response);
