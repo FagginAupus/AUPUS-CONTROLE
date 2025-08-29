@@ -42,7 +42,7 @@ const NovaPropostaPage = () => {
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor: '',
+      consultor_id: '',
       recorrencia: '3%',
       economia: 20,
       bandeira: 20,
@@ -67,7 +67,7 @@ const NovaPropostaPage = () => {
     name: 'ucs'
   });
 
-  const watchConsultor = watch('consultor');
+  const watchConsultor = watch('consultor_id');
 
   // Carregar consultores disponíveis
   const carregarConsultores = useCallback(async () => {
@@ -98,9 +98,9 @@ const NovaPropostaPage = () => {
           ...vendedores.map(member => ({ id: member.id, name: member.name }))
         ]);
       } else if (user?.role === 'vendedor') {
-        setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
-        setValue('consultor', user.id); // Salvar ID ao invés do nome
-      }
+      setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
+      setValue('consultor_id', user.id); // ← MUDAR DE 'consultor' PARA 'consultor_id'
+    }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
       setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
@@ -519,7 +519,7 @@ const NovaPropostaPage = () => {
                   />
                 ) : (
                   <select
-                    {...register('consultor', { required: 'Consultor é obrigatório' })}
+                    {...register('consultor_id', { required: 'Consultor é obrigatório' })}
                     className="form-input"
                   >
                     <option value="">Selecione o consultor</option>
