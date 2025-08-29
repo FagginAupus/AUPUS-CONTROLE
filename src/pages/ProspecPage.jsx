@@ -47,26 +47,33 @@ const ProspecPage = () => {
       const team = getMyTeam();
       
       if (user?.role === 'admin') {
-        const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
-        setConsultoresDisponiveis([...consultores, 'Sem consultor (AUPUS direto)']);
+        const consultores = team.filter(member => member.role === 'consultor');
+        setConsultoresDisponiveis([
+          ...consultores.map(member => ({ id: member.id, name: member.name })),
+          { id: null, name: 'Sem consultor (AUPUS direto)' }
+        ]);
       } else if (user?.role === 'consultor') {
-        const consultorNome = user.name;
         const funcionarios = team.filter(member => 
           member.role === 'gerente' || member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
+        );
+        setConsultoresDisponiveis([
+          { id: user.id, name: user.name },
+          ...funcionarios.map(member => ({ id: member.id, name: member.name }))
+        ]);
       } else if (user?.role === 'gerente') {
-        const gerenteNome = user.name;
         const vendedores = team.filter(member => 
           member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
+        );
+        setConsultoresDisponiveis([
+          { id: user.id, name: user.name },
+          ...vendedores.map(member => ({ id: member.id, name: member.name }))
+        ]);
       } else if (user?.role === 'vendedor') {
-        setConsultoresDisponiveis([user.name]);
+        setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
       }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
-      setConsultoresDisponiveis([user?.name || 'Erro']);
+      setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
     }
   }, [user, getMyTeam]);
 
@@ -257,10 +264,10 @@ const ProspecPage = () => {
 
       const dadosComId = {
         ...dadosUC,
-        consultor: dadosAtualizados.consultor,
+        consultor_id: dadosAtualizados.consultor_id, // ← USAR consultor_id
         propostaId: propostaId,
         numeroUC: item.numeroUC || item.numero_unidade,
-        documentacao: documentacaoLimpa // ← AGORA SÓ OS DADOS DE DOCUMENTAÇÃO
+        documentacao: documentacaoLimpa
       };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
@@ -960,26 +967,33 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
       const team = getMyTeam();
       
       if (user?.role === 'admin') {
-        const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
-        setConsultoresDisponiveis([...consultores, 'Sem consultor (AUPUS direto)']);
+        const consultores = team.filter(member => member.role === 'consultor');
+        setConsultoresDisponiveis([
+          ...consultores.map(member => ({ id: member.id, name: member.name })),
+          { id: null, name: 'Sem consultor (AUPUS direto)' }
+        ]);
       } else if (user?.role === 'consultor') {
-        const consultorNome = user.name;
         const funcionarios = team.filter(member => 
           member.role === 'gerente' || member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
+        );
+        setConsultoresDisponiveis([
+          { id: user.id, name: user.name },
+          ...funcionarios.map(member => ({ id: member.id, name: member.name }))
+        ]);
       } else if (user?.role === 'gerente') {
-        const gerenteNome = user.name;
         const vendedores = team.filter(member => 
           member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
+        );
+        setConsultoresDisponiveis([
+          { id: user.id, name: user.name },
+          ...vendedores.map(member => ({ id: member.id, name: member.name }))
+        ]);
       } else if (user?.role === 'vendedor') {
-        setConsultoresDisponiveis([user.name]);
+        setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
       }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
-      setConsultoresDisponiveis([user?.name || 'Erro']);
+      setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
     }
   }, [user, getMyTeam]);
 
@@ -1166,27 +1180,28 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
               <div className="form-group">
                 <label>Consultor Responsável</label>
                 <select
-                  value={dados.consultor || ''}
-                  onChange={(e) => {
-                    console.log('🔧 Alterando consultor:', e.target.value);
-                    setDados({...dados, consultor: e.target.value});
-                  }}
+                  value={dados.consultor_id || ''}
+                  onChange={(e) => setDados({...dados, consultor_id: e.target.value || null})}
                 >
-                  <option value="">Selecione um consultor...</option>
-                  {consultoresDisponiveis.map(consultor => (
-                    <option key={consultor} value={consultor}>
-                      {consultor}
+                  <option value="">Selecione o consultor</option>
+                  {consultoresDisponiveis.map((consultor, index) => (
+                    <option key={index} value={consultor.id}>
+                      {consultor.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="form-group">
-                <label>Média (kWh)</label>
-                <input
-                  type="number"
-                  value={dados.media || ''}
-                  onChange={(e) => setDados({...dados, media: parseFloat(e.target.value) || 0})}
-                />
+                <label>Status</label>
+                <select
+                  value={dados.status || ''}
+                  onChange={(e) => setDados({...dados, status: e.target.value})}
+                >
+                  <option value="Aguardando">Aguardando</option>
+                  <option value="Fechado">Fechado</option>
+                  <option value="Recusado">Recusado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
               </div>
             </div>
           </div>

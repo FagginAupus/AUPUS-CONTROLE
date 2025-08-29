@@ -72,33 +72,40 @@ const NovaPropostaPage = () => {
   // Carregar consultores disponíveis
   const carregarConsultores = useCallback(async () => {
     try {
-
       const team = getMyTeam();
       
       if (user?.role === 'admin') {
-        const consultores = team.filter(member => member.role === 'consultor').map(member => member.name);
-        setConsultoresDisponiveis([...consultores, 'Sem consultor (AUPUS direto)']);
+        const consultores = team.filter(member => member.role === 'consultor');
+        // Adicionar opção "sem consultor" com ID especial
+        setConsultoresDisponiveis([
+          ...consultores.map(member => ({ id: member.id, name: member.name })),
+          { id: null, name: 'Sem consultor (AUPUS direto)' }
+        ]);
       } else if (user?.role === 'consultor') {
-        const consultorNome = user.name;
         const funcionarios = team.filter(member => 
           member.role === 'gerente' || member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
+        );
+        setConsultoresDisponiveis([
+          { id: user.id, name: user.name },
+          ...funcionarios.map(member => ({ id: member.id, name: member.name }))
+        ]);
       } else if (user?.role === 'gerente') {
-        const gerenteNome = user.name;
         const vendedores = team.filter(member => 
           member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
+        );
+        setConsultoresDisponiveis([
+          { id: user.id, name: user.name },
+          ...vendedores.map(member => ({ id: member.id, name: member.name }))
+        ]);
       } else if (user?.role === 'vendedor') {
-        setConsultoresDisponiveis([user.name]);
-        setValue('consultor', user.name);
+        setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
+        setValue('consultor', user.id); // Salvar ID ao invés do nome
       }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
-      setConsultoresDisponiveis([user?.name || 'Erro']);
+      setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
     }
-  }, [user, setValue, refreshTeam]); 
+  }, [user, setValue, refreshTeam]);
 
   // Gerar número da proposta
   const gerarNumeroProposta = async () => {
@@ -262,10 +269,11 @@ const NovaPropostaPage = () => {
         distribuidora: uc.distribuidora || ''
       }));
 
-      // ESTRUTURA CORRETA PARA O BACKEND - SEM telefone, email, endereco
+      const consultorId = data.consultor === null || data.consultor === 'null' ? null : data.consultor;
+
       const propostaParaBackend = {
         nomeCliente: data.nomeCliente,
-        consultor: consultorFinal,
+        consultor_id: consultorId, // ← MUDANÇA: usar consultor_id ao invés de consultor
         dataProposta: data.dataProposta,
         numeroProposta: numeroProposta,
         // REMOVIDOS: telefone, email, endereco
@@ -510,14 +518,14 @@ const NovaPropostaPage = () => {
                     style={{ backgroundColor: '#f0f0f0' }}
                   />
                 ) : (
-                  <select 
+                  <select
                     {...register('consultor', { required: 'Consultor é obrigatório' })}
-                    className={errors.consultor ? 'error' : ''}
+                    className="form-input"
                   >
-                    <option value="">Selecione o consultor...</option>
-                    {consultoresDisponiveis.map(consultor => (
-                      <option key={consultor} value={consultor}>
-                        {consultor}
+                    <option value="">Selecione o consultor</option>
+                    {consultoresDisponiveis.map((consultor, index) => (
+                      <option key={index} value={consultor.id}>
+                        {consultor.name}
                       </option>
                     ))}
                   </select>
