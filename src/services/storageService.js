@@ -582,6 +582,9 @@ class StorageService {
     // MAPEAMENTO FRONTEND → BACKEND
     // ========================================
 
+    // Correção para o arquivo: src/services/storageService.js
+    // Método: mapearPropostaParaBackend
+
     mapearPropostaParaBackend(proposta) {
         console.log('🔄 Mapeando proposta para backend:', proposta);
         
@@ -602,7 +605,8 @@ class StorageService {
         
         // ✅ PROCESSAR UNIDADES CONSUMIDORAS
         let unidadesArray = [];
-        if (proposta.numeroUC && (proposta.apelido || proposta.ligacao || proposta.media || proposta.distribuidora)) { // Indica edição de UC específica
+        if (proposta.numeroUC && (proposta.apelido || proposta.ligacao || proposta.media || proposta.distribuidora)) { 
+            // Indica edição de UC específica
             unidadesArray = [{
                 numero_unidade: proposta.numeroUC,
                 apelido: proposta.apelido,
@@ -621,19 +625,28 @@ class StorageService {
             }));
         }
 
-        console.log('📋 Dados processados:', {
-            beneficios: beneficiosArray,
-            beneficios_count: beneficiosArray.length,
-            unidades_consumidoras: unidadesArray,
-            unidades_count: unidadesArray.length
-        });
-        
         const unidadesProcessadas = this.processarUnidadesConsumidoras(proposta);
 
         const dadosBackend = {
             // Campos principais
             nome_cliente: proposta.nomeCliente,
-            consultor: proposta.consultor,
+            
+            // ✅ CORREÇÃO PRINCIPAL: Mapear tanto consultor quanto consultor_id
+            consultor_id: proposta.consultor_id || null, // ← ADICIONAR ESTA LINHA
+            consultor: proposta.consultor || '', // ← MANTER para compatibilidade
+            
+            // ✅ ADICIONAR LOG PARA DEBUG
+            ...(() => {
+                console.log('📋 Dados do consultor no mapeamento:', {
+                    consultor_id_original: proposta.consultor_id,
+                    consultor_original: proposta.consultor,
+                    consultor_id_final: proposta.consultor_id || null,
+                    consultor_final: proposta.consultor || ''
+                });
+                return {};
+            })()
+    ,
+            
             data_proposta: proposta.dataProposta || proposta.data,
             status: proposta.status || 'Aguardando',
             observacoes: proposta.observacoes || '',
@@ -645,7 +658,7 @@ class StorageService {
             
             // Arrays - USAR VARIÁVEL PROCESSADA
             beneficios: this.processarBeneficios(proposta),
-            unidades_consumidoras: unidadesProcessadas // ✅ USAR A MESMA VARIÁVEL!
+            unidades_consumidoras: unidadesProcessadas
         };
 
         console.log('📤 Dados mapeados para backend:', {

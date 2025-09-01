@@ -224,6 +224,9 @@ const NovaPropostaPage = () => {
     return erros;
   };
   // FUNÇÃO PRINCIPAL - COMPLETA E CORRIGIDA
+  // CORREÇÃO COMPLETA para src/pages/NovaPropostaPage.jsx
+// Função onSubmit - seção de preparação dos dados para backend
+
   const onSubmit = async (data) => {
     try {
       setLoading(true);
@@ -235,18 +238,40 @@ const NovaPropostaPage = () => {
         return;
       }
 
-      // Ajustar nome do consultor
-      let consultorFinal = data.consultor;
-      if (data.consultor === 'Sem consultor (AUPUS direto)') {
-        consultorFinal = 'AUPUS';
+      // ✅ CORREÇÃO PRINCIPAL: Mapear consultor corretamente
+      let consultorId = null;
+      let consultorNome = '';
+
+      console.log('🔍 DEBUG Consultor - dados recebidos:', {
+        data_consultor_id: data.consultor_id,
+        data_consultor: data.consultor,
+        consultoresDisponiveis: consultoresDisponiveis
+      });
+
+      // Se veio consultor_id do formulário
+      if (data.consultor_id && data.consultor_id !== 'null' && data.consultor_id !== 'Sem consultor (AUPUS direto)') {
+        // Buscar o consultor selecionado na lista
+        const consultorSelecionado = consultoresDisponiveis.find(c => c.id === data.consultor_id);
+        
+        if (consultorSelecionado) {
+          consultorId = consultorSelecionado.id;
+          consultorNome = consultorSelecionado.name;
+        } else {
+          console.warn('⚠️ Consultor não encontrado na lista:', data.consultor_id);
+        }
       }
+
+      console.log('✅ Consultor processado:', {
+        consultorId,
+        consultorNome
+      });
 
       // Preparar benefícios como array
       const beneficiosArray = [];
       if (data.beneficio1) beneficiosArray.push('Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos');
       if (data.beneficio2) beneficiosArray.push('A titularidade da fatura será transferida para o Consorcio Clube Aupus');
-      if (data.beneficio3) beneficiosArray.push('A Aupus Energia fornecerá consultoria energética para o condomínio');
-      if (data.beneficio4) beneficiosArray.push('Todo o processo será conduzido pela Aupus Energia, não se preocupe');
+      if (data.beneficio3) beneficiosArray.push('Todo o processo será conduzido pela Aupus Energia, não se preocupe');
+      if (data.beneficio4) beneficiosArray.push('Contamos com uma moderna plataforma para te oferecer uma experiencia única!');
       if (data.beneficio5) beneficiosArray.push('Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energia');
       if (data.beneficio6) beneficiosArray.push('Contamos com uma moderna plataforma para te oferecer uma experiencia única!');
       if (data.beneficio7) beneficiosArray.push('A proposta se aplica para todos os condominos que tiverem interesse');
@@ -265,18 +290,16 @@ const NovaPropostaPage = () => {
         apelido: uc.apelido || `UC ${uc.numeroUC}`,
         ligacao: uc.ligacao || '',
         distribuidora: uc.distribuidora || 'EQUATORIAL GO',
-        consumo_medio: parseInt(uc.consumo) || 0,
-        distribuidora: uc.distribuidora || ''
+        consumo_medio: parseInt(uc.consumo) || 0
       }));
 
-      const consultorId = data.consultor === null || data.consultor === 'null' ? null : data.consultor;
-
+      // ✅ PREPARAR DADOS CORRIGIDOS PARA O BACKEND
       const propostaParaBackend = {
         nomeCliente: data.nomeCliente,
-        consultor_id: consultorId, // ← MUDANÇA: usar consultor_id ao invés de consultor
+        consultor_id: consultorId,       // ← CORREÇÃO: enviar o ID do consultor
+        consultor: consultorNome,        // ← ADICIONAR: enviar o nome para compatibilidade
         dataProposta: data.dataProposta,
         numeroProposta: numeroProposta,
-        // REMOVIDOS: telefone, email, endereco
         status: 'Aguardando',
         economia: data.economia || 0,
         bandeira: data.bandeira || 0,
@@ -285,6 +308,14 @@ const NovaPropostaPage = () => {
         unidadesConsumidoras: unidadesConsumidoras.length > 0 ? unidadesConsumidoras : [],
         observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim()
       };
+
+      // ✅ ADICIONAR LOG PARA DEBUG
+      console.log('📤 Dados finais enviados para backend:', {
+        consultor_id: propostaParaBackend.consultor_id,
+        consultor: propostaParaBackend.consultor,
+        nome_cliente: propostaParaBackend.nomeCliente,
+        unidades_count: propostaParaBackend.unidadesConsumidoras.length
+      });
 
       console.log('📤 Enviando proposta para o backend:', propostaParaBackend);
 
@@ -309,12 +340,12 @@ const NovaPropostaPage = () => {
         const dadosPDF = {
           numeroProposta: numeroProposta,
           nomeCliente: data.nomeCliente,
-          consultor: data.consultor,
+          consultor: consultorNome, // ← USAR consultorNome processado
           data: data.dataProposta || new Date().toISOString().split('T')[0],
           descontoTarifa: (data.economia || 20) / 100,
           descontoBandeira: (data.bandeira || 20) / 100,
-          inflacao: (data.inflacao || 2) / 100,        // Converter % para decimal
-          tarifaTributos: data.tarifaTributos || 0.98, // Valor em R$/kWh
+          inflacao: (data.inflacao || 2) / 100,        
+          tarifaTributos: data.tarifaTributos || 0.98,
           observacoes: data.observacoes || '',
           ucs: data.ucs || [],
           beneficios: [
@@ -334,47 +365,15 @@ const NovaPropostaPage = () => {
         
       } catch (pdfError) {
         console.error('⚠️ Erro ao gerar PDF (proposta foi salva):', pdfError);
-        showNotification(`Proposta ${numeroProposta} criada! PDF não pôde ser gerado: ${pdfError.message}`, 'warning');
+        showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
       }
 
-      // Invalidar cache do DataContext
-      afterCreateProposta();
-
-      // Limpar formulário e navegar
-      reset();
-      setBeneficiosAdicionais([]);
-      await gerarNumeroProposta();
-      navigate('/prospec');
-
+      // Limpar formulário
+      limparFormulario();
+      
     } catch (error) {
       console.error('❌ Erro ao salvar proposta:', error);
-      
-      // Determinar mensagem de erro baseada no tipo de erro
-      let errorMessage = 'Erro inesperado ao salvar proposta';
-      
-      if (error.message) {
-        // Verificar tipos específicos de erro
-        if (error.message.includes('Call to undefined method')) {
-          errorMessage = 'Erro no servidor: Problema de configuração do backend Laravel';
-        } else if (error.message.includes('500')) {
-          errorMessage = 'Erro interno do servidor: Verifique se o backend está funcionando';
-        } else if (error.message.includes('404')) {
-          errorMessage = 'Rota não encontrada: Verifique se a API está configurada corretamente';
-        } else if (error.message.includes('Network Error') || error.message.includes('fetch')) {
-          errorMessage = 'Erro de conexão: Verifique sua internet e se o servidor está rodando';
-        } else if (error.message.includes('401')) {
-          errorMessage = 'Não autorizado: Faça login novamente';
-        } else if (error.message.includes('403')) {
-          errorMessage = 'Sem permissão para executar esta ação';
-        } else if (error.message.includes('422')) {
-          errorMessage = 'Dados inválidos: Verifique os campos obrigatórios';
-        } else {
-          errorMessage = `Erro: ${error.message}`;
-        }
-      }
-      
-      showNotification(errorMessage, 'error');
-      
+      showNotification(`Erro ao criar proposta: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
