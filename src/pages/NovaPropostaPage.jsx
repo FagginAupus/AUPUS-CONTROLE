@@ -11,6 +11,14 @@ import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import './NovaPropostaPage.css';
 
+// ✅ ADICIONAR após as importações, antes do componente
+const formatarDataParaBackend = (dataString) => {
+  if (!dataString) return new Date().toLocaleDateString('en-CA');
+  if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) return dataString;
+  const data = new Date(dataString + 'T12:00:00');
+  return data.toISOString().split('T')[0];
+};
+
 const NovaPropostaPage = () => {
   const navigate = useNavigate();
   const { user, getMyTeam, refreshTeam } = useAuth();
@@ -28,7 +36,7 @@ const NovaPropostaPage = () => {
 
   const obterBeneficiosSelecionados = (data) => {
     const beneficios = [];
-    if (data.beneficio1) beneficios.push({ numero: 1, texto: 'Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos' });
+    if (data.beneficio1) beneficios.push({ numero: 1, texto: 'Os benefícios economicos foram calculados com base nas tarifas de energia, com impostos' });
     if (data.beneficio2) beneficios.push({ numero: 2, texto: 'A titularidade da fatura será transferida para o Consorcio Clube Aupus' });
     if (data.beneficio3) beneficios.push({ numero: 3, texto: 'A Aupus Energia fornecerá consultoria energética para o condomínio' });
     if (data.beneficio4) beneficios.push({ numero: 4, texto: 'Todo o processo será conduzido pela Aupus Energia, não se preocupe' });
@@ -41,7 +49,7 @@ const NovaPropostaPage = () => {
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
-      dataProposta: new Date().toISOString().split('T')[0],
+      dataProposta: new Date().toLocaleDateString('en-CA'),
       consultor_id: '',
       recorrencia: '3%',
       economia: 20,
@@ -53,11 +61,11 @@ const NovaPropostaPage = () => {
       // Benefícios padrão (não obrigatórios)
       beneficio1: true,
       beneficio2: true,
-      beneficio3: true,
+      beneficio3: false,
       beneficio4: true,
-      beneficio5: true,
+      beneficio5: false,
       beneficio6: true,
-      beneficio7: true,
+      beneficio7: false,
       beneficio8: false
     }
   });
@@ -165,7 +173,7 @@ const NovaPropostaPage = () => {
   const limparFormulario = () => {
     if (window.confirm('Deseja limpar todos os dados do formulário?')) {
       reset({
-        dataProposta: new Date().toISOString().split('T')[0],
+        dataProposta: new Date().toLocaleDateString('en-CA'),
         consultor: '',
         recorrencia: '3%',
         economia: 20,
@@ -238,7 +246,9 @@ const NovaPropostaPage = () => {
         return;
       }
 
-      // ✅ CORREÇÃO PRINCIPAL: Mapear consultor corretamente
+      const dataCorrigida = formatarDataParaBackend(data.dataProposta);
+      console.log('🔍 Data original:', data.dataProposta, '→ Data corrigida:', dataCorrigida);
+
       let consultorId = null;
       let consultorNome = '';
 
@@ -268,7 +278,7 @@ const NovaPropostaPage = () => {
 
       // Preparar benefícios como array
       const beneficiosArray = [];
-      if (data.beneficio1) beneficiosArray.push('Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos');
+      if (data.beneficio1) beneficiosArray.push('Os benefícios economicos foram calculados com base nas tarifas de energia, com impostos');
       if (data.beneficio2) beneficiosArray.push('A titularidade da fatura será transferida para o Consorcio Clube Aupus');
       if (data.beneficio3) beneficiosArray.push('Todo o processo será conduzido pela Aupus Energia, não se preocupe');
       if (data.beneficio4) beneficiosArray.push('Contamos com uma moderna plataforma para te oferecer uma experiencia única!');
@@ -296,9 +306,9 @@ const NovaPropostaPage = () => {
       // ✅ PREPARAR DADOS CORRIGIDOS PARA O BACKEND
       const propostaParaBackend = {
         nomeCliente: data.nomeCliente,
-        consultor_id: consultorId,       // ← CORREÇÃO: enviar o ID do consultor
-        consultor: consultorNome,        // ← ADICIONAR: enviar o nome para compatibilidade
-        dataProposta: data.dataProposta,
+        consultor_id: consultorId,       
+        consultor: consultorNome,     
+        dataProposta: dataCorrigida,
         numeroProposta: numeroProposta,
         status: 'Aguardando',
         economia: data.economia || 0,
@@ -341,7 +351,7 @@ const NovaPropostaPage = () => {
           numeroProposta: numeroProposta,
           nomeCliente: data.nomeCliente,
           consultor: consultorNome, // ← USAR consultorNome processado
-          data: data.dataProposta || new Date().toISOString().split('T')[0],
+          data: dataCorrigida,
           descontoTarifa: (data.economia || 20) / 100,
           descontoBandeira: (data.bandeira || 20) / 100,
           inflacao: (data.inflacao || 2) / 100,        
@@ -435,6 +445,17 @@ const NovaPropostaPage = () => {
             
             {/* Primeira linha */}
             <div className="form-grid-uniform">
+              {/* ✅ CORREÇÃO: Adicionar campo Número da Proposta */}
+              <div className="form-group">
+                <label>Número da Proposta</label>
+                <input 
+                  type="text" 
+                  value={numeroProposta}
+                  disabled
+                  style={{ backgroundColor: '#f0f0f0', color: '#666' }}
+                  placeholder="Será gerado automaticamente"
+                />
+              </div>
               <div className="form-group">
                 <label>Data da Proposta *</label>
                 <input 
@@ -443,15 +464,6 @@ const NovaPropostaPage = () => {
                   className={errors.dataProposta ? 'error' : ''}
                 />
                 {errors.dataProposta && <span className="error-message">{errors.dataProposta.message}</span>}
-              </div>
-
-              <div className="form-group">
-                <label>Data da Proposta</label>
-                <input 
-                  {...register('dataProposta')} 
-                  type="date" 
-                  className={errors.dataProposta ? 'error' : ''}
-                />
               </div>
 
               <div className="form-group">
@@ -502,10 +514,9 @@ const NovaPropostaPage = () => {
                   </div>
                 </div>
               </div>
-
             </div>
 
-            {/* Segunda linha */}
+            {/* Segunda linha - MANTÉM IGUAL */}
             <div className="form-grid-uniform">
               <div className="form-group">
                 <label>Nome do Consultor *</label>
@@ -545,6 +556,7 @@ const NovaPropostaPage = () => {
                 />
                 {errors.recorrencia && <span className="error-message">{errors.recorrencia.message}</span>}
               </div>
+
               <div className="form-group">
                 <label>Desconto Tarifa (%)</label>
                 <input 
@@ -714,7 +726,7 @@ const NovaPropostaPage = () => {
                   type="checkbox" 
                   id="beneficio1"
                 />
-                <label htmlFor="beneficio1">Os benefícios economicos foram calculados com base nas tarifas de energia, sem impostos</label>
+                <label htmlFor="beneficio1">Os benefícios economicos foram calculados com base nas tarifas de energia, com impostos</label>
               </div>
 
               <div className="beneficio-item">

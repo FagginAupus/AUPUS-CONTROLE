@@ -1,11 +1,12 @@
 // src/pages/ControlePage.jsx - Com modal UG corrigido seguindo padrão PROSPEC
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
+
 import { useData } from '../context/DataContext';
 import { 
   Database, 
@@ -28,7 +29,8 @@ const ControlePage = () => {
   } = useData();
 
   const calibragemGlobal = calibragem.valor;
-  const isAdmin = user?.role === 'admin';  // ← MOVER PARA CIMA
+  const isAdmin = user?.role === 'admin'; 
+  const loadingUgsRef = useRef(false); 
 
   const [calibragemTemp, setCalibragemTemp] = useState(calibragemGlobal);
 
@@ -66,11 +68,20 @@ const ControlePage = () => {
   const debouncedFiltros = useMemo(() => filtros, [filtros]);
 
   useEffect(() => {
-    if (isAdmin && (!ugs.data || ugs.data.length === 0) && !ugs.loading) {
+    if (isAdmin && 
+        (!ugs.data || ugs.data.length === 0) && 
+        !ugs.loading && 
+        !loadingUgsRef.current) {
+      
       console.log('🔄 Carregando UGs para admin...');
-      loadUgs({}, true);
+      loadingUgsRef.current = true;
+      
+      loadUgs({}, true).finally(() => {
+        loadingUgsRef.current = false;
+      });
     }
-  }, [isAdmin, ugs.data, ugs.loading, loadUgs]);  
+  }, [isAdmin]);
+
 
   console.log('🔍 Debug apiService:', {
     apiServiceDisponivel: !!apiService,

@@ -21,6 +21,7 @@ export const DataProvider = ({ children }) => {
   // Ref para controlar se já foi inicializado
   const initializedRef = useRef(false);
   const loadingRef = useRef(false);
+  const lastLoadTimestamp = useRef({});
 
   // ========================================
   // ESTADOS DOS DADOS
@@ -325,13 +326,29 @@ export const DataProvider = ({ children }) => {
   // ========================================
   
   const loadUgs = useCallback(async (filters = {}, forceReload = false) => {
+    console.log('📡 Carregando UGs - Role:', user?.role);
+    // ADICIONAR ESTAS LINHAS:
+    const now = Date.now();
+    const lastLoad = lastLoadTimestamp.current['ugs'] || 0;
+    
+    if (!forceReload && (now - lastLoad) < 1000) {
+      console.log('⏳ UGs - Debounce ativo, ignorando chamada');
+      return;
+    }
+    
+    if (ugs.loading) {
+      console.log('⏳ UGs - Já carregando, ignorando');
+      return;
+    }
+
+    lastLoadTimestamp.current['ugs'] = now;
+    
     if (!user?.id || user.role !== 'admin') {
       console.log('⚠️ UGs disponíveis apenas para admin');
       return;
     }
 
     const cacheTimeout = 120000;
-    const now = Date.now();
     const isExpired = (now - cacheTimestamps.ugs) > cacheTimeout;
 
     if (!forceReload && !isExpired && ugs.data.length > 0) {
@@ -522,7 +539,15 @@ export const DataProvider = ({ children }) => {
 
       initData();
     }
-  }, [user?.id, user?.name, user?.role, loadPropostas, loadControle, loadUgs, updateDashboardStats]);
+  }, [user?.id, user?.role]);
+
+  // ADICIONAR este useEffect:
+  useEffect(() => {
+    initializedRef.current = false;
+    loadingRef.current = false;
+    lastLoadTimestamp.current = {};
+  }, [user?.id]);
+
 
   // ========================================
   // PROVIDER VALUE
