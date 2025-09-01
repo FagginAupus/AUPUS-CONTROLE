@@ -10,6 +10,183 @@ class ApiService {
     }
 
     // ========================================
+    // ✅ NOVO: INTERCEPTOR PARA AUTO-REFRESH
+    // ========================================
+    
+    setupResponseInterceptor() {
+        // Interceptor para capturar tokens renovados automaticamente
+        if (typeof window !== 'undefined' && window.fetch) {
+            const originalFetch = window.fetch;
+            
+            window.fetch = async (url, options = {}) => {
+                const response = await originalFetch(url, options);
+                
+                // Verificar se houve renovação de token
+                const newToken = response.headers.get('X-New-Token');
+                const tokenRefreshed = response.headers.get('X-Token-Refreshed');
+                const tokenExpiresIn = response.headers.get('X-Token-Expires-In');
+                const tokenWarning = response.headers.get('X-Token-Warning');
+                
+                if (tokenRefreshed === 'true' && newToken) {
+                    console.log('🔄 Token auto-renovado pelo backend');
+                    this.setToken(newToken);
+                    
+                    // Disparar evento personalizado para notificar outros componentes
+                    window.dispatchEvent(new CustomEvent('tokenRefreshed', {
+                        detail: { newToken, autoRefresh: true }
+                    }));
+                }
+                
+                if (tokenWarning === 'true' && tokenExpiresIn) {
+                    const minutesLeft = Math.floor(parseInt(tokenExpiresIn) / 60);
+                    console.log(`⚠️ Token expira em ${minutesLeft} minutos`);
+                    
+                    // Disparar evento de aviso
+                    window.dispatchEvent(new CustomEvent('tokenExpiring', {
+                        detail: { minutesLeft, secondsLeft: parseInt(tokenExpiresIn) }
+                    }));
+                }
+                
+                return response;
+            };
+        }
+    }
+
+    // ========================================
+    // ✅ MELHORAR O MÉTODO REQUEST EXISTENTE
+    // ========================================
+    
+    async request(endpoint, options = {}) {
+        const url = `${this.baseURL}${endpoint}`;
+        const token = this.getToken();
+        
+        const config = {
+            method: options.method || 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                ...options.headers,
+            },
+            ...options,
+        };
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        if (options.body) {
+            config.body = options.body;
+        }
+
+        console.log(`📡 ${config.method} ${url}`);
+
+        try {            
+            const response = await fetch(url, config);
+            
+            // ✅ NOVO: Verificar auto-refresh antes de processar resposta
+            const newToken = response.headers.get('X-New-Token');
+            const tokenRefreshed = response.headers.get('X-Token-Refreshed');
+            
+            if (tokenRefreshed === 'true' && newToken) {
+                console.log('🔄 Token auto-renovado durante requisição');
+                this.setToken(newToken);
+            }
+            
+            const responseData = await response.json();
+            
+            if (!response.ok) {
+                console.error(`❌ Erro ${response.status}:`, responseData);
+                
+                if (response.status === 422 && responseData.errors) {
+                    console.error('🚨 Erros de validação:', JSON.stringify(responseData.errors, null, 2));
+                }
+                
+                // ✅ MELHORADO: Verificar se precisa fazer login
+                if (response.status === 401) {
+                    // Se for login, não limpar token ainda
+                    if (endpoint.includes('/auth/login')) {
+                        throw new Error(responseData.message || 'Credenciais inválidas');
+                    }
+                    
+                    // Para outras rotas, verificar se é erro de sessão
+                    if (responseData.requires_login) {
+                        console.log('🚪 Sessão expirada - disparando evento');
+                        
+                        this.clearToken();
+                        
+                        // Disparar evento de logout necessário
+                        window.dispatchEvent(new CustomEvent('sessionExpired', {
+                            detail: { 
+                                message: responseData.message || 'Sessão expirada',
+                                errorType: responseData.error_type || 'session_expired'
+                            }
+                        }));
+                        
+                        throw new Error(responseData.message || 'Sessão expirada');
+                    }
+                    
+                    // Caso contrário, é erro de token inválido
+                    this.clearToken();
+                    throw new Error('Sessão expirada - faça login novamente');
+                }
+                
+                // Para erros de capacidade, retornar objeto ao invés de throw
+                if (response.status === 400 && responseData.message && 
+                    (responseData.message.includes('capacidade') || responseData.message.includes('suficiente'))) {
+                    return {
+                        success: false,
+                        message: responseData.message,
+                        errorType: 'capacity'
+                    };
+                }
+
+                const errorMessage = responseData.message || responseData.error || `HTTP ${response.status}`;
+                throw new Error(errorMessage);
+            }
+
+            console.log(`✅ Resposta recebida:`, responseData);
+            return responseData;
+
+        } catch (error) {
+            console.error(`❌ Erro na requisição ${config.method} ${url}:`, error);
+            
+            // Se for erro de rede e não de autenticação
+            if (!error.message.includes('Sessão') && !error.message.includes('Token')) {
+                throw new Error('Erro de conexão - Verifique sua internet');
+            }
+            
+            throw error;
+        }
+    }
+
+    // ========================================
+    // ✅ NOVO: MÉTODOS DE CONTROLE DE SESSÃO
+    // ========================================
+    
+    // Verificar se token está próximo do vencimento
+    checkTokenExpiration() {
+        const token = this.getToken();
+        if (!token) return { expired: true, minutesLeft: 0 };
+        
+        try {
+            // Decodificar JWT para pegar expiração
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp * 1000; // Converter para ms
+            const now = Date.now();
+            const minutesLeft = Math.max(0, Math.floor((exp - now) / (1000 * 60)));
+            
+            return {
+                expired: minutesLeft <= 0,
+                minutesLeft,
+                warningZone: minutesLeft <= 30 // Menos de 30 minutos
+            };
+        } catch (error) {
+            console.error('Erro ao verificar expiração do token:', error);
+            return { expired: true, minutesLeft: 0 };
+        }
+    }
+
+    // ========================================
     // CONFIGURAÇÃO DE TOKEN
     // ========================================
 
