@@ -1,4 +1,4 @@
-// src/services/pdfGenerator.js - GERADOR PDF COM LAYOUT OTIMIZADO
+// src/services/pdfGenerator.js - GERADOR PDF COM LAYOUT OTIMIZADO E COMPRESSÃO
 class PDFGenerator {
   constructor() {
     this.jsPDFLoaded = false;
@@ -31,7 +31,125 @@ class PDFGenerator {
     }
   }
 
-  // Função principal para gerar PDF
+  // ========== NOVA FUNÇÃO DE COMPRESSÃO ==========
+  async comprimirPDF(doc) {
+    try {
+      console.log('🗜️ Iniciando compressão do PDF...');
+
+      // Obter array buffer do PDF original
+      const pdfArrayBuffer = doc.output('arraybuffer');
+      const originalSize = pdfArrayBuffer.byteLength;
+      console.log(`📦 Tamanho original: ${(originalSize / 1024).toFixed(2)} KB`);
+
+      // Técnica 1: Comprimir usando deflate interno do jsPDF
+      if (doc.internal && doc.internal.deflate) {
+        try {
+          doc.internal.deflate = true;
+          console.log('✅ Compressão deflate ativada');
+        } catch (e) {
+          console.warn('⚠️ Deflate não disponível:', e.message);
+        }
+      }
+
+      // Técnica 2: Otimizar imagens já carregadas
+      await this.otimizarImagensExistentes(doc);
+
+      // Técnica 3: Comprimir fontes (remover dados desnecessários)
+      this.otimizarFontes(doc);
+
+      // Técnica 4: Remover metadados desnecessários
+      this.removerMetadadosDesnecessarios(doc);
+
+      // Obter tamanho após otimizações
+      const pdfComprimido = doc.output('arraybuffer');
+      const compressedSize = pdfComprimido.byteLength;
+      const economiaBytes = originalSize - compressedSize;
+      const economiaPercentual = ((economiaBytes / originalSize) * 100).toFixed(1);
+
+      console.log(`📦 Tamanho comprimido: ${(compressedSize / 1024).toFixed(2)} KB`);
+      console.log(`💾 Economia: ${(economiaBytes / 1024).toFixed(2)} KB (${economiaPercentual}%)`);
+
+      return doc;
+    } catch (error) {
+      console.warn('⚠️ Erro na compressão (continuando com PDF original):', error);
+      return doc;
+    }
+  }
+
+  // Otimizar imagens existentes no PDF
+  async otimizarImagensExistentes(doc) {
+    try {
+      if (doc.internal && doc.internal.pageSize) {
+        console.log('🖼️ Otimizando imagens...');
+        
+        // Configurar compressão de imagens
+        if (doc.internal.scaleFactor) {
+          doc.internal.scaleFactor = Math.min(doc.internal.scaleFactor, 2);
+        }
+        
+        // Definir qualidade de compressão para imagens JPEG
+        if (doc.setImageProperties) {
+          doc.setImageProperties = function(imageData) {
+            if (imageData && typeof imageData === 'object') {
+              imageData.compression = 'FAST';
+              imageData.quality = 0.7; // 70% de qualidade
+            }
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao otimizar imagens:', error);
+    }
+  }
+
+  // Otimizar fontes
+  otimizarFontes(doc) {
+    try {
+      console.log('🔤 Otimizando fontes...');
+      
+      if (doc.internal && doc.internal.events && doc.internal.events.subscribe) {
+        // Limitar conjunto de caracteres das fontes (se possível)
+        doc.internal.events.subscribe('addFont', function(font) {
+          if (font && font.metadata) {
+            // Remover metadados desnecessários da fonte
+            delete font.metadata.description;
+            delete font.metadata.version;
+            delete font.metadata.trademark;
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao otimizar fontes:', error);
+    }
+  }
+
+  // Remover metadados desnecessários
+  removerMetadadosDesnecessarios(doc) {
+    try {
+      console.log('🧹 Removendo metadados desnecessários...');
+      
+      if (doc.internal && doc.internal.events) {
+        // Definir apenas metadados essenciais
+        doc.setProperties({
+          title: 'Proposta Comercial',
+          creator: 'AUPUS',
+          producer: 'AUPUS PDF Generator',
+          // Remover campos opcionais como: keywords, subject, author details
+        });
+        
+        // Remover comentários e anotações desnecessárias
+        if (doc.internal.annotations) {
+          doc.internal.annotations = doc.internal.annotations.filter(annotation => 
+            annotation.type === 'text' || annotation.type === 'link'
+          );
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao remover metadados:', error);
+    }
+  }
+
+  // Função principal para gerar PDF COM COMPRESSÃO
   async gerarPDF(dadosProposta, autoDownload = true) {
     try {
       console.log('📄 Iniciando geração de PDF...', dadosProposta.numeroProposta);
@@ -40,24 +158,45 @@ class PDFGenerator {
       await this.loadJsPDF();
       
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');
+      
+      // Criar PDF com configurações otimizadas
+      const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true, // ✅ HABILITAR COMPRESSÃO NATIVA
+        encryption: {
+          userPassword: '',
+          ownerPassword: '',
+          userPermissions: []
+        }
+      });
 
       // Gerar conteúdo do PDF
       await this.criarLayoutPDF(doc, dadosProposta);
+
+      // ✅ APLICAR COMPRESSÃO ANTES DE FINALIZAR
+      const docComprimido = await this.comprimirPDF(doc);
 
       // Gerar nome do arquivo
       const nomeArquivo = this.gerarNomeArquivo(dadosProposta);
 
       // Baixar automaticamente se solicitado
       if (autoDownload) {
-        doc.save(nomeArquivo);
+        docComprimido.save(nomeArquivo);
         console.log('✅ PDF baixado:', nomeArquivo);
       }
 
+      // Calcular tamanho final
+      const finalArrayBuffer = docComprimido.output('arraybuffer');
+      const finalSizeKB = (finalArrayBuffer.byteLength / 1024).toFixed(2);
+      console.log(`📊 Tamanho final do PDF: ${finalSizeKB} KB`);
+
       return {
         nomeArquivo,
-        pdfBlob: doc.output('blob'),
-        pdfDataUri: doc.output('datauristring'),
+        pdfBlob: docComprimido.output('blob'),
+        pdfDataUri: docComprimido.output('datauristring'),
+        tamanhoKB: finalSizeKB,
         success: true
       };
 
@@ -65,6 +204,71 @@ class PDFGenerator {
       console.error('❌ Erro ao gerar PDF:', error);
       throw error;
     }
+  }
+
+  // Função para comprimir imagens - PRESERVANDO TRANSPARÊNCIA
+  async comprimirImagem(imageSrc, maxWidth = 800, qualidade = 0.7, preservarTransparencia = false) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Calcular novas dimensões mantendo proporção
+          let { width, height } = img;
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Se preservar transparência, não preencher fundo
+          if (!preservarTransparencia) {
+            // Fundo branco para imagens JPEG
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+          }
+          
+          // Desenhar imagem redimensionada
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Escolher formato baseado na transparência
+          let dataURL;
+          let formato;
+          
+          if (preservarTransparencia) {
+            // PNG para manter transparência (logos)
+            dataURL = canvas.toDataURL('image/png');
+            formato = 'PNG';
+            console.log(`🖼️ Logo redimensionada (PNG transparente): ${width}x${height}`);
+          } else {
+            // JPEG com compressão para outras imagens
+            dataURL = canvas.toDataURL('image/jpeg', qualidade);
+            formato = 'JPEG';
+            console.log(`🖼️ Imagem comprimida (JPEG): ${width}x${height} (qualidade: ${qualidade * 100}%)`);
+          }
+          
+          resolve({
+            dataURL,
+            width,
+            height,
+            aspectRatio: width / height,
+            formato
+          });
+          
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      img.onerror = () => reject(new Error(`Falha ao carregar imagem: ${imageSrc}`));
+      img.src = imageSrc;
+    });
   }
 
   // Criar layout otimizado do PDF
@@ -109,67 +313,28 @@ class PDFGenerator {
     await this.adicionarRodape(doc);
   }
 
-  // Cabeçalho com logo
+  // Cabeçalho com logo PRESERVANDO TRANSPARÊNCIA
   async adicionarCabecalhoComLogo(doc, y, corAzul) {
     // Fundo azul
     doc.setFillColor(...corAzul);
     doc.rect(0, 0, 210, 18, 'F');
 
-    // Carregar logo de forma síncrona
+    // Carregar logo MANTENDO transparência
     try {
-      // Criar promise para aguardar carregamento da imagem
-      const logoCarregada = await new Promise((resolve, reject) => {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        
-        logoImg.onload = function() {
-          try {
-            console.log('✅ Logo carregada com sucesso!');
-            resolve(logoImg);
-          } catch (error) {
-            console.warn('Erro ao processar logo:', error);
-            reject(error);
-          }
-        };
-        
-        logoImg.onerror = function() {
-          console.error('❌ Erro ao carregar logo de: /Logo.png');
-          reject(new Error('Logo não encontrada'));
-        };
-        
-        // Definir timeout para evitar espera infinita
-        setTimeout(() => {
-          if (!logoImg.complete) {
-            reject(new Error('Timeout ao carregar logo'));
-          }
-        }, 3000);
-        
-        logoImg.src = '/Logo.png';
-        
-        // Se já estiver carregada (cache)
-        if (logoImg.complete && logoImg.naturalHeight !== 0) {
-          resolve(logoImg);
-        }
-      });
+      console.log('🖼️ Carregando logo (preservando transparência)...');
+      // ✅ PRESERVAR TRANSPARÊNCIA DA LOGO (PNG)
+      const logoOtimizada = await this.comprimirImagem('/Logo.png', 200, 0.8, true);
       
-      // Adicionar logo ao PDF
-      // Calcular dimensões mantendo proporção
-      const logoWidth = logoCarregada.naturalWidth;
-      const logoHeight = logoCarregada.naturalHeight;
-      const aspectRatio = logoWidth / logoHeight;
-
-      // Definir altura desejada e calcular largura proporcional
+      // Calcular dimensões para PDF
       const alturaDesejada = 10;
-      const larguraProporcional = alturaDesejada * aspectRatio;
-
-      // Limitar largura máxima para não ocupar muito espaço
+      const larguraProporcional = alturaDesejada * logoOtimizada.aspectRatio;
       const larguraMaxima = 35;
       const larguraFinal = Math.min(larguraProporcional, larguraMaxima);
-      const alturaFinal = larguraFinal / aspectRatio;
+      const alturaFinal = larguraFinal / logoOtimizada.aspectRatio;
 
-      // Adicionar logo ao PDF mantendo proporção
-      doc.addImage(logoCarregada, 'PNG', 10, 4, larguraFinal, alturaFinal);
-      console.log(`📐 Logo adicionada: ${larguraFinal.toFixed(1)}x${alturaFinal.toFixed(1)}mm (aspecto: ${aspectRatio.toFixed(2)})`);
+      // Adicionar logo como PNG (mantém transparência)
+      doc.addImage(logoOtimizada.dataURL, logoOtimizada.formato, 10, 4, larguraFinal, alturaFinal);
+      console.log(`📐 Logo adicionada (${logoOtimizada.formato}): ${larguraFinal.toFixed(1)}x${alturaFinal.toFixed(1)}mm`);
       
     } catch (error) {
       // Fallback - mostrar texto em vez da logo
@@ -579,7 +744,7 @@ class PDFGenerator {
     return y + 5;
   }
 
-  // Rodapé - MODIFICADO COM EMOJIS E IMAGEM ONDA
+  // Rodapé - MODIFICADO COM IMAGENS COMPRIMIDAS
   async adicionarRodape(doc) {
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -607,89 +772,23 @@ class PDFGenerator {
       // WhatsApp
       doc.text('#  (62) 9 9654-7888', xContatos, yContatos);
       
-      // Slogan - IMAGEM CURSIVA CENTRALIZADA
+      // Slogan - IMAGEM CURSIVA CENTRALIZADA (COMPRESSÃO SEGURA)
       try {
-        const sloganCarregado = await new Promise((resolve, reject) => {
-          const sloganImg = new Image();
-          sloganImg.crossOrigin = 'anonymous';
-          
-          sloganImg.onload = function() {
-            try {
-              console.log('📊 Imagem original:', {
-                width: sloganImg.naturalWidth,
-                height: sloganImg.naturalHeight
-              });
-              
-              // Verificar dimensões válidas
-              if (sloganImg.naturalWidth === 0 || sloganImg.naturalHeight === 0) {
-                throw new Error('Dimensões inválidas');
-              }
-              
-              // REDIMENSIONAR IMAGEM
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              const maxWidth = 800;
-              const originalWidth = sloganImg.naturalWidth;
-              const originalHeight = sloganImg.naturalHeight;
-              
-              let newWidth = originalWidth;
-              let newHeight = originalHeight;
-              
-              if (originalWidth > maxWidth) {
-                const ratio = maxWidth / originalWidth;
-                newWidth = maxWidth;
-                newHeight = originalHeight * ratio;
-              }
-              
-              canvas.width = newWidth;
-              canvas.height = newHeight;
-              ctx.drawImage(sloganImg, 0, 0, newWidth, newHeight);
-              
-              const dataURL = canvas.toDataURL('image/png', 0.8);
-              
-              // Dimensões para PDF - centralizado
-              const aspectRatio = newWidth / newHeight;
-              const alturaDesejada = 10;
-              const larguraProporcional = alturaDesejada * aspectRatio;
-              const larguraMaxPDF = 100;
-              const larguraFinal = Math.min(larguraProporcional, larguraMaxPDF);
-              const alturaFinal = larguraFinal / aspectRatio;
-              const xCentralizado = (210 - larguraFinal) / 2;
-              
-              console.log('📐 Dimensões finais:', {
-                larguraFinal: larguraFinal.toFixed(1),
-                alturaFinal: alturaFinal.toFixed(1),
-                xCentralizado: xCentralizado.toFixed(1)
-              });
-              
-              resolve({ dataURL, x: xCentralizado, y: 277, w: larguraFinal, h: alturaFinal });
-              
-            } catch (error) {
-              console.warn('❌ Erro ao processar slogan:', error);
-              reject(error);
-            }
-          };
-          
-          sloganImg.onerror = function() {
-            console.error('❌ Erro ao carregar: /Frase_interligando.png');
-            reject(new Error('Falha ao carregar slogan'));
-          };
-          
-          // Timeout para evitar espera infinita
-          setTimeout(() => {
-            if (!sloganImg.complete) {
-              reject(new Error('Timeout ao carregar slogan'));
-            }
-          }, 3000);
-          
-          console.log('🔄 Carregando slogan...');
-          sloganImg.src = '/Frase_interligando.png';
-        });
+        console.log('🖼️ Carregando slogan...');
+        // ✅ COMPRIMIR APENAS SE NÃO TIVER TRANSPARÊNCIA CRÍTICA
+        const sloganOtimizada = await this.comprimirImagem('/Frase_interligando.png', 400, 0.7, false);
+        
+        // Dimensões para PDF - centralizado
+        const alturaDesejada = 10;
+        const larguraProporcional = alturaDesejada * sloganOtimizada.aspectRatio;
+        const larguraMaxPDF = 100;
+        const larguraFinal = Math.min(larguraProporcional, larguraMaxPDF);
+        const alturaFinal = larguraFinal / sloganOtimizada.aspectRatio;
+        const xCentralizado = (210 - larguraFinal) / 2;
         
         // Adicionar imagem ao PDF
-        doc.addImage(sloganCarregado.dataURL, 'PNG', sloganCarregado.x, sloganCarregado.y, sloganCarregado.w, sloganCarregado.h);
-        console.log('✅ Slogan cursivo adicionado ao PDF!');
+        doc.addImage(sloganOtimizada.dataURL, sloganOtimizada.formato, xCentralizado, 277, larguraFinal, alturaFinal);
+        console.log(`✅ Slogan adicionado (${sloganOtimizada.formato}) ao PDF!`);
         
       } catch (error) {
         console.warn('📝 Usando fallback de texto para slogan:', error.message);
@@ -700,79 +799,22 @@ class PDFGenerator {
         doc.text('Interligando você com o futuro!', 75, 285);
       }
       
-      // Imagem onda à direita - SUBSTITUINDO PAGINAÇÃO
+      // Imagem onda à direita - COMPRESSÃO SEGURA
       try {
-        const ondaCarregada = await new Promise((resolve, reject) => {
-          const ondaImg = new Image();
-          ondaImg.crossOrigin = 'anonymous';
-          
-          ondaImg.onload = function() {
-            try {
-              console.log('🌊 Imagem onda original:', {
-                width: ondaImg.naturalWidth,
-                height: ondaImg.naturalHeight
-              });
-              
-              if (ondaImg.naturalWidth === 0 || ondaImg.naturalHeight === 0) {
-                throw new Error('Dimensões inválidas');
-              }
-              
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              const maxWidth = 300;
-              const originalWidth = ondaImg.naturalWidth;
-              const originalHeight = ondaImg.naturalHeight;
-              
-              let newWidth = originalWidth;
-              let newHeight = originalHeight;
-              
-              if (originalWidth > maxWidth) {
-                const ratio = maxWidth / originalWidth;
-                newWidth = maxWidth;
-                newHeight = originalHeight * ratio;
-              }
-              
-              canvas.width = newWidth;
-              canvas.height = newHeight;
-              ctx.drawImage(ondaImg, 0, 0, newWidth, newHeight);
-              
-              const dataURL = canvas.toDataURL('image/png', 0.8);
-              
-              // Posicionar à direita
-              const aspectRatio = newWidth / newHeight;
-              const alturaDesejada = 12;
-              const larguraProporcional = alturaDesejada * aspectRatio;
-              const larguraFinal = Math.min(larguraProporcional, 30);
-              const alturaFinal = larguraFinal / aspectRatio;
-              const xDireita = 210 - larguraFinal - 8; // 8mm da margem direita
-              
-              resolve({ dataURL, x: xDireita, y: 275, w: larguraFinal, h: alturaFinal });
-              
-            } catch (error) {
-              console.warn('❌ Erro ao processar onda:', error);
-              reject(error);
-            }
-          };
-          
-          ondaImg.onerror = function() {
-            console.error('❌ Erro ao carregar: /Onda.png');
-            reject(new Error('Falha ao carregar onda'));
-          };
-          
-          setTimeout(() => {
-            if (!ondaImg.complete) {
-              reject(new Error('Timeout ao carregar onda'));
-            }
-          }, 3000);
-          
-          console.log('🌊 Carregando Onda...');
-          ondaImg.src = '/Onda.png';
-        });
+        console.log('🌊 Carregando onda...');
+        // ✅ COMPRIMIR ONDA (sem transparência crítica)
+        const ondaOtimizada = await this.comprimirImagem('/Onda.png', 150, 0.6, false);
         
-        // Adicionar imagem onda ao PDF
-        doc.addImage(ondaCarregada.dataURL, 'PNG', ondaCarregada.x, ondaCarregada.y, ondaCarregada.w, ondaCarregada.h);
-        console.log('✅ Imagem onda adicionada ao PDF!');
+        // Posicionar à direita
+        const alturaDesejada = 12;
+        const larguraProporcional = alturaDesejada * ondaOtimizada.aspectRatio;
+        const larguraFinal = Math.min(larguraProporcional, 30);
+        const alturaFinal = larguraFinal / ondaOtimizada.aspectRatio;
+        const xDireita = 210 - larguraFinal - 8; // 8mm da margem direita
+        
+        // Adicionar imagem ao PDF
+        doc.addImage(ondaOtimizada.dataURL, ondaOtimizada.formato, xDireita, 275, larguraFinal, alturaFinal);
+        console.log(`✅ Imagem onda adicionada (${ondaOtimizada.formato}) ao PDF!`);
         
       } catch (error) {
         console.warn('📝 Usando fallback para paginação:', error.message);
