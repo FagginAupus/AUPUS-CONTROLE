@@ -11,14 +11,6 @@ import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import './NovaPropostaPage.css';
 
-// ✅ ADICIONAR após as importações, antes do componente
-const formatarDataParaBackend = (dataString) => {
-  if (!dataString) return new Date().toLocaleDateString('en-CA');
-  if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) return dataString;
-  const data = new Date(dataString + 'T12:00:00');
-  return data.toISOString().split('T')[0];
-};
-
 const NovaPropostaPage = () => {
   const navigate = useNavigate();
   const { user, getMyTeam, refreshTeam } = useAuth();
@@ -49,7 +41,7 @@ const NovaPropostaPage = () => {
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
-      dataProposta: new Date().toLocaleDateString('en-CA'),
+      dataProposta: new Date().toISOString().split('T')[0],
       consultor_id: '',
       recorrencia: '3%',
       economia: 20,
@@ -171,9 +163,8 @@ const NovaPropostaPage = () => {
   }, [watchConsultor, setValue]);
 
   const limparFormulario = () => {
-    if (window.confirm('Deseja limpar todos os dados do formulário?')) {
       reset({
-        dataProposta: new Date().toLocaleDateString('en-CA'),
+        dataProposta: new Date().toISOString().split('T')[0],
         consultor: '',
         recorrencia: '3%',
         economia: 20,
@@ -182,19 +173,18 @@ const NovaPropostaPage = () => {
         tarifaTributos: 0.98,
         ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
         // Benefícios continuam como false (não obrigatórios)
-        beneficio1: false,
-        beneficio2: false,
+        beneficio1: true,
+        beneficio2: true,
         beneficio3: false,
-        beneficio4: false,
+        beneficio4: true,
         beneficio5: false,
-        beneficio6: false,
+        beneficio6: true,
         beneficio7: false,
         beneficio8: false
       });
       setBeneficiosAdicionais([]);
       gerarNumeroProposta();
       showNotification('Formulário limpo com sucesso!', 'info');
-    }
   };
 
   const adicionarBeneficioAdicional = () => {
@@ -246,9 +236,7 @@ const NovaPropostaPage = () => {
         return;
       }
 
-      const dataCorrigida = formatarDataParaBackend(data.dataProposta);
-      console.log('🔍 Data original:', data.dataProposta, '→ Data corrigida:', dataCorrigida);
-
+      // ✅ CORREÇÃO PRINCIPAL: Mapear consultor corretamente
       let consultorId = null;
       let consultorNome = '';
 
@@ -306,9 +294,9 @@ const NovaPropostaPage = () => {
       // ✅ PREPARAR DADOS CORRIGIDOS PARA O BACKEND
       const propostaParaBackend = {
         nomeCliente: data.nomeCliente,
-        consultor_id: consultorId,       
-        consultor: consultorNome,     
-        dataProposta: dataCorrigida,
+        consultor_id: consultorId,       // ← CORREÇÃO: enviar o ID do consultor
+        consultor: consultorNome,        // ← ADICIONAR: enviar o nome para compatibilidade
+        dataProposta: data.dataProposta,
         numeroProposta: numeroProposta,
         status: 'Aguardando',
         economia: data.economia || 0,
@@ -351,7 +339,7 @@ const NovaPropostaPage = () => {
           numeroProposta: numeroProposta,
           nomeCliente: data.nomeCliente,
           consultor: consultorNome, // ← USAR consultorNome processado
-          data: dataCorrigida,
+          data: data.dataProposta || new Date().toISOString().split('T')[0],
           descontoTarifa: (data.economia || 20) / 100,
           descontoBandeira: (data.bandeira || 20) / 100,
           inflacao: (data.inflacao || 2) / 100,        
@@ -378,8 +366,7 @@ const NovaPropostaPage = () => {
         showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
       }
 
-      // Limpar formulário
-      limparFormulario();
+      navigate('/prospec');
       
     } catch (error) {
       console.error('❌ Erro ao salvar proposta:', error);

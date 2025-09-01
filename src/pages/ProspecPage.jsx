@@ -182,7 +182,7 @@ const ProspecPage = () => {
   };
 
   const salvarEdicao = async (dadosAtualizados) => {
-    setLoading(true); // ← ADICIONAR no início
+    setLoading(true);
     
     try {
       const { item } = modalEdicao;
@@ -252,12 +252,18 @@ const ProspecPage = () => {
 
       // Agora salvar os dados com os nomes dos arquivos
       const dadosUC = {
-        apelido: dadosAtualizados.apelido,
-        ligacao: dadosAtualizados.ligacao,
-        media: dadosAtualizados.media,
-        distribuidora: dadosAtualizados.distribuidora,
-        status: dadosAtualizados.status
-      };
+      nomeCliente: dadosAtualizados.nomeCliente,
+      
+      apelido: dadosAtualizados.apelido,
+      ligacao: dadosAtualizados.ligacao,
+      media: dadosAtualizados.media,
+      distribuidora: dadosAtualizados.distribuidora,
+      status: dadosAtualizados.status,
+      descontoTarifa: dadosAtualizados.descontoTarifa, 
+      descontoBandeira: dadosAtualizados.descontoBandeira,
+      economia: dadosAtualizados.descontoTarifa,
+      bandeira: dadosAtualizados.descontoBandeira
+    };
 
       // ✅ APENAS campos de documentação
       const documentacaoLimpa = {
@@ -277,13 +283,19 @@ const ProspecPage = () => {
       };
 
       const dadosComId = {
-        ...dadosUC,
-        consultor_id: dadosAtualizados.consultor_id || null, // ← ADICIONAR ESTA LINHA
-        consultor: dadosAtualizados.consultor || '', // Manter para compatibilidade
-        propostaId: propostaId,
-        numeroUC: item.numeroUC || item.numero_unidade,
-        documentacao: documentacaoLimpa
-      };
+      ...dadosUC,
+      
+      numeroProposta: dadosAtualizados.numeroProposta,
+      data: dadosAtualizados.data,
+      observacoes: dadosAtualizados.observacoes,
+      recorrencia: dadosAtualizados.recorrencia,
+      
+      consultor_id: dadosAtualizados.consultor_id || null,
+      consultor: dadosAtualizados.consultor || '',
+      propostaId: propostaId,
+      numeroUC: item.numeroUC || item.numero_unidade,
+      documentacao: documentacaoLimpa
+    };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
     
@@ -654,6 +666,12 @@ const ProspecPage = () => {
                           <span className="data">
                             {item.data ? (() => {
                               try {
+                                // Se a data vem no formato YYYY-MM-DD, converter diretamente
+                                if (item.data.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                  const [ano, mes, dia] = item.data.split('-');
+                                  return `${dia}/${mes}/${ano}`;
+                                }
+                                // Para outros formatos, usar Date normalmente
                                 const dataObj = new Date(item.data);
                                 return dataObj.toLocaleDateString('pt-BR');
                               } catch {
@@ -963,8 +981,25 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     ...item,
     consultor_id: item.consultor_id || null,
     consultor: item.consultor || '',
-      
-    // Novos campos para documentação
+    
+    // ✅ EXTRAIR valores numéricos dos descontos na inicialização
+    descontoTarifa: (() => {
+      const valor = item.descontoTarifa || item.economia;
+      if (typeof valor === 'string' && valor.includes('%')) {
+        return parseFloat(valor.replace('%', ''));
+      }
+      return parseFloat(valor) || 20;
+    })(),
+    
+    descontoBandeira: (() => {
+      const valor = item.descontoBandeira || item.bandeira;
+      if (typeof valor === 'string' && valor.includes('%')) {
+        return parseFloat(valor.replace('%', ''));
+      }
+      return parseFloat(valor) || 20;
+    })(),
+        
+    // ... resto dos campos permanecem iguais
     tipoDocumento: item.tipoDocumento || 'CPF',
     nomeRepresentante: item.nomeRepresentante || '',
     cpf: item.cpf || '',
@@ -1207,8 +1242,21 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   step="0.1"
                   min="0"
                   max="100"
-                  value={dados.descontoTarifa ? parseFloat(dados.descontoTarifa).toFixed(1) : ''} 
-                  onChange={(e) => setDados({...dados, descontoTarifa: parseFloat(e.target.value) || 0})} 
+                  name="descontoTarifa"
+                  value={(() => {
+                  // ✅ PRESERVAR valor real digitado ou extrair do valor inicial
+                  const valor = dados.descontoTarifa;
+                  if (typeof valor === 'string' && valor.includes('%')) {
+                    return parseFloat(valor.replace('%', ''));
+                  }
+                  return parseFloat(valor) || '';
+                })()} 
+                onChange={(e) => {
+                  // ✅ GUARDAR apenas o número, sem formatação
+                  const numeroLimpo = parseFloat(e.target.value) || 0;
+                  console.log('🔧 Desconto Tarifa alterado:', numeroLimpo);
+                  setDados({...dados, descontoTarifa: numeroLimpo});
+                }} 
                 />
               </div>
               <div className="form-group">
@@ -1218,8 +1266,20 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   step="0.1"
                   min="0"
                   max="100"
-                  value={dados.descontoBandeira ? parseFloat(dados.descontoBandeira).toFixed(1) : ''} 
-                  onChange={(e) => setDados({...dados, descontoBandeira: parseFloat(e.target.value) || 0})} 
+                  name="descontoBandeira"
+                  value={(() => {
+                  const valor = dados.descontoBandeira;
+                  if (typeof valor === 'string' && valor.includes('%')) {
+                    return parseFloat(valor.replace('%', ''));
+                  }
+                  return parseFloat(valor) || '';
+                })()} 
+                onChange={(e) => {
+                  // ✅ GUARDAR apenas o número, sem formatação
+                  const numeroLimpo = parseFloat(e.target.value) || 0;
+                  console.log('🔧 Desconto Bandeira alterado:', numeroLimpo);
+                  setDados({...dados, descontoBandeira: numeroLimpo});
+                }} 
                 />
               </div>
             </div>

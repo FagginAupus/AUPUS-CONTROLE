@@ -457,43 +457,38 @@ class StorageService {
             throw new Error(`Não foi possível remover a UG: ${error.message}`);
         }
     }
+
     /**
      * ✅ Processar desconto vindo do backend
      */
     processarDesconto(desconto) {
-        if (!desconto) return 0;
+        if (desconto === null || desconto === undefined) return 20;
         
-        // ✅ REMOVER logs excessivos
         if (typeof desconto === 'number') return desconto;
-        if (typeof desconto === 'string') return parseFloat(desconto) || 0;
-        if (desconto.valor !== undefined) return parseFloat(desconto.valor) || 0;
+        if (typeof desconto === 'string') {
+            const limpo = desconto.replace('%', '').trim();
+            const numero = parseFloat(limpo);
+            return isNaN(numero) ? 20 : numero;
+        }
+        if (desconto.valor !== undefined) return parseFloat(desconto.valor) || 20;
         
-        return 0;
+        return 20;
     }
 
     /**
      * ✅ Formatar desconto para enviar ao backend
      */
     formatarDescontoParaBackend(valor) {
-        if (!valor) return '20%';
+        if (valor === null || valor === undefined) return '20%';
 
-        // console.log('🔍 Formatando desconto para backend:', { valor, tipo: typeof valor });
-
-        // Se já vem com %, validar e manter
+        // Se já vem com %, remover e reprocessar
         if (typeof valor === 'string' && valor.includes('%')) {
-            // console.log('✅ Desconto já com %:', valor);
-            return valor;
+            const numeroLimpo = parseFloat(valor.replace('%', ''));
+            return isNaN(numeroLimpo) ? '20%' : `${numeroLimpo}%`;
         }
 
-        // ✅ CORREÇÃO: Não usar || 20 como fallback
         const numeroLimpo = parseFloat(valor);
-        if (isNaN(numeroLimpo)) {
-            return '20%'; // Só usar padrão se for NaN
-        }
-        
-        const resultado = numeroLimpo + '%';
-        // console.log('✅ Desconto formatado:', resultado);
-        return resultado;
+        return isNaN(numeroLimpo) ? '20%' : `${numeroLimpo}%`;
     }
 
     /**
@@ -582,12 +577,9 @@ class StorageService {
     // MAPEAMENTO FRONTEND → BACKEND
     // ========================================
 
-    // Correção para o arquivo: src/services/storageService.js
-    // Método: mapearPropostaParaBackend
-
     mapearPropostaParaBackend(proposta) {
         console.log('🔄 Mapeando proposta para backend:', proposta);
-        
+
         // ✅ SE FOR CANCELAMENTO DE UC, ENVIAR APENAS OS CAMPOS NECESSÁRIOS
         if (proposta.cancelar_uc && proposta.numero_uc) {
             return {
@@ -595,14 +587,45 @@ class StorageService {
                 numero_uc: proposta.numero_uc
             };
         }
-        
+
+        // ✅ IDENTIFICAR SE É EDIÇÃO DE MODAL (campos limitados)
+        const isEdicaoModal = proposta.numeroUC && !proposta.nomeCliente;
+
+        if (isEdicaoModal) {
+            // ✅ MODAL DE EDIÇÃO: Enviar apenas campos editáveis
+            const dadosModal = {
+                consultor: proposta.consultor || '',
+                status: proposta.status || 'Aguardando',
+                
+                // ✅ DESCONTOS - usar valores reais do formulário  
+                economia: proposta.economia ? `${proposta.economia}%` : undefined,
+                bandeira: proposta.bandeira ? `${proposta.bandeira}%` : undefined,
+                
+                // UC específica
+                numeroUC: proposta.numeroUC,
+                apelido: proposta.apelido,
+                ligacao: proposta.ligacao,
+                media: proposta.media,
+                distribuidora: proposta.distribuidora
+            };
+
+            // ✅ INCLUIR documentação se existir
+            if (proposta.documentacao) {
+                dadosModal.documentacao = proposta.documentacao;
+            }
+
+            // ❌ NÃO enviar: observacoes, beneficios (para não sobrescrever)
+            return dadosModal;
+        }
+
+        // ✅ CRIAÇÃO COMPLETA: Enviar todos os campos
         let beneficiosArray = [];
         if (proposta.beneficios && Array.isArray(proposta.beneficios)) {
             beneficiosArray = proposta.beneficios;
         } else if (proposta.beneficiosAdicionais && Array.isArray(proposta.beneficiosAdicionais)) {
             beneficiosArray = proposta.beneficiosAdicionais;
         }
-        
+
         // ✅ PROCESSAR UNIDADES CONSUMIDORAS
         let unidadesArray = [];
         if (proposta.numeroUC && (proposta.apelido || proposta.ligacao || proposta.media || proposta.distribuidora)) { 
@@ -630,23 +653,7 @@ class StorageService {
         const dadosBackend = {
             // Campos principais
             nome_cliente: proposta.nomeCliente,
-            
-            // ✅ CORREÇÃO PRINCIPAL: Mapear tanto consultor quanto consultor_id
-            consultor_id: proposta.consultor_id || null, // ← ADICIONAR ESTA LINHA
-            consultor: proposta.consultor || '', // ← MANTER para compatibilidade
-            
-            // ✅ ADICIONAR LOG PARA DEBUG
-            ...(() => {
-                console.log('📋 Dados do consultor no mapeamento:', {
-                    consultor_id_original: proposta.consultor_id,
-                    consultor_original: proposta.consultor,
-                    consultor_id_final: proposta.consultor_id || null,
-                    consultor_final: proposta.consultor || ''
-                });
-                return {};
-            })()
-    ,
-            
+            consultor: proposta.consultor || '',
             data_proposta: proposta.dataProposta || proposta.data,
             status: proposta.status || 'Aguardando',
             observacoes: proposta.observacoes || '',
@@ -672,7 +679,7 @@ class StorageService {
                 unidades_count: dadosBackend.unidades_consumidoras.length
             }
         });
-        
+
         if (proposta.numeroUC) {
             dadosBackend.numeroUC = proposta.numeroUC;
             // 🆕 ADICIONAR CAMPOS DA UC COMO INDIVIDUAIS (igual ao status)
