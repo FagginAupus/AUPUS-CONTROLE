@@ -1,4 +1,4 @@
-// src/services/apiService.js - SERVIÇO COMPLETO DE API - CORRIGIDO
+// src/services/apiService.js - VERSÃO CORRIGIDA PARA PROBLEMA 401
 
 class ApiService {
     constructor() {
@@ -7,183 +7,6 @@ class ApiService {
         
         console.log('🔗 ApiService inicializado');
         console.log('🌐 Base URL:', this.baseURL);
-    }
-
-    // ========================================
-    // ✅ NOVO: INTERCEPTOR PARA AUTO-REFRESH
-    // ========================================
-    
-    setupResponseInterceptor() {
-        // Interceptor para capturar tokens renovados automaticamente
-        if (typeof window !== 'undefined' && window.fetch) {
-            const originalFetch = window.fetch;
-            
-            window.fetch = async (url, options = {}) => {
-                const response = await originalFetch(url, options);
-                
-                // Verificar se houve renovação de token
-                const newToken = response.headers.get('X-New-Token');
-                const tokenRefreshed = response.headers.get('X-Token-Refreshed');
-                const tokenExpiresIn = response.headers.get('X-Token-Expires-In');
-                const tokenWarning = response.headers.get('X-Token-Warning');
-                
-                if (tokenRefreshed === 'true' && newToken) {
-                    console.log('🔄 Token auto-renovado pelo backend');
-                    this.setToken(newToken);
-                    
-                    // Disparar evento personalizado para notificar outros componentes
-                    window.dispatchEvent(new CustomEvent('tokenRefreshed', {
-                        detail: { newToken, autoRefresh: true }
-                    }));
-                }
-                
-                if (tokenWarning === 'true' && tokenExpiresIn) {
-                    const minutesLeft = Math.floor(parseInt(tokenExpiresIn) / 60);
-                    console.log(`⚠️ Token expira em ${minutesLeft} minutos`);
-                    
-                    // Disparar evento de aviso
-                    window.dispatchEvent(new CustomEvent('tokenExpiring', {
-                        detail: { minutesLeft, secondsLeft: parseInt(tokenExpiresIn) }
-                    }));
-                }
-                
-                return response;
-            };
-        }
-    }
-
-    // ========================================
-    // ✅ MELHORAR O MÉTODO REQUEST EXISTENTE
-    // ========================================
-    
-    async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
-        const token = this.getToken();
-        
-        const config = {
-            method: options.method || 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...options.headers,
-            },
-            ...options,
-        };
-
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        if (options.body) {
-            config.body = options.body;
-        }
-
-        console.log(`📡 ${config.method} ${url}`);
-
-        try {            
-            const response = await fetch(url, config);
-            
-            // ✅ NOVO: Verificar auto-refresh antes de processar resposta
-            const newToken = response.headers.get('X-New-Token');
-            const tokenRefreshed = response.headers.get('X-Token-Refreshed');
-            
-            if (tokenRefreshed === 'true' && newToken) {
-                console.log('🔄 Token auto-renovado durante requisição');
-                this.setToken(newToken);
-            }
-            
-            const responseData = await response.json();
-            
-            if (!response.ok) {
-                console.error(`❌ Erro ${response.status}:`, responseData);
-                
-                if (response.status === 422 && responseData.errors) {
-                    console.error('🚨 Erros de validação:', JSON.stringify(responseData.errors, null, 2));
-                }
-                
-                // ✅ MELHORADO: Verificar se precisa fazer login
-                if (response.status === 401) {
-                    // Se for login, não limpar token ainda
-                    if (endpoint.includes('/auth/login')) {
-                        throw new Error(responseData.message || 'Credenciais inválidas');
-                    }
-                    
-                    // Para outras rotas, verificar se é erro de sessão
-                    if (responseData.requires_login) {
-                        console.log('🚪 Sessão expirada - disparando evento');
-                        
-                        this.clearToken();
-                        
-                        // Disparar evento de logout necessário
-                        window.dispatchEvent(new CustomEvent('sessionExpired', {
-                            detail: { 
-                                message: responseData.message || 'Sessão expirada',
-                                errorType: responseData.error_type || 'session_expired'
-                            }
-                        }));
-                        
-                        throw new Error(responseData.message || 'Sessão expirada');
-                    }
-                    
-                    // Caso contrário, é erro de token inválido
-                    this.clearToken();
-                    throw new Error('Sessão expirada - faça login novamente');
-                }
-                
-                // Para erros de capacidade, retornar objeto ao invés de throw
-                if (response.status === 400 && responseData.message && 
-                    (responseData.message.includes('capacidade') || responseData.message.includes('suficiente'))) {
-                    return {
-                        success: false,
-                        message: responseData.message,
-                        errorType: 'capacity'
-                    };
-                }
-
-                const errorMessage = responseData.message || responseData.error || `HTTP ${response.status}`;
-                throw new Error(errorMessage);
-            }
-
-            console.log(`✅ Resposta recebida:`, responseData);
-            return responseData;
-
-        } catch (error) {
-            console.error(`❌ Erro na requisição ${config.method} ${url}:`, error);
-            
-            // Se for erro de rede e não de autenticação
-            if (!error.message.includes('Sessão') && !error.message.includes('Token')) {
-                throw new Error('Erro de conexão - Verifique sua internet');
-            }
-            
-            throw error;
-        }
-    }
-
-    // ========================================
-    // ✅ NOVO: MÉTODOS DE CONTROLE DE SESSÃO
-    // ========================================
-    
-    // Verificar se token está próximo do vencimento
-    checkTokenExpiration() {
-        const token = this.getToken();
-        if (!token) return { expired: true, minutesLeft: 0 };
-        
-        try {
-            // Decodificar JWT para pegar expiração
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const exp = payload.exp * 1000; // Converter para ms
-            const now = Date.now();
-            const minutesLeft = Math.max(0, Math.floor((exp - now) / (1000 * 60)));
-            
-            return {
-                expired: minutesLeft <= 0,
-                minutesLeft,
-                warningZone: minutesLeft <= 30 // Menos de 30 minutos
-            };
-        } catch (error) {
-            console.error('Erro ao verificar expiração do token:', error);
-            return { expired: true, minutesLeft: 0 };
-        }
     }
 
     // ========================================
@@ -215,25 +38,23 @@ class ApiService {
         const token = this.getToken();
         
         const config = {
-            method: options.method || 'GET', // CORRIGIDO: method deve estar no config
+            method: options.method || 'GET',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 ...options.headers,
             },
-            ...options, // Spread options depois para sobrescrever se necessário
+            ...options,
         };
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // CORRIGIDO: Se tiver body, usar o body do options
         if (options.body) {
             config.body = options.body;
         }
 
-        // Log detalhado da requisição
         console.log(`📡 ${config.method} ${url}`);
         if (config.body && config.headers['Content-Type'] === 'application/json') {
             try {
@@ -244,35 +65,58 @@ class ApiService {
         }
 
         try {            
-            const response = await fetch(url, config); // CORRIGIDO: url primeiro, config segundo
+            const response = await fetch(url, config);
             const responseData = await response.json();
             
             if (!response.ok) {
                 console.error(`❌ Erro ${response.status}:`, responseData);
                 
-                // MOSTRAR DETALHES DO ERRO DE VALIDAÇÃO
+                // Log de erros de validação
                 if (response.status === 422 && responseData.errors) {
                     console.error('🚨 Erros de validação:', JSON.stringify(responseData.errors, null, 2));
                 }
                 
-                // ✅ CORREÇÃO: Só limpar token se for 401 E NÃO for uma tentativa de login
-                if (response.status === 401 && !endpoint.includes('/auth/login')) {
-                    this.clearToken();
-                    throw new Error('Sessão expirada - faça login novamente');
+                // ✅ TRATAMENTO ESPECÍFICO PARA 401 - SEM REMOÇÃO AUTOMÁTICA DE TOKEN
+                if (response.status === 401) {
+                    console.log('🔍 Análise do erro 401:', {
+                        endpoint: endpoint,
+                        isLoginRoute: endpoint.includes('/auth/login'),
+                        responseMessage: responseData.message,
+                        errorType: responseData.error_type,
+                        requiresLogin: responseData.requires_login
+                    });
+                    
+                    // Se for rota de login, não remover token (credenciais inválidas)
+                    if (endpoint.includes('/auth/login')) {
+                        console.log('❌ Falha no login - credenciais inválidas');
+                        throw new Error(responseData.message || 'Email ou senha incorretos');
+                    }
+                    
+                    // Para outras rotas, analisar a resposta do servidor
+                    if (responseData.requires_login === true || 
+                        responseData.error_type === 'session_expired' ||
+                        responseData.error_type === 'token_expired') {
+                        
+                        console.log('🚪 Sessão realmente expirada detectada, removendo token');
+                        this.clearToken();
+                        
+                        // Disparar evento para o sistema de sessão
+                        window.dispatchEvent(new CustomEvent('sessionExpired', {
+                            detail: { 
+                                message: responseData.message || 'Sessão expirada',
+                                errorType: responseData.error_type || 'session_expired'
+                            }
+                        }));
+                        
+                        throw new Error(responseData.message || 'Sessão expirada - faça login novamente');
+                    }
+                    
+                    // Se chegou aqui, é erro 401 mas não é necessariamente token expirado
+                    console.log('⚠️ Erro 401 sem indicação clara de expiração - mantendo token');
+                    throw new Error(responseData.message || 'Erro de autenticação');
                 }
                 
-                // Para outras rotas ou para login com 401, buscar mensagem do servidor
-                if (response.status === 400 && responseData.message && 
-                    (responseData.message.includes('capacidade') || responseData.message.includes('suficiente'))) {
-                    // Para erros de capacidade, retornar objeto ao invés de throw
-                    return {
-                        success: false,
-                        message: responseData.message,
-                        errorType: 'capacity'
-                    };
-                }
-
-                // Para outras rotas ou para login com 401, buscar mensagem do servidor
+                // Para outros códigos de erro HTTP
                 const errorMessage = responseData.message || responseData.error || `HTTP ${response.status}`;
                 throw new Error(errorMessage);
             }
@@ -341,7 +185,6 @@ class ApiService {
         const formData = new FormData();
         formData.append('file', file);
         
-        // Adicionar dados extras
         Object.keys(additionalData).forEach(key => {
             formData.append(key, additionalData[key]);
         });
@@ -360,9 +203,9 @@ class ApiService {
             const response = await fetch(url, config);
             
             if (!response.ok) {
+                // Para uploads, ser mais conservador com limpeza de token
                 if (response.status === 401) {
-                    this.clearToken();
-                    throw new Error('Sessão expirada');
+                    console.log('⚠️ Erro 401 no upload - não limpando token automaticamente');
                 }
                 
                 const errorData = await response.json().catch(() => ({}));
@@ -422,113 +265,13 @@ class ApiService {
     }
 
     // ========================================
-    // UGs (USINAS GERADORAS) - CORRIGIDO
-    // ========================================
-
-    async getUGs(filtros = {}) {
-        console.log('📥 Buscando UGs da API...');
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/ugs?${params}` : '/ugs';
-        return this.get(endpoint);
-    }
-
-    async getUG(id) {
-        console.log('📋 Buscando UG específica da API...', id);
-        return this.get(`/ugs/${id}`);
-    }
-
-    async criarUG(dadosUG) {
-        console.log('🌐 apiService.criarUG INICIADO');
-        console.log('🌐 Nome da UG:', dadosUG.nome_usina);
-        console.log('🔍 DADOS COMPLETOS ENVIADOS:', JSON.stringify(dadosUG, null, 2));
-        
-        try {
-            const response = await this.post('/ugs', dadosUG);
-            console.log('✅ apiService.criarUG - Resposta recebida:', response);
-            return response;
-        } catch (error) {
-            console.error('❌ apiService.criarUG - Erro:', error);
-            throw error;
-        }
-    }
-
-    async atualizarUG(id, dadosUG) {
-        console.log('📝 Atualizando UG na API...', id);
-        return this.put(`/ugs/${id}`, dadosUG);
-    }
-
-    async excluirUG(id) {
-        console.log('🗑️ Excluindo UG da API...', id);
-        return this.delete(`/ugs/${id}`);
-    }
-
-    async getUGStatistics(filtros = {}) {
-        console.log('📊 Buscando estatísticas das UGs...');
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/ugs/statistics?${params}` : '/ugs/statistics';
-        return this.get(endpoint);
-    }
-
-    // ========================================
-    // USUÁRIOS
-    // ========================================
-
-    async getUsuarios(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/usuarios?${params}` : '/usuarios';
-        return this.get(endpoint);
-    }
-
-    async getUsuario(id) {
-        return this.get(`/usuarios/${id}`);
-    }
-
-    async criarUsuario(userData) {
-        return this.post('/usuarios', userData);
-    }
-
-    async atualizarUsuario(id, userData) {
-        return this.put(`/usuarios/${id}`, userData);
-    }
-
-    async toggleUsuarioAtivo(id) {
-        return this.patch(`/usuarios/${id}/toggle-active`);
-    }
-
-    async excluirUsuario(id) {
-        return this.delete(`/usuarios/${id}`);
-    }
-
-    async getTeam() {
-        return this.get('/usuarios/team');
-    }
-
-    async getEstatisticasUsuarios(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/usuarios/statistics?${params}` : '/usuarios/statistics';
-        return this.get(endpoint);
-    }
-
-    async bulkActivateUsuarios(ids) {
-        return this.post('/usuarios/bulk-activate', { ids });
-    }
-
-    async bulkDeactivateUsuarios(ids) {
-        return this.post('/usuarios/bulk-deactivate', { ids });
-    }
-
-    // ========================================
-    // PROPOSTAS (PROSPEC)
+    // PROPOSTAS - MÉTODOS NECESSÁRIOS PARA O DATACONTEXT
     // ========================================
 
     async getPropostas(filtros = {}) {
         const params = new URLSearchParams(filtros).toString();
         const endpoint = params ? `/propostas?${params}` : '/propostas';
         return this.get(endpoint);
-    }
-
-    async getProposta(id) {
-        return this.get(`/propostas/${id}`);
     }
 
     async criarProposta(propostaData) {
@@ -543,44 +286,8 @@ class ApiService {
         return this.delete(`/propostas/${id}`);
     }
 
-    async updateStatusProposta(id, status) {
-        return this.patch(`/propostas/${id}/status`, { status });
-    }
-
-    async duplicarProposta(id) {
-        return this.post(`/propostas/${id}/duplicate`);
-    }
-
-    async converterPropostaParaControle(id) {
-        return this.post(`/propostas/${id}/convert-to-controle`);
-    }
-
-    async getEstatisticasPropostas(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/propostas/statistics?${params}` : '/propostas/statistics';
-        return this.get(endpoint);
-    }
-
-    async exportarPropostas(filtros = {}) {
-        const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/propostas/export?${params}` : '/propostas/export';
-        return this.get(endpoint);
-    }
-
-    async uploadDocumentoProposta(id, file, tipo) {
-        return this.uploadFile(`/propostas/${id}/upload-documento`, file, { tipo });
-    }
-
-    async removeDocumentoProposta(id, tipo) {
-        return this.delete(`/propostas/${id}/documento/${tipo}`);
-    }
-
-    async bulkUpdateStatusPropostas(ids, status) {
-        return this.post('/propostas/bulk-update-status', { ids, status });
-    }
-
     // ========================================
-    // CONTROLE
+    // CONTROLE - MÉTODOS NECESSÁRIOS PARA O DATACONTEXT
     // ========================================
 
     async getControle(filtros = {}) {
@@ -589,11 +296,7 @@ class ApiService {
         return this.get(endpoint);
     }
 
-    async getControleItem(id) {
-        return this.get(`/controle/${id}`);
-    }
-
-    async adicionarControle(controleData) {
+    async criarControle(controleData) {
         return this.post('/controle', controleData);
     }
 
@@ -606,56 +309,60 @@ class ApiService {
     }
 
     // ========================================
-    // CONFIGURAÇÕES
+    // UGs (USINAS GERADORAS)
     // ========================================
 
-    async getConfiguracoes(grupo = null) {
-        const endpoint = grupo ? `/configuracoes/grupo/${grupo}` : '/configuracoes';
-        return this.get(endpoint);
-    }
-
-    async getConfiguracao(chave) {
-        return this.get(`/configuracoes/${chave}`);
-    }
-
-    async salvarConfiguracao(configData) {
-        return this.post('/configuracoes', configData);
-    }
-
-    // ========================================
-    // NOTIFICAÇÕES
-    // ========================================
-
-    async getNotificacoes(filtros = {}) {
+    async getUGs(filtros = {}) {
+        console.log('📥 Buscando UGs da API...');
         const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/notificacoes?${params}` : '/notificacoes';
+        const endpoint = params ? `/ugs?${params}` : '/ugs';
         return this.get(endpoint);
     }
 
-    async marcarComoLida(id) {
-        return this.patch(`/notificacoes/${id}/mark-read`);
+    async criarUG(dadosUG) {
+        console.log('💾 Criando UG na API...', dadosUG);
+        return this.post('/ugs', dadosUG);
     }
 
     // ========================================
-    // DASHBOARD & SISTEMA
+    // USUÁRIOS - MÉTODOS NECESSÁRIOS
     // ========================================
 
-    async getDashboardData(filtros = {}) {
+    async getUsuarios(filtros = {}) {
         const params = new URLSearchParams(filtros).toString();
-        const endpoint = params ? `/dashboard?${params}` : '/dashboard';
+        const endpoint = params ? `/usuarios?${params}` : '/usuarios';
         return this.get(endpoint);
     }
 
-    async healthCheck() {
-        return this.get('/health-check');
+    async getTeam() {
+        return this.get('/usuarios/equipe');
     }
 
-    async testDatabase() {
-        return this.get('/test-db');
+    // ========================================
+    // UTILITÁRIOS DE TOKEN
+    // ========================================
+
+    checkTokenExpiration() {
+        const token = this.getToken();
+        if (!token) return { expired: true, minutesLeft: 0 };
+        
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp * 1000; // Converter para ms
+            const now = Date.now();
+            const minutesLeft = Math.max(0, Math.floor((exp - now) / (1000 * 60)));
+            
+            return {
+                expired: minutesLeft <= 0,
+                minutesLeft,
+                warningZone: minutesLeft <= 30
+            };
+        } catch (error) {
+            console.error('Erro ao verificar expiração do token:', error);
+            return { expired: true, minutesLeft: 0 };
+        }
     }
 }
 
-// Criar instância única (Singleton)
 const apiService = new ApiService();
-
 export default apiService;

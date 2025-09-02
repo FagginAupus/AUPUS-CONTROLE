@@ -19,8 +19,8 @@ class StorageService {
             // Configurar token no apiService
             apiService.setToken(response.token);
             
-            // ADICIONAR estas linhas para salvar no localStorage:
-            localStorage.setItem('token', response.token);
+            // ✅ CORRIGIDO: Usar 'aupus_token' igual ao apiService
+            localStorage.setItem('aupus_token', response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
             
             console.log('✅ Login realizado com sucesso');
@@ -41,8 +41,8 @@ class StorageService {
         // Limpar token do apiService
         apiService.clearToken();
         
-        // ADICIONAR estas linhas:
-        localStorage.removeItem('token');
+        // ✅ CORRIGIDO: Usar 'aupus_token' igual ao apiService
+        localStorage.removeItem('aupus_token');
         localStorage.removeItem('user');
         
         console.log('🚪 Logout realizado');
