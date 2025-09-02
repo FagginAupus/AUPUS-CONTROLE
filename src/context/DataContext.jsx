@@ -449,8 +449,12 @@ export const DataProvider = ({ children }) => {
 
   const afterCreateUg = useCallback(() => {
     invalidateCache('ugs');
-    invalidateCache('dashboard');
-  }, [invalidateCache]);
+    
+    // ✅ ADICIONAR: Forçar reload imediatamente
+    setTimeout(() => {
+      loadUgs({}, true); // true = forceReload
+    }, 100);
+  }, [invalidateCache, loadUgs]);
 
   const afterCreateUser = useCallback(() => {
     invalidateCache('dashboard');

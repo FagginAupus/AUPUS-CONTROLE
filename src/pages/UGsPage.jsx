@@ -19,7 +19,7 @@ const UGsPage = () => {
   const { user } = useAuth();
   const { 
     ugs, 
-    loadUgs, 
+    loadUgs,  
     afterCreateUg 
   } = useData();
   const [modalNovaUG, setModalNovaUG] = useState({ show: false });
@@ -79,21 +79,17 @@ const UGsPage = () => {
     console.log('✅ Usuário é admin, continuando...');
 
     try {
-      console.log('🔍 Verificando nome da usina...');
-      if (!dadosUG.nome_usina?.trim()) {
-        console.log('❌ Nome da usina vazio:', dadosUG.nome_usina);
-        showNotification('Nome da usina é obrigatório', 'error');
-        return;
-      }
-
-      console.log('✅ Nome da usina válido:', dadosUG.nome_usina);
-      console.log('📝 Dados da UG ANTES de enviar:', JSON.stringify(dadosUG, null, 2));
-      
-      console.log('🔗 CHAMANDO storageService.adicionarUG...');
-      
       await storageService.adicionarUG(dadosUG);
-      console.log('✅ UG criada - Invalidando cache');
+      console.log('✅ UG criada com sucesso!');
+      
+      // ✅ ALTERAR: Chamar afterCreateUg E fazer reload direto
       afterCreateUg();
+      
+      // ✅ ADICIONAR: Reload adicional para garantir
+      setTimeout(() => {
+        console.log('🔄 Recarregando UGs direto da página...');
+        loadUgs({}, true); // Força reload
+      }, 200);
             
       setModalNovaUG({ show: false });
       showNotification('UG criada com sucesso!', 'success');
