@@ -368,7 +368,7 @@ const Dashboard = () => {
           <ModalCadastroUsuario 
             tipo={modalCadastro.type}
             onClose={fecharModalCadastro}
-            onSubmit={handleCriarUsuario}
+            onSubmit={handleCriarUsuario}  // ← Verificar se esta linha existe
             gerentes={getGerentesDisponiveis()}
           />
         )}
@@ -410,8 +410,13 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
     }
 
     setLoading(true);
-    await onSubmit(dados);
-    setLoading(false);
+    try {
+      await onSubmit(dados);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro no modal:', error);
+      setLoading(false);
+    }
   };
 
   const getTipoLabel = (type) => {
