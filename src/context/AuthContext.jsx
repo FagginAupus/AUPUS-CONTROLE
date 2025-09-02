@@ -116,7 +116,8 @@ export const AuthProvider = ({ children }) => {
   const checkDefaultPassword = async () => {
     try {
       const response = await apiService.get('/auth/check-default-password');
-      return response.data?.has_default_password || false;
+      console.log('🔐 Resposta da verificação de senha:', response);
+      return response.has_default_password || false;
     } catch (error) {
       console.error('Erro ao verificar senha padrão:', error);
       return false;
