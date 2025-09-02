@@ -68,6 +68,8 @@ class ApiService {
             const response = await fetch(url, config);
             const responseData = await response.json();
             
+            console.log(`📥 Resposta ${response.status}:`, responseData);
+
             if (!response.ok) {
                 console.error(`❌ Erro ${response.status}:`, responseData);
                 
@@ -78,12 +80,15 @@ class ApiService {
                 
                 // ✅ TRATAMENTO ESPECÍFICO PARA 401 - SEM REMOÇÃO AUTOMÁTICA DE TOKEN
                 if (response.status === 401) {
-                    console.log('🔍 Análise do erro 401:', {
+                    console.log('🔍 Análise detalhada do erro 401:', {
                         endpoint: endpoint,
                         isLoginRoute: endpoint.includes('/auth/login'),
+                        isSessionCheck: endpoint.includes('/auth/session-status'),
+                        isRefreshRoute: endpoint.includes('/auth/refresh'),
                         responseMessage: responseData.message,
                         errorType: responseData.error_type,
-                        requiresLogin: responseData.requires_login
+                        requiresLogin: responseData.requires_login,
+                        tokenPresent: !!this.getToken()
                     });
                     
                     // Se for rota de login, não remover token (credenciais inválidas)
@@ -92,6 +97,16 @@ class ApiService {
                         throw new Error(responseData.message || 'Email ou senha incorretos');
                     }
                     
+                    if (endpoint.includes('/auth/session-status') || endpoint.includes('/auth/me')) {
+                        console.log('⚠️ Erro 401 em verificação de sessão - não disparando evento');
+                        throw new Error(responseData.message || 'Sessão inválida');
+                    }
+
+                    // Se for refresh de token, não disparar eventos
+                    if (endpoint.includes('/auth/refresh')) {
+                        console.log('⚠️ Erro 401 no refresh - token não pode ser renovado');
+                        throw new Error(responseData.message || 'Token não pode ser renovado');
+                    }
                     // Para outras rotas, analisar a resposta do servidor
                     if (responseData.requires_login === true || 
                         responseData.error_type === 'session_expired' ||
@@ -231,6 +246,7 @@ class ApiService {
         if (response.success && response.token) {
             this.setToken(response.token);
         }
+        
         return response;
     }
 

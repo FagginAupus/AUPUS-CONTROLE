@@ -31,7 +31,7 @@ const useSessionTimeout = () => {
       // Evitar verificações muito frequentes
       const now = Date.now();
       const timeSinceLastCheck = now - lastCheckTime.current;
-      const minInterval = 30000; // 30 segundos mínimo
+      const minInterval = 120000; // 2 minutos
       
       if (timeSinceLastCheck < minInterval) {
         console.log(`🕐 Verificação de sessão ignorada - muito recente (${Math.round(timeSinceLastCheck/1000)}s atrás)`);
@@ -95,7 +95,7 @@ const useSessionTimeout = () => {
         });
         
         // Só fazer logout após múltiplos erros consecutivos
-        if (consecutiveErrors.current >= 2) {
+        if (consecutiveErrors.current >= 5) {
           console.log('🚨 Múltiplos erros de sessão detectados, fazendo logout...');
           
           // Se for erro de autenticação e não está já fazendo logout

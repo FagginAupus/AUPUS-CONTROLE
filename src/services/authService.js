@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
           
           // ✅ CONFIGURAR TOKEN NO APISERVICE ANTES DE DEFINIR USUÁRIO
           apiService.setToken(savedToken);
-          
+  
           setUser(userData);
           setIsAuthenticated(true);
           

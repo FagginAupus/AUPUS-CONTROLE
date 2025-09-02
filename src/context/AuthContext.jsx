@@ -1,4 +1,4 @@
-// src/context/AuthContext.jsx - CORRIGIDO PARA SEMPRE BUSCAR DA API
+// src/context/AuthContext.jsx - CORREÇÃO COMPLETA DEFINITIVA
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
@@ -17,28 +17,77 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [teamCache, setTeamCache] = useState([]); // ✅ Cache da equipe
+  const [teamCache, setTeamCache] = useState([]);
 
-  // Verificar se há usuário salvo ao inicializar
+  // ========================================
+  // 🔧 INICIALIZAÇÃO CORRIGIDA
+  // ========================================
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       try {
+        console.log('🔍 Inicializando autenticação...');
+        
+        // ✅ USAR CHAVE CONSISTENTE 'aupus_token'
         const savedUser = localStorage.getItem('user');
-        const savedToken = localStorage.getItem('token');
+        const savedToken = localStorage.getItem('aupus_token');
+        
+        console.log('🔍 Dados salvos encontrados:', {
+          hasUser: !!savedUser,
+          hasToken: !!savedToken,
+          tokenLength: savedToken ? savedToken.length : 0,
+          userPreview: savedUser ? JSON.parse(savedUser).name || JSON.parse(savedUser).nome : 'N/A'
+        });
         
         if (savedUser && savedToken) {
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
-          setIsAuthenticated(true);
-          console.log('👤 Usuário restaurado do localStorage:', userData.name || userData.nome);
+          try {
+            const userData = JSON.parse(savedUser);
+            
+            // ✅ CONFIGURAR TOKEN NO APISERVICE PRIMEIRO
+            apiService.setToken(savedToken);
+            
+            // ✅ DEFINIR USUÁRIO E ESTADO
+            setUser(userData);
+            setIsAuthenticated(true);
+            
+            console.log('✅ Sessão restaurada:', {
+              userId: userData.id,
+              userName: userData.name || userData.nome,
+              userRole: userData.role
+            });
+            
+            // ✅ VALIDAÇÃO OPCIONAL DO TOKEN (sem forçar logout)
+            setTimeout(async () => {
+              try {
+                const validation = await apiService.get('/auth/me');
+                console.log('✅ Token validado na inicialização:', validation.success);
+              } catch (error) {
+                console.log('⚠️ Validação de token falhou, mas mantendo sessão:', error.message);
+                // Não forçar logout - deixar o sistema de timeout tratar
+              }
+            }, 2000); // 2 segundos de delay
+            
+          } catch (parseError) {
+            console.error('❌ Erro ao processar dados salvos:', parseError);
+            // Limpar dados corrompidos
+            localStorage.removeItem('user');
+            localStorage.removeItem('aupus_token');
+            apiService.clearToken();
+          }
+        } else {
+          console.log('ℹ️ Nenhuma sessão salva encontrada');
+          // Limpar restos inconsistentes
+          localStorage.removeItem('user');
+          localStorage.removeItem('aupus_token');
+          localStorage.removeItem('token'); // Limpar versão antiga também
+          apiService.clearToken();
         }
-        apiService.setToken(savedToken);
-
       } catch (error) {
-        console.error('❌ Erro ao restaurar sessão:', error);
-        // Limpar dados corrompidos
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        console.error('❌ Erro na inicialização da autenticação:', error);
+        // Reset completo em caso de erro
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.clear(); // Limpar tudo se houver problema grave
+        apiService.clearToken();
       } finally {
         setLoading(false);
       }
@@ -47,16 +96,25 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // ✅ ATUALIZAR EQUIPE QUANDO USUÁRIO MUDA
+  // ========================================
+  // 🔄 ATUALIZAÇÃO DA EQUIPE
+  // ========================================
   useEffect(() => {
     if (user && isAuthenticated) {
-      refreshTeam();
+      // ✅ AGUARDAR UM POUCO PARA A API ESTAR PRONTA
+      const timer = setTimeout(() => {
+        refreshTeam();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     } else {
       setTeamCache([]);
     }
   }, [user?.id, isAuthenticated]);
 
-  // ✅ FUNÇÃO PARA BUSCAR EQUIPE DA API (SEMPRE ATUALIZADA)
+  // ========================================
+  // 👥 FUNÇÕES DE EQUIPE
+  // ========================================
   const refreshTeam = async () => {
     try {
       if (!user?.id || !isAuthenticated) {
@@ -65,31 +123,26 @@ export const AuthProvider = ({ children }) => {
         return [];
       }
 
-      console.log('🔄 Atualizando equipe da API para:', user.role);
-      const response = await apiService.get('/usuarios/equipe');
+      console.log('🔄 Buscando equipe da API para:', user.role);
+      const response = await apiService.getTeam();
       
-      if (!response?.success || !response?.data) {
-        console.warn('⚠️ API não retornou usuários válidos');
+      if (!response || !response.success) {
+        console.warn('⚠️ API não retornou equipe válida:', response);
         const fallback = [user];
         setTeamCache(fallback);
         return fallback;
       }
 
-      let usuarios = [];
-      if (response.data.data && Array.isArray(response.data.data)) {
-        usuarios = response.data.data;
-      } else if (Array.isArray(response.data)) {
-        usuarios = response.data;
-      }
-
+      let usuarios = response.data || [];
+      
       // ✅ MAPEAR USUÁRIOS COM MANAGER_ID
       const usuariosFormatados = usuarios.map(usuario => ({
         id: usuario.id,
-        name: usuario.nome || usuario.name,
+        name: usuario.name || usuario.nome,
         email: usuario.email,
         role: usuario.role,
         manager_id: usuario.manager_id,
-        status: usuario.status,
+        status: usuario.status_display || 'Ativo',
         telefone: usuario.telefone
       }));
 
@@ -108,22 +161,52 @@ export const AuthProvider = ({ children }) => {
       }
 
       setTeamCache(usuariosFormatados);
-      console.log(`✅ Equipe atualizada: ${usuariosFormatados.length} membros`);
+      console.log(`✅ Equipe atualizada: ${usuariosFormatados.length} membros`, usuariosFormatados);
       return usuariosFormatados;
       
     } catch (error) {
-      console.error('❌ Erro ao atualizar equipe da API:', error);
+      console.error('❌ Erro ao buscar equipe:', error);
       const fallback = [user].filter(Boolean);
       setTeamCache(fallback);
       return fallback;
     }
   };
 
-  // ✅ FUNÇÃO SÍNCRONA PARA OBTER EQUIPE (USA CACHE)
   const getMyTeam = () => {
+    // ✅ VERIFICAR SE CACHE ESTÁ VAZIO E TENTAR REFRESH
+    if (teamCache.length === 0 && user?.id && isAuthenticated) {
+      console.log('⚠️ Cache vazio, disparando refresh da equipe...');
+      // Não aguardar o refresh, apenas disparar
+      refreshTeam().catch(err => console.error('Erro no refresh automático:', err));
+    }
+    
+    // ✅ FALLBACK INTELIGENTE BASEADO NO ROLE
+    if (teamCache.length === 0 && user) {
+      console.log('⚠️ getMyTeam: Cache vazio, retornando fallback baseado no role');
+      
+      // Para admin, tentar buscar do localStorage como fallback
+      if (user.role === 'admin') {
+        try {
+          const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+          if (usuarios.length > 0) {
+            console.log(`👥 getMyTeam (admin fallback): ${usuarios.length} usuários do localStorage`);
+            return usuarios;
+          }
+        } catch (e) {
+          console.warn('Erro ao ler usuarios do localStorage:', e);
+        }
+      }
+      
+      // Fallback final: apenas o usuário atual
+      return [user];
+    }
+    
     return teamCache.filter(Boolean);
   };
 
+  // ========================================
+  // 🔐 FUNÇÕES DE AUTENTICAÇÃO
+  // ========================================
   const login = async (email, password) => {
     setLoading(true);
     console.log('🔐 Iniciando login...');
@@ -131,23 +214,21 @@ export const AuthProvider = ({ children }) => {
     try {
       const userData = await storageService.login(email, password);
       
-      console.log('🔐 AuthContext - Resposta do storageService:', userData);
-      
-      if (userData && (userData.id || userData.name || userData.nome)) {
-        console.log('✅ AuthContext - Definindo usuário:', userData);
+      if (userData && userData.id) {
         setUser(userData);
         setIsAuthenticated(true);
-        setTimeout(() => {
-          refreshTeam();
-        }, 500); // Pequeno delay para garantir que o estado foi atualizado
-
+        
+        // Atualizar equipe após login
+        setTimeout(() => refreshTeam(), 500);
+        
+        console.log('✅ Login realizado com sucesso:', userData.name || userData.nome);
         return { success: true, user: userData };
       }
       
-      throw new Error('Dados de usuário inválidos');
+      throw new Error('Login falhou - dados de usuário inválidos');
       
     } catch (error) {
-      console.error('❌ AuthContext - Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       setUser(null);
       setIsAuthenticated(false);
       return { success: false, message: error.message || 'Erro interno do sistema' };
@@ -160,12 +241,13 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🚪 Fazendo logout...');
       
+      // Usar logout do storageService
       storageService.logout();
       
-      // Resetar estado
+      // Reset completo do estado
       setUser(null);
       setIsAuthenticated(false);
-      setTeamCache([]); // ✅ LIMPAR CACHE DA EQUIPE
+      setTeamCache([]);
       
       console.log('✅ Logout realizado com sucesso');
       return { success: true };
@@ -177,11 +259,32 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
       setTeamCache([]);
+      
+      // ✅ LIMPAR TODAS AS VARIAÇÕES DE TOKEN
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('aupus_token');
+      localStorage.removeItem('token'); // Versão antiga também
+      apiService.clearToken();
       
       return { success: false, message: error.message };
     }
+  };
+
+  // ========================================
+  // 🛡️ FUNÇÕES DE PERMISSÃO
+  // ========================================
+  const canAccessPage = (pageName) => {
+    if (!user) return false;
+    
+    const permissions = {
+      'dashboard': true,
+      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
+      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
+      'ugs': ['admin'].includes(user.role),
+      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
+    };
+    
+    return permissions[pageName] || false;
   };
 
   const updateUser = (userData) => {
@@ -194,35 +297,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Função para verificar se pode acessar uma página
-  const canAccessPage = (pageName) => {
-    if (!user) {
-      return false;
-    }
-
-    const pagePermissions = {
-      'dashboard': true,
-      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
-      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
-      'ugs': ['admin'].includes(user.role),
-      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
-    };
-
-    return pagePermissions[pageName] || false;
-  };
-
-  // Função para obter nome do consultor
-  const getConsultorName = (consultorId) => {
-    const team = getMyTeam();
-    const consultor = team.find(member => 
-      member.id === consultorId || 
-      member.name === consultorId ||
-      member.email === consultorId
-    );
-    return consultor?.name || consultorId || 'Desconhecido';
-  };
-
-  // Função para verificar se pode criar usuário
   const canCreateUser = (role) => {
     if (!user) return false;
     
@@ -238,71 +312,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ FUNÇÃO PARA CRIAR USUÁRIO COM RECARREGAMENTO AUTOMÁTICO DA EQUIPE
-  const createUser = async (userData) => {
-    try {
-      if (!canCreateUser(userData.role)) {
-        throw new Error('Você não tem permissão para criar este tipo de usuário');
-      }
-
-      // ✅ DEFINIR manager_id AUTOMATICAMENTE
-      let managerId = null;
-      if (userData.role === 'gerente' || userData.role === 'vendedor') {
-        managerId = user.id;
-      }
-      
-      console.log('👤 Criando usuário via API:', userData);
-      
-      const response = await apiService.criarUsuario({
-        nome: userData.nome,
-        email: userData.email,
-        password: userData.password,
-        telefone: userData.telefone,
-        cpf_cnpj: userData.cpf_cnpj,
-        endereco: userData.endereco,
-        cidade: userData.cidade,
-        estado: userData.estado,
-        cep: userData.cep,
-        pix: userData.pix,
-        role: userData.role,
-        manager_id: managerId  // ✅ ENVIAR MANAGER_ID CORRETO
-      });
-
-      if (response?.success) {
-        console.log('✅ Usuário criado com sucesso:', response);
-        
-        // ✅ RECARREGAR EQUIPE APÓS CRIAR USUÁRIO
-        setTimeout(() => {
-          refreshTeam();
-        }, 1000);
-        
-        return response;
-      } else {
-        throw new Error(response?.message || 'Erro ao criar usuário');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao criar usuário:', error);
-      return { 
-        success: false, 
-        message: error.message || 'Erro interno do sistema'
-      };
-    }
-  };
-
+  // ========================================
+  // 📊 VALUE DO CONTEXT
+  // ========================================
   const value = {
     user,
     isAuthenticated,
     loading,
+    teamCache,
+    
+    // Funções principais
     login,
     logout,
     updateUser,
+    
+    // Funções de equipe
     getMyTeam,
-    refreshTeam,        
+    refreshTeam,
+    
+    // Funções de permissão
     canAccessPage,
     canCreateUser,
-    createUser,
-    getConsultorName
+    
+    // Utilitários
+    getConsultorName: (consultorId) => {
+      const team = getMyTeam();
+      const consultor = team.find(member => 
+        member.id === consultorId || 
+        member.name === consultorId ||
+        member.email === consultorId
+      );
+      return consultor?.name || consultorId || 'Desconhecido';
+    }
   };
 
   return (

@@ -40,7 +40,7 @@ const SessionEventListener = () => {
         window.location.href = '/login';
       }
     };
-
+    
     // Escutar eventos de token renovado
     const handleTokenRefreshed = (event) => {
       console.log('✅ Token renovado automaticamente:', event.detail);
@@ -53,18 +53,40 @@ const SessionEventListener = () => {
       // O SessionManager já cuida do aviso visual
     };
 
+    const handleBeforeUnload = (event) => {
+      console.log('🔄 Página sendo recarregada - mantendo sessão ativa');
+      sessionStorage.setItem('page_refreshing', 'true');
+    };
+
+    const handlePageShow = (event) => {
+      if (event.persisted || sessionStorage.getItem('page_refreshing')) {
+        console.log('✅ Página restaurada após refresh - sessão mantida');
+        sessionStorage.removeItem('page_refreshing');
+      }
+    };
+
+    // Nos addEventListener existentes, adicionar:
     window.addEventListener('sessionExpired', handleSessionExpired);
     window.addEventListener('tokenRefreshed', handleTokenRefreshed);
     window.addEventListener('tokenExpiring', handleTokenExpiring);
+    
+    // ✅ ADICIONAR ESTAS 2 LINHAS:
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pageshow', handlePageShow);
 
     return () => {
+      // No cleanup existente, adicionar:
       window.removeEventListener('sessionExpired', handleSessionExpired);
       window.removeEventListener('tokenRefreshed', handleTokenRefreshed);
       window.removeEventListener('tokenExpiring', handleTokenExpiring);
+      
+      // ✅ ADICIONAR ESTAS 2 LINHAS:
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pageshow', handlePageShow);
     };
   }, [logout]);
 
-  return null; // Componente invisível
+  return null;
 };
 
 // Componente principal da aplicação
