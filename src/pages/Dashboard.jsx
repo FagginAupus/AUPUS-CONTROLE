@@ -61,11 +61,18 @@ const Dashboard = () => {
     
     try {
       const team = getMyTeam();
-      console.log('🏠 Dashboard carregando equipe:', team.length, 'membros');
+      console.log('🏠 Dashboard carregando equipe:', team?.length || 0, 'membros');
+      
+      // ← ADICIONAR ESTA VERIFICAÇÃO
+      if (!Array.isArray(team)) {
+        console.error('❌ getMyTeam não retornou um array:', team);
+        setEquipe([]);
+        return;
+      }
       
       if (team.length === 0) {
         console.log('⚠️ Equipe vazia no Dashboard, forçando refresh...');
-        refreshTeam(); // ✅ FORÇAR REFRESH SE EQUIPE ESTIVER VAZIA
+        refreshTeam();
         return;
       }
       
@@ -76,6 +83,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('❌ Erro ao carregar equipe:', error);
+      setEquipe([]); // ← SEMPRE definir array vazio em caso de erro
     }
   }, [user?.id, user?.role, getMyTeam, refreshTeam]);
 

@@ -157,59 +157,91 @@ export const AuthProvider = ({ children }) => {
   // 👥 FUNÇÕES DE EQUIPE
   // ========================================
   const getMyTeam = () => {
-    try {
-      if (!user) {
-        console.log('⚠️ getMyTeam: Usuário não logado');
-        return [];
-      }
-
-      // Para admin, retornar todos os usuários
-      if (user.role === 'admin') {
-        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-        console.log(`👥 getMyTeam (admin): ${usuarios.length} usuários`);
-        return usuarios;
-      }
-
-      // Para outros usuários, verificar subordinados
-      if (user.subordinates && user.subordinates.length > 0) {
-        console.log(`👥 getMyTeam: ${user.subordinates.length} subordinados`);
-        return user.subordinates;
-      }
-
-      console.log('⚠️ getMyTeam: Equipe vazia, retornando apenas usuário atual');
-      return [user];
-
-    } catch (error) {
-      console.error('❌ Erro ao obter equipe:', error);
-      return [user].filter(Boolean);
+    // ✅ VERIFICAR SE CACHE ESTÁ VAZIO E TENTAR REFRESH
+    if (teamCache.length === 0 && user?.id && isAuthenticated) {
+      console.log('⚠️ Cache vazio, disparando refresh da equipe...');
+      // Não aguardar o refresh, apenas disparar
+      refreshTeam().catch(err => console.error('Erro no refresh automático:', err));
     }
+    
+    // ✅ FALLBACK INTELIGENTE BASEADO NO ROLE
+    if (teamCache.length === 0 && user) {
+      console.log('⚠️ getMyTeam: Cache vazio, retornando fallback baseado no role');
+      
+      // Para admin, tentar buscar do localStorage como fallback
+      if (user.role === 'admin') {
+        try {
+          const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+          if (usuarios.length > 0) {
+            console.log(`👥 getMyTeam (admin fallback): ${usuarios.length} usuários do localStorage`);
+            return usuarios;
+          }
+        } catch (e) {
+          console.warn('Erro ao ler usuarios do localStorage:', e);
+        }
+      }
+      
+      // Fallback final: apenas o usuário atual
+      return [user];
+    }
+    
+    return teamCache.filter(Boolean);
   };
 
   const refreshTeam = async () => {
     try {
-      console.log('🔄 Atualizando cache da equipe...');
-      
-      if (user?.role === 'admin') {
-        // Para admin, carregar todos os usuários
-        const response = await apiService.get('/usuarios');
-        if (response.success && response.data) {
-          localStorage.setItem('usuarios', JSON.stringify(response.data));
-          setTeamCache(response.data);
-          console.log(`✅ Cache da equipe atualizado: ${response.data.length} usuários`);
-        }
-      } else if (user?.id) {
-        // Para outros usuários, carregar subordinados
-        const response = await apiService.get(`/usuarios/${user.id}/subordinados`);
-        if (response.success && response.data) {
-          const updatedUser = { ...user, subordinates: response.data };
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          setTeamCache(response.data);
-          console.log(`✅ Subordinados atualizados: ${response.data.length} membros`);
-        }
+      if (!user?.id || !isAuthenticated) {
+        console.log('⚠️ refreshTeam: Usuário não autenticado, limpando cache');
+        setTeamCache([]);
+        return [];
       }
+
+      console.log('🔄 Buscando equipe da API para:', user.role);
+      const response = await apiService.getTeam();
+      
+      if (!response || !response.success) {
+        console.warn('⚠️ API não retornou equipe válida:', response);
+        const fallback = [user];
+        setTeamCache(fallback);
+        return fallback;
+      }
+
+      let usuarios = response.data || [];
+      
+      // ✅ MAPEAR USUÁRIOS COM MANAGER_ID
+      const usuariosFormatados = usuarios.map(usuario => ({
+        id: usuario.id,
+        name: usuario.name || usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+        manager_id: usuario.manager_id,
+        status: usuario.status_display || 'Ativo',
+        telefone: usuario.telefone
+      }));
+
+      // ✅ SEMPRE INCLUIR O USUÁRIO ATUAL SE NÃO ESTIVER NA LISTA
+      const usuarioAtualNaLista = usuariosFormatados.find(u => u.id === user.id);
+      if (!usuarioAtualNaLista) {
+        usuariosFormatados.push({
+          id: user.id,
+          name: user.name || user.nome,
+          email: user.email,
+          role: user.role,
+          manager_id: user.manager_id,
+          status: 'Ativo',
+          telefone: user.telefone
+        });
+      }
+
+      setTeamCache(usuariosFormatados);
+      console.log(`✅ Equipe atualizada: ${usuariosFormatados.length} membros`, usuariosFormatados);
+      return usuariosFormatados;
+      
     } catch (error) {
-      console.error('❌ Erro ao atualizar equipe:', error);
+      console.error('❌ Erro ao buscar equipe:', error);
+      const fallback = [user].filter(Boolean);
+      setTeamCache(fallback);
+      return fallback;
     }
   };
 
