@@ -21,20 +21,54 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = () => {
       try {
-        const savedUser = localStorage.getItem('user'); // Usar 'user' como no storageService
-        const savedToken = localStorage.getItem('token');
+        // ✅ CORRIGIDO: Usar 'aupus_token' consistentemente
+        const savedUser = localStorage.getItem('user');
+        const savedToken = localStorage.getItem('aupus_token');
+        
+        console.log('🔍 Verificando sessão salva:', {
+          hasUser: !!savedUser,
+          hasToken: !!savedToken,
+          tokenLength: savedToken ? savedToken.length : 0
+        });
         
         if (savedUser && savedToken) {
           const userData = JSON.parse(savedUser);
+          
+          // ✅ CONFIGURAR TOKEN NO APISERVICE ANTES DE DEFINIR USUÁRIO
+          apiService.setToken(savedToken);
+          
           setUser(userData);
           setIsAuthenticated(true);
-          console.log('👤 Usuário restaurado do localStorage:', userData.name || userData.nome);
+          
+          console.log('✅ Usuário restaurado do localStorage:', userData.name || userData.nome);
+          console.log('✅ Token configurado no apiService');
+          
+          // ✅ VERIFICAR SE O TOKEN AINDA É VÁLIDO
+          // Fazer uma verificação rápida sem forçar logout se falhar
+          setTimeout(async () => {
+            try {
+              await apiService.get('/auth/me');
+              console.log('✅ Token validado com sucesso na inicialização');
+            } catch (error) {
+              console.log('⚠️ Token pode ter expirado, mas mantendo sessão. Será verificado pelo sistema automático.');
+            }
+          }, 1000);
+          
+        } else {
+          console.log('ℹ️ Nenhuma sessão salva encontrada');
+          // Limpar qualquer dado inconsistente
+          localStorage.removeItem('user');
+          localStorage.removeItem('aupus_token');
+          apiService.clearToken();
         }
       } catch (error) {
         console.error('❌ Erro ao restaurar sessão:', error);
-        // Limpar dados corrompidos
+        // Limpar dados corrompidos mas não forçar logout imediato
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        localStorage.removeItem('aupus_token');
+        apiService.clearToken();
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -72,12 +106,13 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🚪 Fazendo logout...');
       
-      // Usar logout do storageService
+      // Usar logout do storageService (que já limpa corretamente)
       storageService.logout();
       
       // Resetar estado
       setUser(null);
       setIsAuthenticated(false);
+      setTeamCache([]); // Limpar cache da equipe
       
       console.log('✅ Logout realizado com sucesso');
       return { success: true };
@@ -85,11 +120,15 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Erro no logout:', error);
       
-      // Forçar limpeza mesmo com erro
+      // Forçar limpeza mesmo com erro - ✅ USAR CHAVES CORRETAS
       setUser(null);
       setIsAuthenticated(false);
+      setTeamCache([]);
+      
+      // ✅ LIMPAR COM CHAVES CONSISTENTES
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('aupus_token');  // ← CORRIGIDO: era 'token'
+      apiService.clearToken();
       
       return { success: false, message: error.message };
     }
@@ -98,8 +137,9 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (userData) => {
     try {
       setUser(userData);
+      // ✅ SALVAR USUÁRIO ATUALIZADO NO LOCALSTORAGE
       localStorage.setItem('user', JSON.stringify(userData));
-      console.log('👤 Dados do usuário atualizados');
+      console.log('👤 Dados do usuário atualizados e salvos no localStorage');
     } catch (error) {
       console.error('❌ Erro ao atualizar usuário:', error);
     }
