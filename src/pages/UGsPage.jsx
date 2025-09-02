@@ -423,6 +423,7 @@ const ModalNovaUG = ({ onSave, onClose }) => {
     const dados = {
       // ✅ CAMPOS OBRIGATÓRIOS EM SNAKE_CASE:
       nome_usina: formData.nomeUsina.trim(),                        // ✅ CORRIGIDO
+      potencia_cA: parseFloat(formData.potenciaCA) || 0,
       potencia_cc: parseFloat(formData.potenciaCC) || 0,            // ✅ CORRIGIDO
       fator_capacidade: parseFloat(formData.fatorCapacidade) || 19, // ✅ CORRIGIDO
       numero_unidade: String(formData.numero_unidade).trim(),       // ✅ CORRIGIDO - STRING
@@ -550,6 +551,7 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   const [dados, setDados] = useState({
     nomeUsina: '',
     potenciaCC: 0,
+    potenciaCA: 0,
     fatorCapacidade: 19,
     numero_unidade: ''
   });
@@ -570,6 +572,7 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
       setDados({
         nomeUsina: item.nomeUsina || '',
         potenciaCC: parseFloat(item.potenciaCC) || 0,
+        potenciaCA: parseFloat(item.potenciaCA) || 0,
         fatorCapacidade: parseFloat(item.fatorCapacidade) || 19,
         numero_unidade: String(item.numeroUnidade || item.numero_unidade || '').trim()
       });
