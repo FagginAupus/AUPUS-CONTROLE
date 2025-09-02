@@ -86,10 +86,18 @@ const Navigation = () => {
     navigate(path);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Deseja realmente sair do sistema?')) {
-      logout();
-      navigate('/login');
+      try {
+        // NÃO aguardar o logout completar
+        logout();
+        
+        // Redirecionamento IMEDIATO
+        window.location.href = '/login';
+      } catch (error) {
+        console.error('Erro no logout:', error);
+        window.location.href = '/login';
+      }
     }
   };
 

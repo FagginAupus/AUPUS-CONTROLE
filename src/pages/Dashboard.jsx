@@ -22,10 +22,11 @@ import {
 } from 'lucide-react';
 import storageService from '../services/storageService';
 import './Dashboard.css';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, createUser, canCreateUser, getMyTeam, refreshTeam } = useAuth();
+  const { user, createUser, canCreateUser, getMyTeam, refreshTeam, checkDefaultPassword, isAuthenticated } = useAuth();
   const { showNotification } = useNotification();
   const { dashboard, loadDashboard, afterCreateUser } = useData(); // USAR DATACONTEXT
   
@@ -36,6 +37,29 @@ const Dashboard = () => {
   // USAR DIRETAMENTE AS ESTATISTICAS DO DATACONTEXT - SEM ESTADO LOCAL
   const estadisticas = dashboard.statistics;
   const loading = dashboard.loading;
+
+  useEffect(() => {
+    const verificarSenhaPadrao = async () => {
+      // SAIR IMEDIATAMENTE se logout em andamento
+      if (window.isLoggingOut || !isAuthenticated) return;
+      
+      if (user?.id) {
+        try {
+          const hasDefaultPassword = await checkDefaultPassword();
+          if (hasDefaultPassword && !window.isLoggingOut) {
+            setShowChangePasswordModal(true);
+          }
+        } catch (error) {
+          console.error('Erro ao verificar senha padrão:', error);
+        }
+      }
+    };
+
+    verificarSenhaPadrao();
+  }, [user?.id, checkDefaultPassword, isAuthenticated]);
+
+  // ADICIONAR state para o modal:
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -380,6 +404,15 @@ const Dashboard = () => {
             gerentes={getGerentesDisponiveis()}
           />
         )}
+        {/* MODAL DE SENHA */}
+        <ChangePasswordModal 
+          isOpen={showChangePasswordModal}
+          onClose={() => {}} // Não permitir fechar - obrigatório
+          onSuccess={(message) => {
+            showNotification(message, 'success');
+            setShowChangePasswordModal(false);
+          }}
+        />
       </div>
     </div>
   );

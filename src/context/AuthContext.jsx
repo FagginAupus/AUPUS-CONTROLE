@@ -80,14 +80,14 @@ export const AuthProvider = ({ children }) => {
   // ========================================
   // 🔐 FUNÇÕES DE AUTENTICAÇÃO
   // ========================================
-  const login = async (credentials) => {
+  const login = async (email, password) => { // ← ALTERAR PARÂMETROS
     try {
       setLoading(true);
       
-      const response = await apiService.post('/auth/login', credentials);
+      const response = await apiService.post('/auth/login', { email, password });
       
-      if (response.success && response.data) {
-        const { user: userData, token } = response.data;
+      if (response.success && response.user && response.token) {
+        const { user: userData, token } = response;
         
         // Configurar token
         apiService.setToken(token);
@@ -113,18 +113,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkDefaultPassword = async () => {
+    try {
+      const response = await apiService.get('/auth/check-default-password');
+      return response.data?.has_default_password || false;
+    } catch (error) {
+      console.error('Erro ao verificar senha padrão:', error);
+      return false;
+    }
+  };
+
+
   const logout = async () => {
     try {
       console.log('🚪 Realizando logout...');
       
-      // Tentar fazer logout no servidor
-      try {
-        await apiService.post('/auth/logout');
-      } catch (error) {
-        console.log('⚠️ Erro no logout do servidor:', error.message);
-      }
+      // DEFINIR FLAG ANTES de qualquer operação
+      window.isLoggingOut = true;
       
-      // Limpar dados locais
+      // Limpar dados locais IMEDIATAMENTE
       setUser(null);
       setIsAuthenticated(false);
       setTeamCache([]);
@@ -132,6 +139,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
       localStorage.removeItem('aupus_token');
       apiService.clearToken();
+      
+      // Logout do servidor em background (sem aguardar)
+      apiService.post('/auth/logout').catch(() => {
+        console.log('Logout do servidor falhou, mas logout local concluído');
+      });
       
       console.log('✅ Logout realizado com sucesso');
       
@@ -157,7 +169,12 @@ export const AuthProvider = ({ children }) => {
   // 👥 FUNÇÕES DE EQUIPE
   // ========================================
   const getMyTeam = () => {
-    // ✅ VERIFICAR SE CACHE ESTÁ VAZIO E TENTAR REFRESH
+    
+    if (window.isLoggingOut) {
+      console.log('🚪 Logout em andamento, não carregando equipe');
+      return [];
+    }
+
     if (teamCache.length === 0 && user?.id && isAuthenticated) {
       console.log('⚠️ Cache vazio, disparando refresh da equipe...');
       // Não aguardar o refresh, apenas disparar
@@ -354,6 +371,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUser,
+    checkDefaultPassword, 
     
     // Funções de equipe
     getMyTeam,
@@ -363,7 +381,6 @@ export const AuthProvider = ({ children }) => {
     canAccessPage,
     canCreateUser,
     
-    // ⭐ FUNÇÃO QUE ESTAVA FALTANDO!
     createUser,
     
     // Utilitários
