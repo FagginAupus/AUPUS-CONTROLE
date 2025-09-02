@@ -13,7 +13,8 @@ import {
   Users, 
   AlertTriangle, 
   CheckCircle,
-  Edit
+  Edit,
+  Clock
 } from 'lucide-react';
 import './ControlePage.css';
 
@@ -34,11 +35,6 @@ const ControlePage = () => {
 
   const [calibragemTemp, setCalibragemTemp] = useState(calibragemGlobal);
 
-  // Sincronizar valor temporário quando carrega do banco
-  useEffect(() => {
-    setCalibragemTemp(calibragemGlobal);
-  }, [calibragemGlobal]);
-
   // ✅ ADICIONAR useEffect para carregar calibragem quando necessário
   useEffect(() => {
     if (isAdmin && calibragem.valor === 0 && !calibragem.loading) {
@@ -55,13 +51,6 @@ const ControlePage = () => {
     consultor: '',
     ug: '',
     busca: ''
-  });
-
-  const [estatisticas, setEstatisticas] = useState({
-    total: 0,
-    comUG: 0,
-    semUG: 0,
-    calibradas: 0
   });
 
   const { showNotification } = useNotification();
@@ -133,21 +122,58 @@ const ControlePage = () => {
     return dados;
   }, [controle.data, filtros]);
 
-  const calcularEstatisticas = useCallback(() => {
-    const dados = dadosFiltrados;
+  const estatisticas = useMemo(() => {
+    const dados = dadosFiltrados || [];
     
-    setEstatisticas({
+    const comUG = dados.filter(item => item.ug && item.ug.trim() !== '');
+    const semUG = dados.filter(item => !item.ug || item.ug.trim() === '');
+    
+    // Calcular somatório dos consumos médios
+    const somaConsumoComUG = comUG.reduce((soma, item) => {
+      const consumo = parseFloat(item.media) || 0;  // ← CORRETO: usar 'media'
+      return soma + consumo;
+    }, 0);
+
+    const somaConsumoSemUG = semUG.reduce((soma, item) => {
+      const consumo = parseFloat(item.media) || 0;  // ← CORRETO: usar 'media'
+      return soma + consumo;
+    }, 0);
+    
+    // Calcular status da troca
+    const statusTroca = dados.reduce((acc, item) => {
+      const status = item.status_troca || 'Aguardando';
+      switch (status) {
+        case 'Aguardando':
+          acc.aguardando++;
+          break;
+        case 'Em andamento':
+          acc.emAndamento++;
+          break;
+        case 'Finalizado':
+          acc.finalizado++;
+          break;
+      }
+      return acc;
+    }, { aguardando: 0, emAndamento: 0, finalizado: 0 });
+
+    return {
       total: dados.length,
-      comUG: dados.filter(item => item.ug && item.ug !== '').length,
-      semUG: dados.filter(item => !item.ug || item.ug === '').length,
-      calibradas: dados.filter(item => item.valorCalibrado > 0).length
-    });
+      comUG: {
+        quantidade: comUG.length,
+        somaConsumo: somaConsumoComUG
+      },
+      semUG: {
+        quantidade: semUG.length,  
+        somaConsumo: somaConsumoSemUG
+      },
+      statusTroca
+    };
   }, [dadosFiltrados]);
 
   // UseEffect para recalcular estatísticas quando dados mudam
   useEffect(() => {
-    calcularEstatisticas();
-  }, [calcularEstatisticas]);
+    setCalibragemTemp(calibragemGlobal);
+  }, [calibragemGlobal]);
 
   const calcularValorCalibrado = useCallback((media, calibragem) => {
     if (!media || !calibragem || calibragem === 0) return 0;
@@ -470,6 +496,7 @@ const ControlePage = () => {
 
         {/* Estatísticas Rápidas */}
         <section className="quick-stats">
+          {/* Total - mantido */}
           <div className="stat-card">
             <div className="stat-icon">
               <Database size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
@@ -479,35 +506,55 @@ const ControlePage = () => {
               <span className="stat-value">{estatisticas.total}</span>
             </div>
           </div>
+
+          {/* Com UG - ALTERADO */}
           <div className="stat-card">
             <div className="stat-icon">
               <CheckCircle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <span className="stat-label">Com UG</span>
-              <span className="stat-value">{estatisticas.comUG}</span>
+              <span className="stat-value">{estatisticas.comUG.somaConsumo.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} kWh</span>
+              <span className="stat-label-small">
+                {estatisticas.comUG.quantidade} {estatisticas.comUG.quantidade === 1 ? 'Unidade' : 'Unidades'} com UG
+              </span>
             </div>
           </div>
+
+          {/* Sem UG - ALTERADO */}
           <div className="stat-card">
             <div className="stat-icon">
               <AlertTriangle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <span className="stat-label">Sem UG</span>
-              <span className="stat-value">{estatisticas.semUG}</span>
+              <span className="stat-value">{estatisticas.semUG.somaConsumo.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} kWh</span>
+              <span className="stat-label-small">
+                {estatisticas.semUG.quantidade} {estatisticas.semUG.quantidade === 1 ? 'Unidade' : 'Unidades'} sem UG
+              </span>
             </div>
           </div>
-          {isAdmin && (
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Users size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Calibradas</span>
-                <span className="stat-value">{estatisticas.calibradas}</span>
+
+          {/* NOVO - Card de Status */}
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Clock size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <div className="status-resumo">
+                <div className="status-item">
+                  <span className="status-badge status-aguardando">{estatisticas.statusTroca.aguardando}</span>
+                  <small>Aguardando</small>
+                </div>
+                <div className="status-item">
+                  <span className="status-badge status-em-andamento">{estatisticas.statusTroca.emAndamento}</span>
+                  <small>Em Andamento</small>
+                </div>
+                <div className="status-item">
+                  <span className="status-badge status-finalizado">{estatisticas.statusTroca.finalizado}</span>
+                  <small>Finalizado</small>
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </section>
 
         {/* Filtros */}

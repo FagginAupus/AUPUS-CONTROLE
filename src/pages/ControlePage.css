@@ -1358,3 +1358,74 @@ small {
     padding: 12px !important;
   }
 }
+
+/* ===============================================
+   NOVOS ESTILOS PARA OS INDICADORES ATUALIZADOS
+   =============================================== */
+
+/* Label pequeno para mostrar "X Unidades" */
+/* Adicionar ao final do arquivo ControlePage.css */
+.stat-label-small {
+  font-size: 0.8rem !important;
+  color: #b0b0b0 !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  margin-top: 4px !important;
+}
+
+.status-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.status-item small {
+  font-size: 0.75rem;
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.status-badge.status-aguardando {
+  background: #ffc107;
+  color: #000;
+}
+
+.status-badge.status-em-andamento {
+  background: #17a2b8;
+  color: white;
+}
+
+.status-badge.status-finalizado {
+  background: #28a745;
+  color: white;
+}
+
+.stat-card .stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 60px;
+  justify-content: center;
+}
