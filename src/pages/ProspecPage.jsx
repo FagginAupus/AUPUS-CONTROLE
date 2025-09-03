@@ -6,7 +6,8 @@ import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import storageService from '../services/storageService'; // ✅ ADICIONAR
+import storageService from '../services/storageService'; 
+import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -283,19 +284,21 @@ const ProspecPage = () => {
       };
 
       const dadosComId = {
-      ...dadosUC,
-      
-      numeroProposta: dadosAtualizados.numeroProposta,
-      data: dadosAtualizados.data,
-      observacoes: dadosAtualizados.observacoes,
-      recorrencia: dadosAtualizados.recorrencia,
-      
-      consultor_id: dadosAtualizados.consultor_id || null,
-      consultor: dadosAtualizados.consultor || '',
-      propostaId: propostaId,
-      numeroUC: item.numeroUC || item.numero_unidade,
-      documentacao: documentacaoLimpa
-    };
+        ...dadosUC,
+        
+        numeroProposta: dadosAtualizados.numeroProposta,
+        data: dadosAtualizados.data,
+        observacoes: dadosAtualizados.observacoes || item.observacoes, // ✅ PRESERVAR
+        recorrencia: dadosAtualizados.recorrencia,
+        
+        consultor_id: dadosAtualizados.consultor_id || null,
+        consultor: dadosAtualizados.consultor || '',
+        propostaId: propostaId,
+        numeroUC: item.numeroUC || item.numero_unidade,
+        documentacao: documentacaoLimpa,
+        
+        beneficios: item.beneficios || [],
+      };
 
       await storageService.atualizarProspec(propostaId, dadosComId);
     
@@ -1193,7 +1196,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 <input
                   type="text"
                   value={dados.nomeCliente || ''}
-                  onChange={(e) => setDados({...dados, nomeCliente: e.target.value})}
+                  onChange={(e) => setDados({...dados, nomeCliente: formatarPrimeiraMaiuscula(e.target.value)})}
                 />
               </div>
               <div className="form-group">
@@ -1201,7 +1204,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 <input
                   type="text"
                   value={dados.apelido || ''}
-                  onChange={(e) => setDados({...dados, apelido: e.target.value})}
+                  onChange={(e) => setDados({...dados, apelido: formatarPrimeiraMaiuscula(e.target.value)})}
                 />
               </div>
             </div>

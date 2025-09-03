@@ -1,5 +1,6 @@
 // src/services/storageService.js - Completo com expansão de UCs
 import apiService from './apiService';
+import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 
 class StorageService {
     constructor() {
@@ -614,7 +615,16 @@ class StorageService {
                 dadosModal.documentacao = proposta.documentacao;
             }
 
-            // ❌ NÃO enviar: observacoes, beneficios (para não sobrescrever)
+            // ✅ CORREÇÃO: PRESERVAR benefícios existentes para não sobrescrever
+            if (proposta.beneficios && Array.isArray(proposta.beneficios) && proposta.beneficios.length > 0) {
+                dadosModal.beneficios = proposta.beneficios;
+            }
+
+            // ✅ CORREÇÃO: PRESERVAR observações existentes para não sobrescrever  
+            if (proposta.observacoes) {
+                dadosModal.observacoes = proposta.observacoes;
+            }
+
             return dadosModal;
         }
 
@@ -652,7 +662,7 @@ class StorageService {
 
         const dadosBackend = {
             // Campos principais
-            nome_cliente: proposta.nomeCliente,
+            nome_cliente: formatarPrimeiraMaiuscula(proposta.nomeCliente),
             consultor: proposta.consultor || '',
             data_proposta: proposta.dataProposta || proposta.data,
             status: proposta.status || 'Aguardando',
@@ -723,11 +733,14 @@ class StorageService {
             unidadesArray = proposta.unidadesConsumidoras;
         } else if (Array.isArray(proposta.unidades_consumidoras)) {
             unidadesArray = proposta.unidades_consumidoras;
-            unidadesArray = unidadesArray.map(uc => ({
-                ...uc,
-                status: uc.status || 'Aguardando'
-            }));
         }
+        
+        // Aplicar formatação e status
+        unidadesArray = unidadesArray.map(uc => ({
+            ...uc,
+            apelido: formatarPrimeiraMaiuscula(uc.apelido),
+            status: uc.status || 'Aguardando'
+        }));
         
         console.log('🏢 Unidades processadas:', {
             count: unidadesArray.length,

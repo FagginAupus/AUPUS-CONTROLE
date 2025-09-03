@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
+import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 import './NovaPropostaPage.css';
 
 const NovaPropostaPage = () => {
@@ -459,6 +460,7 @@ const NovaPropostaPage = () => {
                   {...register('nomeCliente', { required: 'Nome é obrigatório' })} 
                   type="text" 
                   placeholder="Nome completo do cliente"
+                  onBlur={(e) => setValue('nomeCliente', formatarPrimeiraMaiuscula(e.target.value))}
                   className={errors.nomeCliente ? 'error' : ''}
                 />
                 {errors.nomeCliente && <span className="error-message">{errors.nomeCliente.message}</span>}
@@ -647,6 +649,7 @@ const NovaPropostaPage = () => {
                         })} 
                         type="text" 
                         placeholder="Ex: Casa, Loja..."
+                        onBlur={(e) => setValue(`ucs.${index}.apelido`, formatarPrimeiraMaiuscula(e.target.value))}
                         className={errors.ucs?.[index]?.apelido ? 'error' : ''}
                       />
                       {errors.ucs?.[index]?.apelido && (
