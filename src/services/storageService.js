@@ -260,20 +260,49 @@ class StorageService {
     }
 
     async saveProspec(proposta) {
+        console.log('📤 Dados enviados:', proposta);
+        
         try {
-            console.log('💾 Salvando proposta na API...');
+            const dadosParaBackend = this.mapearPropostaParaBackend(proposta);
+            const response = await apiService.post('/propostas', dadosParaBackend);
             
-            const dadosBackend = this.mapearPropostaParaBackend(proposta);
-            const response = await apiService.post('/propostas', dadosBackend);
+            if (response.success) {
+                console.log('✅ Proposta salva com sucesso:', response.data);
+                return response.data;
+            } else {
+                throw new Error(response.message || 'Erro desconhecido do servidor');
+            }
             
-            console.log('✅ Proposta salva na API com sucesso');
-            return response;
+        } catch (originalError) {
+            // ✅ CONDICIONAL: Só logar se não for UC duplicada
+            if (originalError.response?.status === 422 && 
+                originalError.response?.data?.error_type === 'ucs_com_proposta_ativa') {
+                // Silenciar logs para UC duplicada - modal será exibido
+            } else {
+                console.error('❌ Erro ao salvar proposta:', originalError.message);
+                console.log('🔍 DEBUG storageService - estrutura do erro original:', {
+                    hasResponse: !!originalError.response,
+                    responseStatus: originalError.response?.status,
+                    responseData: originalError.response?.data,
+                    errorType: originalError.response?.data?.error_type
+                });
+            }
             
-        } catch (error) {
-            console.error('❌ Erro ao salvar proposta:', error.message);
-            throw new Error(`Não foi possível salvar a proposta: ${error.message}`);
+            // ✅ VERIFICAÇÃO ESPECÍFICA PARA UC DUPLICADA (sem logs)
+            if (originalError.response?.status === 422 && 
+                originalError.response?.data?.error_type === 'ucs_com_proposta_ativa') {
+                
+                // Preservar dados sem logs de debug
+                const erroPreservado = new Error(originalError.message);
+                erroPreservado.response = originalError.response;
+                erroPreservado.isUcDuplicada = true;
+                throw erroPreservado;
+            }
+            
+            throw originalError;
         }
     }
+
 
     async adicionarProspec(proposta) {
         console.log('📝 adicionarProspec - Salvando proposta...');

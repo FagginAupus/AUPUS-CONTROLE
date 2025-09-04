@@ -68,14 +68,20 @@ class ApiService {
             const response = await fetch(url, config);
             const responseData = await response.json();
             
-            console.log(`📥 Resposta ${response.status}:`, responseData);
+            if (response.status === 422 && responseData.error_type === 'ucs_com_proposta_ativa') {
+            console.log(`🎯 UC duplicada detectada - modal será exibido`);
+            } else {
+                console.log(`📥 Resposta ${response.status}:`, responseData);
+            }
 
             if (!response.ok) {
                 console.error(`❌ Erro ${response.status}:`, responseData);
                 
                 // Log de erros de validação
                 if (response.status === 422 && responseData.errors) {
-                    console.error('🚨 Erros de validação:', JSON.stringify(responseData.errors, null, 2));
+                    
+                } else {
+                    console.error(`❌ Erro ${response.status}:`, responseData);
                 }
                 
                 // ✅ TRATAMENTO ESPECÍFICO PARA 401 - SEM REMOÇÃO AUTOMÁTICA DE TOKEN
@@ -131,17 +137,22 @@ class ApiService {
                     throw new Error(responseData.message || 'Erro de autenticação');
                 }
                 
-                // Para outros códigos de erro HTTP
+                // ✅ CORREÇÃO CRÍTICA: PRESERVAR DADOS DE RESPOSTA PARA OUTROS ERROS
                 const errorMessage = responseData.message || responseData.error || `HTTP ${response.status}`;
-                throw new Error(errorMessage);
+                const error = new Error(errorMessage);
+                error.response = {
+                    status: response.status,
+                    data: responseData
+                };
+                throw error;
             }
 
             console.log(`✅ Resposta recebida:`, responseData);
             return responseData;
-
+            
         } catch (error) {
             console.error(`❌ Erro na requisição ${config.method} ${url}:`, error);
-            throw error;
+            throw error; // ✅ PRESERVAR ERRO ORIGINAL
         }
     }
 

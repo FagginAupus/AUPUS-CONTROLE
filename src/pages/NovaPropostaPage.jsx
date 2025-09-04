@@ -152,6 +152,7 @@ const NovaPropostaPage = () => {
   useEffect(() => {
     gerarNumeroProposta();
     carregarConsultores();
+    injetarCssModal();
   }, [carregarConsultores]);
 
   // Handle consultor change
@@ -230,7 +231,7 @@ const NovaPropostaPage = () => {
   };
   // FUNÇÃO PRINCIPAL - COMPLETA E CORRIGIDA
   // CORREÇÃO COMPLETA para src/pages/NovaPropostaPage.jsx
-// Função onSubmit - seção de preparação dos dados para backend
+  // Função onSubmit - seção de preparação dos dados para backend
 
   const onSubmit = async (data) => {
     try {
@@ -379,13 +380,94 @@ const NovaPropostaPage = () => {
       navigate('/prospec');
       
     } catch (error) {
-      console.error('❌ Erro ao salvar proposta:', error);
-      showNotification(`Erro ao criar proposta: ${error.message}`, 'error');
+        // ✅ CONDICIONAL: Só logar se não for UC duplicada
+        if (error.response?.status === 422 && error.response?.data?.error_type === 'ucs_com_proposta_ativa') {
+            // Silenciar logs - apenas mostrar modal
+            mostrarModalUcsBloqueadas(error.response.data);
+        } else {
+            // Logs normais para outros erros
+            console.error('❌ Erro ao salvar proposta:', error);
+            console.log('🔍 DEBUG - Estrutura do erro:', {
+                message: error.message,
+                hasResponse: !!error.response,
+                responseStatus: error.response?.status,
+                responseData: error.response?.data,
+                errorType: error.response?.data?.error_type,
+                isUcDuplicada: error.isUcDuplicada
+            });
+            
+            if (error.response?.data?.message) {
+                showNotification(error.response.data.message, 'error');
+            } else {
+                showNotification(`Erro ao criar proposta: ${error.message}`, 'error');
+            }
+        }
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
+  // ✅ NOVA FUNÇÃO - MODAL PARA UCs BLOQUEADAS
+  // Adicionar esta função no mesmo arquivo, fora do onSubmit
+  const mostrarModalUcsBloqueadas = (dadosErro) => {
+      console.log('🎭 Mostrando modal de UCs bloqueadas:', dadosErro);
+      
+      const { message, ucs_bloqueadas } = dadosErro;
+      
+      // Remover modal existente se houver
+      const modalExistente = document.querySelector('.modal-ucs-bloqueadas');
+      if (modalExistente) {
+          modalExistente.remove();
+      }
+      
+      // Criar modal personalizado
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay modal-ucs-bloqueadas';
+      modal.innerHTML = `
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h3>⚠️ Unidades Consumidoras Indisponíveis</h3>
+                  <button class="btn-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+              </div>
+              <div class="modal-body">
+                  <p><strong>Não é possível criar a proposta pois algumas unidades já possuem propostas ativas:</strong></p>
+                  <div class="ucs-bloqueadas-lista">
+                      ${ucs_bloqueadas.map(uc => `
+                          <div class="uc-bloqueada-item">
+                              <div class="uc-info">
+                                  <strong>UC ${uc.numero_uc}</strong> - ${uc.apelido}
+                              </div>
+                              <div class="proposta-info">
+                                  Proposta: <strong>${uc.proposta_numero}</strong><br>
+                                  Cliente: <strong>${uc.proposta_cliente}</strong><br>
+                                  Status: <span class="status-badge status-${uc.status_atual.toLowerCase()}">${uc.status_atual}</span>
+                              </div>
+                          </div>
+                      `).join('')}
+                  </div>
+                  <div class="modal-footer">
+                      <p><strong>Ação necessária:</strong> Remova essas unidades da proposta ou cancele as propostas anteriores.</p>
+                  </div>
+              </div>
+              <div class="modal-actions">
+                  <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">
+                      Entendi, vou corrigir
+                  </button>
+              </div>
+          </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Auto-remover após 20 segundos
+      setTimeout(() => {
+          if (modal.parentNode) {
+              modal.remove();
+          }
+      }, 20000);
+      
+      console.log('✅ Modal de UCs bloqueadas criado e exibido');
+  };
   const gerarPDFProposta = async (item) => {
     try {
       console.log('📄 Gerando PDF da proposta...', item);
@@ -883,6 +965,171 @@ const NovaPropostaPage = () => {
       </div>
     </div>
   );
+};
+
+const injetarCssModal = () => {
+    if (document.getElementById('modal-ucs-css')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'modal-ucs-css';
+    style.textContent = `
+        .modal-overlay.modal-ucs-bloqueadas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .modal-ucs-bloqueadas .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: modalAppear 0.3s ease-out;
+        }
+
+        @keyframes modalAppear {
+            from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-ucs-bloqueadas .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-ucs-bloqueadas .modal-header h3 {
+            margin: 0;
+            color: #dc3545;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-ucs-bloqueadas .modal-body {
+            padding: 20px;
+        }
+
+        .modal-ucs-bloqueadas .modal-body p {
+            margin: 0 0 15px 0;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .ucs-bloqueadas-lista {
+            margin: 15px 0;
+        }
+
+        .uc-bloqueada-item {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #f39c12;
+        }
+
+        .uc-bloqueada-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .uc-bloqueada-item .uc-info {
+            font-size: 16px;
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .uc-bloqueada-item .proposta-info {
+            font-size: 14px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-aguardando { background: #fff3cd; color: #856404; }
+        .status-fechada { background: #d4edda; color: #155724; }
+        .status-perdida { background: #f8d7da; color: #721c24; }
+
+        .modal-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .modal-footer p {
+            margin: 0;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .modal-actions {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            text-align: right;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .btn-close:hover {
+            color: #333;
+            background: #e9ecef;
+        }
+
+        .btn.btn-primary {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn.btn-primary:hover {
+            background: #0056b3;
+        }
+    `;
+    
+    document.head.appendChild(style);
 };
 
 export default NovaPropostaPage;
