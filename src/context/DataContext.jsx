@@ -80,9 +80,9 @@ export const DataProvider = ({ children }) => {
       totalControle: 0,
       totalUGs: 0,
       statusTroca: {
-        aguardando: 0,
+        esteira: 0,      
         emAndamento: 0,
-        realizada: 0
+        associado: 0    
       }
     },
     loading: false,
@@ -110,9 +110,9 @@ export const DataProvider = ({ children }) => {
 
     // Calcular status da troca de titularidade
     const statusTroca = {
-      aguardando: currentControle.filter(item => item.status_troca === 'Aguardando').length,
+      esteira: currentControle.filter(item => item.status_troca === 'Esteira').length,    
       emAndamento: currentControle.filter(item => item.status_troca === 'Em andamento').length,
-      realizada: currentControle.filter(item => item.status_troca === 'Finalizado').length
+      associado: currentControle.filter(item => item.status_troca === 'Associado').length   
     };
 
     const canceladas = currentPropostas.filter(p => p.status === 'Cancelada').length;

@@ -141,20 +141,20 @@ const ControlePage = () => {
     
     // Calcular status da troca
     const statusTroca = dados.reduce((acc, item) => {
-      const status = item.status_troca || 'Aguardando';
+      const status = item.status_troca || 'Esteira';  // Default mudou
       switch (status) {
-        case 'Aguardando':
-          acc.aguardando++;
+        case 'Esteira':        // Era 'Aguardando'
+          acc.esteira++;
           break;
         case 'Em andamento':
           acc.emAndamento++;
           break;
-        case 'Finalizado':
-          acc.finalizado++;
+        case 'Associado':      // Era 'Finalizado'
+          acc.associado++;
           break;
       }
       return acc;
-    }, { aguardando: 0, emAndamento: 0, finalizado: 0 });
+    }, { esteira: 0, emAndamento: 0, associado: 0 });
 
     return {
       total: dados.length,
@@ -541,16 +541,16 @@ const ControlePage = () => {
             <div className="stat-content">
               <div className="status-resumo">
                 <div className="status-item">
-                  <span className="status-badge status-aguardando">{estatisticas.statusTroca.aguardando}</span>
-                  <small>Aguardando</small>
+                  <span className="status-badge status-esteira">{estatisticas.statusTroca.esteira}</span>
+                  <small>Esteira</small>
                 </div>
                 <div className="status-item">
                   <span className="status-badge status-em-andamento">{estatisticas.statusTroca.emAndamento}</span>
                   <small>Em Andamento</small>
                 </div>
                 <div className="status-item">
-                  <span className="status-badge status-finalizado">{estatisticas.statusTroca.finalizado}</span>
-                  <small>Finalizado</small>
+                  <span className="status-badge status-associado">{estatisticas.statusTroca.associado}</span>
+                  <small>Associado</small>
                 </div>
               </div>
             </div>
@@ -890,11 +890,11 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
 
   // ✅ ADICIONAR: Limpar data quando status muda
   useEffect(() => {
-    // Limpar data quando status não for "Finalizado"
-    if (statusTroca !== 'Finalizado') {
+    // Limpar data quando status não for "Associado"
+    if (statusTroca !== 'Associado') {
       setDataTitularidade('');
-    } else if (statusTroca === 'Finalizado' && !dataTitularidade) {
-      // Definir data atual quando selecionar "Finalizado" pela primeira vez
+    } else if (statusTroca === 'Associado' && !dataTitularidade) {
+      // Definir data atual quando selecionar "Associado" pela primeira vez
       setDataTitularidade(new Date().toISOString().split('T')[0]);
     }
   }, [statusTroca, dataTitularidade]);
@@ -902,14 +902,14 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Se está saindo de "Finalizado" e tem UG, mostrar confirmação
-    if (item.statusTroca === 'Finalizado' && statusTroca !== 'Finalizado' && item.ugNome) {
+    // Se está saindo de "Associado" e tem UG, mostrar confirmação
+    if (item.statusTroca === 'Associado' && statusTroca !== 'Associado' && item.ugNome) {
       setShowConfirmacao(true);
       return;
     }
     
-    // Sempre enviar uma data - atual se não for "Finalizado", ou a selecionada se for "Finalizado"
-    const dataFinal = statusTroca === 'Finalizado' 
+    // Sempre enviar uma data - atual se não for "Associado", ou a selecionada se for "Associado"
+    const dataFinal = statusTroca === 'Associado' 
       ? dataTitularidade 
       : new Date().toISOString().split('T')[0]; // Data atual como fallback
     
@@ -936,7 +936,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             <div className="alert alert-warning">
               <h4>⚠️ Confirmação Necessária</h4>
               <p>
-                Ao alterar o status de <strong>"Finalizado"</strong> para <strong>"{statusTroca}"</strong>, 
+                Ao alterar o status de <strong>"Associado"</strong> para <strong>"{statusTroca}"</strong>, 
                 a UG <strong>"{item.ugNome}"</strong> será automaticamente <strong>desatribuída</strong> desta UC.
               </p>
               <p>Deseja continuar?</p>
@@ -965,14 +965,14 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
                 onChange={(e) => setStatusTroca(e.target.value)}
                 required
               >
-                <option value="Aguardando">Aguardando</option>
+                <option value="Esteira">Esteira</option>
                 <option value="Em andamento">Em andamento</option>
-                <option value="Finalizado">Finalizado</option>
+                <option value="Associado">Associado</option>
               </select>
             </div>
             
             {/* Campo Data - só aparece quando status é "Finalizado" */}
-            {statusTroca === 'Finalizado' && (
+            {statusTroca === 'Associado' && (  // Era 'Finalizado'
               <div className="form-group">
                 <label>Data da Titularidade:</label>
                 <input
