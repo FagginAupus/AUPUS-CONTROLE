@@ -50,7 +50,8 @@ const ControlePage = () => {
   const [filtros, setFiltros] = useState({
     consultor: '',
     ug: '',
-    busca: ''
+    busca: '',
+    statusTroca: ''
   });
 
   const { showNotification } = useNotification();
@@ -109,6 +110,14 @@ const ControlePage = () => {
       }
     }
 
+    // ← NOVO FILTRO DE STATUS DE TROCA
+    if (filtros.statusTroca) {
+      dados = dados.filter(item => {
+        const status = item.statusTroca || item.status_troca || 'Esteira'; // Default para Esteira
+        return status === filtros.statusTroca;
+      });
+    }
+
     if (filtros.busca) {
       const busca = filtros.busca.toLowerCase();
       dados = dados.filter(item =>
@@ -121,6 +130,16 @@ const ControlePage = () => {
 
     return dados;
   }, [controle.data, filtros]);
+
+  // 3. ADICIONAR função para limpar filtros:
+  const limparFiltros = () => {
+    setFiltros({
+      consultor: '',
+      ug: '',
+      busca: '',
+      statusTroca: '' // ← INCLUIR novo filtro
+    });
+  };
 
   const estatisticas = useMemo(() => {
     const dados = dadosFiltrados || [];
@@ -575,6 +594,19 @@ const ControlePage = () => {
               </div>
 
               <div className="filter-group">
+                <label>Status Troca:</label>
+                <select
+                  value={filtros.statusTroca}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, statusTroca: e.target.value }))}
+                >
+                  <option value="">Todos</option>
+                  <option value="Esteira">Esteira</option>
+                  <option value="Em andamento">Em andamento</option>
+                  <option value="Associado">Associado</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
                 <label>UG:</label>
                 <select
                   value={filtros.ug}
@@ -597,6 +629,13 @@ const ControlePage = () => {
                   onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
                 />
               </div>
+            </div>
+
+            {/* Botão para limpar filtros */}
+            <div className="actions-container">
+              <button onClick={limparFiltros} className="btn btn-secondary">
+                Limpar Filtros
+              </button>
             </div>
 
             {isAdmin && (
