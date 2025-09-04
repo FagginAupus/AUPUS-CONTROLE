@@ -113,10 +113,10 @@ const ProspecPage = () => {
     if (filtros.busca) {
       const busca = filtros.busca.toLowerCase();
       dados = dados.filter(item =>
-        item.nomeCliente?.toLowerCase().includes(busca) ||
-        item.numeroProposta?.toLowerCase().includes(busca) ||
-        item.numeroUC?.toLowerCase().includes(busca) ||
-        item.apelido?.toLowerCase().includes(busca)
+        (item.nomeCliente?.toString().toLowerCase() || '').includes(busca) ||
+        (item.numeroProposta?.toString().toLowerCase() || '').includes(busca) ||
+        (item.numeroUC?.toString().toLowerCase() || '').includes(busca) ||
+        (item.apelido?.toString().toLowerCase() || '').includes(busca)
       );
     }
 

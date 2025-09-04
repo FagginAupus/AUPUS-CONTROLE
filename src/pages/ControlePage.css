@@ -7,7 +7,6 @@
 }
 
 .container {
-  max-width: 1200px;  /* ← CORRIGIDO: era 95vw */
   width: 90%;         /* ← CORRIGIDO: largura controlada */
   margin: 0 auto;
   padding: 20px;
@@ -407,13 +406,6 @@ small {
 .table tbody tr:nth-child(even):hover,
 .table tr:nth-child(even):hover {
   background: #3d3d3d !important;  /* ← MESMO hover para linhas pares */
-}
-
-/* Wrapper adicional para garantir fundo escuro */
-.table-wrapper {
-  overflow-x: auto;
-  max-height: 70vh;
-  background: #2d2d2d !important;
 }
 
 /* =======================================================

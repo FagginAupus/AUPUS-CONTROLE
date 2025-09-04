@@ -17,7 +17,7 @@
 
 .page-main {
   flex: 1;
-  padding: 24px;
+  padding: 16px;
   overflow-x: auto;
   background: hsl(225, 38%, 16%); /* ← Background escuro */
 }
