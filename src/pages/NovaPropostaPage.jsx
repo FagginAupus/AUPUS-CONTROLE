@@ -44,7 +44,7 @@ const NovaPropostaPage = () => {
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
       consultor_id: '',
-      recorrencia: '3%',
+      recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
       economia: 20,
       bandeira: 20,
       inflacao: 2,
@@ -156,36 +156,42 @@ const NovaPropostaPage = () => {
 
   // Handle consultor change
   useEffect(() => {
-    if (watchConsultor === 'Sem consultor (AUPUS direto)') {
-      setValue('recorrencia', '0%');
-    } else if (watchConsultor && watchConsultor !== 'Sem consultor (AUPUS direto)') {
-      setValue('recorrencia', '3%');
-    }
-  }, [watchConsultor, setValue]);
+    // Só ajustar recorrência se o usuário pode vê-la
+    if (user?.role === 'admin' || user?.role === 'consultor') {
+      if (watchConsultor === 'Sem consultor (AUPUS direto)') {
+        setValue('recorrencia', '0%');
+      } else if (watchConsultor && watchConsultor !== 'Sem consultor (AUPUS direto)') {
+        setValue('recorrencia', '3%');
+      }
+    } else {
+      // Para gerente e vendedor, sempre setar como vazio ou valor padrão oculto
+      setValue('recorrencia', '');
+  }
+}, [watchConsultor, setValue, user?.role]);
 
   const limparFormulario = () => {
-      reset({
-        dataProposta: new Date().toISOString().split('T')[0],
-        consultor: '',
-        recorrencia: '3%',
-        economia: 20,
-        bandeira: 20,
-        inflacao: 2,
-        tarifaTributos: 0.98,
-        ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-        // Benefícios continuam como false (não obrigatórios)
-        beneficio1: true,
-        beneficio2: true,
-        beneficio3: false,
-        beneficio4: true,
-        beneficio5: false,
-        beneficio6: true,
-        beneficio7: false,
-        beneficio8: false
-      });
-      setBeneficiosAdicionais([]);
-      gerarNumeroProposta();
-      showNotification('Formulário limpo com sucesso!', 'info');
+    reset({
+      dataProposta: new Date().toISOString().split('T')[0],
+      consultor_id: '',
+      recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
+      economia: 20,
+      bandeira: 20,
+      inflacao: 2,
+      tarifaTributos: 0.98,
+      ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
+      // Benefícios continuam como false (não obrigatórios)
+      beneficio1: true,
+      beneficio2: true,
+      beneficio3: false,
+      beneficio4: true,
+      beneficio5: false,
+      beneficio6: true,
+      beneficio7: false,
+      beneficio8: false
+    });
+    setBeneficiosAdicionais([]);
+    gerarNumeroProposta();
+    showNotification('Formulário limpo com sucesso!', 'info');
   };
 
   const adicionarBeneficioAdicional = () => {
@@ -229,7 +235,10 @@ const NovaPropostaPage = () => {
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-
+      
+      if (user?.role !== 'admin' && user?.role !== 'consultor') {
+        data.recorrencia = '0%'; // Ou valor padrão desejado
+      }
       // Validação extra
       const errosValidacao = validarFormulario(data);
       if (errosValidacao.length > 0) {
@@ -505,7 +514,7 @@ const NovaPropostaPage = () => {
               </div>
             </div>
 
-            {/* Segunda linha - MANTÉM IGUAL */}
+            {/* Segunda linha - OCULTAR RECORRÊNCIA PARA GERENTE E VENDEDOR */}
             <div className="form-grid-uniform">
               <div className="form-group">
                 <label>Nome do Consultor *</label>
@@ -532,19 +541,23 @@ const NovaPropostaPage = () => {
                 {errors.consultor && <span className="error-message">{errors.consultor.message}</span>}
               </div>
 
-              <div className="form-group">
-                <label>Recorrência *</label>
-                <input 
-                  {...register('recorrencia', { 
-                    required: 'Recorrência é obrigatória'
-                  })} 
-                  type="text" 
-                  style={{ backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#f0f0f0' : 'white' }}
-                  readOnly={watchConsultor === 'Sem consultor (AUPUS direto)'}
-                  className={errors.recorrencia ? 'error' : ''}
-                />
-                {errors.recorrencia && <span className="error-message">{errors.recorrencia.message}</span>}
-              </div>
+              {/* ✅ ADICIONAR ESTA CONDIÇÃO - Só mostrar para admin e consultor */}
+              {(user?.role === 'admin' || user?.role === 'consultor') && (
+                <div className="form-group">
+                  <label>Recorrência *</label>
+                  <input 
+                    {...register('recorrencia', { 
+                      required: (user?.role === 'admin' || user?.role === 'consultor') ? 'Recorrência é obrigatória' : false
+                    })} 
+                    type="text" 
+                    style={{ backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#f0f0f0' : 'white' }}
+                    readOnly={watchConsultor === 'Sem consultor (AUPUS direto)'}
+                    className={errors.recorrencia ? 'error' : ''}
+                  />
+                  {errors.recorrencia && <span className="error-message">{errors.recorrencia.message}</span>}
+                </div>
+              )}
+
 
               <div className="form-group">
                 <label>Desconto Tarifa (%)</label>

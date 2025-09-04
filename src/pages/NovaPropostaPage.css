@@ -61,9 +61,48 @@
   margin-bottom: 20px;
 }
 
-/* Grid com 4 campos (Admin e Consultor) */
+/* Grid com 4 campos (Admin e Consultor) - COM recorrência */
 .form-grid-uniform {
   grid-template-columns: repeat(4, 1fr);
+}
+
+/* Grid com 3 campos (Gerente e Vendedor) - SEM recorrência */
+@media screen {
+  /* Quando há apenas 3 campos visíveis, usar grid de 3 colunas */
+  body[data-user-role="gerente"] .form-grid-uniform,
+  body[data-user-role="vendedor"] .form-grid-uniform {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Alternativa usando CSS puro - detectar automaticamente */
+.form-grid-uniform:has(.form-group:nth-child(4)) {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.form-grid-uniform:not(:has(.form-group:nth-child(4))) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Fallback para navegadores sem suporte ao :has() */
+@supports not (selector(:has(.form-group))) {
+  .form-grid-uniform {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    max-width: 100%;
+  }
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+  .form-grid-uniform {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .form-grid-uniform {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Grid com 3 campos quando recorrência está oculta (Gerente e Vendedor) */

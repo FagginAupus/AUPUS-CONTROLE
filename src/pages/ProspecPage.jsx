@@ -593,7 +593,9 @@ const ProspecPage = () => {
                 >
                   <option value="">Todos</option>
                   <option value="Aguardando">Aguardando</option>
-                  <option value="Fechado">Fechadas</option>
+                  <option value="Fechada">Fechadas</option>  {/* ✅ CORRIGIDO: value="Fechada" */}
+                  <option value="Cancelada">Canceladas</option>
+                  <option value="Recusada">Recusadas</option>
                 </select>
               </div>
             </div>
@@ -789,8 +791,6 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
     return `${numero.toFixed(1)}%`;
   };
 
-
-
   const formatarData = (data) => {
     if (!data) return '-';
     try {
@@ -862,8 +862,8 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 
   const beneficiosReais = obterBeneficiosReais();
 
-  // ALTERAÇÃO: Verificar se deve mostrar recorrência (apenas admin e consultor)
-  const mostrarRecorrencia = ['admin', 'consultor'].includes(user?.role);
+  // ✅ CORREÇÃO: Verificar se deve mostrar recorrência (apenas admin e consultor)
+  const mostrarRecorrencia = user?.role === 'admin' || user?.role === 'consultor';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -901,7 +901,7 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
                   <label>Consultor:</label>
                   <span>{item.consultor || '-'}</span>
                 </div>
-                {/* ALTERAÇÃO: Mostrar recorrência apenas para admin e consultor */}
+                {/* ✅ CORREÇÃO: Mostrar recorrência apenas para admin e consultor */}
                 {mostrarRecorrencia && (
                   <div className="detail-item">
                     <label>Recorrência:</label>
@@ -936,32 +936,44 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
               </div>
             </div>
 
-            {/* Descontos e benefícios - REORGANIZADA */}
-            <div className="details-section">
-              <h4>💰 Descontos e Benefícios</h4>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <label>Desconto Tarifa:</label>
-                  <span className="desconto-valor">{formatarPercentualModal(item.descontoTarifa)}</span>
+            {/* ✅ CORREÇÃO: Descontos e benefícios - Só mostrar para admin e consultor */}
+            {mostrarRecorrencia && (
+              <div className="details-section">
+                <h4>💰 Descontos e Benefícios</h4>
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <label>Desconto Tarifa:</label>
+                    <span className="desconto-valor">{formatarPercentualModal(item.descontoTarifa)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Desconto Bandeira:</label>
+                    <span className="desconto-valor">{formatarPercentualModal(item.descontoBandeira)}</span>
+                  </div>
                 </div>
-                <div className="detail-item">
-                  <label>Desconto Bandeira:</label>
-                  <span className="desconto-valor">{formatarPercentualModal(item.descontoBandeira)}</span>
+                
+                {/* Lista de benefícios reais */}
+                {beneficiosReais.length > 0 && (
+                  <div className="beneficios-lista">
+                    <h5>📝 Benefícios Inclusos:</h5>
+                    <ul>
+                      {beneficiosReais.map((beneficio, index) => (
+                        <li key={index}>{beneficio}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ✅ NOVA SEÇÃO: Observações (visível para todos) */}
+            {item.observacoes && (
+              <div className="details-section">
+                <h4>📝 Observações</h4>
+                <div className="observacoes-content">
+                  <p>{item.observacoes}</p>
                 </div>
               </div>
-              
-              {/* Lista de benefícios reais */}
-              {beneficiosReais.length > 0 && (
-                <div className="beneficios-lista">
-                  <h5>📝 Benefícios Inclusos:</h5>
-                  <ul>
-                    {beneficiosReais.map((beneficio, index) => (
-                      <li key={index}>{beneficio}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
