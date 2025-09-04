@@ -242,7 +242,7 @@ const Dashboard = () => {
     return botoes;
   };
 
-  const StatCard = ({ icon: Icon, label, value }) => (
+  const StatCard = ({ icon: Icon, label, value, subtitle }) => (
     <div className="stat-card">
       <div className="stat-icon">
         <Icon size={32} style={{ color: '#f0f0f0', opacity: 0.8 }} />
@@ -250,6 +250,11 @@ const Dashboard = () => {
       <div className="stat-content">
         <span className="stat-label">{label}</span>
         <span className="stat-value">{value}</span>
+        {subtitle && (
+          <small className="stat-subtitle">
+            {subtitle}
+          </small>
+        )}
       </div>
     </div>
   );
@@ -273,6 +278,12 @@ const Dashboard = () => {
             value={estadisticas.totalPropostas}
           />
           <StatCard 
+            icon={Database} 
+            label="Propostas Válidas" 
+            value={estadisticas.propostasValidas}
+            subtitle={`${estadisticas.canceladas} canceladas`}
+          />
+          <StatCard 
             icon={Clock} 
             label="Aguardando" 
             value={estadisticas.aguardando}
@@ -281,11 +292,6 @@ const Dashboard = () => {
             icon={CheckCircle} 
             label="Fechadas" 
             value={estadisticas.fechadas}
-          />
-          <StatCard 
-            icon={Database} 
-            label="Total UCs" 
-            value={estadisticas.totalUCs}
           />
           {user?.role === 'admin' && (
             <StatCard 

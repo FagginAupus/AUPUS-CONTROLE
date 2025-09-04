@@ -75,7 +75,8 @@ export const DataProvider = ({ children }) => {
       totalPropostas: 0,
       aguardando: 0,
       fechadas: 0,
-      totalUCs: 0,
+      propostasValidas: 0,    // ✅ NOVO
+      canceladas: 0,          // ✅ NOVO
       totalControle: 0,
       totalUGs: 0,
       statusTroca: {
@@ -114,14 +115,17 @@ export const DataProvider = ({ children }) => {
       realizada: currentControle.filter(item => item.status_troca === 'Finalizado').length
     };
 
+    const canceladas = currentPropostas.filter(p => p.status === 'Cancelada').length;
+    const propostasValidas = currentPropostas.length - canceladas;
     const stats = {
       totalPropostas: currentPropostas.length,
       aguardando: currentPropostas.filter(p => p.status === 'Aguardando').length,
       fechadas: currentPropostas.filter(p => p.status === 'Fechada').length,
-      totalUCs: new Set(currentPropostas.map(p => p.numeroUC).filter(Boolean)).size,
+      propostasValidas: propostasValidas,     // ✅ NOVO: Propostas válidas
+      canceladas: canceladas,                 // ✅ NOVO: Propostas canceladas
       totalControle: currentControle.length,
       totalUGs: currentUgs.length,
-      statusTroca: statusTroca
+      statusTroca
     };
 
     setDashboard(prev => ({
