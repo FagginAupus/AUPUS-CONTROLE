@@ -1,4 +1,4 @@
-// src/pages/ControlePage.jsx - Com modal UG corrigido seguindo padrão PROSPEC
+// src/pages/ControlePage.jsx - Com calibragem no estilo original restaurada
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -591,12 +591,13 @@ const ControlePage = () => {
             </div>
           </div>
         </section>
-        {/* Filtros */}
+
+        {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
             <div className="filters-grid">
               <div className="filter-group">
-                <label>Consultor:</label>
+                <label>Consultor</label>
                 <select
                   value={filtros.consultor}
                   onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
@@ -608,22 +609,8 @@ const ControlePage = () => {
                 </select>
               </div>
 
-              {/* ← NOVO FILTRO DE STATUS DE TROCA */}
               <div className="filter-group">
-                <label>Status Troca:</label>
-                <select
-                  value={filtros.statusTroca}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, statusTroca: e.target.value }))}
-                >
-                  <option value="">Todos</option>
-                  <option value="Esteira">Esteira</option>
-                  <option value="Em andamento">Em andamento</option>
-                  <option value="Associado">Associado</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>UG:</label>
+                <label>UG (Usina)</label>
                 <select
                   value={filtros.ug}
                   onChange={(e) => setFiltros(prev => ({ ...prev, ug: e.target.value }))}
@@ -633,6 +620,19 @@ const ControlePage = () => {
                   {ugsUnicas.map(ug => (
                     <option key={ug} value={ug}>{ug}</option>
                   ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Status Troca</label>
+                <select
+                  value={filtros.statusTroca}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, statusTroca: e.target.value }))}
+                >
+                  <option value="">Todos</option>
+                  <option value="Esteira">Esteira</option>
+                  <option value="Em andamento">Em andamento</option>
+                  <option value="Associado">Associado</option>
                 </select>
               </div>
 
@@ -647,21 +647,58 @@ const ControlePage = () => {
               </div>
             </div>
 
+            {/* ========================================== */}
+            {/* CALIBRAGEM RESTAURADA NO ESTILO ORIGINAL  */}
+            {/* ========================================== */}
+            {isAdmin && (
+              <div className="calibragem-controls">
+                <div className="calibragem-group">
+                  <label htmlFor="calibragem-input">Calibragem Global:</label>
+                  <input
+                    id="calibragem-input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={calibragemTemp}
+                    onChange={(e) => setCalibragemTemp(parseFloat(e.target.value) || 0)}
+                    placeholder="0.0"
+                    disabled={calibragem.loading}
+                  />
+                  <span style={{ fontSize: '0.9rem', color: '#666', marginLeft: '5px' }}>%</span>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                    <strong>Atual: {calibragemGlobal}%</strong>
+                    {calibragemGlobal > 0 && (
+                      <span style={{ marginLeft: '10px', color: '#4CAF50' }}>
+                        (Fator: {(1 + calibragemGlobal / 100).toFixed(3)})
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => aplicarCalibragemComValor(calibragemTemp)}
+                    disabled={calibragem.loading || calibragemTemp < 0 || calibragemTemp > 100}
+                    className="btn btn-primary"
+                    style={{ minWidth: '100px' }}
+                  >
+                    {calibragem.loading ? 'Aplicando...' : 'Aplicar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Botão para limpar filtros */}
             <div className="actions-container">
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
             </div>
-
-            {/* Resto dos controles de calibragem para admin... */}
-            {isAdmin && (
-              <div className="calibragem-controls">
-                {/* ... resto do código existente */}
-              </div>
-            )}
           </div>
         </section>
+
         {/* Tabela */}
         <section className="table-section">
           <div className="table-header">
@@ -724,9 +761,9 @@ const ControlePage = () => {
                       </td>
                       <td>
                         {item.ug ? (
-                          <span className="ug-atribuida">{item.ug}</span>
+                          <span className="ug-definida">{item.ug}</span>
                         ) : (
-                          <span className="sem-ug">Sem UG</span>
+                          <span className="ug-pendente">Sem UG</span>
                         )}
                       </td>
                       <td>
@@ -739,18 +776,21 @@ const ControlePage = () => {
                         <td>
                           {calibragemTemp !== 0 && item.media ? (
                             <div className="calibragem-info">
-                              <div className="calibragem-calculada">
-                                {calcularValorCalibrado(item.media, calibragemTemp).toFixed(0)} kWh
-                                <br />
-                                <small style={{color: calibragemTemp !== calibragemGlobal ? '#ffa500' : '#4CAF50', fontWeight: '600'}}>
-                                  ({calibragemTemp > 0 ? '+' : ''}{calibragemTemp}% {calibragemTemp !== calibragemGlobal ? 'preview' : 'aplicado'})
-                                </small>
-                              </div>
+                              <span className="calibragem-calculada">
+                                {calcularValorCalibrado(item.media, calibragemTemp).toFixed(0)}
+                              </span>
+                              <br />
+                              <small 
+                                className={`calibragem-status ${calibragemTemp !== calibragemGlobal ? 'pendente' : 'calibrada'}`}
+                              >
+                                {calibragemTemp > 0 ? '+' : ''}{calibragemTemp}%
+                                {calibragemTemp !== calibragemGlobal ? ' (preview)' : ''}
+                              </small>
                             </div>
                           ) : (
-                            <div className="sem-calibragem">
+                            <span className="sem-calibragem">
                               {calibragemTemp === 0 ? 'Sem calibragem' : '-'}
-                            </div>
+                            </span>
                           )}
                         </td>
                       )}
