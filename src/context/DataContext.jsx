@@ -108,24 +108,53 @@ export const DataProvider = ({ children }) => {
     const currentControle = controleData || controle.data;
     const currentUgs = ugsData || ugs.data;
 
+    console.log('🔍 DEBUG - Dados do controle para estatísticas:', currentControle);
+    console.log('🔍 DEBUG - Total de registros:', currentControle.length);
+
     // Calcular status da troca de titularidade
     const statusTroca = {
-      esteira: currentControle.filter(item => item.status_troca === 'Esteira').length,    
-      emAndamento: currentControle.filter(item => item.status_troca === 'Em andamento').length,
-      associado: currentControle.filter(item => item.status_troca === 'Associado').length   
+      esteira: currentControle.filter(item => {
+        const status = item.status_troca || item.statusTroca || 'Esteira';
+        console.log('🔍 DEBUG - Item status_troca:', status, '| Comparando com: Esteira');
+        return status === 'Esteira';
+      }).length,
+      
+      emAndamento: currentControle.filter(item => {
+        const status = item.status_troca || item.statusTroca || 'Esteira';
+        console.log('🔍 DEBUG - Item status_troca:', status, '| Comparando com: Em andamento');
+        return status === 'Em andamento'; // ✅ CORRETO: 'Em andamento' (com 'E' maiúsculo)
+      }).length,
+      
+      associado: currentControle.filter(item => {
+        const status = item.status_troca || item.statusTroca || 'Esteira';
+        console.log('🔍 DEBUG - Item status_troca:', status, '| Comparando com: Associado');
+        return status === 'Associado';
+      }).length
     };
+
+    console.log('🔍 DEBUG - Status calculados:', statusTroca);
+
+    // Debug: Mostrar distribuição de status
+    const statusDistribution = currentControle.reduce((acc, item) => {
+      const status = item.status_troca || item.statusTroca || 'Esteira';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+    
+    console.log('🔍 DEBUG - Distribuição real dos status no banco:', statusDistribution);
 
     const canceladas = currentPropostas.filter(p => p.status === 'Cancelada').length;
     const propostasValidas = currentPropostas.length - canceladas;
+    
     const stats = {
       totalPropostas: currentPropostas.length,
       aguardando: currentPropostas.filter(p => p.status === 'Aguardando').length,
       fechadas: currentPropostas.filter(p => p.status === 'Fechada').length,
-      propostasValidas: propostasValidas,     // ✅ NOVO: Propostas válidas
-      canceladas: canceladas,                 // ✅ NOVO: Propostas canceladas
+      propostasValidas: propostasValidas,
+      canceladas: canceladas,
       totalControle: currentControle.length,
       totalUGs: currentUgs.length,
-      statusTroca
+      statusTroca // ✅ Status corrigidos
     };
 
     setDashboard(prev => ({
