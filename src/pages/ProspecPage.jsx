@@ -399,28 +399,141 @@ const ProspecPage = () => {
     try {
       console.log('📄 Gerando PDF da proposta...', item);
 
-      // Preparar dados para o PDF a partir do item da tabela
+      // ✅ BUSCAR TODAS AS UCs DA MESMA PROPOSTA
+      const propostaId = item.propostaId || item.id?.split('-')[0];
+      if (!propostaId) {
+        showNotification('ID da proposta não encontrado', 'error');
+        return;
+      }
+
+      // ✅ BUSCAR PROPOSTA COMPLETA COM TODAS AS UCs
+      let propostaCompleta;
+      try {
+        console.log('🔍 Buscando proposta completa por ID:', propostaId);
+        propostaCompleta = await storageService.buscarPropostaPorId(propostaId);
+        
+        if (!propostaCompleta) {
+          // Fallback: buscar nas propostas carregadas em memória
+          const todasPropostas = await storageService.getProspec();
+          propostaCompleta = todasPropostas.find(p => 
+            p.propostaId === propostaId || p.id === propostaId
+          );
+        }
+      } catch (error) {
+        console.warn('⚠️ Erro ao buscar proposta completa:', error);
+        propostaCompleta = null;
+      }
+
+      // ✅ EXTRAIR TODAS AS UCs DA PROPOSTA (FORMATADAS CORRETAMENTE)
+      let todasUCsDaProposta = [];
+      
+      if (propostaCompleta && propostaCompleta.unidades_consumidoras) {
+        // Se encontrou a proposta completa, usar as UCs dela
+        const ucsOriginais = Array.isArray(propostaCompleta.unidades_consumidoras) 
+          ? propostaCompleta.unidades_consumidoras 
+          : [];
+        
+        // ✅ FORMATAR UCs CORRETAMENTE PARA O PDF
+        todasUCsDaProposta = ucsOriginais.map(uc => ({
+          apelido: uc.apelido || uc.numero_unidade || 'UC',
+          numeroUC: uc.numero_unidade || uc.numeroUC || '',
+          numero_unidade: uc.numero_unidade || uc.numeroUC || '',
+          ligacao: uc.ligacao || uc.tipo_ligacao || 'Monofásica',
+          consumo: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
+          consumo_medio: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
+          distribuidora: uc.distribuidora || ''
+        }));
+        
+        console.log('✅ UCs encontradas na proposta completa:', todasUCsDaProposta.length);
+      } else {
+        // Fallback: agrupar todas as linhas da mesma proposta que estão na tabela atual
+        const linhasDaMesmaProposta = dadosFiltrados.filter(linha => {
+          const linhaPropostaId = linha.propostaId || linha.id?.split('-')[0];
+          return linhaPropostaId === propostaId;
+        });
+
+        todasUCsDaProposta = linhasDaMesmaProposta.map(linha => ({
+          apelido: linha.apelido || linha.numero_unidade || 'UC',
+          numeroUC: linha.numeroUC || linha.numero_unidade || '',
+          numero_unidade: linha.numeroUC || linha.numero_unidade || '',
+          ligacao: linha.ligacao || linha.tipo_ligacao || 'Monofásica',
+          consumo: parseInt(linha.media) || 0,
+          consumo_medio: parseInt(linha.media) || 0,
+          distribuidora: linha.distribuidora || ''
+        }));
+        
+        console.log('✅ UCs extraídas das linhas da tabela:', todasUCsDaProposta.length);
+      }
+
+      // ✅ PREPARAR DADOS COMPLETOS PARA O PDF COM DESCONTOS CORRETOS
       const dadosPDF = {
         numeroProposta: item.numeroProposta,
         nomeCliente: item.nomeCliente,
         consultor: item.consultor,
-        data: item.data || item.dataProposta,
-        descontoTarifa: extrairValorDesconto(item.descontoTarifa) / 100 || 0.2,
-        descontoBandeira: extrairValorDesconto(item.descontoBandeira) / 100 || 0.2,
-        inflacao: (parseFloat(item.inflacao) || 2) / 100,        
-        tarifaTributos: parseFloat(item.tarifaTributos) || 0.98,
+        data: item.data,
+        // ✅ CORRIGIR DESCONTOS: Converter de % ou decimal para decimal
+        descontoTarifa: parseFloat(item.descontoTarifa) / 100 || 0.2,  // 20 → 0.2
+        descontoBandeira: parseFloat(item.descontoBandeira) / 100 || 0.2, // 20 → 0.2
+        // ✅ USAR VALORES SALVOS NO BANCO DE DADOS DA PROPOSTA
+        inflacao: (parseFloat(item.inflacao) || 2) / 100,  // Do banco: proposta.inflacao / 100
+        tarifaTributos: parseFloat(item.tarifaTributos) || 0.98, // Do banco: proposta.tarifa_tributos
         observacoes: item.observacoes || '',
-        ucs: formatarUCsDoItem(item) || [],
-        beneficios: formatarBeneficiosDoItem(item) || []  // ✅ USAR APENAS ESTA LINHA
+        ucs: todasUCsDaProposta, // ← CORRIGIDO: usar todas as UCs formatadas
+        beneficios: []
       };
 
-      // REMOVER TODO O BLOCO DE "Se benefícios estão disponíveis..."
+      // ✅ PROCESSAR BENEFÍCIOS CORRETAMENTE
+      if (item.beneficios && typeof item.beneficios === 'string') {
+        try {
+          const beneficiosArray = JSON.parse(item.beneficios);
+          dadosPDF.beneficios = Array.isArray(beneficiosArray) 
+            ? beneficiosArray.map((beneficio, index) => ({
+                numero: beneficio.numero || (index + 1),
+                texto: beneficio.texto || beneficio.toString()
+              }))
+            : [];
+        } catch (e) {
+          console.warn('Erro ao parsear benefícios:', e);
+          dadosPDF.beneficios = [];
+        }
+      } else if (Array.isArray(item.beneficios)) {
+        dadosPDF.beneficios = item.beneficios.map((beneficio, index) => ({
+          numero: beneficio.numero || (index + 1),
+          texto: beneficio.texto || beneficio.toString()
+        }));
+      }
 
-      // Importar e usar o gerador de PDF
+      console.log('📊 Dados finais para o PDF:', {
+        numeroProposta: dadosPDF.numeroProposta,
+        nomeCliente: dadosPDF.nomeCliente,
+        consultor: dadosPDF.consultor,
+        descontoTarifa: dadosPDF.descontoTarifa, // Deve ser 0.2 (20%)
+        descontoBandeira: dadosPDF.descontoBandeira, // Deve ser 0.2 (20%)
+        inflacao: dadosPDF.inflacao, // Deve ser 0.02 (2%)
+        tarifaTributos: dadosPDF.tarifaTributos, // Deve ser 0.8
+        totalUCs: dadosPDF.ucs.length,
+        primeiraUC: dadosPDF.ucs[0], // Para debug
+        totalBeneficios: dadosPDF.beneficios.length
+      });
+
+      // ✅ VERIFICAR SE OS DADOS ESTÃO COMPLETOS
+      if (dadosPDF.ucs.length === 0) {
+        showNotification('Nenhuma unidade consumidora encontrada para esta proposta', 'warning');
+        return;
+      }
+
+      if (dadosPDF.descontoTarifa === 0 || dadosPDF.descontoTarifa > 1) {
+        console.warn('⚠️ Desconto tarifa parece incorreto:', dadosPDF.descontoTarifa);
+      }
+
+      // Gerar PDF
       const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
       await PDFGenerator.baixarPDF(dadosPDF, true);
       
-      showNotification(`PDF da proposta ${item.numeroProposta} gerado com sucesso!`, 'success');
+      showNotification(
+        `PDF da proposta ${item.numeroProposta} gerado com sucesso! (${dadosPDF.ucs.length} UCs incluídas)`, 
+        'success'
+      );
       
     } catch (error) {
       console.error('❌ Erro ao gerar PDF:', error);

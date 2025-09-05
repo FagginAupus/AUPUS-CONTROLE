@@ -898,6 +898,149 @@ class StorageService {
         window.URL.revokeObjectURL(url);
         console.log('✅ Exportação concluída');
     }
+
+    async buscarPropostaPorId(propostaId) {
+        try {
+            console.log('🔍 Buscando proposta completa por ID:', propostaId);
+            
+            // Tentar buscar via API diretamente
+            try {
+            const response = await apiService.get(`/propostas/${propostaId}`);
+            
+            if (response?.success && response?.data) {
+                const proposta = response.data;
+                console.log('✅ Proposta encontrada via API:', proposta.numero_proposta);
+                
+                // ✅ MAPEAR CORRETAMENTE USANDO O MÉTODO EXISTENTE
+                const propostaMapeada = this.mapearPropostaDoBackend(proposta);
+                
+                // ✅ GARANTIR QUE AS UCs ESTÃO FORMATADAS CORRETAMENTE
+                if (propostaMapeada && propostaMapeada.unidades_consumidoras) {
+                console.log('📊 UCs na proposta mapeada:', propostaMapeada.unidades_consumidoras.length);
+                
+                // Debug: Log da primeira UC para verificar estrutura
+                if (propostaMapeada.unidades_consumidoras.length > 0) {
+                    console.log('🔍 Primeira UC estrutura:', propostaMapeada.unidades_consumidoras[0]);
+                }
+                }
+                
+                return propostaMapeada;
+            }
+            } catch (apiError) {
+            console.warn('⚠️ Erro ao buscar via API individual:', apiError.message);
+            }
+            
+            // Fallback: buscar na lista geral de propostas (sem expansão)
+            try {
+            const todasPropostas = await this.getProspecOriginal(); // Usar versão sem expansão para evitar loop
+            const propostaEncontrada = todasPropostas.find(proposta => {
+                // Tentar diferentes formatos de ID
+                return proposta.propostaId === propostaId || 
+                    proposta.id === propostaId ||
+                    proposta.numeroProposta === propostaId;
+            });
+            
+            if (propostaEncontrada) {
+                console.log('✅ Proposta encontrada no cache:', propostaEncontrada.numeroProposta);
+                console.log('📊 UCs no cache:', propostaEncontrada.unidades_consumidoras?.length || 0);
+                return propostaEncontrada;
+            }
+            } catch (cacheError) {
+            console.warn('⚠️ Erro ao buscar no cache:', cacheError.message);
+            }
+            
+            console.warn('⚠️ Proposta não encontrada:', propostaId);
+            return null;
+            
+        } catch (error) {
+            console.error('❌ Erro ao buscar proposta por ID:', error);
+            return null;
+        }
+        }
+
+        /**
+         * ✅ BUSCAR TODAS AS UCs DE UMA PROPOSTA - VERSÃO CORRIGIDA
+         * Método específico para obter apenas as UCs de uma proposta
+         */
+        async buscarUCsDaProposta(propostaId) {
+        try {
+            const proposta = await this.buscarPropostaPorId(propostaId);
+            
+            if (!proposta) {
+            console.warn('❌ Proposta não encontrada para buscar UCs:', propostaId);
+            return [];
+            }
+            
+            // Extrair UCs da proposta
+            let ucs = [];
+            
+            if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
+            ucs = proposta.unidades_consumidoras;
+            } else if (proposta.ucs && Array.isArray(proposta.ucs)) {
+            ucs = proposta.ucs;
+            } else if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
+            ucs = proposta.unidadesConsumidoras;
+            }
+            
+            // ✅ FORMATAR UCs PARA GARANTIR CONSISTÊNCIA
+            const ucsFormatadas = ucs.map(uc => ({
+            apelido: uc.apelido || uc.numero_unidade || 'UC',
+            numeroUC: uc.numero_unidade || uc.numeroUC || '',
+            numero_unidade: uc.numero_unidade || uc.numeroUC || '',
+            ligacao: uc.ligacao || uc.tipo_ligacao || 'Monofásica',
+            consumo: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
+            consumo_medio: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
+            distribuidora: uc.distribuidora || '',
+            status: uc.status || 'Aguardando'
+            }));
+            
+            console.log(`✅ ${ucsFormatadas.length} UCs formatadas para a proposta ${propostaId}`);
+            
+            if (ucsFormatadas.length > 0) {
+            console.log('🔍 Primeira UC formatada:', ucsFormatadas[0]);
+            }
+            
+            return ucsFormatadas;
+            
+        } catch (error) {
+            console.error('❌ Erro ao buscar UCs da proposta:', error);
+            return [];
+        }
+        }
+
+        /**
+         * ✅ MÉTODO ORIGINAL GETPROSPEC SEM EXPANSÃO
+         * Para evitar loops infinitos e obter dados brutos
+         */
+        async getProspecOriginal() {
+        try {
+            const response = await apiService.get('/propostas');
+            
+            let propostas = [];
+            if (response?.data?.data && Array.isArray(response.data.data)) {
+            propostas = response.data.data;
+            } else if (response?.data && Array.isArray(response.data)) {
+            propostas = response.data;
+            } else if (Array.isArray(response)) {
+            propostas = response;
+            } else {
+            console.warn('⚠️ Estrutura de resposta inesperada:', response);
+            propostas = [];
+            }
+
+            // Mapear propostas sem expandir
+            const propostasMapeadas = propostas.map(proposta => {
+            return this.mapearPropostaDoBackend(proposta);
+            }).filter(Boolean);
+            
+            console.log(`📊 Total de propostas originais: ${propostasMapeadas.length}`);
+            return propostasMapeadas;
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar propostas originais:', error);
+            return [];
+        }
+    }
 }
 
 const storageService = new StorageService();
