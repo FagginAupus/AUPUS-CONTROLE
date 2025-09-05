@@ -1023,3 +1023,185 @@
   font-size: 0.75rem;
   margin-top: 4px;
 }
+
+/* Dashboard.css - Estilos adicionais para consultores clicáveis */
+
+/* ===============================================
+   CONSULTORES CLICÁVEIS - APENAS PARA ADMIN
+   =============================================== */
+
+.team-member.clickable-consultor {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.team-member.clickable-consultor:hover {
+  border-color: #3498db !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2) !important;
+  background: #f8f9ff !important;
+}
+
+.team-member.clickable-consultor:hover .member-icon-svg {
+  color: #3498db !important;
+}
+
+.team-member.clickable-consultor:hover .member-name {
+  color: #2980b9 !important;
+  font-weight: 700 !important;
+}
+
+.team-member.clickable-consultor:hover .member-role {
+  color: #3498db !important;
+}
+
+/* Tooltip que aparece no hover */
+.team-member.clickable-consultor::after {
+  content: '👁️ Clique para ver informações e equipe';
+  position: absolute;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.team-member.clickable-consultor::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #2c3e50;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.team-member.clickable-consultor:hover::after,
+.team-member.clickable-consultor:hover::before {
+  opacity: 1;
+}
+
+/* Indicador visual que é clicável */
+.team-member.clickable-consultor .member-info::after {
+  content: '👁️';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.team-member.clickable-consultor:hover .member-info::after {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* Efeito de "pulso" sutil para chamar atenção */
+.team-member.clickable-consultor {
+  animation: subtle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes subtle-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(52, 152, 219, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+  }
+}
+
+.team-member.clickable-consultor:hover {
+  animation: none; /* Para a animação no hover */
+}
+
+/* Ajustar posição relativa para o container de info */
+.team-member .member-info {
+  position: relative;
+}
+
+/* ===============================================
+   RESPONSIVIDADE PARA TOOLTIPS
+   =============================================== */
+
+@media (max-width: 768px) {
+  .team-member.clickable-consultor::after {
+    content: '👁️ Toque para ver';
+    font-size: 0.7rem;
+    padding: 6px 12px;
+    top: -35px;
+  }
+  
+  .team-member.clickable-consultor::before {
+    top: -5px;
+    border-top-width: 6px;
+    border-left-width: 6px;
+    border-right-width: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-member.clickable-consultor::after {
+    display: none; /* Ocultar tooltip em telas muito pequenas */
+  }
+  
+  .team-member.clickable-consultor::before {
+    display: none;
+  }
+  
+  /* Mostrar apenas o ícone indicativo */
+  .team-member.clickable-consultor .member-info::after {
+    opacity: 0.8;
+    font-size: 1rem;
+    top: 4px;
+    right: 4px;
+  }
+}
+
+/* ===============================================
+   ESTADOS DE FOCUS PARA ACESSIBILIDADE
+   =============================================== */
+
+.team-member.clickable-consultor:focus {
+  outline: 3px solid #3498db;
+  outline-offset: 2px;
+  border-color: #3498db;
+}
+
+.team-member.clickable-consultor:focus .member-icon-svg {
+  color: #3498db;
+}
+
+/* ===============================================
+   VARIAÇÃO PARA TEMA ESCURO (se necessário)
+   =============================================== */
+
+@media (prefers-color-scheme: dark) {
+  .team-member.clickable-consultor:hover {
+    background: #1a1a1a !important;
+    border-color: #3498db !important;
+  }
+  
+  .team-member.clickable-consultor::after {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+}

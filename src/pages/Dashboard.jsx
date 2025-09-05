@@ -6,6 +6,7 @@ import Navigation from '../components/common/Navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useData } from '../context/DataContext';
+import ModalConsultorDetalhes from './ModalConsultorDetalhes';
 import { 
   FileText, 
   Clock, 
@@ -37,6 +38,26 @@ const Dashboard = () => {
   // USAR DIRETAMENTE AS ESTATISTICAS DO DATACONTEXT - SEM ESTADO LOCAL
   const estadisticas = dashboard.statistics;
   const loading = dashboard.loading;
+
+  const [modalConsultor, setModalConsultor] = useState({
+    show: false,
+    consultor: null
+  });
+
+  const abrirModalConsultor = (consultor) => {
+    setModalConsultor({
+      show: true,
+      consultor: consultor
+    });
+  };
+
+  // 4. Função para fechar o modal do consultor
+  const fecharModalConsultor = () => {
+    setModalConsultor({
+      show: false,
+      consultor: null
+    });
+  };
 
   useEffect(() => {
     const verificarSenhaPadrao = async () => {
@@ -335,44 +356,26 @@ const Dashboard = () => {
           <section className="user-management">
             <div className="team-list">
               <h3>
-                {getTituloEquipe()} 
-                <span className="table-count">
-                  ({equipe.filter(member => 
-                    member.name.toLowerCase().includes(filtroNome.toLowerCase())
-                  ).length})
-                </span>
+                <Users size={20} />
+                {getTituloEquipe()}
               </h3>
-              
-              {/* Campo de filtro por nome */}
-              <div style={{ marginBottom: '20px' }}>
-                <input
-                  type="text"
-                  placeholder="🔍 Filtrar por nome..."
-                  value={filtroNome}
-                  onChange={(e) => setFiltroNome(e.target.value)}
-                  style={{
-                    width: '100%',
-                    maxWidth: '300px',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: '2px solid #e9ecef',
-                    fontSize: '14px',
-                    transition: 'border-color 0.3s ease'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#4CAF50'}
-                  onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
-                />
-              </div>
-              
               <div className="team-grid">
-                {equipe.filter(member => 
-                  member.name.toLowerCase().includes(filtroNome.toLowerCase())
-                ).map((member) => {
+                {equipe.map((member) => {
                   const IconComponent = getRoleIcon(member.role);
+                  
+                  // Verifica se deve ser clicável (admin clicando em consultor)
+                  const isClickable = user?.role === 'admin' && member.role === 'consultor';
+                  
                   return (
-                    <div key={member.id} className="team-member">
+                    <div 
+                      key={member.id} 
+                      className={`team-member ${isClickable ? 'clickable-consultor' : ''}`}
+                      onClick={isClickable ? () => abrirModalConsultor(member) : undefined}
+                      style={isClickable ? { cursor: 'pointer' } : {}}
+                      title={isClickable ? 'Clique para ver detalhes e equipe' : ''}
+                    >
                       <div className="member-icon-svg">
-                        <IconComponent size={32} />
+                        <IconComponent size={28} />
                       </div>
                       <div className="member-info">
                         <div className="member-name">{member.name}</div>
@@ -381,7 +384,7 @@ const Dashboard = () => {
                         </div>
                         <div className="member-email">{member.email}</div>
                         
-                        {/* 👇 CORREÇÃO: Tag do Gerente só para vendedores quando consultor está logado */}
+                        {/* Tag do Gerente só para vendedores quando consultor está logado */}
                         {user?.role === 'consultor' && 
                         member.role === 'vendedor' && 
                         member.manager_name && 
@@ -401,6 +404,7 @@ const Dashboard = () => {
           </section>
         )}
 
+
         {/* Modal de Cadastro */}
         {modalCadastro.show && (
           <ModalCadastroUsuario 
@@ -419,6 +423,14 @@ const Dashboard = () => {
             setShowChangePasswordModal(false);
           }}
         />
+        {modalConsultor.show && (
+          <ModalConsultorDetalhes 
+            consultor={modalConsultor.consultor}
+            isOpen={modalConsultor.show}
+            onClose={fecharModalConsultor}
+            equipe={getMyTeam()}
+          />
+        )}
       </div>
     </div>
   );
