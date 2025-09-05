@@ -26,7 +26,8 @@ const ControlePage = () => {
     ugs,
     loadUgs,
     calibragem, 
-    loadCalibragem 
+    loadCalibragem,
+    dashboard 
   } = useData();
 
   const calibragemGlobal = calibragem.valor;
@@ -583,19 +584,19 @@ const ControlePage = () => {
               <div className="controle-status-resumo">
                 <div className="controle-status-item">
                   <span className="controle-status-badge controle-status-esteira">
-                    {estatisticas.statusTroca.esteira}
+                    {dashboard.statistics.statusTroca.esteira}
                   </span>
                   <small>Esteira</small>
                 </div>
                 <div className="controle-status-item">
                   <span className="controle-status-badge controle-status-em-andamento">
-                    {estatisticas.statusTroca.emAndamento}
+                    {dashboard.statistics.statusTroca.emAndamento}
                   </span>
                   <small>Em Andamento</small>
                 </div>
                 <div className="controle-status-item">
                   <span className="controle-status-badge controle-status-associado">
-                    {estatisticas.statusTroca.associado}
+                    {dashboard.statistics.statusTroca.associado}
                   </span>
                   <small>Associado</small>
                 </div>
