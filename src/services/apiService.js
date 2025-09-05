@@ -365,6 +365,10 @@ class ApiService {
         return this.get('/usuarios/equipe');
     }
 
+    async getFamiliaConsultor(consultorId) {
+        return this.get(`/usuarios/${consultorId}/familia`);
+    }
+
     // ========================================
     // UTILITÁRIOS DE TOKEN
     // ========================================

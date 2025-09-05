@@ -6,6 +6,7 @@ import Navigation from '../components/common/Navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useData } from '../context/DataContext';
+import apiService from '../services/apiService';
 import ModalConsultorDetalhes from './ModalConsultorDetalhes';
 import { 
   FileText, 
@@ -29,9 +30,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, createUser, canCreateUser, getMyTeam, refreshTeam, checkDefaultPassword, isAuthenticated } = useAuth();
   const { showNotification } = useNotification();
-  const { dashboard, loadDashboard, afterCreateUser } = useData(); // USAR DATACONTEXT
+  const { dashboard, loadDashboard, afterCreateUser } = useData();
   
   const [modalCadastro, setModalCadastro] = useState({ show: false, type: '' });
+  const [consultores, setConsultores] = useState([]);
   const [equipe, setEquipe] = useState([]);
   const [filtroNome, setFiltroNome] = useState('');
 
@@ -51,7 +53,6 @@ const Dashboard = () => {
     });
   };
 
-  // 4. Função para fechar o modal do consultor
   const fecharModalConsultor = () => {
     setModalConsultor({
       show: false,
@@ -61,7 +62,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     const verificarSenhaPadrao = async () => {
-      // SAIR IMEDIATAMENTE se logout em andamento
       if (window.isLoggingOut || !isAuthenticated) return;
       
       if (user?.id) {
@@ -79,27 +79,45 @@ const Dashboard = () => {
     verificarSenhaPadrao();
   }, [user?.id, checkDefaultPassword, isAuthenticated]);
 
-  // ADICIONAR state para o modal:
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
+  const carregarConsultores = useCallback(() => {
+    if (!user?.id || user?.role !== 'admin') return;
+    
+    try {
+      const team = getMyTeam();
+      console.log('🏠 Admin carregando equipe completa:', team?.length || 0, 'membros');
+      
+      if (!Array.isArray(team)) {
+        console.error('❌ getMyTeam não retornou um array:', team);
+        setConsultores([]);
+        return;
+      }
+      
+      if (team.length === 0) {
+        console.log('⚠️ Equipe vazia no Dashboard, forçando refresh...');
+        refreshTeam();
+        return;
+      }
+      
+      // Admin vê apenas os consultores da sua hierarquia
+      const consultoresFiltrados = team.filter(member => member.role === 'consultor');
+      setConsultores(consultoresFiltrados);
+      console.log('✅ Consultores filtrados:', consultoresFiltrados.length);
+    } catch (error) {
+      console.error('❌ Erro ao carregar consultores:', error);
+      setConsultores([]);
+    }
+  }, [user?.id, user?.role, getMyTeam, refreshTeam]);
+
+  // Carregar dados baseado no role
   useEffect(() => {
-    if (user?.id) {
+    if (user?.role === 'admin') {
+      carregarConsultores();
+    } else if (user?.id) {
       carregarEquipe();
     }
-  }, [user?.id, getMyTeam]); 
-
-  useEffect(() => {
-    const team = getMyTeam();
-    console.log('🏠 Dashboard detectou mudança na equipe:', team.length, 'membros');
-    
-    if (user?.id && team.length > 0) {
-      if (user?.role === 'admin') {
-        setEquipe(team.filter(member => member.role === 'consultor'));
-      } else {
-        setEquipe(team.filter(member => member.id !== user?.id));
-      }
-    }
-  }, [getMyTeam, user?.id, user?.role]); // ✅ REAGIR A MUDANÇAS NA EQUIPE
+  }, [user?.role, user?.id, carregarConsultores]);
 
   const carregarEquipe = useCallback(() => {
     if (!user?.id) return;
@@ -108,7 +126,6 @@ const Dashboard = () => {
       const team = getMyTeam();
       console.log('🏠 Dashboard carregando equipe:', team?.length || 0, 'membros');
       
-      // ← ADICIONAR ESTA VERIFICAÇÃO
       if (!Array.isArray(team)) {
         console.error('❌ getMyTeam não retornou um array:', team);
         setEquipe([]);
@@ -121,16 +138,12 @@ const Dashboard = () => {
         return;
       }
       
-      if (user?.role === 'admin') {
-        setEquipe(team.filter(member => member.role === 'consultor'));
-      } else {
-        setEquipe(team.filter(member => member.id !== user?.id));
-      }
+      setEquipe(team.filter(member => member.id !== user?.id));
     } catch (error) {
       console.error('❌ Erro ao carregar equipe:', error);
-      setEquipe([]); // ← SEMPRE definir array vazio em caso de erro
+      setEquipe([]);
     }
-  }, [user?.id, user?.role, getMyTeam, refreshTeam]);
+  }, [user?.id, getMyTeam, refreshTeam]);
 
   const abrirModalCadastro = (type) => {
     if (!canCreateUser(type)) {
@@ -154,9 +167,14 @@ const Dashboard = () => {
       if (result.success) {
         showNotification(`${getTipoLabel(modalCadastro.type)} criado(a) com sucesso!`, 'success');
         fecharModalCadastro();
-        carregarEquipe();
         
-        // Notificar DataContext sobre novo usuário
+        // Recarregar dados após criação
+        if (user?.role === 'admin') {
+          carregarConsultores();
+        } else {
+          carregarEquipe();
+        }
+                
         if (afterCreateUser) {
           afterCreateUser(result.data);
         }
@@ -180,10 +198,10 @@ const Dashboard = () => {
 
   const getRoleIcon = (role) => {
     const icons = {
-      admin: Crown,           // Coroa para admin
-      consultor: Briefcase,   // Maleta para consultor  
-      gerente: Users,         // Grupo de usuários para gerente
-      vendedor: User          // Usuário individual para vendedor
+      admin: Crown,
+      consultor: Briefcase,
+      gerente: Users,
+      vendedor: User
     };
     return icons[role] || User;
   };
@@ -210,13 +228,11 @@ const Dashboard = () => {
     }
   };
 
-  // Função para determinar quais botões mostrar baseado na hierarquia
   const getBotoesDisponiveis = () => {
     const botoes = [];
     
     switch (user?.role) {
       case 'admin':
-        // Admin só cadastra consultor
         if (canCreateUser('consultor')) {
           botoes.push({
             tipo: 'consultor',
@@ -227,7 +243,6 @@ const Dashboard = () => {
         break;
       
       case 'consultor':
-        // Consultor cadastra gerente e vendedor
         if (canCreateUser('gerente')) {
           botoes.push({
             tipo: 'gerente',
@@ -245,7 +260,6 @@ const Dashboard = () => {
         break;
       
       case 'gerente':
-        // Gerente só cadastra vendedor
         if (canCreateUser('vendedor')) {
           botoes.push({
             tipo: 'vendedor',
@@ -256,7 +270,6 @@ const Dashboard = () => {
         break;
       
       case 'vendedor':
-        // Vendedor não cadastra ninguém
         break;
     }
     
@@ -351,8 +364,40 @@ const Dashboard = () => {
           </section>
         )}
 
-        {/* Lista da Equipe */}
-        {equipe.length > 0 && (
+        {/* Consultores para Admin */}
+        {user?.role === 'admin' && consultores.length > 0 && (
+          <section className="user-management">
+            <div className="team-list">
+              <h3>
+                <Users size={20} />
+                Consultores Cadastrados ({consultores.length})
+              </h3>
+              <div className="team-grid">
+                {consultores.map((consultor) => (
+                  <div 
+                    key={consultor.id} 
+                    className="team-member clickable-consultor"
+                    onClick={() => abrirModalConsultor(consultor)}
+                    style={{ cursor: 'pointer' }}
+                    title="Clique para ver detalhes e equipe"
+                  >
+                    <div className="member-icon-svg">
+                      <Briefcase size={28} />
+                    </div>
+                    <div className="member-info">
+                      <div className="member-name">{consultor.name || consultor.nome}</div>
+                      <div className="member-role">Consultor</div>
+                      <div className="member-email">{consultor.email}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Equipe para outros roles */}
+        {user?.role !== 'admin' && equipe.length > 0 && (
           <section className="user-management">
             <div className="team-list">
               <h3>
@@ -363,16 +408,10 @@ const Dashboard = () => {
                 {equipe.map((member) => {
                   const IconComponent = getRoleIcon(member.role);
                   
-                  // Verifica se deve ser clicável (admin clicando em consultor)
-                  const isClickable = user?.role === 'admin' && member.role === 'consultor';
-                  
                   return (
                     <div 
                       key={member.id} 
-                      className={`team-member ${isClickable ? 'clickable-consultor' : ''}`}
-                      onClick={isClickable ? () => abrirModalConsultor(member) : undefined}
-                      style={isClickable ? { cursor: 'pointer' } : {}}
-                      title={isClickable ? 'Clique para ver detalhes e equipe' : ''}
+                      className="team-member"
                     >
                       <div className="member-icon-svg">
                         <IconComponent size={28} />
@@ -404,31 +443,32 @@ const Dashboard = () => {
           </section>
         )}
 
-
         {/* Modal de Cadastro */}
         {modalCadastro.show && (
           <ModalCadastroUsuario 
             tipo={modalCadastro.type}
             onClose={fecharModalCadastro}
-            onSubmit={handleCriarUsuario}  // ← Verificar se esta linha existe
+            onSubmit={handleCriarUsuario}
             gerentes={getGerentesDisponiveis()}
           />
         )}
+
         {/* MODAL DE SENHA */}
         <ChangePasswordModal 
           isOpen={showChangePasswordModal}
-          onClose={() => {}} // Não permitir fechar - obrigatório
+          onClose={() => {}}
           onSuccess={(message) => {
             showNotification(message, 'success');
             setShowChangePasswordModal(false);
           }}
         />
+
+        {/* Modal Consultor */}
         {modalConsultor.show && (
           <ModalConsultorDetalhes 
             consultor={modalConsultor.consultor}
             isOpen={modalConsultor.show}
             onClose={fecharModalConsultor}
-            equipe={getMyTeam()}
           />
         )}
       </div>
@@ -438,7 +478,7 @@ const Dashboard = () => {
 
 // Modal de Cadastro - TEMA CLARO
 const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
-  const [loading, setLoading] = useState(false); // ADICIONAR ESTA LINHA
+  const [loading, setLoading] = useState(false);
   
   const [dados, setDados] = useState({
     nome: '',

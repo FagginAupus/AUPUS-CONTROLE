@@ -1,5 +1,5 @@
 // ModalConsultorDetalhes.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   User, 
@@ -12,48 +12,45 @@ import {
   UserCheck,
   Building,
   Info,
-  TeamIcon
+  Loader
 } from 'lucide-react';
+import apiService from '../services/apiService';
 import './ModalConsultorDetalhes.css';
 
-const ModalConsultorDetalhes = ({ consultor, isOpen, onClose, equipe }) => {
+const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
   const [abaAtiva, setAbaAtiva] = useState('informacoes');
+  const [familiaData, setFamiliaData] = useState(null);
+  const [loadingFamilia, setLoadingFamilia] = useState(false);
 
-  // Função para obter os gerentes do consultor
-  const getGerentesDoConsultor = useMemo(() => {
-    if (!consultor || !equipe) return [];
-    
-    return equipe.filter(member => 
-      member.role === 'gerente' && 
-      member.manager_id === consultor.id
-    );
-  }, [consultor, equipe]);
+  // Buscar família dinamicamente
+  useEffect(() => {
+    if (consultor?.id && isOpen) {
+      fetchFamiliaConsultor(consultor.id);
+    }
+  }, [consultor?.id, isOpen]);
 
-  // Função para obter vendedores de cada gerente + vendedores diretos do consultor
-  const getFamiliaCompleta = useMemo(() => {
-    if (!consultor || !equipe) return { gerentes: [], vendedores: [] };
-    
-    const gerentes = getGerentesDoConsultor;
-    const vendedoresDiretos = equipe.filter(member => 
-      member.role === 'vendedor' && 
-      member.manager_id === consultor.id
-    );
-    
-    const vendedoresDeGerentes = equipe.filter(member => 
-      member.role === 'vendedor' && 
-      gerentes.some(gerente => gerente.id === member.manager_id)
-    );
-    
-    return {
-      gerentes,
-      vendedoresDiretos,
-      vendedoresDeGerentes
-    };
-  }, [consultor, equipe, getGerentesDoConsultor]);
+  const fetchFamiliaConsultor = async (consultorId) => {
+    setLoadingFamilia(true);
+    try {
+      console.log('🔍 Buscando família do consultor:', consultorId);
+      const response = await apiService.getFamiliaConsultor(consultorId);
+      if (response.success) {
+        setFamiliaData(response.data);
+        console.log('✅ Família carregada:', response.data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar família:', error);
+      setFamiliaData(null);
+    } finally {
+      setLoadingFamilia(false);
+    }
+  };
 
   const getTotalEquipe = () => {
-    const familia = getFamiliaCompleta;
-    return familia.gerentes.length + familia.vendedoresDiretos.length + familia.vendedoresDeGerentes.length;
+    if (!familiaData) return 0;
+    return (familiaData.gerentes?.length || 0) + 
+           (familiaData.vendedores_diretos?.length || 0) + 
+           (familiaData.vendedores_indiretos?.length || 0);
   };
 
   const formatarData = (dateString) => {
@@ -92,7 +89,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose, equipe }) => {
               <Briefcase size={24} />
             </div>
             <div className="consultor-header-details">
-              <h2>{consultor.name}</h2>
+              <h2>{consultor.name || consultor.nome}</h2>
               <span className="consultor-role-badge">
                 {getTipoLabel(consultor.role)}
               </span>
@@ -184,12 +181,12 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose, equipe }) => {
                 <h3>📊 Estatísticas da Equipe</h3>
                 <div className="stats-grid">
                   <div className="stat-item">
-                    <span className="stat-number">{getFamiliaCompleta.gerentes.length}</span>
+                    <span className="stat-number">{familiaData?.gerentes?.length || 0}</span>
                     <span className="stat-label">Gerentes</span>
                   </div>
                   <div className="stat-item">
                     <span className="stat-number">
-                      {getFamiliaCompleta.vendedoresDiretos.length + getFamiliaCompleta.vendedoresDeGerentes.length}
+                      {(familiaData?.vendedores_diretos?.length || 0) + (familiaData?.vendedores_indiretos?.length || 0)}
                     </span>
                     <span className="stat-label">Vendedores</span>
                   </div>
@@ -204,99 +201,109 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose, equipe }) => {
 
           {abaAtiva === 'equipe' && (
             <div className="tab-content-equipe">
-              {/* Gerentes */}
-              {getFamiliaCompleta.gerentes.length > 0 && (
-                <div className="equipe-section">
-                  <h3>
-                    <Users size={20} />
-                    Gerentes ({getFamiliaCompleta.gerentes.length})
-                  </h3>
-                  <div className="members-grid">
-                    {getFamiliaCompleta.gerentes.map(gerente => {
-                      const IconComponent = getRoleIcon(gerente.role);
-                      return (
-                        <div key={gerente.id} className="member-card gerente">
-                          <div className="member-header">
-                            <div className="member-icon">
-                              <IconComponent size={20} />
-                            </div>
-                            <div className="member-info">
-                              <h4>{gerente.name}</h4>
-                              <span className="member-role">Gerente</span>
-                            </div>
-                          </div>
-                          <div className="member-contact">
-                            <span>{gerente.email}</span>
-                            {gerente.telefone && <span>{gerente.telefone}</span>}
-                          </div>
-                          
-                          {/* Vendedores deste gerente */}
-                          {(() => {
-                            const vendedoresDoGerente = equipe.filter(member => 
-                              member.role === 'vendedor' && member.manager_id === gerente.id
-                            );
-                            return vendedoresDoGerente.length > 0 ? (
-                              <div className="gerente-vendedores">
-                                <span className="vendedores-label">
-                                  👥 {vendedoresDoGerente.length} vendedor(es):
-                                </span>
-                                <div className="vendedores-list">
-                                  {vendedoresDoGerente.map(vendedor => (
-                                    <div key={vendedor.id} className="vendedor-item">
-                                      <User size={14} />
-                                      <span>{vendedor.name}</span>
-                                    </div>
-                                  ))}
+              {loadingFamilia ? (
+                <div className="loading-equipe">
+                  <Loader size={32} className="spinner" />
+                  <p>Carregando equipe...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Gerentes */}
+                  {familiaData?.gerentes?.length > 0 && (
+                    <div className="equipe-section">
+                      <h3>
+                        <Users size={20} />
+                        Gerentes ({familiaData.gerentes.length})
+                      </h3>
+                      <div className="members-grid">
+                        {familiaData.gerentes.map(gerente => {
+                          const IconComponent = getRoleIcon(gerente.role);
+                          return (
+                            <div key={gerente.id} className="member-card gerente">
+                              <div className="member-header">
+                                <div className="member-icon">
+                                  <IconComponent size={20} />
+                                </div>
+                                <div className="member-info">
+                                  <h4>{gerente.name}</h4>
+                                  <span className="member-role">Gerente</span>
                                 </div>
                               </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Vendedores Diretos */}
-              {getFamiliaCompleta.vendedoresDiretos.length > 0 && (
-                <div className="equipe-section">
-                  <h3>
-                    <User size={20} />
-                    Vendedores Diretos ({getFamiliaCompleta.vendedoresDiretos.length})
-                  </h3>
-                  <div className="members-grid">
-                    {getFamiliaCompleta.vendedoresDiretos.map(vendedor => {
-                      const IconComponent = getRoleIcon(vendedor.role);
-                      return (
-                        <div key={vendedor.id} className="member-card vendedor">
-                          <div className="member-header">
-                            <div className="member-icon">
-                              <IconComponent size={20} />
+                              <div className="member-contact">
+                                <span>{gerente.email}</span>
+                                {gerente.telefone && <span>{gerente.telefone}</span>}
+                              </div>
+                              
+                              {/* Vendedores deste gerente */}
+                              {(() => {
+                                const vendedoresDoGerente = familiaData.vendedores_indiretos?.filter(vendedor => 
+                                  vendedor.manager_id === gerente.id
+                                ) || [];
+                                
+                                return vendedoresDoGerente.length > 0 ? (
+                                  <div className="gerente-vendedores">
+                                    <span className="vendedores-label">
+                                      👥 {vendedoresDoGerente.length} vendedor(es):
+                                    </span>
+                                    <div className="vendedores-list">
+                                      {vendedoresDoGerente.map(vendedor => (
+                                        <div key={vendedor.id} className="vendedor-item">
+                                          <User size={14} />
+                                          <span>{vendedor.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })()}
                             </div>
-                            <div className="member-info">
-                              <h4>{vendedor.name}</h4>
-                              <span className="member-role">Vendedor</span>
-                            </div>
-                          </div>
-                          <div className="member-contact">
-                            <span>{vendedor.email}</span>
-                            {vendedor.telefone && <span>{vendedor.telefone}</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-              {/* Estado Vazio */}
-              {getTotalEquipe() === 0 && (
-                <div className="empty-team-state">
-                  <Users size={48} />
-                  <h3>Nenhum membro na equipe</h3>
-                  <p>Este consultor ainda não possui gerentes ou vendedores em sua equipe.</p>
-                </div>
+                  {/* Vendedores Diretos */}
+                  {familiaData?.vendedores_diretos?.length > 0 && (
+                    <div className="equipe-section">
+                      <h3>
+                        <User size={20} />
+                        Vendedores Diretos ({familiaData.vendedores_diretos.length})
+                      </h3>
+                      <div className="members-grid">
+                        {familiaData.vendedores_diretos.map(vendedor => {
+                          const IconComponent = getRoleIcon(vendedor.role);
+                          return (
+                            <div key={vendedor.id} className="member-card vendedor">
+                              <div className="member-header">
+                                <div className="member-icon">
+                                  <IconComponent size={20} />
+                                </div>
+                                <div className="member-info">
+                                  <h4>{vendedor.name}</h4>
+                                  <span className="member-role">Vendedor</span>
+                                </div>
+                              </div>
+                              <div className="member-contact">
+                                <span>{vendedor.email}</span>
+                                {vendedor.telefone && <span>{vendedor.telefone}</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estado Vazio */}
+                  {getTotalEquipe() === 0 && !loadingFamilia && (
+                    <div className="empty-team-state">
+                      <Users size={48} />
+                      <h3>Nenhum membro na equipe</h3>
+                      <p>Este consultor ainda não possui gerentes ou vendedores em sua equipe.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
