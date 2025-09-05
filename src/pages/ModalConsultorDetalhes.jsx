@@ -1,4 +1,4 @@
-// ModalConsultorDetalhes.jsx - Aba Informações com Campos de Cadastro
+// ModalConsultorDetalhes.jsx - CORREÇÃO da variável consultorCompleto
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -35,6 +35,9 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
   const [modoEdicao, setModoEdicao] = useState(false);
   const [dadosEdicao, setDadosEdicao] = useState({});
   const [salvandoDados, setSalvandoDados] = useState(false);
+
+  // ✅ CORREÇÃO: Definir consultorCompleto baseado no consultor atual
+  const consultorCompleto = consultor;
 
   // Buscar família dinamicamente
   useEffect(() => {
@@ -201,7 +204,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
               {/* Botão de Editar */}
               <div className="info-actions">
                 {!modoEdicao ? (
-                  <button className="btn-editar" onClick={() => setModoEdicao(true)}>
+                  <button 
+                    className="btn-editar-consultor" 
+                    onClick={() => setModoEdicao(true)}
+                  >
                     <Edit2 size={16} />
                     Editar Informações
                   </button>
@@ -212,20 +218,31 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                       onClick={handleSalvarDados}
                       disabled={salvandoDados}
                     >
-                      <Save size={16} />
-                      {salvandoDados ? 'Salvando...' : 'Salvar'}
+                      {salvandoDados ? (
+                        <>
+                          <Loader size={16} className="spinning" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={16} />
+                          Salvar
+                        </>
+                      )}
                     </button>
-                    <button className="btn-cancelar" onClick={handleCancelarEdicao}>
-                      <X size={16} />
+                    <button 
+                      className="btn-cancelar" 
+                      onClick={handleCancelarEdicao}
+                    >
                       Cancelar
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Grid de Informações */}
-              <div className="info-grid">
-                {/* Nome Completo */}
+              {/* Cards de Informação */}
+              <div className="info-cards-grid">
+                {/* Nome */}
                 <div className="info-card">
                   <div className="info-icon">
                     <User size={20} />
@@ -240,7 +257,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         className="edit-input"
                       />
                     ) : (
-                      <span>{consultor.name || consultor.nome || '-'}</span>
+                      <span>{consultorCompleto?.name || consultorCompleto?.nome || '-'}</span>
                     )}
                   </div>
                 </div>
@@ -260,7 +277,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         className="edit-input"
                       />
                     ) : (
-                      <span>{consultor.email || '-'}</span>
+                      <span>{consultorCompleto?.email || '-'}</span>
                     )}
                   </div>
                 </div>
@@ -271,10 +288,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                     <Phone size={20} />
                   </div>
                   <div className="info-details">
-                    <label>Celular</label>
+                    <label>Telefone</label>
                     {modoEdicao ? (
                       <input
-                        type="text"
+                        type="tel"
                         value={dadosEdicao.telefone}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, telefone: e.target.value})}
                         className="edit-input"
@@ -285,13 +302,13 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                   </div>
                 </div>
 
-                {/* CPF */}
+                {/* CPF/CNPJ */}
                 <div className="info-card">
                   <div className="info-icon">
                     <Hash size={20} />
                   </div>
                   <div className="info-details">
-                    <label>CPF</label>
+                    <label>CPF/CNPJ</label>
                     {modoEdicao ? (
                       <input
                         type="text"
@@ -306,7 +323,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                 </div>
 
                 {/* Endereço */}
-                <div className="info-card full-width">
+                <div className="info-card">
                   <div className="info-icon">
                     <MapPin size={20} />
                   </div>
@@ -435,83 +452,100 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
           {abaAtiva === 'equipe' && (
             <div className="tab-content-equipe">
               {loadingFamilia ? (
-                <div className="loading-equipe">
-                  <Loader size={32} className="spinner" />
+                <div className="loading-familia">
+                  <Loader size={32} className="spinning" />
                   <p>Carregando equipe...</p>
                 </div>
               ) : (
                 <>
-                  {/* Gerentes */}
+                  {/* Gerentes e suas equipes */}
                   {familiaData?.gerentes?.length > 0 && (
                     <div className="equipe-section">
                       <h3>
                         <Users size={20} />
                         Gerentes ({familiaData.gerentes.length})
                       </h3>
-                      <div className="members-grid">
+                      <div className="gerentes-list">
                         {familiaData.gerentes.map(gerente => {
                           const IconComponent = getRoleIcon(gerente.role);
-                          const vendedoresDoGerente = familiaData.vendedores_indiretos?.filter(vendedor => 
-                            vendedor.manager_name === gerente.name
-                          ) || [];
+                          const vendedoresDoGerente = familiaData.vendedores_indiretos?.filter(v => v.manager_id === gerente.id) || [];
                           const isExpanded = expandedGerentes.includes(gerente.id);
-                          const showAll = showAllVendedores[gerente.id] || false;
+                          const showAllForThisGerente = showAllVendedores[gerente.id] || false;
 
                           return (
-                            <div key={gerente.id} className="member-card gerente">
-                              <div className="member-header">
-                                <div className="member-icon">
-                                  <IconComponent size={20} />
+                            <div key={gerente.id} className="gerente-item">
+                              <div className="member-card gerente">
+                                <div className="member-header">
+                                  <div className="member-icon">
+                                    <IconComponent size={20} />
+                                  </div>
+                                  <div className="member-info">
+                                    <h4>{gerente.name}</h4>
+                                    <span className="member-role">Gerente</span>
+                                  </div>
                                 </div>
-                                <div className="member-info">
-                                  <h4>{gerente.name}</h4>
-                                  <span className="member-role">Gerente</span>
+                                <div className="member-contact">
+                                  <span>{gerente.email}</span>
+                                  {gerente.telefone && <span>{gerente.telefone}</span>}
                                 </div>
-                              </div>
-                              <div className="member-contact">
-                                <span>{gerente.email}</span>
-                                {gerente.telefone && <span>{gerente.telefone}</span>}
-                              </div>
-                              
-                              {/* Vendedores deste gerente */}
-                              {vendedoresDoGerente.length > 0 && (
-                                <div className="gerente-vendedores">
+                                
+                                {/* Botão para expandir vendedores */}
+                                {vendedoresDoGerente.length > 0 && (
                                   <button 
-                                    className="vendedores-toggle"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleVendedores(gerente.id);
-                                    }}
+                                    className="btn-toggle-vendedores"
+                                    onClick={() => toggleVendedores(gerente.id)}
                                   >
-                                    <span className="vendedores-count">
-                                      👥 {vendedoresDoGerente.length} vendedor(es)
-                                    </span>
-                                    {isExpanded ? 
-                                      <ChevronDown size={16} /> : 
-                                      <ChevronRight size={16} />
-                                    }
+                                    {isExpanded ? (
+                                      <>
+                                        <ChevronDown size={16} />
+                                        Ocultar vendedores ({vendedoresDoGerente.length})
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronRight size={16} />
+                                        Ver vendedores ({vendedoresDoGerente.length})
+                                      </>
+                                    )}
                                   </button>
-                                  
-                                  {isExpanded && (
-                                    <div className="vendedores-list expanded">
-                                      {vendedoresDoGerente.slice(0, showAll ? vendedoresDoGerente.length : 3).map(vendedor => (
-                                        <div key={vendedor.id} className="vendedor-item">
-                                          <User size={14} />
-                                          <div className="vendedor-info">
-                                            <span className="vendedor-name">{vendedor.name}</span>
-                                            <span className="vendedor-email">{vendedor.email}</span>
+                                )}
+                              </div>
+
+                              {/* Lista de vendedores do gerente */}
+                              {isExpanded && vendedoresDoGerente.length > 0 && (
+                                <div className="vendedores-do-gerente">
+                                  <div className="members-grid">
+                                    {(showAllForThisGerente ? vendedoresDoGerente : vendedoresDoGerente.slice(0, 3)).map(vendedor => {
+                                      const VendedorIcon = getRoleIcon(vendedor.role);
+                                      return (
+                                        <div key={vendedor.id} className="member-card vendedor">
+                                          <div className="member-header">
+                                            <div className="member-icon">
+                                              <VendedorIcon size={18} />
+                                            </div>
+                                            <div className="member-info">
+                                              <h5>{vendedor.name}</h5>
+                                              <span className="member-role">Vendedor</span>
+                                            </div>
+                                          </div>
+                                          <div className="member-contact">
+                                            <span>{vendedor.email}</span>
+                                            {vendedor.telefone && <span>{vendedor.telefone}</span>}
                                           </div>
                                         </div>
-                                      ))}
-                                      
-                                      {vendedoresDoGerente.length > 3 && (
-                                        <button 
-                                          className="show-more-vendedores"
-                                          onClick={() => toggleShowAllVendedores(gerente.id)}
-                                        >
-                                          {showAll ? 'Ver menos' : `Ver mais ${vendedoresDoGerente.length - 3}`}
-                                        </button>
-                                      )}
+                                      );
+                                    })}
+                                  </div>
+                                  
+                                  {/* Botão ver mais/menos vendedores */}
+                                  {vendedoresDoGerente.length > 3 && (
+                                    <div className="show-more-vendedores">
+                                      <button 
+                                        className="btn-show-more"
+                                        onClick={() => toggleShowAllVendedores(gerente.id)}
+                                      >
+                                        {showAllForThisGerente ? 
+                                          'Ver menos' : `Ver mais ${vendedoresDoGerente.length - 3}`}
+                                      </button>
                                     </div>
                                   )}
                                 </div>
