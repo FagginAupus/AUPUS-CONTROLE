@@ -96,6 +96,19 @@ const ControlePage = () => {
   const dadosFiltrados = useMemo(() => {
     let dados = controle.data || [];
 
+    // 🔧 CORREÇÃO: Tentar resolver consultores N/A usando contexto auth
+    dados = dados.map(item => {
+      // Se consultor está como N/A, tentar buscar pelo ID do usuário
+      if (item.consultor === 'N/A' && item.usuario_id) {
+        const consultorCorrigido = getConsultorName(item.usuario_id);
+        return {
+          ...item,
+          consultor: consultorCorrigido || item.consultor
+        };
+      }
+      return item;
+    });
+
     if (filtros.consultor) {
       dados = dados.filter(item =>
         item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
@@ -110,10 +123,9 @@ const ControlePage = () => {
       }
     }
 
-    // ← NOVO FILTRO DE STATUS DE TROCA
     if (filtros.statusTroca) {
       dados = dados.filter(item => {
-        const status = item.statusTroca || item.status_troca || 'Esteira'; // Default para Esteira
+        const status = item.statusTroca || item.status_troca || 'Esteira';
         return status === filtros.statusTroca;
       });
     }
@@ -129,7 +141,7 @@ const ControlePage = () => {
     }
 
     return dados;
-  }, [controle.data, filtros]);
+  }, [controle.data, filtros, getConsultorName]);
 
   // 3. ADICIONAR função para limpar filtros:
   const limparFiltros = () => {
@@ -140,6 +152,7 @@ const ControlePage = () => {
       statusTroca: '' // ← INCLUIR novo filtro
     });
   };
+
 
   const estatisticas = useMemo(() => {
     const dados = dadosFiltrados || [];
@@ -496,10 +509,20 @@ const ControlePage = () => {
   }, [showNotification]);
 
   // Obter listas únicas para filtros
-  const consultoresUnicos = useMemo(() => 
-    [...new Set((controle.data || []).map(item => item.consultor).filter(Boolean))], 
-    [controle.data]
-  );
+  const consultoresUnicos = useMemo(() => {
+    const dados = controle.data || [];
+    
+    // Corrigir consultores N/A antes de gerar lista única
+    const consultoresCorrigidos = dados.map(item => {
+      if (item.consultor === 'N/A' && item.usuario_id) {
+        return getConsultorName(item.usuario_id) || item.consultor;
+      }
+      return item.consultor;
+    }).filter(Boolean);
+
+    return [...new Set(consultoresCorrigidos)];
+  }, [controle.data, getConsultorName]);
+  
   const ugsUnicas = useMemo(() => 
     [...new Set((controle.data || []).map(item => item.ug).filter(Boolean))], 
     [controle.data]
@@ -592,7 +615,7 @@ const ControlePage = () => {
                   ))}
                 </select>
               </div>
-
+              
               <div className="filter-group">
                 <label>Status Troca:</label>
                 <select
@@ -605,7 +628,7 @@ const ControlePage = () => {
                   <option value="Associado">Associado</option>
                 </select>
               </div>
-
+              
               <div className="filter-group">
                 <label>UG:</label>
                 <select
@@ -630,14 +653,13 @@ const ControlePage = () => {
                 />
               </div>
             </div>
-
-            {/* Botão para limpar filtros */}
+            
             <div className="actions-container">
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
             </div>
-
+            
             {isAdmin && (
               <div className="calibragem-controls">
                 <div className="calibragem-group">
