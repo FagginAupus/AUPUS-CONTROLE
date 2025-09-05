@@ -169,7 +169,7 @@ const ControlePage = () => {
         case 'Em andamento':
           acc.emAndamento++;
           break;
-        case 'Associado':      // Era 'Finalizado'
+        case 'Associado':     
           acc.associado++;
           break;
       }
@@ -222,8 +222,8 @@ const ControlePage = () => {
     if (!item) return;
     
     // Verificar se status permite atribuição
-    if (item.statusTroca !== 'Finalizado') {
-      showNotification('Status deve ser "Finalizado" para atribuir UG', 'warning');
+    if (item.statusTroca !== 'Associado') {
+      showNotification('Status deve ser "Associado" para atribuir UG', 'warning');
       return;
     }
 
@@ -986,7 +986,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             </div>
             
             {/* Campo Data - só aparece quando status é "Finalizado" */}
-            {statusTroca === 'Associado' && (  // Era 'Finalizado'
+            {statusTroca === 'Associado' && ( 
               <div className="form-group">
                 <label>Data da Titularidade:</label>
                 <input
