@@ -465,13 +465,35 @@
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: #6c757d;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.vendedor-item:last-child {
+  border-bottom: none;
 }
 
 .vendedor-item svg {
   color: #1abc9c;
+  flex-shrink: 0;
 }
 
+.vendedor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.vendedor-nome {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.vendedor-email {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
 /* ===============================================
    ESTADO VAZIO
    =============================================== */

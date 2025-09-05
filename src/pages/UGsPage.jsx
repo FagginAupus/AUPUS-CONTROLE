@@ -217,7 +217,7 @@ const UGsPage = () => {
             </div>
             <div className="stat-content">
               <span className="stat-label">Capacidade Total</span>
-              <span className="stat-value">{estatisticas.capacidadeTotal.toLocaleString('pt-BR')} MWh</span>
+              <span className="stat-value">{estatisticas.capacidadeTotal.toLocaleString('pt-BR')} kWh</span>
             </div>
           </div>
           <div className="stat-card">

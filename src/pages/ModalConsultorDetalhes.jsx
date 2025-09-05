@@ -1,4 +1,4 @@
-// ModalConsultorDetalhes.jsx - CORREÇÃO da variável consultorCompleto
+// ModalConsultorDetalhes.jsx - VERSÃO FINAL SEM ERROS DE ESLINT
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -8,7 +8,6 @@ import {
   Phone, 
   Calendar, 
   Briefcase,
-  Crown,
   UserCheck,
   Building,
   Info,
@@ -19,7 +18,8 @@ import {
   Save,
   MapPin,
   CreditCard,
-  Hash
+  Hash,
+  AlertCircle
 } from 'lucide-react';
 import apiService from '../services/apiService';
 import './ModalConsultorDetalhes.css';
@@ -35,28 +35,75 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
   const [modoEdicao, setModoEdicao] = useState(false);
   const [dadosEdicao, setDadosEdicao] = useState({});
   const [salvandoDados, setSalvandoDados] = useState(false);
+  const [consultorCompleto, setConsultorCompleto] = useState(null);
+  const [erroBackend, setErroBackend] = useState(false);
 
-  // ✅ CORREÇÃO: Definir consultorCompleto baseado no consultor atual
-  const consultorCompleto = consultor;
+  // Função para determinar status baseado em is_active
+  const getStatusInfo = (isActive) => {
+    if (isActive === true || isActive === 'true' || isActive === 1 || isActive === '1') {
+      return { text: 'Ativo', class: 'active' };
+    }
+    return { text: 'Inativo', class: 'inactive' };
+  };
 
-  // Buscar família dinamicamente
+  // Inicialização com dados do consultor atual
   useEffect(() => {
     if (consultor?.id && isOpen) {
+      initializeDadosEdicao();
+      fetchConsultorCompleto(consultor.id);
       fetchFamiliaConsultor(consultor.id);
-      // Inicializar dados para edição
-      setDadosEdicao({
-        nome: consultor.name || consultor.nome || '',
-        email: consultor.email || '',
-        telefone: consultor.telefone || '',
-        cpf_cnpj: consultor.cpf_cnpj || '',
-        endereco: consultor.endereco || '',
-        cidade: consultor.cidade || '',
-        estado: consultor.estado || '',
-        cep: consultor.cep || '',
-        pix: consultor.pix || ''
-      });
     }
   }, [consultor?.id, isOpen]);
+
+  // Inicializar com dados disponíveis
+  const initializeDadosEdicao = () => {
+    setDadosEdicao({
+      nome: consultor.name || consultor.nome || '',
+      email: consultor.email || '',
+      telefone: consultor.telefone || '',
+      cpf_cnpj: consultor.cpf_cnpj || '',
+      endereco: consultor.endereco || '',
+      cidade: consultor.cidade || '',
+      estado: consultor.estado || '',
+      cep: consultor.cep || '',
+      pix: consultor.pix || ''
+    });
+    setConsultorCompleto(consultor);
+    setErroBackend(false);
+  };
+
+  // Função para buscar dados completos (com fallback)
+  const fetchConsultorCompleto = async (consultorId) => {
+    try {
+      console.log('🔍 Tentando buscar dados completos do consultor:', consultorId);
+      const response = await apiService.get(`/usuarios/${consultorId}`);
+      if (response.success) {
+        const dadosCompletos = response.data;
+        console.log('✅ Dados completos do consultor recebidos:', dadosCompletos);
+        
+        setConsultorCompleto(dadosCompletos);
+        setErroBackend(false);
+        
+        setDadosEdicao(prev => ({
+          nome: dadosCompletos.name || dadosCompletos.nome || prev.nome,
+          email: dadosCompletos.email || prev.email,
+          telefone: dadosCompletos.telefone || prev.telefone,
+          cpf_cnpj: dadosCompletos.cpf_cnpj || prev.cpf_cnpj,
+          endereco: dadosCompletos.endereco || prev.endereco,
+          cidade: dadosCompletos.cidade || prev.cidade,
+          estado: dadosCompletos.estado || prev.estado,
+          cep: dadosCompletos.cep || prev.cep,
+          pix: dadosCompletos.pix || prev.pix
+        }));
+        
+        console.log('✅ Dados mesclados com sucesso');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar dados completos do consultor:', error);
+      console.log('⚠️ Usando dados básicos disponíveis como fallback');
+      setErroBackend(true);
+    }
+  };
 
   const fetchFamiliaConsultor = async (consultorId) => {
     setLoadingFamilia(true);
@@ -78,17 +125,25 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
   const handleSalvarDados = async () => {
     setSalvandoDados(true);
     try {
+      console.log('💾 Salvando dados do consultor:', dadosEdicao);
       const response = await apiService.put(`/usuarios/${consultor.id}`, dadosEdicao);
       if (response.success) {
-        // Atualizar dados locais do consultor
         Object.assign(consultor, dadosEdicao);
         setModoEdicao(false);
         console.log('✅ Dados atualizados com sucesso');
+        
+        try {
+          await fetchConsultorCompleto(consultor.id);
+        } catch (error) {
+          console.log('⚠️ Não foi possível recarregar dados após salvamento, mas dados foram salvos');
+        }
       } else {
         console.error('❌ Erro ao salvar dados:', response.message);
+        alert('Erro ao salvar dados: ' + response.message);
       }
     } catch (error) {
       console.error('❌ Erro ao salvar dados:', error);
+      alert('Erro ao salvar dados. Tente novamente.');
     } finally {
       setSalvandoDados(false);
     }
@@ -96,18 +151,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
 
   const handleCancelarEdicao = () => {
     setModoEdicao(false);
-    // Resetar dados para valores originais
-    setDadosEdicao({
-      nome: consultor.name || consultor.nome || '',
-      email: consultor.email || '',
-      telefone: consultor.telefone || '',
-      cpf_cnpj: consultor.cpf_cnpj || '',
-      endereco: consultor.endereco || '',
-      cidade: consultor.cidade || '',
-      estado: consultor.estado || '',
-      cep: consultor.cep || '',
-      pix: consultor.pix || ''
-    });
+    initializeDadosEdicao();
   };
 
   const toggleVendedores = (gerenteId) => {
@@ -137,16 +181,6 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const getRoleIcon = (role) => {
-    const icons = {
-      admin: Crown,
-      consultor: Briefcase,
-      gerente: Users,
-      vendedor: User
-    };
-    return icons[role] || User;
-  };
-
   const getTipoLabel = (type) => {
     const labels = {
       consultor: 'Consultor',
@@ -156,7 +190,19 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
     return labels[type] || type;
   };
 
+  // Funções para exibir dados (com fallback)
+  const getDisplayValue = (field, fallback = '-') => {
+    return dadosEdicao[field] || 
+           consultorCompleto?.[field] || 
+           consultor?.[field] || 
+           fallback;
+  };
+
   if (!isOpen || !consultor) return null;
+
+  // Determinar status atual
+  const statusAtual = consultorCompleto?.is_active ?? consultor?.is_active;
+  const statusInfo = getStatusInfo(statusAtual);
 
   return (
     <div className="modal-overlay-consultor">
@@ -168,7 +214,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
               <Briefcase size={24} />
             </div>
             <div className="consultor-header-details">
-              <h2>{consultor.name || consultor.nome}</h2>
+              <h2>{getDisplayValue('nome') || getDisplayValue('name') || 'Nome não informado'}</h2>
               <span className="consultor-role-badge">
                 {getTipoLabel(consultor.role)}
               </span>
@@ -201,6 +247,17 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
         <div className="modal-consultor-body">
           {abaAtiva === 'informacoes' && (
             <div className="tab-content-informacoes">
+              {/* Aviso de Erro Backend */}
+              {erroBackend && (
+                <div className="backend-error-warning">
+                  <AlertCircle size={20} />
+                  <span>
+                    Alguns dados podem estar desatualizados devido a um erro no servidor. 
+                    As informações básicas estão sendo exibidas.
+                  </span>
+                </div>
+              )}
+
               {/* Botão de Editar */}
               <div className="info-actions">
                 {!modoEdicao ? (
@@ -255,9 +312,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.nome}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, nome: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite o nome completo"
                       />
                     ) : (
-                      <span>{consultorCompleto?.name || consultorCompleto?.nome || '-'}</span>
+                      <span>{getDisplayValue('nome') || getDisplayValue('name')}</span>
                     )}
                   </div>
                 </div>
@@ -275,9 +333,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.email}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, email: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite o email"
                       />
                     ) : (
-                      <span>{consultorCompleto?.email || '-'}</span>
+                      <span>{getDisplayValue('email')}</span>
                     )}
                   </div>
                 </div>
@@ -295,9 +354,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.telefone}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, telefone: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite o telefone"
                       />
                     ) : (
-                      <span>{consultorCompleto?.telefone || '-'}</span>
+                      <span>{getDisplayValue('telefone')}</span>
                     )}
                   </div>
                 </div>
@@ -315,9 +375,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.cpf_cnpj}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, cpf_cnpj: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite o CPF ou CNPJ"
                       />
                     ) : (
-                      <span>{consultorCompleto?.cpf_cnpj || '-'}</span>
+                      <span>{getDisplayValue('cpf_cnpj')}</span>
                     )}
                   </div>
                 </div>
@@ -335,9 +396,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.endereco}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, endereco: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite o endereço completo"
                       />
                     ) : (
-                      <span>{consultorCompleto?.endereco || '-'}</span>
+                      <span>{getDisplayValue('endereco')}</span>
                     )}
                   </div>
                 </div>
@@ -355,9 +417,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.cidade}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, cidade: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite a cidade"
                       />
                     ) : (
-                      <span>{consultorCompleto?.cidade || '-'}</span>
+                      <span>{getDisplayValue('cidade')}</span>
                     )}
                   </div>
                 </div>
@@ -376,9 +439,10 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         onChange={(e) => setDadosEdicao({...dadosEdicao, estado: e.target.value})}
                         className="edit-input"
                         maxLength={2}
+                        placeholder="Ex: GO"
                       />
                     ) : (
-                      <span>{consultorCompleto?.estado || '-'}</span>
+                      <span>{getDisplayValue('estado')}</span>
                     )}
                   </div>
                 </div>
@@ -396,14 +460,15 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.cep}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, cep: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite o CEP"
                       />
                     ) : (
-                      <span>{consultorCompleto?.cep || '-'}</span>
+                      <span>{getDisplayValue('cep')}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Chave PIX */}
+                {/* PIX */}
                 <div className="info-card">
                   <div className="info-icon">
                     <CreditCard size={20} />
@@ -416,33 +481,46 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         value={dadosEdicao.pix}
                         onChange={(e) => setDadosEdicao({...dadosEdicao, pix: e.target.value})}
                         className="edit-input"
+                        placeholder="Digite a chave PIX"
                       />
                     ) : (
-                      <span>{consultorCompleto?.pix || '-'}</span>
+                      <span>{getDisplayValue('pix')}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Data de Cadastro e Status */}
-                <div className="info-card">
-                  <div className="info-icon">
-                    <Calendar size={20} />
-                  </div>
-                  <div className="info-details">
-                    <label>Data de Cadastro</label>
-                    <span>{formatarData(consultorCompleto?.created_at)}</span>
-                  </div>
-                </div>
-
+                {/* Status */}
                 <div className="info-card">
                   <div className="info-icon">
                     <UserCheck size={20} />
                   </div>
                   <div className="info-details">
                     <label>Status</label>
-                    <span className={`status-badge ${(consultorCompleto?.is_active !== false && consultorCompleto?.is_active !== 0) ? 'active' : 'inactive'}`}>
-                      {(consultorCompleto?.is_active !== false && consultorCompleto?.is_active !== 0) ? 'Ativo' : 'Inativo'}
+                    <span className={`status-badge ${statusInfo.class}`}>
+                      {statusInfo.text}
                     </span>
+                  </div>
+                </div>
+
+                {/* Data de Criação */}
+                <div className="info-card">
+                  <div className="info-icon">
+                    <Calendar size={20} />
+                  </div>
+                  <div className="info-details">
+                    <label>Data de Criação</label>
+                    <span>{formatarData(consultorCompleto?.created_at || consultor?.created_at)}</span>
+                  </div>
+                </div>
+
+                {/* ID do Usuário */}
+                <div className="info-card full-width">
+                  <div className="info-icon">
+                    <Hash size={20} />
+                  </div>
+                  <div className="info-details">
+                    <label>ID do Usuário</label>
+                    <span className="user-id">{consultor.id}</span>
                   </div>
                 </div>
               </div>
@@ -452,99 +530,74 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
           {abaAtiva === 'equipe' && (
             <div className="tab-content-equipe">
               {loadingFamilia ? (
-                <div className="loading-familia">
-                  <Loader size={32} className="spinning" />
+                <div className="loading-state">
+                  <Loader size={32} />
                   <p>Carregando equipe...</p>
                 </div>
               ) : (
                 <>
-                  {/* Gerentes e suas equipes */}
+                  {/* Gerentes */}
                   {familiaData?.gerentes?.length > 0 && (
                     <div className="equipe-section">
                       <h3>
                         <Users size={20} />
                         Gerentes ({familiaData.gerentes.length})
                       </h3>
-                      <div className="gerentes-list">
+                      <div className="members-grid">
                         {familiaData.gerentes.map(gerente => {
-                          const IconComponent = getRoleIcon(gerente.role);
-                          const vendedoresDoGerente = familiaData.vendedores_indiretos?.filter(v => v.manager_id === gerente.id) || [];
+                          const vendedoresDoGerente = familiaData.vendedores_indiretos?.filter(
+                            v => v.manager_id === gerente.id
+                          ) || [];
                           const isExpanded = expandedGerentes.includes(gerente.id);
-                          const showAllForThisGerente = showAllVendedores[gerente.id] || false;
+                          const showAll = showAllVendedores[gerente.id] || false;
+                          const vendedoresExibidos = showAll ? vendedoresDoGerente : vendedoresDoGerente.slice(0, 3);
 
                           return (
-                            <div key={gerente.id} className="gerente-item">
-                              <div className="member-card gerente">
-                                <div className="member-header">
-                                  <div className="member-icon">
-                                    <IconComponent size={20} />
-                                  </div>
-                                  <div className="member-info">
-                                    <h4>{gerente.name}</h4>
-                                    <span className="member-role">Gerente</span>
-                                  </div>
+                            <div key={gerente.id} className="member-card gerente">
+                              <div className="member-header">
+                                <div className="member-icon">
+                                  <Users size={20} />
                                 </div>
-                                <div className="member-contact">
-                                  <span>{gerente.email}</span>
-                                  {gerente.telefone && <span>{gerente.telefone}</span>}
+                                <div className="member-info">
+                                  <h4>{gerente.name}</h4>
+                                  <span className="member-role">Gerente</span>
                                 </div>
-                                
-                                {/* Botão para expandir vendedores */}
                                 {vendedoresDoGerente.length > 0 && (
-                                  <button 
-                                    className="btn-toggle-vendedores"
+                                  <button
+                                    className="expand-btn"
                                     onClick={() => toggleVendedores(gerente.id)}
                                   >
-                                    {isExpanded ? (
-                                      <>
-                                        <ChevronDown size={16} />
-                                        Ocultar vendedores ({vendedoresDoGerente.length})
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronRight size={16} />
-                                        Ver vendedores ({vendedoresDoGerente.length})
-                                      </>
-                                    )}
+                                    {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                                   </button>
                                 )}
                               </div>
-
-                              {/* Lista de vendedores do gerente */}
+                              <div className="member-contact">
+                                <span>{gerente.email}</span>
+                                {gerente.telefone && <span>{gerente.telefone}</span>}
+                              </div>
                               {isExpanded && vendedoresDoGerente.length > 0 && (
-                                <div className="vendedores-do-gerente">
-                                  <div className="members-grid">
-                                    {(showAllForThisGerente ? vendedoresDoGerente : vendedoresDoGerente.slice(0, 3)).map(vendedor => {
-                                      const VendedorIcon = getRoleIcon(vendedor.role);
-                                      return (
-                                        <div key={vendedor.id} className="member-card vendedor">
-                                          <div className="member-header">
-                                            <div className="member-icon">
-                                              <VendedorIcon size={18} />
-                                            </div>
-                                            <div className="member-info">
-                                              <h5>{vendedor.name}</h5>
-                                              <span className="member-role">Vendedor</span>
-                                            </div>
-                                          </div>
-                                          <div className="member-contact">
-                                            <span>{vendedor.email}</span>
-                                            {vendedor.telefone && <span>{vendedor.telefone}</span>}
-                                          </div>
+                                <div className="gerente-vendedores">
+                                  <span className="vendedores-label">
+                                    Vendedores ({vendedoresDoGerente.length})
+                                  </span>
+                                  <div className="vendedores-list">
+                                    {vendedoresExibidos.map(vendedor => (
+                                      <div key={vendedor.id} className="vendedor-item">
+                                        <User size={14} />
+                                        <div className="vendedor-info">
+                                          <div className="vendedor-nome">{vendedor.name}</div>
+                                          <div className="vendedor-email">{vendedor.email}</div>
                                         </div>
-                                      );
-                                    })}
+                                      </div>
+                                    ))}
                                   </div>
-                                  
-                                  {/* Botão ver mais/menos vendedores */}
                                   {vendedoresDoGerente.length > 3 && (
-                                    <div className="show-more-vendedores">
-                                      <button 
-                                        className="btn-show-more"
+                                    <div className="show-more-container">
+                                      <button
+                                        className="show-more-btn"
                                         onClick={() => toggleShowAllVendedores(gerente.id)}
                                       >
-                                        {showAllForThisGerente ? 
-                                          'Ver menos' : `Ver mais ${vendedoresDoGerente.length - 3}`}
+                                        {showAll ? 'Ver menos' : `Ver mais ${vendedoresDoGerente.length - 3}`}
                                       </button>
                                     </div>
                                   )}
@@ -565,26 +618,23 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
                         Vendedores Diretos ({familiaData.vendedores_diretos.length})
                       </h3>
                       <div className="members-grid">
-                        {familiaData.vendedores_diretos.map(vendedor => {
-                          const IconComponent = getRoleIcon(vendedor.role);
-                          return (
-                            <div key={vendedor.id} className="member-card vendedor">
-                              <div className="member-header">
-                                <div className="member-icon">
-                                  <IconComponent size={20} />
-                                </div>
-                                <div className="member-info">
-                                  <h4>{vendedor.name}</h4>
-                                  <span className="member-role">Vendedor</span>
-                                </div>
+                        {familiaData.vendedores_diretos.map(vendedor => (
+                          <div key={vendedor.id} className="member-card vendedor">
+                            <div className="member-header">
+                              <div className="member-icon">
+                                <User size={20} />
                               </div>
-                              <div className="member-contact">
-                                <span>{vendedor.email}</span>
-                                {vendedor.telefone && <span>{vendedor.telefone}</span>}
+                              <div className="member-info">
+                                <h4>{vendedor.name}</h4>
+                                <span className="member-role">Vendedor</span>
                               </div>
                             </div>
-                          );
-                        })}
+                            <div className="member-contact">
+                              <span>{vendedor.email}</span>
+                              {vendedor.telefone && <span>{vendedor.telefone}</span>}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
