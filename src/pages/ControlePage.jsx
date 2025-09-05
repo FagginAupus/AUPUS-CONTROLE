@@ -574,31 +574,35 @@ const ControlePage = () => {
               </span>
             </div>
           </div>
-
           {/* NOVO - Card de Status */}
           <div className="stat-card">
             <div className="stat-icon">
               <Clock size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <div className="status-resumo">
-                <div className="status-item">
-                  <span className="status-badge status-esteira">{estatisticas.statusTroca.esteira}</span>
+              <div className="controle-status-resumo">
+                <div className="controle-status-item">
+                  <span className="controle-status-badge controle-status-esteira">
+                    {estatisticas.statusTroca.esteira}
+                  </span>
                   <small>Esteira</small>
                 </div>
-                <div className="status-item">
-                  <span className="status-badge status-em-andamento">{estatisticas.statusTroca.emAndamento}</span>
+                <div className="controle-status-item">
+                  <span className="controle-status-badge controle-status-em-andamento">
+                    {estatisticas.statusTroca.emAndamento}
+                  </span>
                   <small>Em Andamento</small>
                 </div>
-                <div className="status-item">
-                  <span className="status-badge status-associado">{estatisticas.statusTroca.associado}</span>
+                <div className="controle-status-item">
+                  <span className="controle-status-badge controle-status-associado">
+                    {estatisticas.statusTroca.associado}
+                  </span>
                   <small>Associado</small>
                 </div>
               </div>
             </div>
           </div>
         </section>
-
         {/* Filtros */}
         <section className="filters-section">
           <div className="filters-container">

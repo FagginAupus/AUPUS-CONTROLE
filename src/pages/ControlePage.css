@@ -1359,6 +1359,10 @@ small {
   margin-top: 4px !important;
 }
 
+/* ===============================================
+   AJUSTES DOS INDICADORES DE STATUS - ESPAÇAMENTO E ALINHAMENTO
+   =============================================== */
+
 .status-resumo {
   display: flex;
   flex-direction: column;
@@ -1383,69 +1387,93 @@ small {
   flex-shrink: 0; /* Impede que o texto seja comprimido */
 }
 
-.status-badge {
+.controle-status-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.controle-status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+}
+
+.controle-status-item small {
+  font-size: 0.75rem;
+  color: #b0b0b0;
+  font-weight: 500;
+  text-align: left;
+  min-width: 85px;
+  flex-shrink: 0;
+}
+
+.controle-status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 45px; /* CORREÇÃO: Aumentado de 24px para 45px para acomodar 4 dígitos */
-  width: 45px; /* Largura fixa para todos os badges */
-  height: 24px; /* Aumentado de 20px para 24px */
-  padding: 4px 8px; /* Aumentado o padding */
-  border-radius: 6px; /* Bordas um pouco mais arredondadas */
-  font-size: 0.8rem; /* Aumentado de 0.75rem para 0.8rem */
+  min-width: 45px;
+  width: 45px;
+  height: 24px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
   line-height: 1;
   text-align: center;
-  font-family: 'Courier New', monospace; /* Fonte monospace para melhor alinhamento de números */
-  flex-shrink: 0; /* Impede que o badge seja comprimido */
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
 }
 
-.status-badge.status-esteira {
+.controle-status-badge.controle-status-esteira {
   background: #ffc107;
   color: #000;
-  border: 1px solid #ffca2c; /* Borda sutil */
+  border: 1px solid #ffca2c;
 }
 
-.status-badge.status-em-andamento {
+.controle-status-badge.controle-status-em-andamento {
   background: #17a2b8;
   color: white;
-  border: 1px solid #20c0db; /* Borda sutil */
+  border: 1px solid #20c0db;
 }
 
-.status-badge.status-associado {
+.controle-status-badge.controle-status-associado {
   background: #28a745;
   color: white;
-  border: 1px solid #34ce57; /* Borda sutil */
+  border: 1px solid #34ce57;
 }
 
 .stat-card .stat-content {
   display: flex;
   flex-direction: column;
-  gap: 6px; /* Mantido o gap entre elementos */
-  min-height: 70px; /* Aumentado de 60px para 70px para acomodar melhor os 3 indicadores */
+  gap: 6px;
+  min-height: 70px;
   justify-content: center;
-  padding: 4px 0; /* Padding interno para melhor espaçamento */
+  padding: 4px 0;
 }
 
-/* Hover effect para melhor interatividade visual */
-.status-badge:hover {
+/* Hover effect específico para controle */
+.controle-status-badge:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   transition: all 0.2s ease;
 }
 
-/* Responsividade para telas menores */
+/* Responsividade específica para controle */
 @media (max-width: 768px) {
-  .status-item {
+  .controle-status-item {
     gap: 8px;
   }
   
-  .status-item small {
+  .controle-status-item small {
     min-width: 70px;
     font-size: 0.7rem;
   }
   
-  .status-badge {
+  .controle-status-badge {
     min-width: 40px;
     width: 40px;
     height: 22px;
@@ -1458,20 +1486,20 @@ small {
 }
 
 @media (max-width: 480px) {
-  .status-resumo {
+  .controle-status-resumo {
     gap: 6px;
   }
   
-  .status-item {
+  .controle-status-item {
     gap: 6px;
   }
   
-  .status-item small {
+  .controle-status-item small {
     min-width: 60px;
     font-size: 0.65rem;
   }
   
-  .status-badge {
+  .controle-status-badge {
     min-width: 35px;
     width: 35px;
     height: 20px;
