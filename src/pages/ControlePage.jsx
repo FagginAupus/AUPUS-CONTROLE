@@ -163,13 +163,13 @@ const ControlePage = () => {
     const statusTroca = dados.reduce((acc, item) => {
       const status = item.status_troca || 'Esteira';  // Default mudou
       switch (status) {
-        case 'Esteira':        // Era 'Aguardando'
+        case 'Esteira':        
           acc.esteira++;
           break;
         case 'Em andamento':
           acc.emAndamento++;
           break;
-        case 'Associado':      // Era 'Finalizado'
+        case 'Associado':     
           acc.associado++;
           break;
       }
@@ -204,15 +204,30 @@ const ControlePage = () => {
   }, []);
 
   const editarStatusTroca = useCallback((index) => {
-    console.log('🔍 editarStatusTroca chamada com index:', index);
+    console.log('🚀 INÍCIO editarStatusTroca - index recebido:', index);
+    console.log('🚀 dadosFiltrados disponível:', !!dadosFiltrados);
+    console.log('🚀 dadosFiltrados.length:', dadosFiltrados?.length);
+    
     const item = dadosFiltrados[index];
-    console.log('🔍 Item encontrado:', item);
+    console.log('🚀 Item no index', index, ':', item);
+    
     if (!item) {
-      console.log('❌ Item não encontrado');
+      console.log('❌ Item não encontrado no index:', index);
+      console.log('❌ dadosFiltrados completo:', dadosFiltrados);
       return;
     }
-    console.log('✅ Abrindo modal com item:', item);
+    
+    console.log('✅ Item encontrado:', {
+      id: item.id,
+      nomeCliente: item.nomeCliente,
+      statusTroca: item.statusTroca,
+      status_troca: item.status_troca
+    });
+    
+    console.log('✅ Definindo modalStatusTroca para true');
     setModalStatusTroca({ show: true, item, index });
+    
+    console.log('✅ Estado do modal após setModalStatusTroca - aguarde próximo render');
   }, [dadosFiltrados]);
 
   const editarUG = useCallback(async (index) => {
@@ -221,9 +236,12 @@ const ControlePage = () => {
     const item = dadosFiltrados[index];
     if (!item) return;
     
+    // ✅ CORRIGIR: Usar ambos os campos para compatibilidade
+    const statusAtual = item.statusTroca || item.status_troca || 'Esteira';
+    
     // Verificar se status permite atribuição
-    if (item.statusTroca !== 'Finalizado') {
-      showNotification('Status deve ser "Finalizado" para atribuir UG', 'warning');
+    if (statusAtual !== 'Associado') {
+      showNotification('Status deve ser "Associado" para atribuir UG', 'warning');
       return;
     }
 
@@ -985,8 +1003,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
               </select>
             </div>
             
-            {/* Campo Data - só aparece quando status é "Finalizado" */}
-            {statusTroca === 'Associado' && (  // Era 'Finalizado'
+            {statusTroca === 'Associado' && ( 
               <div className="form-group">
                 <label>Data da Titularidade:</label>
                 <input

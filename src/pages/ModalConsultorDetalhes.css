@@ -333,20 +333,31 @@
 
 .members-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px;
+  justify-content: center; /* ← ADICIONAR ESTA LINHA */
+  justify-items: center;   /* ← ADICIONAR ESTA LINHA */
 }
 
-/* ===============================================
-   CARDS DOS MEMBROS
-   =============================================== */
+/* Muitos vendedores = cards menores */
+.member-card.has-many-vendedores {
+  min-width: 280px;
+}
 
+@media (max-width: 768px) {
+  .members-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .member-card {
+    min-height: auto;
+  }
+}
+
+/* Cards se ajustam ao conteúdo */
 .member-card {
-  background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s ease;
+  min-height: 120px;
+  height: fit-content;
 }
 
 .member-card:hover {
@@ -590,4 +601,38 @@
   .stat-number {
     font-size: 1.8rem;
   }
+}
+
+.info-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.btn-editar, .btn-salvar, .btn-cancelar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-editar { background: #3498db; color: white; }
+.btn-salvar { background: #27ae60; color: white; }
+.btn-cancelar { background: #95a5a6; color: white; }
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid #3498db;
+  border-radius: 4px;
+  font-size: 1rem;
 }
