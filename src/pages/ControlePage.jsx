@@ -72,13 +72,6 @@ const ControlePage = () => {
       });
     }
   }, [isAdmin]);
-
-
-  console.log('🔍 Debug apiService:', {
-    apiServiceDisponivel: !!apiService,
-    temMetodoAtualizar: typeof apiService.atualizarConfiguracao,
-    temMetodoGet: typeof apiService.getConfiguracao
-  });
   
   const carregarUGs = useCallback(async () => {
     if (controle.loading) return;
@@ -95,42 +88,90 @@ const ControlePage = () => {
   }, [controle.loading, isAdmin, showNotification]);
 
   const dadosFiltrados = useMemo(() => {
+    console.log('🔄 Recalculando dadosFiltrados:', filtros);
     let dados = controle.data || [];
+    console.log('📊 Dados iniciais:', dados.length);
 
-    if (filtros.consultor) {
+    // Filtro por consultor
+    if (filtros.consultor && filtros.consultor.trim()) {
+      const consultorAntes = dados.length;
       dados = dados.filter(item =>
         item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
       );
+      console.log(`👨‍💼 Filtro consultor "${filtros.consultor}": ${consultorAntes} → ${dados.length}`);
     }
 
-    if (filtros.ug) {
+    // ✅ FILTRO UG CORRIGIDO COM LOGS
+    if (filtros.ug && filtros.ug.trim()) {
+      const ugAntes = dados.length;
+      
       if (filtros.ug === 'sem-ug') {
-        dados = dados.filter(item => !item.ug);
+        dados = dados.filter(item => {
+          const semUG = !item.ug || item.ug.trim() === '';
+          return semUG;
+        });
       } else {
-        dados = dados.filter(item => item.ug === filtros.ug);
+        dados = dados.filter(item => {
+          if (!item.ug || item.ug.trim() === '') {
+            return false; // ← EXCLUSÃO EXPLÍCITA de registros sem UG
+          }
+          return item.ug.trim() === filtros.ug.trim();
+        });
       }
+      
+      console.log(`🏭 Filtro UG "${filtros.ug}": ${ugAntes} → ${dados.length}`);
+      
+      // ✅ DEBUG: Mostrar UGs dos registros restantes
+      const ugsRestantes = dados.map(item => item.ug || 'SEM_UG');
+      console.log('🔍 UGs após filtro:', [...new Set(ugsRestantes)]);
     }
 
-    // ← NOVO FILTRO DE STATUS DE TROCA
-    if (filtros.statusTroca) {
+    // Filtro por status
+    if (filtros.statusTroca && filtros.statusTroca.trim()) {
+      const statusAntes = dados.length;
       dados = dados.filter(item => {
-        const status = item.statusTroca || item.status_troca || 'Esteira'; // Default para Esteira
+        const status = item.statusTroca || item.status_troca || 'Esteira';
         return status === filtros.statusTroca;
       });
+      console.log(`📊 Filtro status "${filtros.statusTroca}": ${statusAntes} → ${dados.length}`);
     }
 
-    if (filtros.busca) {
-      const busca = filtros.busca.toLowerCase();
+    // Filtro por busca textual
+    if (filtros.busca && filtros.busca.trim()) {
+      const buscaAntes = dados.length;
+      const busca = filtros.busca.toLowerCase().trim();
       dados = dados.filter(item =>
         (item.nomeCliente?.toString().toLowerCase() || '').includes(busca) ||
         (item.numeroProposta?.toString().toLowerCase() || '').includes(busca) ||
         (item.numeroUC?.toString().toLowerCase() || '').includes(busca) ||
         (item.apelido?.toString().toLowerCase() || '').includes(busca)
       );
+      console.log(`🔍 Filtro busca "${filtros.busca}": ${buscaAntes} → ${dados.length}`);
     }
 
+    console.log('✅ Dados finais filtrados:', dados.length);
     return dados;
-  }, [controle.data, filtros]);
+  }, [
+    controle.data, 
+    filtros.consultor, 
+    filtros.ug, 
+    filtros.statusTroca, 
+    filtros.busca
+  ]);
+
+  const [filtrosKey, setFiltrosKey] = useState(0);
+
+  // ✅ TERCEIRA CORREÇÃO: Função para alterar filtros que força atualização
+  const alterarFiltro = useCallback((campo, valor) => {
+    console.log(`🎯 Alterando filtro ${campo}:`, valor);
+    setFiltros(prev => {
+      const novos = { ...prev, [campo]: valor };
+      console.log('📝 Novos filtros:', novos);
+      return novos;
+    });
+    // Força re-render incrementando key
+    setFiltrosKey(prev => prev + 1);
+  }, []);
 
   // 3. ADICIONAR função para limpar filtros:
   const limparFiltros = () => {
@@ -161,32 +202,34 @@ const ControlePage = () => {
     
     // Calcular status da troca
     const statusTroca = dados.reduce((acc, item) => {
-      const status = item.status_troca || 'Esteira';  // Default mudou
+      const status = item.status_troca || 'Esteira';
       switch (status) {
-        case 'Esteira':        // Era 'Aguardando'
+        case 'Esteira':
           acc.esteira++;
           break;
-        case 'Em andamento':
+        case 'Em Andamento':
           acc.emAndamento++;
           break;
-        case 'Associado':     
+        case 'Associado':
           acc.associado++;
           break;
+        default:
+          acc.esteira++;
       }
       return acc;
     }, { esteira: 0, emAndamento: 0, associado: 0 });
-
+    
     return {
       total: dados.length,
       comUG: {
         quantidade: comUG.length,
-        somaConsumo: somaConsumoComUG
+        somaConsumo: Math.round(somaConsumoComUG)
       },
       semUG: {
-        quantidade: semUG.length,  
-        somaConsumo: somaConsumoSemUG
+        quantidade: semUG.length,
+        somaConsumo: Math.round(somaConsumoSemUG)
       },
-      statusTroca
+      statusTroca: statusTroca // ← USAR DADOS LOCAIS FILTRADOS
     };
   }, [dadosFiltrados]);
 
@@ -517,16 +560,14 @@ const ControlePage = () => {
   );
 
   return (
-    <div className="page-container">
+    <div className="page-container" key={filtrosKey}>
       <div className="container">
-        <Header 
-          title="Controle" 
-        />   
+        <Header title="Controle" />   
         <Navigation />
 
         {/* Estatísticas Rápidas */}
         <section className="quick-stats">
-          {/* Total - mantido */}
+          {/* Total */}
           <div className="stat-card">
             <div className="stat-icon">
               <Database size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
@@ -537,32 +578,43 @@ const ControlePage = () => {
             </div>
           </div>
 
-          {/* Com UG - ALTERADO */}
+          {/* Com UG */}
           <div className="stat-card">
             <div className="stat-icon">
               <CheckCircle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <span className="stat-value">{estatisticas.comUG.somaConsumo.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} kWh</span>
+              <span className="stat-value">
+                {estatisticas.comUG.somaConsumo.toLocaleString('pt-BR', { 
+                  minimumFractionDigits: 0, 
+                  maximumFractionDigits: 0 
+                })} kWh
+              </span>
               <span className="stat-label-small">
                 {estatisticas.comUG.quantidade} {estatisticas.comUG.quantidade === 1 ? 'Unidade' : 'Unidades'} com UG
               </span>
             </div>
           </div>
 
-          {/* Sem UG - ALTERADO */}
+          {/* Sem UG */}
           <div className="stat-card">
             <div className="stat-icon">
               <AlertTriangle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <span className="stat-value">{estatisticas.semUG.somaConsumo.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} kWh</span>
+              <span className="stat-value">
+                {estatisticas.semUG.somaConsumo.toLocaleString('pt-BR', { 
+                  minimumFractionDigits: 0, 
+                  maximumFractionDigits: 0 
+                })} kWh
+              </span>
               <span className="stat-label-small">
                 {estatisticas.semUG.quantidade} {estatisticas.semUG.quantidade === 1 ? 'Unidade' : 'Unidades'} sem UG
               </span>
             </div>
           </div>
-          {/* NOVO - Card de Status */}
+
+          {/* ✅ CORREÇÃO 4: Card de Status usando dados locais filtrados */}
           <div className="stat-card">
             <div className="stat-icon">
               <Clock size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
@@ -571,19 +623,19 @@ const ControlePage = () => {
               <div className="controle-status-resumo">
                 <div className="controle-status-item">
                   <span className="controle-status-badge controle-status-esteira">
-                    {dashboard.statistics.statusTroca.esteira}
+                    {estatisticas.statusTroca.esteira}
                   </span>
                   <small>Esteira</small>
                 </div>
                 <div className="controle-status-item">
                   <span className="controle-status-badge controle-status-em-andamento">
-                    {dashboard.statistics.statusTroca.emAndamento}
+                    {estatisticas.statusTroca.emAndamento}
                   </span>
                   <small>Em Andamento</small>
                 </div>
                 <div className="controle-status-item">
                   <span className="controle-status-badge controle-status-associado">
-                    {dashboard.statistics.statusTroca.associado}
+                    {estatisticas.statusTroca.associado}
                   </span>
                   <small>Associado</small>
                 </div>
@@ -613,7 +665,7 @@ const ControlePage = () => {
                 <label>UG (Usina)</label>
                 <select
                   value={filtros.ug}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, ug: e.target.value }))}
+                  onChange={(e) => alterarFiltro('ug', e.target.value)}
                 >
                   <option value="">Todas</option>
                   <option value="sem-ug">Sem UG</option>
