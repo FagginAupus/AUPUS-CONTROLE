@@ -49,7 +49,7 @@ export const DataProvider = ({ children }) => {
     data: [],
     page: 1,
     lastPage: 1,
-    perPage: 50,
+    perPage: 'all',
     total: 0,
     hasMore: true,
     loading: false,
