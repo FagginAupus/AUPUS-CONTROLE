@@ -1547,7 +1547,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         <button
                           type="button"
                           className="btn-visualizar-doc"
-                          onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoal}`, '_blank')}
+                          onClick={() => window.open(getDocumentUrl(dados.documentoPessoal), '_blank')}
                           title="Visualizar documento"
                         >
                           <Eye size={14} />
@@ -1632,7 +1632,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             <button
                               type="button"
                               className="btn-visualizar-doc"
-                              onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`, '_blank')}
+                              onClick={() => window.open(getDocumentUrl(dados.contratoSocial), '_blank')}
                               title="Visualizar contrato"
                             >
                               <Eye size={14} />
