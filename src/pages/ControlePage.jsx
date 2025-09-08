@@ -694,7 +694,7 @@ const ControlePage = () => {
                   type="text"
                   placeholder="Cliente, proposta ou UC..."
                   value={filtros.busca}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
+                  onChange={(e) => alterarFiltro('busca', e.target.value)}
                 />
               </div>
             </div>
