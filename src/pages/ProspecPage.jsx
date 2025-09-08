@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import storageService from '../services/storageService'; 
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
-import { Eye, Download } from 'lucide-react';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -18,7 +17,8 @@ import {
   Edit, 
   Eye,
   Trash2,
-  X
+  X,
+  Download
 } from 'lucide-react';
 
 const ProspecPage = () => {
