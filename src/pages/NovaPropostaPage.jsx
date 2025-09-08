@@ -40,18 +40,88 @@ const NovaPropostaPage = () => {
     return beneficios;
   };
 
+  const [arquivosFatura, setArquivosFatura] = useState({});
+
+  const handleFileUpload = (ucIndex, file) => {
+    console.log(`📁 Upload de fatura para UC ${ucIndex}:`, file?.name);
+    
+    // Validar arquivo
+    if (file) {
+      const allowedTypes = ['application/pdf'];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      
+      if (!allowedTypes.includes(file.type)) {
+        showNotification('Apenas arquivos PDF são permitidos para faturas', 'error');
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        showNotification('Arquivo muito grande. Tamanho máximo: 10MB', 'error');
+        return;
+      }
+    }
+    
+    setArquivosFatura(prev => ({
+      ...prev,
+      [ucIndex]: file || null
+    }));
+  };
+
+  const uploadArquivosFatura = async (numeroUC, ucIndex, propostaId) => {
+    const arquivo = arquivosFatura[ucIndex];
+    
+    if (!arquivo) {
+      console.log(`📁 Nenhuma fatura para UC ${ucIndex}`);
+      return null;
+    }
+
+    try {
+      console.log(`📤 Fazendo upload da fatura para UC ${numeroUC}...`);
+      
+      const formData = new FormData();
+      formData.append('arquivo', arquivo);
+      formData.append('numeroUC', numeroUC);
+      formData.append('tipoDocumento', 'faturaUC');
+      
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/propostas/${propostaId}/upload-documento`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Fatura UC ${numeroUC} enviada:`, result.nomeArquivo);
+      
+      return result.nomeArquivo;
+      
+    } catch (error) {
+      console.error(`❌ Erro ao enviar fatura UC ${numeroUC}:`, error);
+      showNotification(`Erro ao enviar fatura da UC ${numeroUC}: ${error.message}`, 'error');
+      return null;
+    }
+  };
+
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
       consultor_id: '',
-      recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
+      recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '',
       economia: 20,
       bandeira: 20,
       inflacao: 2,
       tarifaTributos: 0.98,
       
-      ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-      // Benefícios padrão (não obrigatórios)
+      // ✅ MODIFICAR ESTA LINHA PARA PRÉ-SELECIONAR EQUATORIAL GO
+      ucs: [{ distribuidora: 'EQUATORIAL GO', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
+      
+      // Benefícios padrão
       beneficio1: true,
       beneficio2: true,
       beneficio3: false,
@@ -179,7 +249,7 @@ const NovaPropostaPage = () => {
       bandeira: 20,
       inflacao: 2,
       tarifaTributos: 0.98,
-      ucs: [{ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
+      ucs: [{ distribuidora: 'EQUATORIAL GO', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
       // Benefícios continuam como false (não obrigatórios)
       beneficio1: true,
       beneficio2: true,
@@ -191,6 +261,7 @@ const NovaPropostaPage = () => {
       beneficio8: false
     });
     setBeneficiosAdicionais([]);
+    setArquivosFatura({});
     gerarNumeroProposta();
     showNotification('Formulário limpo com sucesso!', 'info');
   };
@@ -697,96 +768,144 @@ const NovaPropostaPage = () => {
                     )}
                   </div>
 
-                  <div className="uc-inputs-row">
-                    <div className="form-group">
-                      <label>Distribuidora *</label>
-                      <select 
-                        {...register(`ucs.${index}.distribuidora`, { 
-                          required: 'Distribuidora é obrigatória' 
-                        })}
-                        className={errors.ucs?.[index]?.distribuidora ? 'error' : ''}
-                      >
-                        <option value="">Selecione...</option>
-                        <option value="ENEL GO">ENEL GO</option>
-                        <option value="EQUATORIAL GO">EQUATORIAL GO</option>
-                        <option value="NEOENERGIA">NEOENERGIA</option>
-                        <option value="CEMIG">CEMIG</option>
-                        <option value="CPFL">CPFL</option>
-                        <option value="LIGHT">LIGHT</option>
-                        <option value="OUTRAS">OUTRAS</option>
-                      </select>
-                      {errors.ucs?.[index]?.distribuidora && (
-                        <span className="error-message">{errors.ucs[index].distribuidora.message}</span>
-                      )}
-                    </div>
-
-                    <div className="form-group">
-                      <label>Número UC *</label>
-                      <input 
-                        {...register(`ucs.${index}.numeroUC`, { 
-                          required: 'Número UC é obrigatório',
-                          minLength: { value: 3, message: 'Mínimo 3 caracteres' }
-                        })} 
-                        type="text" 
-                        placeholder="Ex: 123456789"
-                        className={errors.ucs?.[index]?.numeroUC ? 'error' : ''}
-                      />
-                      {errors.ucs?.[index]?.numeroUC && (
-                        <span className="error-message">{errors.ucs[index].numeroUC.message}</span>
-                      )}
-                    </div>
-
-                    <div className="form-group">
-                      <label>Apelido *</label>
-                      <input 
-                        {...register(`ucs.${index}.apelido`, { 
-                          required: 'Apelido é obrigatório' 
-                        })} 
-                        type="text" 
-                        placeholder="Ex: Casa, Loja..."
-                        onBlur={(e) => setValue(`ucs.${index}.apelido`, formatarPrimeiraMaiuscula(e.target.value))}
-                        className={errors.ucs?.[index]?.apelido ? 'error' : ''}
-                      />
-                      {errors.ucs?.[index]?.apelido && (
-                        <span className="error-message">{errors.ucs[index].apelido.message}</span>
-                      )}
-                    </div>
-
-                    <div className="form-group">
-                      <label>Ligação *</label>
-                      <select 
-                        {...register(`ucs.${index}.ligacao`, { 
-                          required: 'Tipo de ligação é obrigatório' 
-                        })}
-                        className={errors.ucs?.[index]?.ligacao ? 'error' : ''}
-                      >
-                        <option value="">Selecione...</option>
-                        <option value="MONOFÁSICA">MONOFÁSICA</option>
-                        <option value="BIFÁSICA">BIFÁSICA</option>
-                        <option value="TRIFÁSICA">TRIFÁSICA</option>
-                      </select>
-                      {errors.ucs?.[index]?.ligacao && (
-                        <span className="error-message">{errors.ucs[index].ligacao.message}</span>
-                      )}
-                    </div>
-
-                    <div className="form-group">
-                      <label>Consumo (kWh) *</label>
-                      <input 
-                        {...register(`ucs.${index}.consumo`, { 
-                          required: 'Consumo é obrigatório',
-                          min: { value: 1, message: 'Consumo deve ser maior que 0' }
-                        })} 
-                        type="number" 
-                        min="1"
-                        placeholder="Ex: 500"
-                        className={errors.ucs?.[index]?.consumo ? 'error' : ''}
-                      />
-                      {errors.ucs?.[index]?.consumo && (
-                        <span className="error-message">{errors.ucs[index].consumo.message}</span>
-                      )}
-                    </div>
+                  <div className="uc-inputs-grid">
+                  {/* Campo 1 - Distribuidora (mais largo) */}
+                  <div className="uc-field">
+                    <label>Distribuidora *</label>
+                    <select 
+                      {...register(`ucs.${index}.distribuidora`, { 
+                        required: 'Distribuidora é obrigatória' 
+                      })}
+                      className={errors.ucs?.[index]?.distribuidora ? 'error' : ''}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="EQUATORIAL GO">EQUATORIAL GO</option>
+                      <option value="ENEL GO">ENEL GO</option>
+                      <option value="NEOENERGIA">NEOENERGIA</option>
+                      <option value="CEMIG">CEMIG</option>
+                      <option value="CPFL">CPFL</option>
+                      <option value="LIGHT">LIGHT</option>
+                      <option value="OUTRAS">OUTRAS</option>
+                    </select>
+                    {errors.ucs?.[index]?.distribuidora && (
+                      <span className="error-message">{errors.ucs[index].distribuidora.message}</span>
+                    )}
                   </div>
+
+                  {/* Campo 2 - Número UC (menor) */}
+                  <div className="uc-field">
+                    <label>Número UC *</label>
+                    <input 
+                      {...register(`ucs.${index}.numeroUC`, { 
+                        required: 'Número UC é obrigatório',
+                        minLength: { value: 3, message: 'Mínimo 3 caracteres' }
+                      })} 
+                      type="text" 
+                      placeholder="Ex: 123456"
+                      className={errors.ucs?.[index]?.numeroUC ? 'error' : ''}
+                    />
+                    {errors.ucs?.[index]?.numeroUC && (
+                      <span className="error-message">{errors.ucs[index].numeroUC.message}</span>
+                    )}
+                  </div>
+
+                  {/* Campo 3 - Apelido */}
+                  <div className="uc-field">
+                    <label>Apelido *</label>
+                    <input 
+                      {...register(`ucs.${index}.apelido`, { 
+                        required: 'Apelido é obrigatório' 
+                      })} 
+                      type="text" 
+                      placeholder="Ex: Casa, Loja..."
+                      onBlur={(e) => setValue(`ucs.${index}.apelido`, formatarPrimeiraMaiuscula(e.target.value))}
+                      className={errors.ucs?.[index]?.apelido ? 'error' : ''}
+                    />
+                    {errors.ucs?.[index]?.apelido && (
+                      <span className="error-message">{errors.ucs[index].apelido.message}</span>
+                    )}
+                  </div>
+
+                  {/* Campo 4 - Ligação */}
+                  <div className="uc-field">
+                    <label>Ligação *</label>
+                    <select 
+                      {...register(`ucs.${index}.ligacao`, { 
+                        required: 'Tipo de ligação é obrigatório' 
+                      })}
+                      className={errors.ucs?.[index]?.ligacao ? 'error' : ''}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="MONOFÁSICA">MONOFÁSICA</option>
+                      <option value="BIFÁSICA">BIFÁSICA</option>
+                      <option value="TRIFÁSICA">TRIFÁSICA</option>
+                    </select>
+                    {errors.ucs?.[index]?.ligacao && (
+                      <span className="error-message">{errors.ucs[index].ligacao.message}</span>
+                    )}
+                  </div>
+
+                  {/* Campo 5 - Consumo (menor) */}
+                  <div className="uc-field">
+                    <label>Consumo (kWh) *</label>
+                    <input 
+                      {...register(`ucs.${index}.consumo`, { 
+                        required: 'Consumo é obrigatório',
+                        min: { value: 1, message: 'Consumo deve ser maior que 0' }
+                      })} 
+                      type="number" 
+                      min="1"
+                      placeholder="Ex: 500"
+                      className={errors.ucs?.[index]?.consumo ? 'error' : ''}
+                    />
+                    {errors.ucs?.[index]?.consumo && (
+                      <span className="error-message">{errors.ucs[index].consumo.message}</span>
+                    )}
+                  </div>
+
+                  {/* Campo 6 - PDF da Fatura */}
+                  <div className="uc-field">
+                    <label>
+                      PDF da Fatura
+                      <span className="optional-field">(opcional)</span>
+                    </label>
+                    <div className="file-upload-container">
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(e) => handleFileUpload(index, e.target.files[0])}
+                        className="file-input"
+                        id={`fatura-uc-${index}`}
+                      />
+                      <label htmlFor={`fatura-uc-${index}`} className="file-upload-label">
+                        {arquivosFatura[index] ? (
+                          <span className="file-selected">
+                            📄 {arquivosFatura[index].name.length > 8 ? 
+                              arquivosFatura[index].name.substring(0, 8) + '...' : 
+                              arquivosFatura[index].name}
+                          </span>
+                        ) : (
+                          <span className="file-placeholder">
+                            📄 Selecionar PDF
+                          </span>
+                        )}
+                      </label>
+                      {arquivosFatura[index] && (
+                        <button
+                          type="button"
+                          className="btn-remove-file"
+                          onClick={() => handleFileUpload(index, null)}
+                          title="Remover arquivo"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    <small className="file-help-text">
+                      Apenas PDF, máx 10MB
+                    </small>
+                  </div>
+                </div>
                 </div>
               ))}
             </div>
