@@ -64,7 +64,6 @@ const ControlePage = () => {
         !ugs.loading && 
         !loadingUgsRef.current) {
       
-      console.log('🔄 Carregando UGs para admin...');
       loadingUgsRef.current = true;
       
       loadUgs({}, true).finally(() => {
@@ -98,7 +97,6 @@ const ControlePage = () => {
       dados = dados.filter(item =>
         item.consultor?.toLowerCase().includes(filtros.consultor.toLowerCase())
       );
-      console.log(`👨‍💼 Filtro consultor "${filtros.consultor}": ${consultorAntes} → ${dados.length}`);
     }
 
     // ✅ FILTRO UG CORRIGIDO COM LOGS
@@ -119,11 +117,8 @@ const ControlePage = () => {
         });
       }
       
-      console.log(`🏭 Filtro UG "${filtros.ug}": ${ugAntes} → ${dados.length}`);
-      
       // ✅ DEBUG: Mostrar UGs dos registros restantes
       const ugsRestantes = dados.map(item => item.ug || 'SEM_UG');
-      console.log('🔍 UGs após filtro:', [...new Set(ugsRestantes)]);
     }
 
     // Filtro por status
@@ -133,7 +128,6 @@ const ControlePage = () => {
         const status = item.statusTroca || item.status_troca || 'Esteira';
         return status === filtros.statusTroca;
       });
-      console.log(`📊 Filtro status "${filtros.statusTroca}": ${statusAntes} → ${dados.length}`);
     }
 
     // Filtro por busca textual
@@ -158,20 +152,6 @@ const ControlePage = () => {
     filtros.statusTroca, 
     filtros.busca
   ]);
-
-  const [filtrosKey, setFiltrosKey] = useState(0);
-
-  // ✅ TERCEIRA CORREÇÃO: Função para alterar filtros que força atualização
-  const alterarFiltro = useCallback((campo, valor) => {
-    console.log(`🎯 Alterando filtro ${campo}:`, valor);
-    setFiltros(prev => {
-      const novos = { ...prev, [campo]: valor };
-      console.log('📝 Novos filtros:', novos);
-      return novos;
-    });
-    // Força re-render incrementando key
-    setFiltrosKey(prev => prev + 1);
-  }, []);
 
   // 3. ADICIONAR função para limpar filtros:
   const limparFiltros = () => {
@@ -205,8 +185,6 @@ const ControlePage = () => {
       // Usar o campo correto com fallback
       const status = item.status_troca || item.statusTroca || 'Esteira';
       
-      console.log('🔍 DEBUG Status item:', status); // Debug para verificar
-      
       switch (status) {
         case 'Esteira':
           acc.esteira++;
@@ -223,9 +201,6 @@ const ControlePage = () => {
       }
       return acc;
     }, { esteira: 0, emAndamento: 0, associado: 0 });
-    
-    // Debug para verificar distribuição
-    console.log('🔍 DEBUG Estatísticas calculadas:', statusTroca);
     
     return {
       total: dados.length,
@@ -281,7 +256,7 @@ const ControlePage = () => {
     try {
       // ✅ USAR UGs do contexto se disponíveis, senão buscar
       if (ugs.data && ugs.data.length > 0) {
-        console.log('📋 Usando UGs do contexto - abertura instantânea');
+
         
         // Calcular capacidade disponível para cada UG
         const consumoUc = parseFloat(item.media) || 0;
@@ -367,18 +342,9 @@ const ControlePage = () => {
         });
       }
 
-      console.log('🔍 DEBUG - response completa:', response);
-      console.log('🔍 DEBUG - response.success:', response?.success);
-      console.log('🔍 DEBUG - response.errorType:', response?.errorType);
-      console.log('🔍 DEBUG - response.message:', response?.message);
-
       // Verificar se é erro de capacidade especificamente
       if (response?.success === false && response?.errorType === 'capacity') {
-        console.log('✅ DEBUG - Entrando na condição de capacidade');
-        console.log('🟡 DEBUG - Chamando showNotification com WARNING');
         showNotification(response.message, 'warning');
-        console.log('🔚 DEBUG - Executando return, não deve prosseguir');
-        // NÃO fechar o modal - deixar usuário escolher outra UG
         return;
       }
 
@@ -443,9 +409,6 @@ const ControlePage = () => {
   }, [loadControle, controle.filters]);
 
   const aplicarCalibragem = useCallback(async () => {
-    console.log('🔄 aplicarCalibragem chamada!');
-    console.log('🔍 Debug - isAdmin:', isAdmin);
-    console.log('🔍 Debug - calibragemGlobal:', calibragemGlobal);
     
     if (!isAdmin) {
       console.log('❌ Usuário não é admin');
@@ -460,7 +423,6 @@ const ControlePage = () => {
     }
 
     // ✅ CORREÇÃO: Permitir aplicar mesmo com valor 0
-    console.log('🔄 Mostrando confirmação...');
     const mensagem = calibragemGlobal === 0 
       ? `Resetar calibragem global para 0% (remover calibragem)?`
       : `Aplicar calibragem de ${calibragemGlobal}% como padrão global do sistema?`;
@@ -568,7 +530,7 @@ const ControlePage = () => {
   );
 
   return (
-    <div className="page-container" key={filtrosKey}>
+    <div className="page-container">
       <div className="container">
         <Header title="Controle" />   
         <Navigation />
@@ -660,7 +622,7 @@ const ControlePage = () => {
                 <label>Consultor</label>
                 <select
                   value={filtros.consultor}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, consultor: e.target.value }))}
+                  onChange={(e) => setFiltros({...filtros, consultor: e.target.value})}
                 >
                   <option value="">Todos</option>
                   {consultoresUnicos.map(consultor => (
@@ -673,7 +635,7 @@ const ControlePage = () => {
                 <label>UG (Usina)</label>
                 <select
                   value={filtros.ug}
-                  onChange={(e) => alterarFiltro('ug', e.target.value)}
+                  onChange={(e) => setFiltros({...filtros, ug: e.target.value})}
                 >
                   <option value="">Todas</option>
                   <option value="sem-ug">Sem UG</option>
@@ -702,7 +664,7 @@ const ControlePage = () => {
                   type="text"
                   placeholder="Cliente, proposta ou UC..."
                   value={filtros.busca}
-                  onChange={(e) => alterarFiltro('busca', e.target.value)}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
                 />
               </div>
             </div>
@@ -891,7 +853,6 @@ const ControlePage = () => {
             onClose={() => setModalUG({ show: false, item: null, index: -1 })}
           />
         )}
-        {console.log('🔍 Render ModalStatusTroca:', modalStatusTroca.show) || null}
         {modalStatusTroca.show && (
           <ModalStatusTroca 
             item={modalStatusTroca.item}
