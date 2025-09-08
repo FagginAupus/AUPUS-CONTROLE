@@ -191,33 +191,41 @@ const ControlePage = () => {
     
     // Calcular somatório dos consumos médios
     const somaConsumoComUG = comUG.reduce((soma, item) => {
-      const consumo = parseFloat(item.media) || 0;  // ← CORRETO: usar 'media'
+      const consumo = parseFloat(item.media) || 0;
       return soma + consumo;
     }, 0);
 
     const somaConsumoSemUG = semUG.reduce((soma, item) => {
-      const consumo = parseFloat(item.media) || 0;  // ← CORRETO: usar 'media'
+      const consumo = parseFloat(item.media) || 0;
       return soma + consumo;
     }, 0);
     
-    // Calcular status da troca
+    // ✅ CORREÇÃO: Status comparação corrigida
     const statusTroca = dados.reduce((acc, item) => {
-      const status = item.status_troca || 'Esteira';
+      // Usar o campo correto com fallback
+      const status = item.status_troca || item.statusTroca || 'Esteira';
+      
+      console.log('🔍 DEBUG Status item:', status); // Debug para verificar
+      
       switch (status) {
         case 'Esteira':
           acc.esteira++;
           break;
-        case 'Em Andamento':
+        case 'Em andamento':  // ✅ CORRIGIDO: 'Em andamento' (com 'E' maiúsculo, 'a' minúsculo)
           acc.emAndamento++;
           break;
         case 'Associado':
           acc.associado++;
           break;
         default:
-          acc.esteira++;
+          console.warn('Status desconhecido encontrado:', status);
+          acc.esteira++; // Default para Esteira
       }
       return acc;
     }, { esteira: 0, emAndamento: 0, associado: 0 });
+    
+    // Debug para verificar distribuição
+    console.log('🔍 DEBUG Estatísticas calculadas:', statusTroca);
     
     return {
       total: dados.length,
@@ -229,7 +237,7 @@ const ControlePage = () => {
         quantidade: semUG.length,
         somaConsumo: Math.round(somaConsumoSemUG)
       },
-      statusTroca: statusTroca // ← USAR DADOS LOCAIS FILTRADOS
+      statusTroca: statusTroca
     };
   }, [dadosFiltrados]);
 
