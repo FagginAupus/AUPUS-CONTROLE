@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import storageService from '../services/storageService'; 
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
+import { Eye, Download } from 'lucide-react';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -1455,11 +1456,58 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
               </div>
             </div>
           </div>
-
+          
           {/* Tipo de Documento */}
           <div className="secao-modal">
             <h4 className="titulo-secao">📄 Documentação</h4>
-            
+            <div className="form-group">
+              <label>Fatura de Energia da UC</label>
+              {(() => {
+                const documentacao = dados.documentacao || item.documentacao || {};
+                const faturas_ucs = documentacao.faturas_ucs || {};
+                const numeroUC = item.numeroUC || item.numero_unidade;
+                const faturaExistente = faturas_ucs[numeroUC];
+                
+                if (faturaExistente) {
+                  return (
+                    <div className="arquivo-existente">
+                      <span className="arquivo-info" title={faturaExistente}>
+                        📄 Fatura: {faturaExistente.length > 30 ? faturaExistente.substring(0, 30) + '...' : faturaExistente}
+                      </span>
+                      <div className="arquivo-acoes">
+                        <button
+                          type="button"
+                          className="btn-visualizar-doc"
+                          onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`, '_blank')}
+                          title="Visualizar fatura"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-baixar-doc"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`;
+                            link.download = faturaExistente;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          title="Baixar fatura"
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <span className="sem-arquivo">Nenhuma fatura carregada para esta UC</span>
+                  );
+                }
+              })()}
+            </div>
             <div className="document-type-selector">
               <label className="radio-option">
                 <input
@@ -1485,41 +1533,49 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
 
             {/* Campos CPF */}
             {dados.tipoDocumento === 'CPF' && (
-              <div className="document-fields">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Nome do Representante</label>
-                    <input
-                      type="text"
-                      value={dados.nomeRepresentante || ''}
-                      onChange={(e) => setDados({...dados, nomeRepresentante: e.target.value})}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>CPF</label>
-                    <input
-                      type="text"
-                      value={dados.cpf || ''}
-                      onChange={(e) => setDados({...dados, cpf: e.target.value})}
-                      placeholder="000.000.000-00"
-                    />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group file-group">
-                    <label>Documento Pessoal</label>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
-                    />
-                    {dados.documentoPessoal && (
-                      <small className="file-info">
-                        📎 {dados.documentoPessoal.name || 'Documento carregado'}
-                      </small>
+              <div className="form-group">
+                <label>Documento Pessoal (CPF, RG, CNH)</label>
+                {dados.documentoPessoal ? (
+                  <div className="arquivo-existente">
+                    <span className="arquivo-info" title={typeof dados.documentoPessoal === 'string' ? dados.documentoPessoal : dados.documentoPessoal.name}>
+                      📎 {typeof dados.documentoPessoal === 'string' ? 
+                        `Doc: ${dados.documentoPessoal.length > 30 ? dados.documentoPessoal.substring(0, 30) + '...' : dados.documentoPessoal}` : 
+                        `Arquivo: ${dados.documentoPessoal.name.length > 30 ? dados.documentoPessoal.name.substring(0, 30) + '...' : dados.documentoPessoal.name}`}
+                    </span>
+                    {typeof dados.documentoPessoal === 'string' && (
+                      <div className="arquivo-acoes">
+                        <button
+                          type="button"
+                          className="btn-visualizar-doc"
+                          onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoal}`, '_blank')}
+                          title="Visualizar documento"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-baixar-doc"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoal}`;
+                            link.download = dados.documentoPessoal;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          title="Baixar documento"
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
+                />
               </div>
             )}
 
@@ -1559,32 +1615,100 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                     {/* Espaço vazio para manter layout */}
                   </div>
                 </div>
+                
+                {/* SEPARADO: Contrato Social da Empresa */}
                 <div className="form-row">
                   <div className="form-group file-group">
                     <label>Contrato Social da Empresa</label>
+                    {dados.contratoSocial ? (
+                      <div className="arquivo-existente">
+                        <span className="arquivo-info" title={typeof dados.contratoSocial === 'string' ? dados.contratoSocial : dados.contratoSocial.name}>
+                          📎 {typeof dados.contratoSocial === 'string' ? 
+                            `Contrato: ${dados.contratoSocial.length > 30 ? dados.contratoSocial.substring(0, 30) + '...' : dados.contratoSocial}` : 
+                            `Arquivo: ${dados.contratoSocial.name.length > 30 ? dados.contratoSocial.name.substring(0, 30) + '...' : dados.contratoSocial.name}`}
+                        </span>
+                        {typeof dados.contratoSocial === 'string' && (
+                          <div className="arquivo-acoes">
+                            <button
+                              type="button"
+                              className="btn-visualizar-doc"
+                              onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`, '_blank')}
+                              title="Visualizar contrato"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-baixar-doc"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`;
+                                link.download = dados.contratoSocial;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                              title="Baixar contrato"
+                            >
+                              <Download size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => handleFileChange('contratoSocial', e.target.files[0])}
                     />
-                    {dados.contratoSocial && (
-                      <small className="file-info">
-                        📎 {dados.contratoSocial.name || 'Contrato Social carregado'}
-                      </small>
-                    )}
                   </div>
+                </div>
+                
+                {/* SEPARADO: Documento Pessoal do Representante */}
+                <div className="form-row">
                   <div className="form-group file-group">
                     <label>Documento Pessoal do Representante</label>
+                    {dados.documentoPessoalRepresentante ? (
+                      <div className="arquivo-existente">
+                        <span className="arquivo-info" title={typeof dados.documentoPessoalRepresentante === 'string' ? dados.documentoPessoalRepresentante : dados.documentoPessoalRepresentante.name}>
+                          📎 {typeof dados.documentoPessoalRepresentante === 'string' ? 
+                            `Doc Rep: ${dados.documentoPessoalRepresentante.length > 30 ? dados.documentoPessoalRepresentante.substring(0, 30) + '...' : dados.documentoPessoalRepresentante}` : 
+                            `Arquivo: ${dados.documentoPessoalRepresentante.name.length > 30 ? dados.documentoPessoalRepresentante.name.substring(0, 30) + '...' : dados.documentoPessoalRepresentante.name}`}
+                        </span>
+                        {typeof dados.documentoPessoalRepresentante === 'string' && (
+                          <div className="arquivo-acoes">
+                            <button
+                              type="button"
+                              className="btn-visualizar-doc"
+                              onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`, '_blank')}
+                              title="Visualizar documento"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-baixar-doc"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`;
+                                link.download = dados.documentoPessoalRepresentante;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                              title="Baixar documento"
+                            >
+                              <Download size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => handleFileChange('documentoPessoalRepresentante', e.target.files[0])}
                     />
-                    {dados.documentoPessoalRepresentante && (
-                      <small className="file-info">
-                        📎 {dados.documentoPessoalRepresentante.name || 'Documento do Representante carregado'}
-                      </small>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1616,21 +1740,52 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   </label>
                 </div>
               </div>
-
+              {/* Contrato de Locação - COM ÍCONES LUCIDE */}
               {dados.isArrendamento && (
                 <div className="form-row">
                   <div className="form-group file-group">
                     <label>Contrato de Locação</label>
+                    {dados.contratoLocacao ? (
+                      <div className="arquivo-existente">
+                        <span className="arquivo-info" title={typeof dados.contratoLocacao === 'string' ? dados.contratoLocacao : dados.contratoLocacao.name}>
+                          📎 {typeof dados.contratoLocacao === 'string' ? 
+                            `Locação: ${dados.contratoLocacao.length > 30 ? dados.contratoLocacao.substring(0, 30) + '...' : dados.contratoLocacao}` : 
+                            `Arquivo: ${dados.contratoLocacao.name.length > 30 ? dados.contratoLocacao.name.substring(0, 30) + '...' : dados.contratoLocacao.name}`}
+                        </span>
+                        {typeof dados.contratoLocacao === 'string' && (
+                          <div className="arquivo-acoes">
+                            <button
+                              type="button"
+                              className="btn-visualizar-doc"
+                              onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`, '_blank')}
+                              title="Visualizar contrato"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-baixar-doc"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`;
+                                link.download = dados.contratoLocacao;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                              title="Baixar contrato"
+                            >
+                              <Download size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => handleFileChange('contratoLocacao', e.target.files[0])}
                     />
-                    {dados.contratoLocacao && (
-                      <small className="file-info">
-                        📎 {dados.contratoLocacao.name || 'Contrato carregado'}
-                      </small>
-                    )}
                   </div>
                 </div>
               )}
@@ -1647,6 +1802,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 </div>
               </div>
 
+              {/* Termo de Adesão - COM ÍCONES LUCIDE */}
               <div className="form-row">
                 <div className="form-group file-group">
                   <label>Termo de Adesão Assinado</label>
@@ -1670,11 +1826,42 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                       onChange={(e) => handleFileChange('termoAdesao', e.target.files[0])}
                     />
                   </div>
-                  {dados.termoAdesao && (
-                    <small className="file-info">
-                      📎 {dados.termoAdesao.name || 'Termo carregado'}
-                    </small>
-                  )}
+                  {dados.termoAdesao ? (
+                    <div className="arquivo-existente">
+                      <span className="arquivo-info" title={typeof dados.termoAdesao === 'string' ? dados.termoAdesao : dados.termoAdesao.name}>
+                        📎 {typeof dados.termoAdesao === 'string' ? 
+                          `Termo: ${dados.termoAdesao.length > 30 ? dados.termoAdesao.substring(0, 30) + '...' : dados.termoAdesao}` : 
+                          `Arquivo: ${dados.termoAdesao.name.length > 30 ? dados.termoAdesao.name.substring(0, 30) + '...' : dados.termoAdesao.name}`}
+                      </span>
+                      {typeof dados.termoAdesao === 'string' && (
+                        <div className="arquivo-acoes">
+                          <button
+                            type="button"
+                            className="btn-visualizar-doc"
+                            onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`, '_blank')}
+                            title="Visualizar termo"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-baixar-doc"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`;
+                              link.download = dados.termoAdesao;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            title="Baixar termo"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1734,6 +1921,8 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
       </div>
     </div>
   );
+  
+
 };
 
 export default ProspecPage;

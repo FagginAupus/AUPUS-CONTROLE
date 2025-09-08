@@ -1541,3 +1541,289 @@
   box-shadow: none !important;
   border-color: #dee2e6 !important;
 }
+
+/* Arquivo existente com botões de ação */
+.arquivo-existente {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f8ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  min-height: 40px; 
+  box-sizing: border-box;
+}
+
+/* ===============================================
+   CORREÇÕES PARA CAMPOS DE DOCUMENTOS - ProspecPage.css
+   =============================================== */
+
+/* Container de arquivo existente - LAYOUT FIXO */
+.arquivo-existente {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: #e8f5e8 !important;
+  border: 1px solid #28a745 !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+  margin-bottom: 8px !important;
+  min-height: 36px !important; /* ✅ ALTURA FIXA */
+  max-height: 36px !important; /* ✅ ALTURA FIXA */
+}
+
+/* Informações do arquivo - SEM TREMOR */
+.arquivo-info {
+  flex: 1 !important;
+  color: #155724 !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 200px !important; /* ✅ LARGURA FIXA */
+  line-height: 1.2 !important;
+  /* ✅ REMOVER HOVER QUE CAUSA TREMOR */
+  pointer-events: none !important;
+}
+
+/* Ações dos arquivos - LAYOUT FIXO */
+.arquivo-acoes {
+  display: flex !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important; /* ✅ NÃO ENCOLHER */
+  align-items: center !important;
+}
+
+/* Botões de ação dos documentos - TAMANHO UNIFORME */
+.btn-visualizar-doc,
+.btn-baixar-doc {
+  background: #007bff !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 4px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  width: 24px !important; /* ✅ LARGURA FIXA */
+  height: 24px !important; /* ✅ ALTURA FIXA */
+}
+
+.btn-visualizar-doc:hover,
+.btn-baixar-doc:hover {
+  background: #0056b3 !important;
+  transform: scale(1.05) !important;
+}
+
+.btn-baixar-doc {
+  background: #28a745 !important;
+}
+
+.btn-baixar-doc:hover {
+  background: #1e7e34 !important;
+}
+
+/* Container "sem arquivo" - ALTURA CONSISTENTE */
+.sem-arquivo {
+  display: block !important;
+  color: #6c757d !important;
+  font-size: 0.8rem !important;
+  font-style: italic !important;
+  padding: 8px 10px !important;
+  background: #f8f9fa !important;
+  border: 1px dashed #dee2e6 !important;
+  border-radius: 6px !important;
+  margin-bottom: 8px !important;
+  min-height: 36px !important; /* ✅ MESMA ALTURA DOS ARQUIVOS EXISTENTES */
+  line-height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Campos de arquivo - ALTURA UNIFORME */
+.file-group input[type="file"] {
+  padding: 8px 10px !important;
+  border: 2px dashed #007bff !important;
+  background: #f8f9fa !important;
+  cursor: pointer !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.8rem !important;
+  min-height: 40px !important; /* ✅ ALTURA FIXA */
+  max-height: 40px !important; /* ✅ ALTURA FIXA */
+  line-height: 1.2 !important;
+}
+
+.file-group input[type="file"]:hover {
+  border-color: #0056b3 !important;
+  background: #e7f3ff !important;
+}
+
+/* Container arquivo com download - LAYOUT OTIMIZADO */
+.file-with-download {
+  display: grid !important;
+  grid-template-columns: auto 1fr !important; /* ✅ BOTÃO + INPUT */
+  gap: 8px !important;
+  align-items: start !important; /* ✅ ALINHAMENTO NO TOPO */
+  margin-bottom: 8px !important;
+}
+
+/* Botão download termo - TAMANHO FIXO */
+.btn-download-termo {
+  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 40px !important; /* ✅ MESMA ALTURA DO INPUT */
+  flex-shrink: 0 !important; /* ✅ NÃO ENCOLHER */
+}
+
+.btn-download-termo:hover {
+  background: linear-gradient(135deg, #0056b3, #004085) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Input de arquivo no container com download - ALTURA CONSISTENTE */
+.file-with-download input[type="file"] {
+  min-width: 0 !important; /* ✅ PERMITIR ENCOLHIMENTO */
+  max-width: 100% !important;
+  height: 40px !important; /* ✅ ALTURA FIXA */
+}
+
+/* Grupo de arquivo completo - ESPAÇAMENTO CONSISTENTE */
+.file-group {
+  margin-bottom: 16px !important;
+}
+
+.file-group label {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #333333 !important;
+  margin-bottom: 6px !important;
+  display: block !important;
+}
+
+/* ===============================================
+   CORREÇÕES ESPECÍFICAS PARA RESPONSIVIDADE
+   =============================================== */
+
+@media (max-width: 768px) {
+  /* Em telas pequenas, empilhar botão e input */
+  .file-with-download {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .btn-download-termo {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Arquivos existentes mais compactos */
+  .arquivo-existente {
+    padding: 6px 8px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+  }
+
+  .arquivo-info {
+    font-size: 0.75rem !important;
+    max-width: 150px !important;
+  }
+
+  .btn-visualizar-doc,
+  .btn-baixar-doc {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .arquivo-info {
+    max-width: 120px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .file-group input[type="file"] {
+    font-size: 0.75rem !important;
+    padding: 6px 8px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+  }
+
+  .sem-arquivo {
+    font-size: 0.75rem !important;
+    min-height: 32px !important;
+    padding: 6px 8px !important;
+  }
+}
+
+/* ===============================================
+   TOOLTIP CUSTOMIZADO PARA DOCUMENTOS (SEM TREMOR)
+   =============================================== */
+
+/* Remover title padrão que causa tremor */
+.arquivo-info[title] {
+  position: relative !important;
+}
+
+.arquivo-info[title]:after {
+  content: attr(title) !important;
+  position: absolute !important;
+  bottom: 100% !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 0.7rem !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease !important;
+  z-index: 1000 !important;
+  margin-bottom: 4px !important;
+}
+
+.arquivo-info[title]:hover:after {
+  opacity: 1 !important;
+}
+
+/* ===============================================
+   GRID DE FORMULÁRIO MAIS CONSISTENTE
+   =============================================== */
+
+/* Garantir que todos os form-groups tenham a mesma altura base */
+.modal-edicao-expandido .form-group {
+  margin-bottom: 16px !important;
+  min-height: 70px !important; /* ✅ ALTURA MÍNIMA PARA CONSISTÊNCIA */
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-edicao-expandido .form-group label {
+  margin-bottom: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+.modal-edicao-expandido .form-group .file-with-download,
+.modal-edicao-expandido .form-group .arquivo-existente,
+.modal-edicao-expandido .form-group .sem-arquivo,
+.modal-edicao-expandido .form-group input[type="file"] {
+  margin-top: auto !important; /* ✅ ALINHAR NO FINAL DO CONTAINER */
+}
