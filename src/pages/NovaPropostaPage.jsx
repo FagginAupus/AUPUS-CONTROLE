@@ -305,126 +305,133 @@ const NovaPropostaPage = () => {
   // Função onSubmit - seção de preparação dos dados para backend
 
   const onSubmit = async (data) => {
+    if (loading) return;
+    
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      
-      if (user?.role !== 'admin' && user?.role !== 'consultor') {
-        data.recorrencia = '0%'; // Ou valor padrão desejado
-      }
-      // Validação extra
-      const errosValidacao = validarFormulario(data);
-      if (errosValidacao.length > 0) {
-        showNotification(`Erro de validação: ${errosValidacao[0]}`, 'error');
+      console.log('📋 Dados do formulário:', data);
+
+      const consultorSelecionado = consultoresDisponiveis.find(c => c.id === data.consultor_id);
+      const consultorNome = consultorSelecionado?.name || data.consultor || '';
+
+      if (!consultorNome) {
+        showNotification('Selecione um consultor responsável', 'error');
         return;
       }
 
-      // ✅ CORREÇÃO PRINCIPAL: Mapear consultor corretamente
-      let consultorId = null;
-      let consultorNome = '';
-
-      console.log('🔍 DEBUG Consultor - dados recebidos:', {
-        data_consultor_id: data.consultor_id,
-        data_consultor: data.consultor,
-        consultoresDisponiveis: consultoresDisponiveis
-      });
-
-      // Se veio consultor_id do formulário
-      if (data.consultor_id && data.consultor_id !== 'null' && data.consultor_id !== 'Sem consultor (AUPUS direto)') {
-        // Buscar o consultor selecionado na lista
-        const consultorSelecionado = consultoresDisponiveis.find(c => c.id === data.consultor_id);
-        
-        if (consultorSelecionado) {
-          consultorId = consultorSelecionado.id;
-          consultorNome = consultorSelecionado.name;
-        } else {
-          console.warn('⚠️ Consultor não encontrado na lista:', data.consultor_id);
-        }
+      // Validação das UCs
+      if (!data.ucs || data.ucs.length === 0) {
+        showNotification('Adicione pelo menos uma unidade consumidora', 'error');
+        return;
       }
 
-      console.log('✅ Consultor processado:', {
-        consultorId,
-        consultorNome
-      });
-
-      // Preparar benefícios como array
-      const beneficiosArray = [];
-      if (data.beneficio1) beneficiosArray.push('Os benefícios economicos foram calculados com base nas tarifas de energia, com impostos');
-      if (data.beneficio2) beneficiosArray.push('A titularidade da fatura será transferida para o Consorcio Clube Aupus');
-      if (data.beneficio3) beneficiosArray.push('Todo o processo será conduzido pela Aupus Energia, não se preocupe');
-      if (data.beneficio4) beneficiosArray.push('Contamos com uma moderna plataforma para te oferecer uma experiencia única!');
-      if (data.beneficio5) beneficiosArray.push('Você irá pagar DOIS boletos, sendo um boleto mínimo para Equatorial e o outro sendo Aluguel da Usina para Aupus Energia');
-      if (data.beneficio6) beneficiosArray.push('Contamos com uma moderna plataforma para te oferecer uma experiencia única!');
-      if (data.beneficio7) beneficiosArray.push('A proposta se aplica para todos os condominos que tiverem interesse');
-      if (data.beneficio8) beneficiosArray.push('Desconto em DOBRO no primeiro mês!!');
+      // Benefícios
+      const beneficiosSelecionados = obterBeneficiosSelecionados(data);
       
-      // Adicionar benefícios extras
-      beneficiosAdicionais.forEach(beneficio => {
-        if (beneficio.trim()) {
-          beneficiosArray.push(beneficio.trim());
-        }
-      });
-
-      // Preparar unidades consumidoras no formato esperado pelo backend
-      const unidadesConsumidoras = data.ucs.map(uc => ({
-        numero_unidade: parseInt(uc.numeroUC),
-        apelido: uc.apelido || `UC ${uc.numeroUC}`,
-        ligacao: uc.ligacao || '',
-        distribuidora: uc.distribuidora || 'EQUATORIAL GO',
-        consumo_medio: parseInt(uc.consumo) || 0
-      }));
-
-      // ✅ PREPARAR DADOS CORRIGIDOS PARA O BACKEND
       const propostaParaBackend = {
-        nomeCliente: data.nomeCliente,
-        consultor_id: consultorId,       // ← CORREÇÃO: enviar o ID do consultor
-        consultor: consultorNome,        // ← ADICIONAR: enviar o nome para compatibilidade
-        dataProposta: data.dataProposta,
-        numeroProposta: numeroProposta,
+        nome_cliente: data.nomeCliente,
+        consultor_id: data.consultor_id,
+        consultor: consultorNome,
+        data_proposta: data.dataProposta || new Date().toISOString().split('T')[0],
         status: 'Aguardando',
-        economia: data.economia || 0,
-        bandeira: data.bandeira || 0,
-        recorrencia: data.recorrencia,
-        beneficios: beneficiosArray,
-        unidadesConsumidoras: unidadesConsumidoras.length > 0 ? unidadesConsumidoras : [],
-        observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim()
+        observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim(),
+        recorrencia: data.recorrencia || '3%',
+        economia: `${data.economia || 20}%`,
+        bandeira: `${data.bandeira || 20}%`,
+        beneficios: [
+          ...beneficiosSelecionados,
+          ...beneficiosAdicionais.map(b => ({ 
+            numero: beneficiosSelecionados.length + beneficiosAdicionais.indexOf(b) + 1, 
+            texto: b 
+          }))
+        ],
+        unidadesConsumidoras: data.ucs?.map(uc => ({
+          numero_unidade: uc.numero_unidade,
+          apelido: uc.apelido,
+          ligacao: uc.ligacao,
+          distribuidora: uc.distribuidora,
+          consumo_medio: uc.consumo_medio,
+          status: 'Aguardando'
+        })) || [],
       };
-
-      // ✅ ADICIONAR LOG PARA DEBUG
-      console.log('📤 Dados finais enviados para backend:', {
-        consultor_id: propostaParaBackend.consultor_id,
-        consultor: propostaParaBackend.consultor,
-        nome_cliente: propostaParaBackend.nomeCliente,
-        unidades_count: propostaParaBackend.unidadesConsumidoras.length
-      });
 
       console.log('📤 Enviando proposta para o backend:', propostaParaBackend);
 
-      // Tentar salvar via API
+      // 1️⃣ PRIMEIRO: Criar a proposta
       const result = await storageService.adicionarProspec(propostaParaBackend);
       console.log('✅ Proposta salva com sucesso:', result);
 
-      // ✅ ADICIONAR: Refresh automático após criar nova proposta
-      console.log('🔄 Atualizando dados automaticamente após criação...');
+      // 2️⃣ SEGUNDO: Fazer upload das faturas (SE HOUVER)
+      const propostaId = result.data?.id || result.id;
       
-      // Atualizar propostas (força reload)
+      if (propostaId && data.ucs?.length > 0) {
+        console.log('📤 Fazendo upload das faturas...');
+        
+        const faturasSalvas = {};
+        
+        for (let ucIndex = 0; ucIndex < data.ucs.length; ucIndex++) {
+          const uc = data.ucs[ucIndex];
+          const numeroUC = uc.numero_unidade;
+          
+          try {
+            const nomeArquivoFatura = await uploadArquivosFatura(numeroUC, ucIndex, propostaId);
+            
+            if (nomeArquivoFatura) {
+              faturasSalvas[numeroUC] = nomeArquivoFatura;
+              console.log(`✅ Fatura UC ${numeroUC} salva: ${nomeArquivoFatura}`);
+            }
+          } catch (error) {
+            console.error(`❌ Erro ao salvar fatura UC ${numeroUC}:`, error);
+            // Não bloquear a criação da proposta por erro de fatura
+          }
+        }
+        
+        // 3️⃣ TERCEIRO: Se houve faturas, atualizar documentação da proposta
+        if (Object.keys(faturasSalvas).length > 0) {
+          try {
+            console.log('📝 Atualizando documentação com faturas...');
+            
+            await fetch(`${process.env.REACT_APP_API_URL}/propostas/${propostaId}/documentacao`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+              },
+              body: JSON.stringify({
+                documentacao: {
+                  faturas_ucs: faturasSalvas,
+                  data_upload_faturas: new Date().toISOString()
+                }
+              })
+            });
+            
+            console.log('✅ Documentação atualizada com faturas:', faturasSalvas);
+            
+          } catch (docError) {
+            console.error('❌ Erro ao atualizar documentação:', docError);
+          }
+        }
+      }
+
+      // 4️⃣ QUARTO: Refresh automático e navegação
+      console.log('🔄 Atualizando dados automaticamente após criação...');
       await loadPropostas(1, {}, true);
 
-      // **NOVA FUNCIONALIDADE: GERAR PDF AUTOMATICAMENTE** 
+      // 5️⃣ QUINTO: Gerar PDF automaticamente (opcional)
       try {
         console.log('📄 Gerando PDF automaticamente...');
         
-        // Obter benefícios selecionados
         const beneficiosSelecionados = obterBeneficiosSelecionados(data);
         
-        // Preparar dados para o PDF
         const dadosPDF = {
           numeroProposta: numeroProposta,
           nomeCliente: data.nomeCliente,
-          consultor: consultorNome, // ← USAR consultorNome processado
+          consultor: consultorNome,
           data: data.dataProposta || new Date().toISOString().split('T')[0],
           descontoTarifa: (data.economia || 20) / 100,
           descontoBandeira: (data.bandeira || 20) / 100,
-          inflacao: (data.inflacao || 2) / 100,        
+          inflacao: (data.inflacao || 2) / 100,
           tarifaTributos: data.tarifaTributos || 0.98,
           observacoes: data.observacoes || '',
           ucs: data.ucs || [],
@@ -437,7 +444,6 @@ const NovaPropostaPage = () => {
           ]
         };
 
-        // Importar e usar o gerador de PDF
         const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
         await PDFGenerator.baixarPDF(dadosPDF, true);
         
@@ -451,30 +457,19 @@ const NovaPropostaPage = () => {
       navigate('/prospec');
       
     } catch (error) {
-        // ✅ CONDICIONAL: Só logar se não for UC duplicada
-        if (error.response?.status === 422 && error.response?.data?.error_type === 'ucs_com_proposta_ativa') {
-            // Silenciar logs - apenas mostrar modal
-            mostrarModalUcsBloqueadas(error.response.data);
+      if (error.response?.status === 422 && error.response?.data?.error_type === 'ucs_com_proposta_ativa') {
+        mostrarModalUcsBloqueadas(error.response.data);
+      } else {
+        console.error('❌ Erro ao salvar proposta:', error);
+        
+        if (error.response?.data?.message) {
+          showNotification(error.response.data.message, 'error');
         } else {
-            // Logs normais para outros erros
-            console.error('❌ Erro ao salvar proposta:', error);
-            console.log('🔍 DEBUG - Estrutura do erro:', {
-                message: error.message,
-                hasResponse: !!error.response,
-                responseStatus: error.response?.status,
-                responseData: error.response?.data,
-                errorType: error.response?.data?.error_type,
-                isUcDuplicada: error.isUcDuplicada
-            });
-            
-            if (error.response?.data?.message) {
-                showNotification(error.response.data.message, 'error');
-            } else {
-                showNotification(`Erro ao criar proposta: ${error.message}`, 'error');
-            }
+          showNotification(`Erro ao criar proposta: ${error.message}`, 'error');
         }
+      }
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
