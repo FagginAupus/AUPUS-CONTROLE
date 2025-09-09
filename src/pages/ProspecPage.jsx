@@ -1488,7 +1488,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                           className="btn-baixar-doc"
                           onClick={() => {
                             const link = document.createElement('a');
-                            link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`;
+                            link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`;
                             link.download = faturaExistente;
                             document.body.appendChild(link);
                             link.click();
@@ -1642,7 +1642,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                               className="btn-baixar-doc"
                               onClick={() => {
                                 const link = document.createElement('a');
-                                link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`;
+                                link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`;
                                 link.download = dados.contratoSocial;
                                 document.body.appendChild(link);
                                 link.click();
@@ -1680,7 +1680,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             <button
                               type="button"
                               className="btn-visualizar-doc"
-                              onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`, '_blank')}
+                              onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`, '_blank')}
                               title="Visualizar documento"
                             >
                               <Eye size={14} />
@@ -1690,7 +1690,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                               className="btn-baixar-doc"
                               onClick={() => {
                                 const link = document.createElement('a');
-                                link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`;
+                                link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`;
                                 link.download = dados.documentoPessoalRepresentante;
                                 document.body.appendChild(link);
                                 link.click();
@@ -1757,7 +1757,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             <button
                               type="button"
                               className="btn-visualizar-doc"
-                              onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`, '_blank')}
+                              onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`, '_blank')}
                               title="Visualizar contrato"
                             >
                               <Eye size={14} />
@@ -1767,7 +1767,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                               className="btn-baixar-doc"
                               onClick={() => {
                                 const link = document.createElement('a');
-                                link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`;
+                                link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`
                                 link.download = dados.contratoLocacao;
                                 document.body.appendChild(link);
                                 link.click();
@@ -1838,7 +1838,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                           <button
                             type="button"
                             className="btn-visualizar-doc"
-                            onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`, '_blank')}
+                            onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`, '_blank')}
                             title="Visualizar termo"
                           >
                             <Eye size={14} />
@@ -1848,7 +1848,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             className="btn-baixar-doc"
                             onClick={() => {
                               const link = document.createElement('a');
-                              link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`;
+                              link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`;
                               link.download = dados.termoAdesao;
                               document.body.appendChild(link);
                               link.click();
