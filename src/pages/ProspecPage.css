@@ -1594,8 +1594,7 @@ div.arquivo-acoes {
 }
 
 /* Botões mantêm tamanho exato */
-button.btn-visualizar-doc,
-button.btn-baixar-doc {
+button.btn-visualizar-doc {
   width: 36px !important;
   height: 36px !important;
   padding: 0 !important;
@@ -1607,9 +1606,6 @@ button.btn-baixar-doc {
   cursor: pointer !important;
   flex-shrink: 0 !important;
   transition: all 0.2s ease !important;
-}
-
-button.btn-visualizar-doc {
   background: #007bff !important;
   color: white !important;
 }
@@ -1619,13 +1615,13 @@ button.btn-visualizar-doc:hover {
   transform: scale(1.05) !important;
 }
 
-button.btn-baixar-doc {
-  background: #28a745 !important;
+button.btn-visualizar-doc {
+  background: #007bff !important;
   color: white !important;
 }
 
-button.btn-baixar-doc:hover {
-  background: #1e7e34 !important;
+button.btn-visualizar-doc:hover {
+  background: #0056b3 !important;
   transform: scale(1.05) !important;
 }
 

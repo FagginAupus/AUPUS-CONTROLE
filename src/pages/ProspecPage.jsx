@@ -1624,6 +1624,11 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
             {dados.tipoDocumento === 'CPF' && (
               <div className="form-group">
                 <label>Documento Pessoal (CPF, RG, CNH)</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
+                />
                 {dados.documentoPessoal ? (
                   <div className="arquivo-existente">
                     <span className="arquivo-info" title={typeof dados.documentoPessoal === 'string' ? dados.documentoPessoal : dados.documentoPessoal.name}>
@@ -1639,11 +1644,6 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                     )}
                   </div>
                 ) : null}
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
-                />
               </div>
             )}
 
@@ -1688,6 +1688,11 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 <div className="form-row">
                   <div className="form-group file-group">
                     <label>Contrato Social da Empresa</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('contratoSocial', e.target.files[0])}
+                    />
                     {dados.contratoSocial ? (
                       <div className="arquivo-existente">
                         <span className="arquivo-info" title={typeof dados.contratoSocial === 'string' ? dados.contratoSocial : dados.contratoSocial.name}>
@@ -1703,11 +1708,6 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         )}
                       </div>
                     ) : null}
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange('contratoSocial', e.target.files[0])}
-                    />
                   </div>
                 </div>
                 
@@ -1715,6 +1715,11 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 <div className="form-row">
                   <div className="form-group file-group">
                     <label>Documento Pessoal do Representante</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('documentoPessoalRepresentante', e.target.files[0])}
+                    />
                     {dados.documentoPessoalRepresentante ? (
                       <div className="arquivo-existente">
                         <span className="arquivo-info" title={typeof dados.documentoPessoalRepresentante === 'string' ? dados.documentoPessoalRepresentante : dados.documentoPessoalRepresentante.name}>
@@ -1730,11 +1735,6 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         )}
                       </div>
                     ) : null}
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange('documentoPessoalRepresentante', e.target.files[0])}
-                    />
                   </div>
                 </div>
               </div>
@@ -1770,7 +1770,12 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
               {dados.isArrendamento && (
                 <div className="form-row">
                   <div className="form-group file-group">
-                    <label>Contrato de Locação</label>
+                    <label>Contrato de Locação</label>~
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('contratoLocacao', e.target.files[0])}
+                    />
                     {dados.contratoLocacao ? (
                       <div className="arquivo-existente">
                         <span className="arquivo-info" title={typeof dados.contratoLocacao === 'string' ? dados.contratoLocacao : dados.contratoLocacao.name}>
@@ -1786,11 +1791,6 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         )}
                       </div>
                     ) : null}
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange('contratoLocacao', e.target.files[0])}
-                    />
                   </div>
                 </div>
               )}
