@@ -18,71 +18,27 @@ import {
   Eye,
   Trash2,
   X,
-  Download
 } from 'lucide-react';
 
-// ✅ Função para construir URL correta dos documentos
 const construirUrlDocumento = (nomeArquivo) => {
   if (!nomeArquivo) return '';
-  
-  // ✅ USAR A URL BASE QUE FUNCIONOU NO TESTE
   const baseUrl = 'https://staging-api.aupusenergia.com.br';
-  
-  // ✅ Construir URL exatamente como funcionou no teste
   return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
 };
 
-// ✅ Função para baixar documento
-const baixarDocumento = (nomeArquivo, nomeAmigavel = null) => {
-  if (!nomeArquivo) {
-    console.warn('❌ Nome do arquivo não fornecido para download');
-    return;
-  }
-  
-  console.log('📥 Iniciando download:', {
-    nomeArquivo,
-    nomeAmigavel,
-    url: construirUrlDocumento(nomeArquivo)
-  });
-  
-  const url = construirUrlDocumento(nomeArquivo);
-  
-  // Criar link temporário para download
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = nomeAmigavel || nomeArquivo;
-  link.target = '_blank'; // Fallback para abrir em nova aba
-  
-  // Adicionar ao DOM, clicar e remover
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  console.log('✅ Download iniciado para:', url);
-};
-
-// ✅ Função para visualizar documento
+// Função para visualizar documento
 const visualizarDocumento = (nomeArquivo) => {
   if (!nomeArquivo) {
-    console.warn('❌ Nome do arquivo não fornecido para visualização');
+    console.warn('Nome do arquivo não fornecido para visualização');
     return;
   }
-  
-  console.log('👁️ Visualizando documento:', {
-    nomeArquivo,
-    url: construirUrlDocumento(nomeArquivo)
-  });
   
   const url = construirUrlDocumento(nomeArquivo);
   window.open(url, '_blank');
-  
-  console.log('✅ Documento aberto em nova aba:', url);
+  console.log('Documento aberto em nova aba:', url);
 };
 
-// =====================================
-// COMPONENTE REUTILIZÁVEL PARA BOTÕES
-// =====================================
-
+// Componente simplificado - APENAS botão de visualizar
 const BotoesDocumento = ({ nomeArquivo, tipoArquivo }) => {
   if (!nomeArquivo || typeof nomeArquivo !== 'string') {
     return null;
@@ -97,14 +53,6 @@ const BotoesDocumento = ({ nomeArquivo, tipoArquivo }) => {
         title={`Visualizar ${tipoArquivo}`}
       >
         <Eye size={14} />
-      </button>
-      <button
-        type="button"
-        className="btn-baixar-doc"
-        onClick={() => baixarDocumento(nomeArquivo, `${tipoArquivo}_${nomeArquivo}`)}
-        title={`Baixar ${tipoArquivo}`}
-      >
-        <Download size={14} />
       </button>
     </div>
   );
@@ -1571,21 +1519,6 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                           title="Visualizar fatura"
                         >
                           <Eye size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-baixar-doc"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`;
-                            link.download = faturaExistente;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          title="Baixar fatura"
-                        >
-                          <Download size={14} />
                         </button>
                       </div>
                     </div>
