@@ -22,9 +22,9 @@ import {
 
 const construirUrlDocumento = (nomeArquivo) => {
   if (!nomeArquivo) return '';
-    const baseUrl = 'https://staging-api.aupusenergia.com.br';
-    return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
-};
+  const baseUrl = process.env.REACT_APP_API_URL.replace('/api', '');
+  return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
+};  
 
 // Função para visualizar documento
 const visualizarDocumento = (nomeArquivo) => {
