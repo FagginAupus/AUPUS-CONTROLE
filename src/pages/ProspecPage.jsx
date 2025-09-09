@@ -30,7 +30,15 @@ const getApiUrl = () => {
 
 const construirUrlDocumento = (nomeArquivo) => {
   if (!nomeArquivo) return '';
-  const baseUrl = getApiBaseUrl();
+  const apiUrl = process.env.REACT_APP_API_URL;
+  const baseUrl = apiUrl?.replace('/api', '') || 'http://localhost:8000';
+  
+  console.log('DEBUG URL:', {
+    apiUrl,
+    baseUrl,
+    finalUrl: `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`
+  });
+  
   return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
 };
 
