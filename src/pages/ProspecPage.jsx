@@ -21,6 +21,95 @@ import {
   Download
 } from 'lucide-react';
 
+// ✅ Função para construir URL correta dos documentos
+const construirUrlDocumento = (nomeArquivo) => {
+  if (!nomeArquivo) return '';
+  
+  // ✅ USAR A URL BASE QUE FUNCIONOU NO TESTE
+  const baseUrl = 'https://staging-api.aupusenergia.com.br';
+  
+  // ✅ Construir URL exatamente como funcionou no teste
+  return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
+};
+
+// ✅ Função para baixar documento
+const baixarDocumento = (nomeArquivo, nomeAmigavel = null) => {
+  if (!nomeArquivo) {
+    console.warn('❌ Nome do arquivo não fornecido para download');
+    return;
+  }
+  
+  console.log('📥 Iniciando download:', {
+    nomeArquivo,
+    nomeAmigavel,
+    url: construirUrlDocumento(nomeArquivo)
+  });
+  
+  const url = construirUrlDocumento(nomeArquivo);
+  
+  // Criar link temporário para download
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeAmigavel || nomeArquivo;
+  link.target = '_blank'; // Fallback para abrir em nova aba
+  
+  // Adicionar ao DOM, clicar e remover
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  console.log('✅ Download iniciado para:', url);
+};
+
+// ✅ Função para visualizar documento
+const visualizarDocumento = (nomeArquivo) => {
+  if (!nomeArquivo) {
+    console.warn('❌ Nome do arquivo não fornecido para visualização');
+    return;
+  }
+  
+  console.log('👁️ Visualizando documento:', {
+    nomeArquivo,
+    url: construirUrlDocumento(nomeArquivo)
+  });
+  
+  const url = construirUrlDocumento(nomeArquivo);
+  window.open(url, '_blank');
+  
+  console.log('✅ Documento aberto em nova aba:', url);
+};
+
+// =====================================
+// COMPONENTE REUTILIZÁVEL PARA BOTÕES
+// =====================================
+
+const BotoesDocumento = ({ nomeArquivo, tipoArquivo }) => {
+  if (!nomeArquivo || typeof nomeArquivo !== 'string') {
+    return null;
+  }
+
+  return (
+    <div className="arquivo-acoes">
+      <button
+        type="button"
+        className="btn-visualizar-doc"
+        onClick={() => visualizarDocumento(nomeArquivo)}
+        title={`Visualizar ${tipoArquivo}`}
+      >
+        <Eye size={14} />
+      </button>
+      <button
+        type="button"
+        className="btn-baixar-doc"
+        onClick={() => baixarDocumento(nomeArquivo, `${tipoArquivo}_${nomeArquivo}`)}
+        title={`Baixar ${tipoArquivo}`}
+      >
+        <Download size={14} />
+      </button>
+    </div>
+  );
+};
+
 const ProspecPage = () => {
   const navigate = useNavigate();
   const { user, getMyTeam, getConsultorName } = useAuth();
@@ -1543,31 +1632,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         `Arquivo: ${dados.documentoPessoal.name.length > 30 ? dados.documentoPessoal.name.substring(0, 30) + '...' : dados.documentoPessoal.name}`}
                     </span>
                     {typeof dados.documentoPessoal === 'string' && (
-                      <div className="arquivo-acoes">
-                        <button
-                          type="button"
-                          className="btn-visualizar-doc"
-                          onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoal}`, '_blank')}
-                          title="Visualizar documento"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-baixar-doc"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoal}`;
-                            link.download = dados.documentoPessoal;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          title="Baixar documento"
-                        >
-                          <Download size={14} />
-                        </button>
-                      </div>
+                      <BotoesDocumento 
+                        nomeArquivo={dados.documentoPessoal} 
+                        tipoArquivo="documento pessoal"
+                      />
                     )}
                   </div>
                 ) : null}
@@ -1628,31 +1696,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             `Arquivo: ${dados.contratoSocial.name.length > 30 ? dados.contratoSocial.name.substring(0, 30) + '...' : dados.contratoSocial.name}`}
                         </span>
                         {typeof dados.contratoSocial === 'string' && (
-                          <div className="arquivo-acoes">
-                            <button
-                              type="button"
-                              className="btn-visualizar-doc"
-                              onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`, '_blank')}
-                              title="Visualizar contrato"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-baixar-doc"
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoSocial}`;
-                                link.download = dados.contratoSocial;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}
-                              title="Baixar contrato"
-                            >
-                              <Download size={14} />
-                            </button>
-                          </div>
+                          <BotoesDocumento 
+                            nomeArquivo={dados.contratoSocial} 
+                            tipoArquivo="contrato social"
+                          />
                         )}
                       </div>
                     ) : null}
@@ -1676,31 +1723,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             `Arquivo: ${dados.documentoPessoalRepresentante.name.length > 30 ? dados.documentoPessoalRepresentante.name.substring(0, 30) + '...' : dados.documentoPessoalRepresentante.name}`}
                         </span>
                         {typeof dados.documentoPessoalRepresentante === 'string' && (
-                          <div className="arquivo-acoes">
-                            <button
-                              type="button"
-                              className="btn-visualizar-doc"
-                              onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`, '_blank')}
-                              title="Visualizar documento"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-baixar-doc"
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.documentoPessoalRepresentante}`;
-                                link.download = dados.documentoPessoalRepresentante;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}
-                              title="Baixar documento"
-                            >
-                              <Download size={14} />
-                            </button>
-                          </div>
+                          <BotoesDocumento 
+                            nomeArquivo={dados.documentoPessoalRepresentante} 
+                            tipoArquivo="documento do representante"
+                          />
                         )}
                       </div>
                     ) : null}
@@ -1753,31 +1779,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                             `Arquivo: ${dados.contratoLocacao.name.length > 30 ? dados.contratoLocacao.name.substring(0, 30) + '...' : dados.contratoLocacao.name}`}
                         </span>
                         {typeof dados.contratoLocacao === 'string' && (
-                          <div className="arquivo-acoes">
-                            <button
-                              type="button"
-                              className="btn-visualizar-doc"
-                              onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`, '_blank')}
-                              title="Visualizar contrato"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-baixar-doc"
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.contratoLocacao}`
-                                link.download = dados.contratoLocacao;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}
-                              title="Baixar contrato"
-                            >
-                              <Download size={14} />
-                            </button>
-                          </div>
+                          <BotoesDocumento 
+                            nomeArquivo={dados.contratoLocacao} 
+                            tipoArquivo="contrato de locação"
+                          />
                         )}
                       </div>
                     ) : null}
@@ -1834,31 +1839,10 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                           `Arquivo: ${dados.termoAdesao.name.length > 30 ? dados.termoAdesao.name.substring(0, 30) + '...' : dados.termoAdesao.name}`}
                       </span>
                       {typeof dados.termoAdesao === 'string' && (
-                        <div className="arquivo-acoes">
-                          <button
-                            type="button"
-                            className="btn-visualizar-doc"
-                            onClick={() => window.open(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`, '_blank')}
-                            title="Visualizar termo"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-baixar-doc"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/documentos/${dados.termoAdesao}`;
-                              link.download = dados.termoAdesao;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }}
-                            title="Baixar termo"
-                          >
-                            <Download size={14} />
-                          </button>
-                        </div>
+                        <BotoesDocumento 
+                          nomeArquivo={dados.termoAdesao} 
+                          tipoArquivo="termo de adesão"
+                        />
                       )}
                     </div>
                   ) : null}
