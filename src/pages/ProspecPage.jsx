@@ -20,9 +20,17 @@ import {
   X,
 } from 'lucide-react';
 
+const getApiBaseUrl = () => {
+  return process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000';
+};
+
+const getApiUrl = () => {
+  return process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+};
+
 const construirUrlDocumento = (nomeArquivo) => {
   if (!nomeArquivo) return '';
-  const baseUrl = 'https://staging-api.aupusenergia.com.br';
+  const baseUrl = process.env.REACT_APP_API_URL.replace('/api', '');
   return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
 };
 
@@ -262,7 +270,7 @@ const ProspecPage = () => {
             formData.append('numeroUC', item.numeroUC || item.numero_unidade);
             formData.append('tipoDocumento', campo);
 
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/propostas/${propostaId}/upload-documento`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/propostas/${propostaId}/upload-documento`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
@@ -1515,7 +1523,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         <button
                           type="button"
                           className="btn-visualizar-doc"
-                          onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`, '_blank')}
+                          onClick={() => window.open(`${process.env.REACT_APP_API_URL.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`, '_blank')}
                           title="Visualizar fatura"
                         >
                           <Eye size={14} />
