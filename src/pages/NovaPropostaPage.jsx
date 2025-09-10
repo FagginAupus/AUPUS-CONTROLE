@@ -173,7 +173,7 @@ const NovaPropostaPage = () => {
         // Adicionar opção "sem consultor" com ID especial
         setConsultoresDisponiveis([
           ...consultores.map(member => ({ id: member.id, name: member.name })),
-          { id: null, name: 'Sem consultor (AUPUS direto)' }
+          { id: '', name: 'Sem consultor (AUPUS direto)' }
         ]);
       } else if (user?.role === 'consultor') {
         const funcionarios = team.filter(member => 

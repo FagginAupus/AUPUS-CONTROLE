@@ -96,19 +96,15 @@ const ProspecPage = () => {
   const carregarConsultores = useCallback(async () => {
     try {
       const team = getMyTeam();
-      console.log('🔍 Modal - Team completo:', team);
-      console.log('🔍 Modal - User role:', user?.role);
       
       if (user?.role === 'admin') {
         const consultores = team.filter(member => member.role === 'consultor');
-        console.log('🔍 Modal - Consultores filtrados:', consultores);
         
         const listaFinal = [
           ...consultores.map(member => ({ id: member.id, name: member.name })),
-          { id: null, name: 'Sem consultor (AUPUS direto)' }
+          { id: '', name: 'Sem consultor (AUPUS direto)' }
         ];
         
-        console.log('🔍 Modal - Lista final consultores:', listaFinal);
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'consultor') {
         const funcionarios = team.filter(member => 
@@ -118,7 +114,6 @@ const ProspecPage = () => {
           { id: user.id, name: user.name },
           ...funcionarios.map(member => ({ id: member.id, name: member.name }))
         ];
-        console.log('🔍 Modal - Lista final funcionários:', listaFinal);
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'gerente') {
         const vendedores = team.filter(member => 
@@ -128,11 +123,9 @@ const ProspecPage = () => {
           { id: user.id, name: user.name },
           ...vendedores.map(member => ({ id: member.id, name: member.name }))
         ];
-        console.log('🔍 Modal - Lista final vendedores:', listaFinal);
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'vendedor') {
         const listaFinal = [{ id: user.id, name: user.name }];
-        console.log('🔍 Modal - Lista final vendedor:', listaFinal);
         setConsultoresDisponiveis(listaFinal);
       }
     } catch (error) {
@@ -140,12 +133,6 @@ const ProspecPage = () => {
       setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
     }
   }, [user, getMyTeam]);
-
-  // Carregar consultores quando o modal abre
-  useEffect(() => {
-    console.log('🔄 Modal - useEffect carregarConsultores executado');
-    carregarConsultores();
-  }, [carregarConsultores]);
 
   const dadosFiltrados = useMemo(() => {
     let dados = propostas.data || [];
@@ -930,8 +917,9 @@ const ProspecPage = () => {
             item={modalEdicao.item}
             onSave={salvarEdicao}
             onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
-            loading={loading} // ← ADICIONAR
-            setLoading={setLoading} // ← ADICIONAR
+            loading={loading}
+            setLoading={setLoading} 
+            consultoresDisponiveis={consultoresDisponiveis}
           />
         )}
       </div>
@@ -1160,11 +1148,9 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 };
 
 // Componente Modal de Edição - ATUALIZADO com novos campos
-const ModalEdicao = ({ item, onSave, onClose }) => {
+const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDisponiveis }) => {
   const { user, getMyTeam } = useAuth(); 
   const { showNotification } = useNotification();
-  const [loading, setLoading] = useState(false);
-  const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
   const [dados, setDados] = useState({ 
     ...item,
     consultor_id: item.consultor_id || null,
@@ -1203,54 +1189,8 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     termoAdesao: item.termoAdesao || null
   });
 
-  const [consultoresCarregados, setConsultoresCarregados] = useState(false)
-
   const [faturaArquivo, setFaturaArquivo] = useState(null);
 
-  const carregarConsultores = useCallback(async () => {
-    try {
-      const team = getMyTeam();
-      console.log('🔍 Modal - Team completo:', team);
-      console.log('🔍 Modal - User role:', user?.role);
-      
-      if (user?.role === 'admin') {
-        const consultores = team.filter(member => member.role === 'consultor');
-        console.log('🔍 Modal - Consultores filtrados:', consultores);
-        
-        const listaFinal = [
-          ...consultores.map(member => ({ id: member.id, name: member.name })),
-          { id: null, name: 'Sem consultor (AUPUS direto)' }
-        ];
-        
-        console.log('🔍 Modal - Lista final consultores:', listaFinal);
-        setConsultoresDisponiveis(listaFinal);
-        setConsultoresCarregados(true); 
-      } else if (user?.role === 'consultor') {
-        const consultorNome = user.name;
-        const funcionarios = team.filter(member => 
-          member.role === 'gerente' || member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([consultorNome, ...funcionarios]);
-      } else if (user?.role === 'gerente') {
-        const gerenteNome = user.name;
-        const vendedores = team.filter(member => 
-          member.role === 'vendedor'
-        ).map(member => member.name);
-        setConsultoresDisponiveis([gerenteNome, ...vendedores]);
-      } else if (user?.role === 'vendedor') {
-        setConsultoresDisponiveis([user.name]);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar consultores:', error);
-      setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
-      setConsultoresCarregados(true); 
-    }
-  }, [user, getMyTeam]);
-
-  // ✅ ADICIONAR ESTE useEffect:
-  useEffect(() => {
-    carregarConsultores();
-  }, [carregarConsultores]);
 
   useEffect(() => {
     // Mapear consultor nome para ID quando consultores carregarem
@@ -1533,7 +1473,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
             <div className="form-row">
               <div className="form-group">
                 <label>Consultor Responsável</label>
-                {!consultoresCarregados ? (
+                {!consultoresDisponiveis || consultoresDisponiveis.length === 0 ? (
                   <div style={{padding: '8px', color: '#666'}}>Carregando consultores...</div>
                 ) : (
                   <select
@@ -1547,16 +1487,26 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                         nome: selectedConsultor?.name
                       });
                       
-                      setDados({
-                        ...dados, 
-                        consultor_id: selectedId,
-                        consultor: selectedConsultor?.name || ''
-                      });
+                      // ✅ CORREÇÃO: tratar quando seleciona "sem consultor"
+                      if (selectedId === '' || !selectedConsultor) {
+                        setDados({
+                          ...dados, 
+                          consultor_id: '',
+                          consultor: 'Sem consultor'
+                        });
+                      } else {
+                        setDados({
+                          ...dados, 
+                          consultor_id: selectedId,
+                          consultor: selectedConsultor.name
+                        });
+                      }
                     }}
                   >
                     <option value="">Selecione um consultor...</option>
+                    <option value="">Sem consultor</option>
                     {consultoresDisponiveis.map((consultor, index) => (
-                      <option key={consultor.id || `sem-consultor-${index}`} value={consultor.id || ''}>
+                      <option key={consultor.id || `consultor-${index}`} value={consultor.id || ''}>
                         {consultor.name}
                       </option>
                     ))}
