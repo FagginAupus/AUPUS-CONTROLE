@@ -102,9 +102,9 @@ const ProspecPage = () => {
         
         const listaFinal = [
           ...consultores.map(member => ({ id: member.id, name: member.name })),
-          { id: '', name: 'Sem consultor (AUPUS direto)' }
+          { id: null, name: 'Sem consultor (AUPUS direto)' }
         ];
-        
+                        
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'consultor') {
         const funcionarios = team.filter(member => 
@@ -133,6 +133,10 @@ const ProspecPage = () => {
       setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
     }
   }, [user, getMyTeam]);
+
+    useEffect(() => {
+      carregarConsultores();
+    }, [carregarConsultores]);
 
   const dadosFiltrados = useMemo(() => {
     let dados = propostas.data || [];
@@ -230,18 +234,14 @@ const ProspecPage = () => {
     
     try {
       const { item } = modalEdicao;
-      
       const propostaId = item.propostaId || item.id?.split('-')[0];
       
       if (!propostaId) {
         showNotification('ID da proposta não encontrado para edição', 'error');
         return;
       }
-      
-      // ✅ REMOVER TODAS AS REFERÊNCIAS A faturaArquivo AQUI
-      // A lógica de upload da fatura agora está dentro do ModalEdicao
 
-      // ✅ DETECTAR CAMPOS DE ARQUIVO E FAZER UPLOAD
+      // ✅ UPLOAD DE ARQUIVOS (mantém como está)
       const camposArquivo = [
         'documentoPessoal', 'contratoSocial', 'documentoPessoalRepresentante',
         'contratoLocacao', 'termoAdesao'
@@ -249,22 +249,9 @@ const ProspecPage = () => {
       
       const documentacaoFinal = { ...dadosAtualizados };
       
-      // Fazer upload dos arquivos primeiro
       for (const campo of camposArquivo) {
         if (dadosAtualizados[campo] && dadosAtualizados[campo] instanceof File) {
           try {
-
-            // ✅ DEBUG: Ver o que está sendo enviado
-            console.log('🔍 Dados do upload:', {
-              campo: campo,
-              arquivo: dadosAtualizados[campo],
-              nomeArquivo: dadosAtualizados[campo].name,
-              tamanho: dadosAtualizados[campo].size,
-              tipo: dadosAtualizados[campo].type,
-              numeroUC: item.numeroUC || item.numero_unidade,
-              tipoDocumento: campo
-            });
-
             const formData = new FormData();
             formData.append('arquivo', dadosAtualizados[campo]);
             formData.append('numeroUC', item.numeroUC || item.numero_unidade);
@@ -274,22 +261,17 @@ const ProspecPage = () => {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
-                // NÃO incluir Content-Type - deixar o browser definir para FormData
               },
               body: formData
             });
 
             if (!response.ok) {
-              const errorText = await response.text();
-              console.error('Erro na resposta:', errorText);
-              throw new Error(`HTTP ${response.status}: ${errorText}`);
+              throw new Error(`HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            
             documentacaoFinal[campo] = result.nomeArquivo;
             showNotification(`${campo} enviado com sucesso!`, 'success');
-            
           } catch (error) {
             showNotification(`Erro ao enviar ${campo}: ${error.message}`, 'error');
             return;
@@ -297,64 +279,64 @@ const ProspecPage = () => {
         }
       }
 
-      // Agora salvar os dados com os nomes dos arquivos
-      const dadosUC = {
+      // ✅ DADOS LIMPOS - SEM DUPLICAÇÕES
+      const dadosLimpos = {
+        // Dados básicos
         nomeCliente: dadosAtualizados.nomeCliente,
         apelido: dadosAtualizados.apelido,
         ligacao: dadosAtualizados.ligacao,
         media: dadosAtualizados.media,
         distribuidora: dadosAtualizados.distribuidora,
         status: dadosAtualizados.status,
-        descontoTarifa: dadosAtualizados.descontoTarifa, 
-        descontoBandeira: dadosAtualizados.descontoBandeira,
-        economia: dadosAtualizados.descontoTarifa,
-        bandeira: dadosAtualizados.descontoBandeira,
-        whatsappRepresentante: dadosAtualizados.whatsappRepresentante,
-        emailRepresentante: dadosAtualizados.emailRepresentante
-      };
-
-      // ✅ APENAS campos de documentação
-      const documentacaoLimpa = {
-        tipoDocumento: documentacaoFinal.tipoDocumento,
-        nomeRepresentante: documentacaoFinal.nomeRepresentante,
-        cpf: documentacaoFinal.cpf,
-        documentoPessoal: documentacaoFinal.documentoPessoal,
-        razaoSocial: documentacaoFinal.razaoSocial,
-        cnpj: documentacaoFinal.cnpj,
-        contratoSocial: documentacaoFinal.contratoSocial,
-        documentoPessoalRepresentante: documentacaoFinal.documentoPessoalRepresentante,
-        enderecoUC: documentacaoFinal.enderecoUC,
-        isArrendamento: documentacaoFinal.isArrendamento,
-        contratoLocacao: documentacaoFinal.contratoLocacao,
-        enderecoRepresentante: documentacaoFinal.enderecoRepresentante,
-        termoAdesao: documentacaoFinal.termoAdesao,
-        whatsappRepresentante: documentacaoFinal.whatsappRepresentante,
-        emailRepresentante: documentacaoFinal.emailRepresentante 
-      };
-
-      const dadosComId = {
-        ...dadosUC,
         numeroProposta: dadosAtualizados.numeroProposta,
         data: dadosAtualizados.data,
-        observacoes: dadosAtualizados.observacoes || item.observacoes, // ✅ PRESERVAR
-        recorrencia: dadosAtualizados.recorrencia,
+        observacoes: dadosAtualizados.observacoes || item.observacoes,
+        
+        // ✅ CONSULTOR E RECORRÊNCIA - APENAS UMA VEZ
         consultor_id: dadosAtualizados.consultor_id || null,
         consultor: dadosAtualizados.consultor || '',
+        recorrencia: dadosAtualizados.recorrencia || (dadosAtualizados.consultor_id ? 1 : 0),
+        
+        // Descontos
+        descontoTarifa: dadosAtualizados.descontoTarifa,
+        descontoBandeira: dadosAtualizados.descontoBandeira,
+        
+        // Contatos
+        whatsappRepresentante: dadosAtualizados.whatsappRepresentante,
+        emailRepresentante: dadosAtualizados.emailRepresentante,
+        
+        // IDs
         propostaId: propostaId,
         numeroUC: item.numeroUC || item.numero_unidade,
-        documentacao: documentacaoLimpa,
-        beneficios: item.beneficios || [],
+        
+        // Documentação
+        documentacao: {
+          tipoDocumento: documentacaoFinal.tipoDocumento,
+          nomeRepresentante: documentacaoFinal.nomeRepresentante,
+          cpf: documentacaoFinal.cpf,
+          documentoPessoal: documentacaoFinal.documentoPessoal,
+          razaoSocial: documentacaoFinal.razaoSocial,
+          cnpj: documentacaoFinal.cnpj,
+          contratoSocial: documentacaoFinal.contratoSocial,
+          documentoPessoalRepresentante: documentacaoFinal.documentoPessoalRepresentante,
+          enderecoUC: documentacaoFinal.enderecoUC,
+          isArrendamento: documentacaoFinal.isArrendamento,
+          contratoLocacao: documentacaoFinal.contratoLocacao,
+          enderecoRepresentante: documentacaoFinal.enderecoRepresentante,
+          termoAdesao: documentacaoFinal.termoAdesao,
+          whatsappRepresentante: documentacaoFinal.whatsappRepresentante,
+          emailRepresentante: documentacaoFinal.emailRepresentante
+        },
+        
+        // Benefícios
+        beneficios: item.beneficios || []
       };
 
-      await storageService.atualizarProspec(propostaId, dadosComId);
-    
-      // ✅ CHAMADAS DIRETAS DE REFRESH - ESTAS SÃO AS LINHAS IMPORTANTES
+      await storageService.atualizarProspec(propostaId, dadosLimpos);
+      
+      // ✅ REFRESH DOS DADOS
       console.log('🔄 Atualizando dados automaticamente após salvamento...');
-      
-      // Atualizar propostas (força reload)
       await loadPropostas(1, propostas.filters, true);
-      
-      // Atualizar controle também (força reload)  
       await loadControle(1, {}, true);
 
       setModalEdicao({ show: false, item: null, index: -1 });
@@ -1213,6 +1195,12 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     e.preventDefault();
     e.stopPropagation();
     
+    if (dados.consultor_id === null || dados.consultor_id === '') {
+      dados.recorrencia = 0;
+      dados.consultor_id = null;
+      dados.consultor = 'Sem consultor';
+    }
+
     // Validação apenas se status for "Fechado"
     if (dados.status === 'Fechado') {
       const camposObrigatorios = [];
@@ -1477,36 +1465,44 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   <div style={{padding: '8px', color: '#666'}}>Carregando consultores...</div>
                 ) : (
                   <select
-                    value={dados.consultor_id || ''}
+                    value={dados.consultor_id === null ? 'null' : (dados.consultor_id || '')}
                     onChange={(e) => {
-                      const selectedId = e.target.value;
+                      const selectedValue = e.target.value;
+                      const selectedId = selectedValue === 'null' ? null : (selectedValue === '' ? null : selectedValue);
                       const selectedConsultor = consultoresDisponiveis.find(c => c.id === selectedId);
                       
                       console.log('🔧 Alterando consultor:', {
+                        value: selectedValue,
                         id: selectedId,
                         nome: selectedConsultor?.name
                       });
                       
-                      // ✅ CORREÇÃO: tratar quando seleciona "sem consultor"
-                      if (selectedId === '' || !selectedConsultor) {
+                      if (selectedId === null) {
                         setDados({
                           ...dados, 
-                          consultor_id: '',
-                          consultor: 'Sem consultor'
+                          consultor_id: null,
+                          consultor: 'Sem consultor',
+                          recorrencia: 0
                         });
                       } else {
                         setDados({
                           ...dados, 
                           consultor_id: selectedId,
-                          consultor: selectedConsultor.name
+                          consultor: selectedConsultor.name,
+                          recorrencia: dados.recorrencia || 1
                         });
                       }
                     }}
                   >
                     <option value="">Selecione um consultor...</option>
-                    <option value="">Sem consultor</option>
-                    {consultoresDisponiveis.map((consultor, index) => (
-                      <option key={consultor.id || `consultor-${index}`} value={consultor.id || ''}>
+                    {/* ✅ APENAS ADMIN vê esta opção */}
+                    {user?.role === 'admin' && (
+                      <option value="null">Sem consultor (AUPUS direto)</option>
+                    )}
+                    {consultoresDisponiveis
+                      .filter(consultor => consultor.id !== null)
+                      .map((consultor, index) => (
+                      <option key={consultor.id || `consultor-${index}`} value={consultor.id}>
                         {consultor.name}
                       </option>
                     ))}
