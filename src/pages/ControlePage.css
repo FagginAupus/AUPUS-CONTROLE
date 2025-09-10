@@ -1511,3 +1511,103 @@ small {
     min-height: 60px;
   }
 }
+
+/* ===============================================
+   MODAL UC DETALHES - ESTILOS ESPECÍFICOS
+   =============================================== */
+
+.modal-uc-detalhes {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  max-width: 700px !important;
+  width: 90% !important;
+}
+
+.modal-uc-detalhes .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-bottom: 20px !important;
+}
+
+.modal-uc-detalhes .form-group label {
+  font-weight: 600 !important;
+  color: #495057 !important;
+  font-size: 0.95rem !important;
+}
+
+.modal-uc-detalhes .form-group input[type="number"] {
+  padding: 12px 15px !important;
+  border: 2px solid #e9ecef !important;
+  border-radius: 6px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+  background: white !important;
+  color: #333 !important;
+}
+
+.modal-uc-detalhes .form-group input[type="number"]:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+  outline: none !important;
+}
+
+.modal-uc-detalhes .form-group input[type="number"]:disabled {
+  background: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+}
+
+/* Checkbox customizado */
+.modal-uc-detalhes input[type="checkbox"] {
+  accent-color: #007bff !important;
+  cursor: pointer !important;
+}
+
+/* Informação de calibragem efetiva */
+.calibragem-info {
+  padding: 12px 16px !important;
+  background: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  color: #495057 !important;
+  margin-top: 15px !important;
+}
+
+.calibragem-info strong {
+  color: #2c3e50 !important;
+}
+
+/* Botão UC na tabela */
+.btn-uc {
+  background: #28a745 !important;
+  color: white !important;
+  font-size: 0.8rem !important;
+  padding: 4px 8px !important;
+}
+
+.btn-uc:hover {
+  background: #218838 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+/* Responsividade para modal UC */
+@media (max-width: 768px) {
+  .modal-uc-detalhes {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 10px !important;
+  }
+
+  .modal-uc-detalhes .proposta-info {
+    padding: 12px !important;
+  }
+
+  .modal-uc-detalhes .form-group input[type="number"] {
+    padding: 10px 12px !important;
+    font-size: 0.9rem !important;
+  }
+}

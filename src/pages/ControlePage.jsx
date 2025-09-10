@@ -47,7 +47,7 @@ const ControlePage = () => {
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [modalStatusTroca, setModalStatusTroca] = useState({ show: false, item: null, index: -1 });
-
+  const [modalUCDetalhes, setModalUCDetalhes] = useState({ show: false, item: null, index: -1 });
   const [filtros, setFiltros] = useState({
     consultor: '',
     ug: '',
@@ -529,6 +529,49 @@ const ControlePage = () => {
     [controle.data]
   );
 
+  const abrirModalUCDetalhes = useCallback((item, index) => {
+    console.log('🏠 Abrindo modal UC detalhes:', item);
+    setModalUCDetalhes({ 
+      show: true, 
+      item: { ...item, controleId: item.id }, 
+      index 
+    });
+  }, []);
+
+  const salvarUCDetalhes = useCallback(async (dados) => {
+    try {
+      console.log('💾 Salvando detalhes da UC:', dados);
+      showNotification('Processando...', 'info');
+
+      const response = await apiService.put(`/controle/${dados.controleId}/uc-detalhes`, {
+        consumo_medio: parseFloat(dados.consumo_medio),
+        usa_calibragem_global: dados.usa_calibragem_global,
+        calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragem_individual)
+      });
+
+      if (response?.success) {
+        // Atualizar item na lista
+        const novosItens = [...controle.items];
+        novosItens[modalUCDetalhes.index] = {
+          ...novosItens[modalUCDetalhes.index],
+          media: dados.consumo_medio,
+          calibragem_efetiva: response.data.calibragem_efetiva,
+          usa_calibragem_global: response.data.usa_calibragem_global
+        };
+
+        setControle(prev => ({ ...prev, items: novosItens }));
+        setModalUCDetalhes({ show: false, item: null, index: -1 });
+        showNotification('UC atualizada com sucesso!', 'success');
+
+        // Recarregar dados para garantir consistência
+        await loadControle(controle.currentPage, controle.filters, true);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar UC:', error);
+      showNotification('Erro ao salvar UC: ' + error.message, 'error');
+    }
+  }, [modalUCDetalhes.index, controle, showNotification, loadControle]);
+
   return (
     <div className="page-container">
       <div className="container">
@@ -825,6 +868,13 @@ const ControlePage = () => {
                           {item.statusTroca || 'Aguardando'}
                         </button>
                       </td>
+                      <button
+                        onClick={() => abrirModalUCDetalhes(item, index)}
+                        className="btn btn-small btn-secondary"
+                        title="Editar UC"
+                      >
+                        📝 UC
+                      </button>
                       {isAdmin && (
                         <td>
                           <button
@@ -843,7 +893,13 @@ const ControlePage = () => {
             )}
           </div>
         </section>
-
+        {modalUCDetalhes.show && (
+          <ModalUCDetalhes 
+            item={modalUCDetalhes.item}
+            onSave={salvarUCDetalhes}
+            onClose={() => setModalUCDetalhes({ show: false, item: null, index: -1 })}
+          />
+        )}
         {/* Modal UG - Apenas para admin */}
         {modalUG.show && isAdmin && (
           <ModalUG 
