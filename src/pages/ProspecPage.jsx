@@ -219,7 +219,9 @@ const ProspecPage = () => {
       isArrendamento: documentacaoUC.isArrendamento || false,
       contratoLocacao: documentacaoUC.contratoLocacao || null,
       enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
-      termoAdesao: documentacaoUC.termoAdesao || null
+      termoAdesao: documentacaoUC.termoAdesao || null,
+      whatsappRepresentante: documentacaoUC.whatsappRepresentante || '', 
+      emailRepresentante: documentacaoUC.emailRepresentante || '' 
     };
     
     console.log('🔍 Item final com documentação:', itemComDocumentacao);
@@ -338,7 +340,9 @@ const ProspecPage = () => {
         isArrendamento: documentacaoFinal.isArrendamento,
         contratoLocacao: documentacaoFinal.contratoLocacao,
         enderecoRepresentante: documentacaoFinal.enderecoRepresentante,
-        termoAdesao: documentacaoFinal.termoAdesao
+        termoAdesao: documentacaoFinal.termoAdesao,
+        whatsappRepresentante: documentacaoFinal.whatsappRepresentante,
+        emailRepresentante: documentacaoFinal.emailRepresentante 
       };
 
       const dadosComId = {
