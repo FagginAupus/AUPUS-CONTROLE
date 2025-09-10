@@ -513,13 +513,13 @@ const ControlePage = () => {
   
   const exportarDados = useCallback(async () => {
     try {
-      await storageService.exportarParaCSV('controle');
+      await storageService.exportarDadosFiltrados('controle', dadosFiltrados);
       showNotification('Dados exportados com sucesso!', 'success');
     } catch (error) {
       console.error('❌ Erro ao exportar:', error);
       showNotification('Erro ao exportar: ' + error.message, 'error');
     }
-  }, [showNotification]);
+  }, [dadosFiltrados, showNotification]);
 
   // ✅ NOVAS FUNÇÕES PARA MODAL UC DETALHES
   const abrirModalUCDetalhes = useCallback((item, index) => {
@@ -539,7 +539,7 @@ const ControlePage = () => {
       const response = await apiService.put(`/controle/${dados.controleId}/uc-detalhes`, {
         consumo_medio: parseFloat(dados.consumo_medio),
         usa_calibragem_global: dados.usa_calibragem_global,
-        calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragem_individual)
+        calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual)
       });
 
       if (response?.success) {
@@ -730,7 +730,7 @@ const ControlePage = () => {
                     type="number"
                     min="0"
                     max="100"
-                    step="0.1"
+                    step="1"
                     value={calibragemTemp}
                     onChange={(e) => setCalibragemTemp(parseFloat(e.target.value) || 0)}
                     placeholder="0.0"
@@ -1178,7 +1178,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     numero_uc: '',
     apelido: '',
     consumo_medio: '',
-    calibragem_individual: '',
+    calibragemIndividual: '',
     usa_calibragem_global: true,
     calibragem_global: 0
   });
@@ -1199,7 +1199,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             numero_uc: response.data.numero_uc || '',
             apelido: response.data.apelido || '',
             consumo_medio: response.data.consumo_medio || '',
-            calibragem_individual: response.data.calibragem_individual || '',
+            calibragemIndividual: response.data.calibragemIndividual || '',
             usa_calibragem_global: response.data.usa_calibragem_global,
             calibragem_global: response.data.calibragem_global || 0,
             controleId: item.controleId
@@ -1227,7 +1227,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     }
 
     if (!dados.usa_calibragem_global) {
-      if (!dados.calibragem_individual || parseFloat(dados.calibragem_individual) < 0 || parseFloat(dados.calibragem_individual) > 100) {
+      if (!dados.calibragemIndividual  || parseFloat(dados.calibragemIndividual ) < 0 || parseFloat(dados.calibragemIndividual ) > 100) {
         alert('Calibragem individual deve ser entre 0 e 100%');
         return;
       }
@@ -1240,7 +1240,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     setDados(prev => ({
       ...prev,
       usa_calibragem_global: checked,
-      calibragem_individual: checked ? '' : prev.calibragem_individual
+      calibragemIndividual: checked ? '' : prev.calibragemIndividual
     }));
   };
 
@@ -1344,8 +1344,8 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   min="0"
                   max="100"
                   step="0.01"
-                  value={dados.calibragem_individual}
-                  onChange={(e) => setDados(prev => ({ ...prev, calibragem_individual: e.target.value }))}
+                  value={dados.calibragemIndividual }
+                  onChange={(e) => setDados(prev => ({ ...prev, calibragemIndividual : e.target.value }))}
                   required={!dados.usa_calibragem_global}
                   className="form-input"
                   placeholder="Ex: 5.5"
