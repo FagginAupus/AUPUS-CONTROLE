@@ -228,13 +228,18 @@ const ControlePage = () => {
     setCalibragemTemp(calibragemGlobal);
   }, [calibragemGlobal]);
 
-  const calcularValorCalibrado = useCallback((media, calibragem) => {
-    if (!media || !calibragem || calibragem === 0) return 0;
+  const calcularValorCalibrado = useCallback((media, calibragemEspecifica = null) => {
+    if (!media) return 0;
     
     const mediaNum = parseFloat(media);
+    // Usar calibragem específica se fornecida, senão usar global
+    const calibragem = calibragemEspecifica !== null ? calibragemEspecifica : calibragemGlobal;
+    
+    if (!calibragem || calibragem === 0) return mediaNum;
+    
     const calibragemNum = parseFloat(calibragem);
     return mediaNum * (1 + calibragemNum / 100);
-  }, []);
+  }, [calibragemGlobal]);
 
   const editarStatusTroca = useCallback((index) => {
     console.log('🔍 editarStatusTroca chamada com index:', index);
@@ -840,24 +845,30 @@ const ControlePage = () => {
                       {/* Valor calibrado - só para admin */}
                       {isAdmin && (
                         <td>
-                          {calibragemTemp !== 0 && item.media ? (
-                            <div className="calibragem-info">
-                              <span className="calibragem-calculada">
-                                {calcularValorCalibrado(item.media, calibragemTemp).toFixed(0)}
-                              </span>
-                              <br />
-                              <small 
-                                className={`calibragem-status ${calibragemTemp !== calibragemGlobal ? 'pendente' : 'calibrada'}`}
-                              >
-                                {calibragemTemp > 0 ? '+' : ''}{calibragemTemp}%
-                                {calibragemTemp !== calibragemGlobal ? ' (preview)' : ''}
-                              </small>
-                            </div>
-                          ) : (
-                            <span className="sem-calibragem">
-                              {calibragemTemp === 0 ? 'Sem calibragem' : '-'}
-                            </span>
-                          )}
+                          {(() => {
+                            // Usar calibragem individual se existir, senão usar global
+                            const calibragemEfetiva = item.calibragemIndividual !== null && item.calibragemIndividual !== undefined
+                              ? item.calibragemIndividual 
+                              : calibragemGlobal;
+                              
+                            const valorCalibrado = calcularValorCalibrado(item.media, calibragemEfetiva);
+                            
+                            if (calibragemEfetiva === 0 || !item.media) {
+                              return <span className="sem-calibragem">Sem calibragem</span>;
+                            }
+                            
+                            return (
+                              <div className="calibragem-info">
+                                <span className="calibragem-calculada">
+                                  {valorCalibrado.toFixed(0)}
+                                </span>
+                                <br />
+                                <small className="calibragem-status calibrada">
+                                  {item.calibragemIndividual !== null && item.calibragemIndividual !== undefined ? 'Individual' : 'Global'}: {calibragemEfetiva}%
+                                </small>
+                              </div>
+                            );
+                          })()}
                         </td>
                       )}
                       <td>
@@ -1282,14 +1293,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           </div>
 
           {/* Calibragem */}
-          <div className="form-group" style={{ marginBottom: '20px' }}>
+          <div className="form-group">
             <label className="label-with-icon">
               <Target size={16} />
               <strong>Calibragem:</strong>
             </label>
             
-            {/* Checkbox para usar calibragem global - CORRIGIDO */}
-            <div className="calibragem-checkbox-container">
+            {/* Checkbox simples para usar calibragem global */}
+            <div style={{ marginBottom: '15px' }}>
               <label className="checkbox-label">
                 <input
                   type="checkbox"
@@ -1305,20 +1316,16 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   )}
                 </div>
                 <span className="checkbox-text">
-                  Utilizar calibragem global ({dados.calibragem_global}%)
+                  Usar calibragem global ({dados.calibragem_global}%)
                 </span>
               </label>
-              <p className="checkbox-help-text">
-                Marque para usar a calibragem padrão do sistema. 
-                Desmarque para definir uma calibragem específica para esta UC.
-              </p>
             </div>
 
-            {/* Campo de calibragem individual */}
+            {/* Campo de calibragem individual - APENAS quando desmarcado */}
             {!dados.usa_calibragem_global && (
-              <div className="calibragem-individual-container">
+              <div>
                 <label htmlFor="calibragem_individual">
-                  <strong>Calibragem Individual (%):</strong>
+                  Calibragem específica (%):
                 </label>
                 <input
                   type="number"
@@ -1330,18 +1337,10 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   onChange={(e) => setDados(prev => ({ ...prev, calibragem_individual: e.target.value }))}
                   required={!dados.usa_calibragem_global}
                   className="form-input"
+                  placeholder="Ex: 5.5"
                 />
               </div>
             )}
-          </div>
-
-          {/* Informação sobre calibragem efetiva */}
-          <div className="calibragem-preview">
-            <strong>Calibragem que será aplicada:</strong> {
-              dados.usa_calibragem_global 
-                ? `${dados.calibragem_global}% (global)` 
-                : `${dados.calibragem_individual || 0}% (individual)`
-            }
           </div>
         </form>
 
