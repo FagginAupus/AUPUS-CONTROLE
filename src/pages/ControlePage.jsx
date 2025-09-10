@@ -509,26 +509,7 @@ const ControlePage = () => {
     }
   }, [showNotification]);
 
-  // Obter listas únicas para filtros
-  const consultoresUnicos = useMemo(() => {
-    const dados = controle.data || [];
-    
-    // Corrigir consultores N/A antes de gerar lista única
-    const consultoresCorrigidos = dados.map(item => {
-      if (item.consultor === 'N/A' && item.usuario_id) {
-        return getConsultorName(item.usuario_id) || item.consultor;
-      }
-      return item.consultor;
-    }).filter(Boolean);
-
-    return [...new Set(consultoresCorrigidos)];
-  }, [controle.data, getConsultorName]);
-  
-  const ugsUnicas = useMemo(() => 
-    [...new Set((controle.data || []).map(item => item.ug).filter(Boolean))], 
-    [controle.data]
-  );
-
+  // ✅ NOVAS FUNÇÕES PARA MODAL UC DETALHES
   const abrirModalUCDetalhes = useCallback((item, index) => {
     console.log('🏠 Abrindo modal UC detalhes:', item);
     setModalUCDetalhes({ 
@@ -550,16 +531,7 @@ const ControlePage = () => {
       });
 
       if (response?.success) {
-        // Atualizar item na lista
-        const novosItens = [...controle.items];
-        novosItens[modalUCDetalhes.index] = {
-          ...novosItens[modalUCDetalhes.index],
-          media: dados.consumo_medio,
-          calibragem_efetiva: response.data.calibragem_efetiva,
-          usa_calibragem_global: response.data.usa_calibragem_global
-        };
-
-        setControle(prev => ({ ...prev, items: novosItens }));
+        // ✅ CORREÇÃO: Remover atualização manual que causa erro
         setModalUCDetalhes({ show: false, item: null, index: -1 });
         showNotification('UC atualizada com sucesso!', 'success');
 
@@ -570,7 +542,29 @@ const ControlePage = () => {
       console.error('❌ Erro ao salvar UC:', error);
       showNotification('Erro ao salvar UC: ' + error.message, 'error');
     }
-  }, [modalUCDetalhes.index, controle, showNotification, loadControle]);
+  }, [modalUCDetalhes, showNotification, loadControle, controle]);
+
+
+  // Obter listas únicas para filtros
+  const consultoresUnicos = useMemo(() => {
+    const dados = controle.data || [];
+    
+    // Corrigir consultores N/A antes de gerar lista única
+    const consultoresCorrigidos = dados.map(item => {
+      if (item.consultor === 'N/A' && item.usuario_id) {
+        return getConsultorName(item.usuario_id) || item.consultor;
+      }
+      return item.consultor;
+    }).filter(Boolean);
+
+    return [...new Set(consultoresCorrigidos)];
+  }, [controle.data, getConsultorName]);
+  
+  const ugsUnicas = useMemo(() => 
+    [...new Set((controle.data || []).map(item => item.ug).filter(Boolean))], 
+    [controle.data]
+  );
+
 
   return (
     <div className="page-container">
@@ -868,22 +862,29 @@ const ControlePage = () => {
                           {item.statusTroca || 'Aguardando'}
                         </button>
                       </td>
-                      <button
-                        onClick={() => abrirModalUCDetalhes(item, index)}
-                        className="btn btn-small btn-secondary"
-                        title="Editar UC"
-                      >
-                        📝 UC
-                      </button>
+                      
+                      {/* CÉLULA DE AÇÕES - CORRIGIDA */}
                       {isAdmin && (
                         <td>
-                          <button
-                            onClick={() => editarUG(index)}
-                            className="btn btn-small btn-secondary"
-                            title="Editar UG"
-                          >
-                            <Edit size={16} /> UG
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {/* Botão UG */}
+                            <button
+                              onClick={() => editarUG(index)}
+                              className="btn btn-small btn-secondary"
+                              title="Editar UG"
+                            >
+                              <Edit size={16} /> UG
+                            </button>
+                            
+                            {/* Botão UC */}
+                            <button
+                              onClick={() => abrirModalUCDetalhes(item, index)}
+                              className="btn btn-small btn-secondary"
+                              title="Editar UC"
+                            >
+                              📝 UC
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -900,15 +901,17 @@ const ControlePage = () => {
             onClose={() => setModalUCDetalhes({ show: false, item: null, index: -1 })}
           />
         )}
+        
         {/* Modal UG - Apenas para admin */}
         {modalUG.show && isAdmin && (
           <ModalUG 
             item={modalUG.item}
-            ugsAnalise={ugsDisponiveis || []} // ✅ CORRIGIDO: usar ugsDisponiveis
+            ugsAnalise={ugsDisponiveis || []}
             onSave={salvarUG}
             onClose={() => setModalUG({ show: false, item: null, index: -1 })}
           />
         )}
+        
         {modalStatusTroca.show && (
           <ModalStatusTroca 
             item={modalStatusTroca.item}
@@ -1127,6 +1130,214 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             </div>
           </form>
         )}
+      </div>
+    </div>
+  );
+};
+const ModalUCDetalhes = ({ item, onSave, onClose }) => {
+  const [loading, setLoading] = useState(true);
+  const [dados, setDados] = useState({
+    numero_proposta: '',
+    nome_cliente: '',
+    numero_uc: '',
+    apelido: '',
+    consumo_medio: '',
+    calibragem_individual: '',
+    usa_calibragem_global: true,
+    calibragem_global: 0
+  });
+
+  // Carregar dados da UC
+  useEffect(() => {
+    const carregarDadosUC = async () => {
+      try {
+        setLoading(true);
+        console.log('📡 Carregando dados da UC:', item.controleId);
+
+        const response = await apiService.get(`/controle/${item.controleId}/uc-detalhes`);
+        
+        if (response?.success) {
+          setDados({
+            numero_proposta: response.data.numero_proposta || '',
+            nome_cliente: response.data.nome_cliente || '',
+            numero_uc: response.data.numero_uc || '',
+            apelido: response.data.apelido || '',
+            consumo_medio: response.data.consumo_medio || '',
+            calibragem_individual: response.data.calibragem_individual || '',
+            usa_calibragem_global: response.data.usa_calibragem_global,
+            calibragem_global: response.data.calibragem_global || 0,
+            controleId: item.controleId
+          });
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar dados da UC:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (item?.controleId) {
+      carregarDadosUC();
+    }
+  }, [item]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validações
+    if (!dados.consumo_medio || parseFloat(dados.consumo_medio) < 0) {
+      alert('Consumo médio deve ser um valor positivo');
+      return;
+    }
+
+    if (!dados.usa_calibragem_global) {
+      if (!dados.calibragem_individual || parseFloat(dados.calibragem_individual) < 0 || parseFloat(dados.calibragem_individual) > 100) {
+        alert('Calibragem individual deve ser entre 0 e 100%');
+        return;
+      }
+    }
+
+    onSave(dados);
+  };
+
+  const handleCalibragemGlobalChange = (checked) => {
+    setDados(prev => ({
+      ...prev,
+      usa_calibragem_global: checked,
+      calibragem_individual: checked ? '' : prev.calibragem_individual
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content modal-controle">
+          <div className="modal-header modal-header-controle">
+            <h3>🏠 Carregando dados da UC...</h3>
+            <button onClick={onClose} className="btn btn-close">✕</button>
+          </div>
+          <div className="modal-body modal-body-controle" style={{ textAlign: 'center', padding: '40px' }}>
+            <div>Carregando informações...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-controle" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header modal-header-controle">
+          <h3>🏠 Editar Detalhes da UC</h3>
+          <button onClick={onClose} className="btn btn-close">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
+          {/* Informações da Proposta (Apenas Leitura) */}
+          <div className="proposta-info">
+            <h4>📋 Informações da Proposta</h4>
+            <p><strong>Proposta:</strong> {dados.numero_proposta}</p>
+            <p><strong>Cliente:</strong> {dados.nome_cliente}</p>
+            <p><strong>UC:</strong> {dados.numero_uc} - {dados.apelido}</p>
+          </div>
+
+          {/* Consumo Médio (Editável) */}
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label htmlFor="consumo_medio">
+              <strong>⚡ Consumo Médio (kWh):</strong>
+            </label>
+            <input
+              type="number"
+              id="consumo_medio"
+              min="0"
+              step="0.01"
+              value={dados.consumo_medio}
+              onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
+              required
+              style={{
+                padding: '12px 15px',
+                border: '2px solid #e9ecef',
+                borderRadius: '6px',
+                fontSize: '0.95rem',
+                background: 'white',
+                color: '#333'
+              }}
+            />
+          </div>
+
+          {/* Calibragem */}
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>
+              <strong>🎯 Calibragem:</strong>
+            </label>
+            
+            {/* Checkbox para usar calibragem global */}
+            <div style={{ marginTop: '10px', marginBottom: '15px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={dados.usa_calibragem_global}
+                  onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
+                  style={{ transform: 'scale(1.2)' }}
+                />
+                <span>Usar calibragem global ({dados.calibragem_global}%)</span>
+              </label>
+            </div>
+
+            {/* Campo de calibragem individual */}
+            {!dados.usa_calibragem_global && (
+              <div>
+                <label htmlFor="calibragem_individual">
+                  <strong>Calibragem Individual (%):</strong>
+                </label>
+                <input
+                  type="number"
+                  id="calibragem_individual"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={dados.calibragem_individual}
+                  onChange={(e) => setDados(prev => ({ ...prev, calibragem_individual: e.target.value }))}
+                  required={!dados.usa_calibragem_global}
+                  style={{
+                    padding: '12px 15px',
+                    border: '2px solid #e9ecef',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                    background: 'white',
+                    color: '#333',
+                    marginTop: '8px'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Informação sobre calibragem efetiva */}
+          <div style={{
+            padding: '12px 16px',
+            background: '#f8f9fa',
+            border: '1px solid #dee2e6',
+            borderRadius: '6px',
+            fontSize: '0.9rem',
+            color: '#495057'
+          }}>
+            <strong>Calibragem que será aplicada:</strong> {
+              dados.usa_calibragem_global 
+                ? `${dados.calibragem_global}% (global)` 
+                : `${dados.calibragem_individual || 0}% (individual)`
+            }
+          </div>
+        </form>
+
+        <div className="modal-footer modal-footer-controle">
+          <button type="button" onClick={onClose} className="btn btn-secondary">
+            Cancelar
+          </button>
+          <button type="submit" onClick={handleSubmit} className="btn btn-primary">
+            💾 Salvar Alterações
+          </button>
+        </div>
       </div>
     </div>
   );
