@@ -207,6 +207,7 @@ const ProspecPage = () => {
       ...item,
       // Dados da documentação específica da UC
       tipoDocumento: documentacaoUC.tipoDocumento || '',
+      documentacao: item.documentacao,
       nomeRepresentante: documentacaoUC.nomeRepresentante || '',
       cpf: documentacaoUC.cpf || '',
       documentoPessoal: documentacaoUC.documentoPessoal || null,
@@ -232,6 +233,9 @@ const ProspecPage = () => {
     setModalVisualizacao({ show: true, item });
   };
 
+  // CORREÇÃO: Remover as linhas problemáticas da função salvarEdicao
+  // Substituir a função salvarEdicao existente por esta versão corrigida:
+
   const salvarEdicao = async (dadosAtualizados) => {
     setLoading(true);
     
@@ -244,6 +248,9 @@ const ProspecPage = () => {
         showNotification('ID da proposta não encontrado para edição', 'error');
         return;
       }
+      
+      // ✅ REMOVER TODAS AS REFERÊNCIAS A faturaArquivo AQUI
+      // A lógica de upload da fatura agora está dentro do ModalEdicao
 
       // ✅ DETECTAR CAMPOS DE ARQUIVO E FAZER UPLOAD
       const camposArquivo = [
@@ -303,18 +310,19 @@ const ProspecPage = () => {
 
       // Agora salvar os dados com os nomes dos arquivos
       const dadosUC = {
-      nomeCliente: dadosAtualizados.nomeCliente,
-      
-      apelido: dadosAtualizados.apelido,
-      ligacao: dadosAtualizados.ligacao,
-      media: dadosAtualizados.media,
-      distribuidora: dadosAtualizados.distribuidora,
-      status: dadosAtualizados.status,
-      descontoTarifa: dadosAtualizados.descontoTarifa, 
-      descontoBandeira: dadosAtualizados.descontoBandeira,
-      economia: dadosAtualizados.descontoTarifa,
-      bandeira: dadosAtualizados.descontoBandeira
-    };
+        nomeCliente: dadosAtualizados.nomeCliente,
+        apelido: dadosAtualizados.apelido,
+        ligacao: dadosAtualizados.ligacao,
+        media: dadosAtualizados.media,
+        distribuidora: dadosAtualizados.distribuidora,
+        status: dadosAtualizados.status,
+        descontoTarifa: dadosAtualizados.descontoTarifa, 
+        descontoBandeira: dadosAtualizados.descontoBandeira,
+        economia: dadosAtualizados.descontoTarifa,
+        bandeira: dadosAtualizados.descontoBandeira,
+        whatsappRepresentante: dadosAtualizados.whatsappRepresentante,
+        emailRepresentante: dadosAtualizados.emailRepresentante
+      };
 
       // ✅ APENAS campos de documentação
       const documentacaoLimpa = {
@@ -335,18 +343,15 @@ const ProspecPage = () => {
 
       const dadosComId = {
         ...dadosUC,
-        
         numeroProposta: dadosAtualizados.numeroProposta,
         data: dadosAtualizados.data,
         observacoes: dadosAtualizados.observacoes || item.observacoes, // ✅ PRESERVAR
         recorrencia: dadosAtualizados.recorrencia,
-        
         consultor_id: dadosAtualizados.consultor_id || null,
         consultor: dadosAtualizados.consultor || '',
         propostaId: propostaId,
         numeroUC: item.numeroUC || item.numero_unidade,
         documentacao: documentacaoLimpa,
-        
         beneficios: item.beneficios || [],
       };
 
@@ -371,7 +376,7 @@ const ProspecPage = () => {
       setLoading(false);
     }
   };
-  
+    
   // Formatar UCs a partir do item da tabela
   const formatarUCsDoItem = (item) => {
     if (item.unidades_consumidoras) {
@@ -1153,6 +1158,7 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 // Componente Modal de Edição - ATUALIZADO com novos campos
 const ModalEdicao = ({ item, onSave, onClose }) => {
   const { user, getMyTeam } = useAuth(); 
+  const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
   const [dados, setDados] = useState({ 
@@ -1194,6 +1200,8 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
   });
 
   const [consultoresCarregados, setConsultoresCarregados] = useState(false)
+
+  const [faturaArquivo, setFaturaArquivo] = useState(null);
 
   const carregarConsultores = useCallback(async () => {
     try {
@@ -1290,29 +1298,64 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
     setLoading(true);
     
     try {
-      // ✅ LOG PARA DEBUG - Ver o que está sendo enviado
-      console.log('📤 Dados enviados no handleSubmit:', {
-        id: dados.id || dados.propostaId,
-        consultor: dados.consultor,
-        nomeCliente: dados.nomeCliente,
-        status: dados.status
-      });
+      // ✅ FAZER UPLOAD DA FATURA PRIMEIRO (DENTRO DO MODAL)
+      if (faturaArquivo && (item.numeroUC || item.numero_unidade)) {
+        try {
+          console.log('📤 Fazendo upload da fatura da UC...');
+          
+          const propostaId = item.propostaId || item.id?.split('-')[0];
+          const numeroUC = item.numeroUC || item.numero_unidade;
+          const formData = new FormData();
+          formData.append('arquivo', faturaArquivo);
+          formData.append('numeroUC', String(numeroUC));
+          formData.append('tipoDocumento', 'faturaUC');
 
-      // ✅ GARANTIR QUE TODOS OS DADOS ESTÃO COMPLETOS
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/propostas/${propostaId}/upload-documento`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+            },
+            body: formData
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Erro no upload da fatura: HTTP ${response.status}`);
+          }
+
+          const result = await response.json();
+          console.log('✅ Fatura da UC enviada com sucesso:', result.nomeArquivo);
+          showNotification(`Fatura da UC ${numeroUC} enviada com sucesso!`, 'success');
+          setFaturaArquivo(null);
+          
+        } catch (error) {
+          console.error('❌ Erro ao enviar fatura da UC:', error);
+          showNotification(`Erro ao enviar fatura da UC: ${error.message}`, 'error');
+          setLoading(false);
+          return;
+        }
+      }
+
       const dadosCompletos = {
-      ...dados,
-      consultor_id: dados.consultor_id || null, // ← ENVIAR consultor_id
-      consultor: dados.consultor || '', // Manter para compatibilidade
-      id: dados.id || dados.propostaId,
-      propostaId: dados.propostaId || dados.id
-    };
+        ...dados,
+        consultor_id: dados.consultor_id || null,
+        consultor: dados.consultor || '',
+        id: dados.id || dados.propostaId,
+        propostaId: dados.propostaId || dados.id
+      };
+
+      console.log('📤 Dados enviados no handleSubmit:', {
+        id: dadosCompletos.id,
+        consultor: dadosCompletos.consultor,
+        nomeCliente: dadosCompletos.nomeCliente,
+        status: dadosCompletos.status
+      });
 
       await onSave(dadosCompletos);
       
     } catch (error) {
       console.error('❌ Erro ao salvar proposta:', error);
-      // Mostrar erro mais amigável
-      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
+      showNotification(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -1326,6 +1369,27 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
 
   const handleFileChange = (campo, file) => {
     setDados({...dados, [campo]: file});
+  };
+
+  const handleFaturaUpload = (file) => {
+    console.log('📁 Fatura selecionada:', file?.name);
+    
+    if (file) {
+      const allowedTypes = ['application/pdf'];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert('Apenas arquivos PDF são permitidos para faturas');
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        alert('Arquivo muito grande. Tamanho máximo: 10MB');
+        return;
+      }
+    }
+    
+    setFaturaArquivo(file);
   };
 
   const handleTipoDocumentoChange = (tipo) => {
@@ -1511,6 +1575,33 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
             <h4 className="titulo-secao">📄 Documentação</h4>
             <div className="form-group">
               <label>Fatura de Energia da UC</label>
+              
+              {/* ✅ NOVO INPUT DE UPLOAD */}
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => handleFaturaUpload(e.target.files[0])}
+                title="Selecione a fatura da UC em formato PDF"
+              />
+              
+              {/* ✅ MOSTRAR ARQUIVO SELECIONADO PARA UPLOAD */}
+              {faturaArquivo && (
+                <div className="arquivo-selecionado">
+                  <span className="arquivo-info" title={faturaArquivo.name}>
+                    📄 Novo arquivo: {faturaArquivo.name.length > 30 ? faturaArquivo.name.substring(0, 30) + '...' : faturaArquivo.name}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-remover-arquivo"
+                    onClick={() => setFaturaArquivo(null)}
+                    title="Remover arquivo selecionado"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              
+              {/* ✅ MOSTRAR FATURA EXISTENTE (se houver) */}
               {(() => {
                 const documentacao = dados.documentacao || item.documentacao || {};
                 const faturas_ucs = documentacao.faturas_ucs || {};
@@ -1521,7 +1612,7 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                   return (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={faturaExistente}>
-                        📄 Fatura: {faturaExistente.length > 30 ? faturaExistente.substring(0, 30) + '...' : faturaExistente}
+                        📄 Fatura atual: {faturaExistente.length > 30 ? faturaExistente.substring(0, 30) + '...' : faturaExistente}
                       </span>
                       <div className="arquivo-acoes">
                         <button
@@ -1752,6 +1843,30 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
                 </div>
               </div>
 
+              <div className="form-row">
+                {/* WhatsApp do Representante */}
+                <div className="form-group">
+                  <label>WhatsApp do Representante</label>
+                  <input
+                    type="tel"
+                    value={dados.whatsappRepresentante || ''}
+                    onChange={(e) => setDados({...dados, whatsappRepresentante: e.target.value})}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+
+                {/* Email do Representante */}
+                <div className="form-group">
+                  <label>Email do Representante</label>
+                  <input
+                    type="email"
+                    value={dados.emailRepresentante || ''}
+                    onChange={(e) => setDados({...dados, emailRepresentante: e.target.value})}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+              </div>
+
               {/* Termo de Adesão - COM ÍCONES LUCIDE */}
               <div className="form-row">
                 <div className="form-group file-group">
@@ -1850,8 +1965,6 @@ const ModalEdicao = ({ item, onSave, onClose }) => {
       </div>
     </div>
   );
-  
-
 };
 
 export default ProspecPage;

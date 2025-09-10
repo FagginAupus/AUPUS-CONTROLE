@@ -1806,3 +1806,28 @@ button.btn-visualizar-doc:hover {
   max-width: none !important;
   flex: 1 !important;
 }
+
+.arquivo-selecionado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #e3f2fd;
+  border: 1px dashed #2196f3;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.btn-remover-arquivo {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 14px;
+}
+
+.btn-remover-arquivo:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}

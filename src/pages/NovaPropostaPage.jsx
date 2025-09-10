@@ -71,33 +71,56 @@ const NovaPropostaPage = () => {
     const arquivo = arquivosFatura[ucIndex];
     
     if (!arquivo) {
-      console.log(`📁 Nenhuma fatura para UC ${ucIndex}`);
+      console.log(`📁 Nenhuma fatura para UC index ${ucIndex} (UC ${numeroUC})`);
       return null;
     }
 
     try {
-      console.log(`📤 Fazendo upload da fatura para UC ${numeroUC}...`);
+      console.log(`📤 Fazendo upload da fatura para UC ${numeroUC}...`, {
+        arquivo: arquivo.name,
+        tamanho: arquivo.size,
+        tipo: arquivo.type,
+        propostaId: propostaId
+      });
       
       const formData = new FormData();
       formData.append('arquivo', arquivo);
-      formData.append('numeroUC', numeroUC);
+      formData.append('numeroUC', String(numeroUC)); // ✅ Garantir que seja string
       formData.append('tipoDocumento', 'faturaUC');
+      
+      // ✅ LOG PARA DEBUG
+      console.log('📝 Dados do FormData:', {
+        arquivo: arquivo.name,
+        numeroUC: String(numeroUC),
+        tipoDocumento: 'faturaUC',
+        propostaId: propostaId
+      });
       
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/propostas/${propostaId}/upload-documento`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+          // ❌ NÃO incluir Content-Type - deixar o browser definir para FormData
         },
         body: formData
       });
 
+      // ✅ LOG DA RESPOSTA COMPLETA
+      console.log(`📥 Response status: ${response.status}`);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ Erro na resposta do servidor:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log(`✅ Fatura UC ${numeroUC} enviada:`, result.nomeArquivo);
+      console.log(`✅ Fatura UC ${numeroUC} enviada com sucesso:`, result);
+      
+      // ✅ VALIDAR SE REALMENTE FOI SALVA
+      if (!result.success || !result.nomeArquivo) {
+        throw new Error('Servidor retornou sucesso mas sem nome do arquivo');
+      }
       
       return result.nomeArquivo;
       
@@ -330,15 +353,17 @@ const NovaPropostaPage = () => {
       const beneficiosSelecionados = obterBeneficiosSelecionados(data);
       
       const propostaParaBackend = {
-        nome_cliente: data.nomeCliente,
+        nomeCliente: data.nomeCliente,
         consultor_id: data.consultor_id,
         consultor: consultorNome,
-        data_proposta: data.dataProposta || new Date().toISOString().split('T')[0],
+        data_proposta: data.dataProposta,
         status: 'Aguardando',
-        observacoes: `Proposta criada via sistema web. ${data.observacoes || ''}`.trim(),
+        observacoes: `Proposta criada via sistema web.${data.observacoes || ''}`.trim(),
         recorrencia: data.recorrencia || '3%',
-        economia: `${data.economia || 20}%`,
-        bandeira: `${data.bandeira || 20}%`,
+        desconto_tarifa: data.economia || 20,
+        desconto_bandeira: data.bandeira || 20,
+        inflacao: data.inflacao || 2.00,
+        tarifa_tributos: data.tarifaTributos || 0.98,
         beneficios: [
           ...beneficiosSelecionados,
           ...beneficiosAdicionais.map(b => ({ 
@@ -346,128 +371,149 @@ const NovaPropostaPage = () => {
             texto: b 
           }))
         ],
-        unidadesConsumidoras: data.ucs?.map(uc => ({
-          numero_unidade: uc.numero_unidade,
+        unidades_consumidoras: data.ucs?.map(uc => ({
+          numero_unidade: uc.numeroUC,     // ✅ Campo correto
           apelido: uc.apelido,
           ligacao: uc.ligacao,
           distribuidora: uc.distribuidora,
-          consumo_medio: uc.consumo_medio,
+          consumo_medio: uc.consumo,       // ✅ Campo correto
           status: 'Aguardando'
         })) || [],
       };
 
       console.log('📤 Enviando proposta para o backend:', propostaParaBackend);
 
-      // 1️⃣ PRIMEIRO: Criar a proposta
+      // ✅ PASSO 1: Criar a proposta
       const result = await storageService.adicionarProspec(propostaParaBackend);
       console.log('✅ Proposta salva com sucesso:', result);
 
-      // 2️⃣ SEGUNDO: Fazer upload das faturas (SE HOUVER)
+      // ✅ PASSO 2: Extrair ID da proposta
       const propostaId = result.data?.id || result.id;
       
-      if (propostaId && data.ucs?.length > 0) {
-        console.log('📤 Fazendo upload das faturas...');
-        
-        const faturasSalvas = {};
+      if (!propostaId) {
+        throw new Error('ID da proposta não foi retornado pelo servidor');
+      }
+
+      console.log('🆔 ID da proposta extraído:', propostaId);
+
+      // ✅ PASSO 3: Fazer upload das faturas (SE HOUVER)
+      const faturasSalvas = {};
+      let totalFaturas = 0;
+      let faturasComSucesso = 0;
+
+      // Contar total de faturas para upload
+      for (let ucIndex = 0; ucIndex < data.ucs.length; ucIndex++) {
+        if (arquivosFatura[ucIndex]) {
+          totalFaturas++;
+        }
+      }
+
+      if (totalFaturas > 0) {
+        console.log(`📤 Iniciando upload de ${totalFaturas} faturas...`);
         
         for (let ucIndex = 0; ucIndex < data.ucs.length; ucIndex++) {
           const uc = data.ucs[ucIndex];
-          const numeroUC = uc.numero_unidade;
+          const numeroUC = uc.numeroUC;
           
+          if (!arquivosFatura[ucIndex]) {
+            console.log(`⏭️ Pulando UC ${numeroUC} - sem fatura`);
+            continue;
+          }
+
           try {
+            console.log(`📤 Processando fatura ${faturasComSucesso + 1}/${totalFaturas} - UC ${numeroUC}`);
+            
             const nomeArquivoFatura = await uploadArquivosFatura(numeroUC, ucIndex, propostaId);
             
             if (nomeArquivoFatura) {
               faturasSalvas[numeroUC] = nomeArquivoFatura;
-              console.log(`✅ Fatura UC ${numeroUC} salva: ${nomeArquivoFatura}`);
+              faturasComSucesso++;
+              console.log(`✅ Fatura UC ${numeroUC} salva: ${nomeArquivoFatura} (${faturasComSucesso}/${totalFaturas})`);
+            } else {
+              console.warn(`⚠️ Fatura UC ${numeroUC} não foi salva`);
             }
+            
+            // ✅ PEQUENA PAUSA ENTRE UPLOADS para evitar sobrecarga
+            if (ucIndex < data.ucs.length - 1 && arquivosFatura[ucIndex + 1]) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
           } catch (error) {
             console.error(`❌ Erro ao salvar fatura UC ${numeroUC}:`, error);
-            // Não bloquear a criação da proposta por erro de fatura
+            // Continuar com outras faturas mesmo se uma falhar
           }
         }
-        
-        // 3️⃣ TERCEIRO: Se houve faturas, atualizar documentação da proposta
-        if (Object.keys(faturasSalvas).length > 0) {
-          try {
-            console.log('📝 Atualizando documentação com faturas...');
-            
-            await fetch(`${process.env.REACT_APP_API_URL}/propostas/${propostaId}/documentacao`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
-              },
-              body: JSON.stringify({
-                documentacao: {
-                  faturas_ucs: faturasSalvas,
-                  data_upload_faturas: new Date().toISOString()
-                }
-              })
-            });
-            
-            console.log('✅ Documentação atualizada com faturas:', faturasSalvas);
-            
-          } catch (docError) {
-            console.error('❌ Erro ao atualizar documentação:', docError);
-          }
-        }
-      }
 
-      // 4️⃣ QUARTO: Refresh automático e navegação
-      console.log('🔄 Atualizando dados automaticamente após criação...');
-      await loadPropostas(1, {}, true);
-
-      // 5️⃣ QUINTO: Gerar PDF automaticamente (opcional)
-      try {
-        console.log('📄 Gerando PDF automaticamente...');
-        
-        const beneficiosSelecionados = obterBeneficiosSelecionados(data);
-        
-        const dadosPDF = {
-          numeroProposta: numeroProposta,
-          nomeCliente: data.nomeCliente,
-          consultor: consultorNome,
-          data: data.dataProposta || new Date().toISOString().split('T')[0],
-          descontoTarifa: (data.economia || 20) / 100,
-          descontoBandeira: (data.bandeira || 20) / 100,
-          inflacao: (data.inflacao || 2) / 100,
-          tarifaTributos: data.tarifaTributos || 0.98,
-          observacoes: data.observacoes || '',
-          ucs: data.ucs || [],
-          beneficios: [
-            ...beneficiosSelecionados,
-            ...beneficiosAdicionais.map(b => ({ 
-              numero: beneficiosSelecionados.length + beneficiosAdicionais.indexOf(b) + 1, 
-              texto: b 
-            }))
-          ]
-        };
-
-        const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
-        await PDFGenerator.baixarPDF(dadosPDF, true);
-        
-        showNotification(`Proposta ${numeroProposta} criada e PDF gerado com sucesso!`, 'success');
-        
-      } catch (pdfError) {
-        console.error('⚠️ Erro ao gerar PDF (proposta foi salva):', pdfError);
-        showNotification(`Proposta ${numeroProposta} criada com sucesso!`, 'success');
-      }
-
-      navigate('/prospec');
-      
-    } catch (error) {
-      if (error.response?.status === 422 && error.response?.data?.error_type === 'ucs_com_proposta_ativa') {
-        mostrarModalUcsBloqueadas(error.response.data);
+        console.log(`📊 Resultado do upload: ${faturasComSucesso}/${totalFaturas} faturas salvas`);
       } else {
-        console.error('❌ Erro ao salvar proposta:', error);
+        console.log('📁 Nenhuma fatura para upload');
+      }
+
+      // ✅ PASSO 4: Verificar se documentação foi atualizada (opcional)
+      if (Object.keys(faturasSalvas).length > 0) {
+        console.log('🔍 Verificando se documentação foi atualizada...');
         
-        if (error.response?.data?.message) {
-          showNotification(error.response.data.message, 'error');
-        } else {
-          showNotification(`Erro ao criar proposta: ${error.message}`, 'error');
+        try {
+          // Fazer uma chamada para verificar a documentação
+          const verificacaoResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/propostas/${propostaId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (verificacaoResponse.ok) {
+            const propostaVerificacao = await verificacaoResponse.json();
+            const documentacao = propostaVerificacao.data?.documentacao || propostaVerificacao.documentacao;
+            
+            console.log('📋 Documentação final:', documentacao);
+            
+            if (documentacao && documentacao.faturas_ucs) {
+              console.log('✅ Documentação atualizada com faturas:', Object.keys(documentacao.faturas_ucs));
+            } else {
+              console.warn('⚠️ Documentação não contém faturas_ucs');
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Não foi possível verificar a documentação:', error.message);
         }
       }
+
+      // ✅ SUCESSO FINAL
+      const mensagemSucesso = totalFaturas > 0 
+        ? `Proposta salva com sucesso! ${faturasComSucesso}/${totalFaturas} faturas enviadas.`
+        : 'Proposta salva com sucesso!';
+        
+      showNotification(mensagemSucesso, 'success');
+      
+      // ✅ ATUALIZAR DADOS E LIMPAR FORMULÁRIO
+      if (afterCreateProposta) {
+        await afterCreateProposta();
+      }
+      
+      reset();
+      setArquivosFatura({});
+      setBeneficiosAdicionais([]);
+      
+      // Redirecionar
+      navigate('/prospec');
+
+    } catch (error) {
+      console.error('❌ Erro geral no salvamento:', error);
+      
+      // ✅ MELHOR TRATAMENTO DE ERROS
+      let mensagemErro = 'Erro ao salvar proposta';
+      
+      if (error.message?.includes('UC duplicada') || error.message?.includes('duplicate')) {
+        mensagemErro = 'Uma ou mais UCs já estão em outra proposta ativa';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        mensagemErro = 'Erro de conexão. Verifique sua internet';
+      } else if (error.message) {
+        mensagemErro = error.message;
+      }
+      
+      showNotification(mensagemErro, 'error');
+      
     } finally {
       setLoading(false);
     }
@@ -1046,21 +1092,52 @@ const NovaPropostaPage = () => {
                   ← Voltar
                 </button>
 
-                <button
-                  type="submit"
-                  className="btn btn-primary"
+                <button 
+                  type="submit" 
+                  className="btn-primary"
                   disabled={loading}
+                  style={{ 
+                    opacity: loading ? 0.7 : 1,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    position: 'relative'
+                  }}
                 >
                   {loading ? (
                     <>
-                      <span className="loading-spinner">⏳</span>
-                      Salvando...
+                      <span style={{ visibility: 'hidden' }}>Salvar Proposta</span>
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <div className="spinner" style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid #ffffff40',
+                          borderTop: '2px solid #ffffff',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }} />
+                        Salvando...
+                      </div>
                     </>
                   ) : (
-                    <>
-                      💾 Salvar Proposta
-                    </>
+                    'Salvar Proposta'
                   )}
+                </button>
+                
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => navigate('/prospec')}
+                  disabled={loading}
+                  style={{ opacity: loading ? 0.5 : 1 }}
+                >
+                  Cancelar
                 </button>
               </div>
             </div>
