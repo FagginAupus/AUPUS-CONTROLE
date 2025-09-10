@@ -1583,57 +1583,85 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                 }
               })()}
             </div>
+
+            {/* Seletor de Tipo de Documento */}
             <div className="document-type-selector">
               <label className="radio-option">
-                <input
-                  type="radio"
-                  name="tipoDocumento"
-                  value="CPF"
+                <input 
+                  type="radio" 
+                  name="tipoDocumento" 
+                  value="CPF" 
                   checked={dados.tipoDocumento === 'CPF'}
-                  onChange={(e) => handleTipoDocumentoChange(e.target.value)}
+                  onChange={() => handleTipoDocumentoChange('CPF')}
                 />
-                <span>CPF</span>
+                <span>Pessoa Física (CPF)</span>
               </label>
               <label className="radio-option">
-                <input
-                  type="radio"
-                  name="tipoDocumento"
-                  value="CNPJ"
+                <input 
+                  type="radio" 
+                  name="tipoDocumento" 
+                  value="CNPJ" 
                   checked={dados.tipoDocumento === 'CNPJ'}
-                  onChange={(e) => handleTipoDocumentoChange(e.target.value)}
+                  onChange={() => handleTipoDocumentoChange('CNPJ')}
                 />
-                <span>CNPJ</span>
+                <span>Pessoa Jurídica (CNPJ)</span>
               </label>
             </div>
 
             {/* Campos CPF */}
             {dados.tipoDocumento === 'CPF' && (
-              <div className="form-group">
-                <label>Documento Pessoal (CPF, RG, CNH)</label>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
-                />
-                {dados.documentoPessoal ? (
-                  <div className="arquivo-existente">
-                    <span className="arquivo-info" title={typeof dados.documentoPessoal === 'string' ? dados.documentoPessoal : dados.documentoPessoal.name}>
-                      📎 {typeof dados.documentoPessoal === 'string' ? 
-                        `Doc: ${dados.documentoPessoal.length > 30 ? dados.documentoPessoal.substring(0, 30) + '...' : dados.documentoPessoal}` : 
-                        `Arquivo: ${dados.documentoPessoal.name.length > 30 ? dados.documentoPessoal.name.substring(0, 30) + '...' : dados.documentoPessoal.name}`}
-                    </span>
-                    {typeof dados.documentoPessoal === 'string' && (
-                      <BotoesDocumento 
-                        nomeArquivo={dados.documentoPessoal} 
-                        tipoArquivo="documento pessoal"
-                      />
-                    )}
+              <div className="document-fields">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nome do Representante Legal</label>
+                    <input
+                      type="text"
+                      value={dados.nomeRepresentante || ''}
+                      onChange={(e) => setDados({...dados, nomeRepresentante: e.target.value})}
+                      placeholder="Nome completo do representante"
+                    />
                   </div>
-                ) : null}
+                  <div className="form-group">
+                    <label>CPF</label>
+                    <input
+                      type="text"
+                      value={dados.cpf || ''}
+                      onChange={(e) => setDados({...dados, cpf: e.target.value})}
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+                </div>
+                
+                {/* Documento Pessoal */}
+                <div className="form-row">
+                  <div className="form-group file-group">
+                    <label>Documento Pessoal (RG/CNH)</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('documentoPessoal', e.target.files[0])}
+                    />
+                    {dados.documentoPessoal ? (
+                      <div className="arquivo-existente">
+                        <span className="arquivo-info" title={typeof dados.documentoPessoal === 'string' ? dados.documentoPessoal : dados.documentoPessoal.name}>
+                          📎 {typeof dados.documentoPessoal === 'string' ? 
+                            `Doc: ${dados.documentoPessoal.length > 30 ? dados.documentoPessoal.substring(0, 30) + '...' : dados.documentoPessoal}` : 
+                            `Arquivo: ${dados.documentoPessoal.name.length > 30 ? dados.documentoPessoal.name.substring(0, 30) + '...' : dados.documentoPessoal.name}`}
+                        </span>
+                        {typeof dados.documentoPessoal === 'string' && (
+                          <BotoesDocumento 
+                            nomeArquivo={dados.documentoPessoal} 
+                            tipoArquivo="documento pessoal"
+                          />
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             )}
-
-            {/* Campos CNPJ */}
+            
+            {/* Campos CNPJ - MANTÉM O MESMO */}
             {dados.tipoDocumento === 'CNPJ' && (
               <div className="document-fields">
                 <div className="form-row">
@@ -1670,7 +1698,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   </div>
                 </div>
                 
-                {/* SEPARADO: Contrato Social da Empresa */}
+                {/* Arquivos CNPJ */}
                 <div className="form-row">
                   <div className="form-group file-group">
                     <label>Contrato Social da Empresa</label>
@@ -1681,26 +1709,16 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     />
                     {dados.contratoSocial ? (
                       <div className="arquivo-existente">
-                        <span className="arquivo-info" title={typeof dados.contratoSocial === 'string' ? dados.contratoSocial : dados.contratoSocial.name}>
-                          📎 {typeof dados.contratoSocial === 'string' ? 
-                            `Contrato: ${dados.contratoSocial.length > 30 ? dados.contratoSocial.substring(0, 30) + '...' : dados.contratoSocial}` : 
-                            `Arquivo: ${dados.contratoSocial.name.length > 30 ? dados.contratoSocial.name.substring(0, 30) + '...' : dados.contratoSocial.name}`}
-                        </span>
-                        {typeof dados.contratoSocial === 'string' && (
-                          <BotoesDocumento 
-                            nomeArquivo={dados.contratoSocial} 
-                            tipoArquivo="contrato social"
-                          />
-                        )}
+                        <span className="arquivo-info">📎 Contrato Social</span>
+                        <BotoesDocumento 
+                          nomeArquivo={dados.contratoSocial} 
+                          tipoArquivo="contrato social"
+                        />
                       </div>
                     ) : null}
                   </div>
-                </div>
-                
-                {/* SEPARADO: Documento Pessoal do Representante */}
-                <div className="form-row">
                   <div className="form-group file-group">
-                    <label>Documento Pessoal do Representante</label>
+                    <label>Documento do Representante</label>
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
@@ -1708,17 +1726,11 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     />
                     {dados.documentoPessoalRepresentante ? (
                       <div className="arquivo-existente">
-                        <span className="arquivo-info" title={typeof dados.documentoPessoalRepresentante === 'string' ? dados.documentoPessoalRepresentante : dados.documentoPessoalRepresentante.name}>
-                          📎 {typeof dados.documentoPessoalRepresentante === 'string' ? 
-                            `Doc Rep: ${dados.documentoPessoalRepresentante.length > 30 ? dados.documentoPessoalRepresentante.substring(0, 30) + '...' : dados.documentoPessoalRepresentante}` : 
-                            `Arquivo: ${dados.documentoPessoalRepresentante.name.length > 30 ? dados.documentoPessoalRepresentante.name.substring(0, 30) + '...' : dados.documentoPessoalRepresentante.name}`}
-                        </span>
-                        {typeof dados.documentoPessoalRepresentante === 'string' && (
-                          <BotoesDocumento 
-                            nomeArquivo={dados.documentoPessoalRepresentante} 
-                            tipoArquivo="documento do representante"
-                          />
-                        )}
+                        <span className="arquivo-info">📎 Doc. Representante</span>
+                        <BotoesDocumento 
+                          nomeArquivo={dados.documentoPessoalRepresentante} 
+                          tipoArquivo="documento representante"
+                        />
                       </div>
                     ) : null}
                   </div>
@@ -1726,101 +1738,103 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
               </div>
             )}
 
-            {/* Campos comuns para ambos */}
             <div className="common-fields">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Endereço da UC</label>
-                  <input
-                    type="text"
-                    value={dados.enderecoUC || ''}
-                    onChange={(e) => setDados({...dados, enderecoUC: e.target.value})}
-                    placeholder="Rua, número, bairro, cidade, CEP"
-                  />
-                </div>
-              </div>
+              <div className="endereco-logadouro-grid">
 
-              <div className="form-row">
-                <div className="form-group checkbox-group-modal">
-                  <label className="checkbox-label">
+                <div className="endereco-column">
+                  <div className="form-group">
+                    <label>Endereço da UC</label>
                     <input
-                      type="checkbox"
-                      checked={dados.isArrendamento || false}
-                      onChange={(e) => setDados({...dados, isArrendamento: e.target.checked})}
+                      type="text"
+                      value={dados.enderecoUC || ''}
+                      onChange={(e) => setDados({...dados, enderecoUC: e.target.value})}
+                      placeholder="Endereço resumido da Unidade Consumidora"
                     />
-                    <span>Este endereço é arrendamento</span>
-                  </label>
-                </div>
-              </div>
-              {/* Contrato de Locação - COM ÍCONES LUCIDE */}
-              {dados.isArrendamento && (
-                <div className="form-row">
-                  <div className="form-group file-group">
-                    <label>Contrato de Locação</label>~
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange('contratoLocacao', e.target.files[0])}
-                    />
-                    {dados.contratoLocacao ? (
-                      <div className="arquivo-existente">
-                        <span className="arquivo-info" title={typeof dados.contratoLocacao === 'string' ? dados.contratoLocacao : dados.contratoLocacao.name}>
-                          📎 {typeof dados.contratoLocacao === 'string' ? 
-                            `Locação: ${dados.contratoLocacao.length > 30 ? dados.contratoLocacao.substring(0, 30) + '...' : dados.contratoLocacao}` : 
-                            `Arquivo: ${dados.contratoLocacao.name.length > 30 ? dados.contratoLocacao.name.substring(0, 30) + '...' : dados.contratoLocacao.name}`}
-                        </span>
-                        {typeof dados.contratoLocacao === 'string' && (
-                          <BotoesDocumento 
-                            nomeArquivo={dados.contratoLocacao} 
-                            tipoArquivo="contrato de locação"
+                  </div>
+                  <div className="logadouro-column">
+                    <div className="form-group logadouro-field">
+                      <label>Logadouro da UC</label>
+                      <textarea
+                        value={dados.logadouroUC || ''}
+                        onChange={(e) => setDados({...dados, logadouroUC: e.target.value})}
+                        placeholder="Descrição detalhada do logadouro, idêntico ao que está na fatura da Equatorial"
+                        rows="6"
+                      ></textarea>
+                    </div>
+                  </div>
+                  {dados.isArrendamento && (
+                    <div className="common-fields">
+                      <div className="form-row">
+                        <div className="form-group file-group">
+                          <label>Contrato de Locação/Arrendamento</label>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => handleFileChange('contratoLocacao', e.target.files[0])}
                           />
-                        )}
+                          {dados.contratoLocacao ? (
+                            <div className="arquivo-existente">
+                              <span className="arquivo-info">📎 Contrato de Locação</span>
+                              <BotoesDocumento 
+                                nomeArquivo={dados.contratoLocacao} 
+                                tipoArquivo="contrato locação"
+                              />
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
-                    ) : null}
+                    </div>
+                  )}
+                  <div className="form-group checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={dados.isArrendamento || false}
+                        onChange={(e) => setDados({...dados, isArrendamento: e.target.checked})}
+                      />
+                      <span className="checkmark"></span>
+                      UC em Arrendamento
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label>Endereço do Representante</label>
+                    <input
+                      type="text"
+                      value={dados.enderecoRepresentante || ''}
+                      onChange={(e) => setDados({...dados, enderecoRepresentante: e.target.value})}
+                      placeholder="Endereço completo do representante"
+                    />
                   </div>
                 </div>
-              )}
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Endereço do Representante</label>
-                  <input
-                    type="text"
-                    value={dados.enderecoRepresentante || ''}
-                    onChange={(e) => setDados({...dados, enderecoRepresentante: e.target.value})}
-                    placeholder="Rua, número, bairro, cidade, CEP"
-                  />
-                </div>
               </div>
-
-              <div className="form-row">
-                {/* WhatsApp do Representante */}
-                <div className="form-group">
-                  <label>WhatsApp do Representante</label>
-                  <input
-                    type="tel"
-                    value={dados.whatsappRepresentante || ''}
-                    onChange={(e) => setDados({...dados, whatsappRepresentante: e.target.value})}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-
-                {/* Email do Representante */}
-                <div className="form-group">
-                  <label>Email do Representante</label>
-                  <input
-                    type="email"
-                    value={dados.emailRepresentante || ''}
-                    onChange={(e) => setDados({...dados, emailRepresentante: e.target.value})}
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-              </div>
-
+              
               {/* Termo de Adesão - COM ÍCONES LUCIDE */}
               <div className="form-row">
                 <div className="form-group file-group">
-                  <label>Termo de Adesão Assinado</label>
+                  <label>Termo de Adesão</label>
+                  <div className="form-row">
+                    {/* WhatsApp do Representante */}
+                    <div className="form-group">
+                      <label>WhatsApp do Representante</label>
+                      <input
+                        type="tel"
+                        value={dados.whatsappRepresentante || ''}
+                        onChange={(e) => setDados({...dados, whatsappRepresentante: e.target.value})}
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+
+                    {/* Email do Representante */}
+                    <div className="form-group">
+                      <label>Email do Representante</label>
+                      <input
+                        type="email"
+                        value={dados.emailRepresentante || ''}
+                        onChange={(e) => setDados({...dados, emailRepresentante: e.target.value})}
+                        placeholder="email@exemplo.com"
+                      />
+                    </div>
+                  </div>
                   <div className="file-with-download">
                     <button
                       type="button"
