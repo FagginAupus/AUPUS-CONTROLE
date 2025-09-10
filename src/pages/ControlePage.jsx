@@ -761,10 +761,21 @@ const ControlePage = () => {
               </div>
             )}
 
-            {/* Botão para limpar filtros */}
+            {/* Botões de ação */}
             <div className="actions-container">
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
+              </button>
+              <button 
+                onClick={refreshDados}
+                className="btn btn-secondary"
+                disabled={controle.loading}
+                title="Atualizar dados"
+              >
+                {controle.loading ? '🔄' : '⟳'} Atualizar
+              </button>
+              <button onClick={exportarDados} className="btn btn-primary">
+                📊 Exportar CSV
               </button>
             </div>
           </div>
