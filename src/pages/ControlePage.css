@@ -934,13 +934,13 @@ small {
 }
 
 .status-troca-btn.status-esteira:hover {
-  background: #cf7826 !important;
+  background: #b45700 !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
 }
 
 .status-troca-btn.status-em-andamento {
-  background: #1bbfdb !important;
+  background: #26899b !important;
   color: white !important;
 }
 
@@ -951,7 +951,7 @@ small {
 }
 
 .status-troca-btn.status-associado {
-  background: #27ae60 !important;
+  background: #2fa05e !important;
   color: white !important;
 }
 
@@ -1729,5 +1729,139 @@ small {
     width: 80px !important;
     height: 28px !important;
     font-size: 0.7rem !important;
+  }
+}
+
+/* Títulos com ícones */
+.modal-title-with-icon,
+.section-title-with-icon,
+.label-with-icon {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Container do checkbox de calibragem global */
+.calibragem-checkbox-container {
+  margin: 15px 0 !important;
+  padding: 15px !important;
+  background: #f8f9fa !important;
+  border-radius: 8px !important;
+  border: 1px solid #e9ecef !important;
+}
+
+/* Label do checkbox melhorado */
+.checkbox-label {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  font-weight: 500 !important;
+  color: #495057 !important;
+}
+
+/* Input checkbox oculto */
+.checkbox-input {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ícone do checkbox customizado */
+.checkbox-icon {
+  flex-shrink: 0 !important;
+  color: #28a745 !important;
+  transition: all 0.2s ease !important;
+}
+
+.checkbox-input:not(:checked) + .checkbox-icon {
+  color: #dee2e6 !important;
+}
+
+/* Texto do checkbox */
+.checkbox-text {
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+
+/* Texto de ajuda */
+.checkbox-help-text {
+  font-size: 0.85rem !important;
+  color: #6c757d !important;
+  margin: 8px 0 0 26px !important;
+  line-height: 1.3 !important;
+  font-style: italic !important;
+}
+
+/* Container da calibragem individual */
+.calibragem-individual-container {
+  margin-top: 15px !important;
+  padding: 15px !important;
+  background: #fff3cd !important;
+  border-radius: 8px !important;
+  border: 1px solid #ffeaa7 !important;
+}
+
+/* Preview da calibragem */
+.calibragem-preview {
+  padding: 12px 16px !important;
+  background: #d1ecf1 !important;
+  border: 1px solid #bee5eb !important;
+  border-radius: 6px !important;
+  fontSize: 0.9rem !important;
+  color: #0c5460 !important;
+  margin-top: 20px !important;
+}
+
+/* Input form melhorado */
+.form-input {
+  padding: 12px 15px !important;
+  border: 2px solid #e9ecef !important;
+  border-radius: 6px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+  background: white !important;
+  color: #333 !important;
+  width: 100% !important;
+}
+
+.form-input:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+  outline: none !important;
+}
+
+.form-input:disabled {
+  background: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+}
+
+/* Botões do modal */
+.modal-footer-controle .btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 10px 20px !important;
+  font-weight: 500 !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .modal-uc-detalhes {
+    width: 95% !important;
+    margin: 10px !important;
+  }
+  
+  .calibragem-checkbox-container,
+  .calibragem-individual-container {
+    padding: 12px !important;
+  }
+  
+  .checkbox-help-text {
+    margin-left: 20px !important;
+    font-size: 0.8rem !important;
   }
 }

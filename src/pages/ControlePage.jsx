@@ -14,7 +14,11 @@ import {
   AlertTriangle, 
   CheckCircle,
   Edit,
-  Clock
+  Clock,
+  Home,     
+  Settings,
+  Target,
+  X       
 } from 'lucide-react';
 import './ControlePage.css';
 
@@ -882,7 +886,8 @@ const ControlePage = () => {
                               className="btn btn-small btn-secondary"
                               title="Editar UC"
                             >
-                              📝 UC
+                              <Edit size={14} />
+                              UC
                             </button>
                           </div>
                         </td>
@@ -1226,16 +1231,24 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-controle" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-controle modal-uc-detalhes" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header modal-header-controle">
-          <h3>🏠 Editar Detalhes da UC</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+          <h3 className="modal-title-with-icon">
+            <Home size={20} />
+            Editar Detalhes da UC
+          </h3>
+          <button onClick={onClose} className="btn btn-close">
+            <X size={18} />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
           {/* Informações da Proposta (Apenas Leitura) */}
           <div className="proposta-info">
-            <h4>📋 Informações da Proposta</h4>
+            <h4 className="section-title-with-icon">
+              <Database size={16} />
+              Informações da Proposta
+            </h4>
             <p><strong>Proposta:</strong> {dados.numero_proposta}</p>
             <p><strong>Cliente:</strong> {dados.nome_cliente}</p>
             <p><strong>UC:</strong> {dados.numero_uc} - {dados.apelido}</p>
@@ -1243,8 +1256,9 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
           {/* Consumo Médio (Editável) */}
           <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label htmlFor="consumo_medio">
-              <strong>⚡ Consumo Médio (kWh):</strong>
+            <label htmlFor="consumo_medio" className="label-with-icon">
+              <Settings size={16} />
+              <strong>Consumo Médio (kWh):</strong>
             </label>
             <input
               type="number"
@@ -1254,39 +1268,40 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
               value={dados.consumo_medio}
               onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
               required
-              style={{
-                padding: '12px 15px',
-                border: '2px solid #e9ecef',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                background: 'white',
-                color: '#333'
-              }}
+              className="form-input"
             />
           </div>
 
           {/* Calibragem */}
           <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label>
-              <strong>🎯 Calibragem:</strong>
+            <label className="label-with-icon">
+              <Target size={16} />
+              <strong>Calibragem:</strong>
             </label>
             
-            {/* Checkbox para usar calibragem global */}
-            <div style={{ marginTop: '10px', marginBottom: '15px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            {/* Checkbox para usar calibragem global - CORRIGIDO */}
+            <div className="calibragem-checkbox-container">
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   checked={dados.usa_calibragem_global}
                   onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
-                  style={{ transform: 'scale(1.2)' }}
+                  className="checkbox-input"
                 />
-                <span>Usar calibragem global ({dados.calibragem_global}%)</span>
+                <CheckCircle size={16} className="checkbox-icon" />
+                <span className="checkbox-text">
+                  Utilizar calibragem global ({dados.calibragem_global}%)
+                </span>
               </label>
+              <p className="checkbox-help-text">
+                Marque para usar a calibragem padrão do sistema. 
+                Desmarque para definir uma calibragem específica para esta UC.
+              </p>
             </div>
 
             {/* Campo de calibragem individual */}
             {!dados.usa_calibragem_global && (
-              <div>
+              <div className="calibragem-individual-container">
                 <label htmlFor="calibragem_individual">
                   <strong>Calibragem Individual (%):</strong>
                 </label>
@@ -1299,29 +1314,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   value={dados.calibragem_individual}
                   onChange={(e) => setDados(prev => ({ ...prev, calibragem_individual: e.target.value }))}
                   required={!dados.usa_calibragem_global}
-                  style={{
-                    padding: '12px 15px',
-                    border: '2px solid #e9ecef',
-                    borderRadius: '6px',
-                    fontSize: '0.95rem',
-                    background: 'white',
-                    color: '#333',
-                    marginTop: '8px'
-                  }}
+                  className="form-input"
                 />
               </div>
             )}
           </div>
 
           {/* Informação sobre calibragem efetiva */}
-          <div style={{
-            padding: '12px 16px',
-            background: '#f8f9fa',
-            border: '1px solid #dee2e6',
-            borderRadius: '6px',
-            fontSize: '0.9rem',
-            color: '#495057'
-          }}>
+          <div className="calibragem-preview">
             <strong>Calibragem que será aplicada:</strong> {
               dados.usa_calibragem_global 
                 ? `${dados.calibragem_global}% (global)` 
@@ -1335,7 +1335,8 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             Cancelar
           </button>
           <button type="submit" onClick={handleSubmit} className="btn btn-primary">
-            💾 Salvar Alterações
+            <CheckCircle size={16} />
+            Salvar Alterações
           </button>
         </div>
       </div>
