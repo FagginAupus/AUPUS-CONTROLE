@@ -1784,15 +1784,24 @@ small {
   font-size: 0.95rem !important;
   line-height: 1.4 !important;
   margin: 0 !important;
+  color: #2c3e50 !important;          /* Cor escura e visível */
+  font-weight: 500 !important;        /* Peso médio para legibilidade */
 }
 
 /* Texto de ajuda */
 .checkbox-help-text {
   font-size: 0.85rem !important;
-  color: #6c757d !important;
-  margin: 8px 0 0 26px !important;
+  color: #495057 !important;          /* Cor mais escura que o cinza anterior */
+  margin: 8px 0 0 30px !important;    /* Margem ajustada para alinhamento */
   line-height: 1.3 !important;
   font-style: italic !important;
+  opacity: 0.9 !important;            /* Leve transparência para diferenciação */
+}
+
+.modal-uc-detalhes .section-title-with-icon,
+.modal-uc-detalhes .label-with-icon {
+  background: none !important;         /* Sem fundo */
+  padding: 0 !important;              /* Sem padding extra */
 }
 
 /* Container da calibragem individual */
@@ -1810,7 +1819,6 @@ small {
   background: #d1ecf1 !important;
   border: 1px solid #bee5eb !important;
   border-radius: 6px !important;
-  fontSize: 0.9rem !important;
   color: #0c5460 !important;
   margin-top: 20px !important;
 }
@@ -1864,4 +1872,265 @@ small {
     margin-left: 20px !important;
     font-size: 0.8rem !important;
   }
+}
+
+.action-buttons-controle {
+  display: flex !important;
+  gap: 6px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Botões UC e UG com tamanho padrão */
+.btn-uc, 
+.btn-ug {
+  width: 45px !important;         /* Largura fixa igual */
+  height: 32px !important;        /* Altura fixa igual */
+  padding: 4px 6px !important;    /* Padding consistente */
+  font-size: 0.75rem !important;  /* Fonte menor */
+  font-weight: 600 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;            /* Gap menor entre ícone e texto */
+  text-align: center !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+/* Botão UC - Verde */
+.btn-uc {
+  background: #28a745 !important;
+  color: white !important;
+}
+
+.btn-uc:hover {
+  background: #218838 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+/* Botão UG - Azul (só para admin) */
+.btn-ug {
+  background: #007bff !important;
+  color: white !important;
+}
+
+.btn-ug:hover {
+  background: #0056b3 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* 2. MODAL UC - REDUZIR ALTURA E ESPAÇAMENTOS */
+
+.modal-uc-detalhes {
+  max-height: 80vh !important;     /* Reduzir altura máxima */
+  overflow: hidden !important;     /* Remover scroll desnecessário */
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-uc-detalhes .modal-header {
+  padding: 16px 20px !important;   /* Reduzir padding do header */
+  flex-shrink: 0 !important;
+}
+
+.modal-uc-detalhes .modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 16px 20px !important;   /* Reduzir padding do body */
+  max-height: calc(80vh - 120px) !important;
+}
+
+.modal-uc-detalhes .modal-footer {
+  padding: 14px 20px !important;   /* Reduzir padding do footer */
+  flex-shrink: 0 !important;
+}
+
+/* Reduzir espaçamentos entre os ícones/grupos */
+.modal-uc-detalhes .form-group {
+  margin-bottom: 16px !important;  /* Era 20px, agora 16px */
+}
+
+.modal-uc-detalhes .label-with-icon {
+  margin-bottom: 8px !important;   /* Era 12px, agora 8px */
+}
+
+.modal-uc-detalhes .calibragem-checkbox-container {
+  margin: 12px 0 !important;       /* Era 15px, agora 12px */
+  padding: 12px !important;        /* Era 15px, agora 12px */
+}
+
+.modal-uc-detalhes .calibragem-individual-container {
+  margin-top: 12px !important;     /* Era 15px, agora 12px */
+  padding: 12px !important;        /* Era 15px, agora 12px */
+}
+
+.modal-uc-detalhes .calibragem-preview {
+  padding: 10px 14px !important;   /* Era 12px 16px, agora menor */
+  margin-top: 14px !important;     /* Era 20px, agora 14px */
+}
+
+/* 3. CHECKBOX DE CALIBRAGEM GLOBAL - MELHOR VISUALIZAÇÃO */
+
+/* Container do checkbox com visual melhorado */
+.checkbox-label {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  padding: 4px 0 !important;
+}
+
+/* Input checkbox invisível */
+.checkbox-input {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ícone personalizado para o checkbox */
+.checkbox-icon-custom {
+  flex-shrink: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;      /* Centralizar verticalmente */
+  justify-content: center !important; /* Centralizar horizontalmente */
+  transition: all 0.2s ease !important;
+  background: white !important;
+  position: relative !important;       /* Posicionamento para controle fino */
+}
+
+/* Centralizacão perfeita do ícone dentro do quadrado */
+.checkbox-icon-custom svg {
+  position: absolute !important;       /* Posicionamento absoluto */
+  top: 50% !important;                 /* Centro vertical */
+  left: 50% !important;                /* Centro horizontal */
+  transform: translate(-50%, -50%) !important; /* Centralizar perfeitamente */
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;                /* Remover qualquer margem */
+  padding: 0 !important;               /* Remover qualquer padding */
+}
+
+/* Estado checked - verde com check */
+.checkbox-input:checked + .checkbox-icon-custom {
+  background: #28a745 !important;
+  border-color: #28a745 !important;
+  color: white !important;
+}
+
+.checkbox-input:not(:checked) + .checkbox-icon-custom {
+  background: white !important;
+  border-color: #ced4da !important;
+  color: #6c757d !important;
+}
+
+/* Hover effect */
+.checkbox-label:hover .checkbox-icon-custom {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1) !important;
+}
+
+/* Ícone dentro do checkbox */
+.checkbox-icon-custom svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Responsividade */
+
+@media (max-width: 768px) {
+  .btn-uc, 
+  .btn-ug {
+    width: 40px !important;
+    height: 30px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .modal-uc-detalhes {
+    width: 95% !important;
+    max-height: 85vh !important;
+  }
+  
+  .modal-uc-detalhes .modal-header,
+  .modal-uc-detalhes .modal-body,
+  .modal-uc-detalhes .modal-footer {
+    padding: 12px 16px !important;
+  }
+
+  .checkbox-icon-custom {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  .checkbox-icon-custom svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  
+  .checkbox-help-text {
+    margin-left: 26px !important;      /* Ajuste para telas menores */
+  }
+}
+
+@media (max-width: 480px) {
+  .action-buttons-controle {
+    gap: 4px !important;
+  }
+  
+  .btn-uc, 
+  .btn-ug {
+    width: 36px !important;
+    height: 28px !important;
+    font-size: 0.65rem !important;
+  }
+}
+
+.modal-uc-detalhes .label-with-icon svg {
+  color: #2c3e50 !important;          /* Mesma cor do título "Informações da Proposta" */
+  opacity: 1 !important;              /* Sem transparência */
+  flex-shrink: 0 !important;          /* Não encolher */
+}
+
+/* Específico para os ícones de Settings e Target */
+.modal-uc-detalhes .label-with-icon svg[data-lucide="settings"],
+.modal-uc-detalhes .label-with-icon svg[data-lucide="target"] {
+  color: #2c3e50 !important;
+  opacity: 1 !important;
+}
+
+.btn-ug.status-esteira:disabled,
+.btn-ug.status-em-andamento:disabled {
+  background: #dc3545 !important;     /* Vermelho para indicar bloqueio */
+  color: white !important;
+  opacity: 0.7 !important;
+}
+
+.btn-ug.status-associado {
+  background: #28a745 !important;     /* Verde quando pode clicar */
+}
+
+.btn-ug:disabled {
+  background: #6c757d !important;     /* Cinza */
+  color: #adb5bd !important;          /* Texto cinza claro */
+  cursor: not-allowed !important;     /* Cursor proibido */
+  opacity: 0.6 !important;            /* Transparência */
+  transform: none !important;         /* Remove hover effects */
+  box-shadow: none !important;        /* Remove sombra */
+}
+
+.btn-ug:disabled:hover {
+  background: #6c757d !important;     /* Manter cinza no hover */
+  transform: none !important;         /* Não levantar no hover */
+  box-shadow: none !important;        /* Sem efeitos de hover */
 }

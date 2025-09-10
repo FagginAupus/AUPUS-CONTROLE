@@ -13,11 +13,14 @@ import {
   Users, 
   AlertTriangle, 
   CheckCircle,
+  Circle, 
   Edit,
   Clock,
   Home,     
   Settings,
   Target,
+  Building, 
+  Zap,
   X       
 } from 'lucide-react';
 import './ControlePage.css';
@@ -870,24 +873,30 @@ const ControlePage = () => {
                       {/* CÉLULA DE AÇÕES - CORRIGIDA */}
                       {isAdmin && (
                         <td>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {/* Botão UG */}
-                            <button
-                              onClick={() => editarUG(index)}
-                              className="btn btn-small btn-secondary"
-                              title="Editar UG"
-                            >
-                              <Edit size={16} /> UG
-                            </button>
-                            
-                            {/* Botão UC */}
+                          <div className="action-buttons-controle">
+                            {/* Botão UC - sempre visível */}
                             <button
                               onClick={() => abrirModalUCDetalhes(item, index)}
-                              className="btn btn-small btn-secondary"
+                              className="btn-uc"
                               title="Editar UC"
                             >
-                              <Edit size={14} />
+                              <Edit size={12} />
                               UC
+                            </button>
+                            
+                            {/* Botão UG - só para admin */}
+                            <button
+                              onClick={item.statusTroca === 'Associado' ? () => editarUG(index) : undefined}
+                              className="btn-ug"
+                              title={
+                                item.statusTroca === 'Associado' 
+                                  ? "Atribuir UG" 
+                                  : `Status deve ser "Associado" para atribuir UG (atual: ${item.statusTroca})`
+                              }
+                              disabled={item.statusTroca !== 'Associado'}
+                            >
+                              <Home size={12} />
+                              UG
                             </button>
                           </div>
                         </td>
@@ -1288,7 +1297,13 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
                   className="checkbox-input"
                 />
-                <CheckCircle size={16} className="checkbox-icon" />
+                <div className="checkbox-icon-custom">
+                  {dados.usa_calibragem_global ? (
+                    <CheckCircle size={14} />
+                  ) : (
+                    <Circle size={14} />
+                  )}
+                </div>
                 <span className="checkbox-text">
                   Utilizar calibragem global ({dados.calibragem_global}%)
                 </span>
