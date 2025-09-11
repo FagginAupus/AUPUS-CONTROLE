@@ -631,6 +631,7 @@ class StorageService {
                 economia: proposta.economia ? `${proposta.economia}%` : undefined,
                 bandeira: proposta.bandeira ? `${proposta.bandeira}%` : undefined,
                 
+                logadouroUC: proposta.logadouroUC,
                 // UC específica
                 numeroUC: proposta.numeroUC,
                 apelido: proposta.apelido,
