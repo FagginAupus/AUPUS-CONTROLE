@@ -210,6 +210,7 @@ const ProspecPage = () => {
       isArrendamento: documentacaoUC.isArrendamento || false,
       contratoLocacao: documentacaoUC.contratoLocacao || null,
       enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
+      logadouroUC: documentacaoUC.logadouroUC || '',
       termoAdesao: documentacaoUC.termoAdesao || null,
       whatsappRepresentante: documentacaoUC.whatsappRepresentante || '', 
       emailRepresentante: documentacaoUC.emailRepresentante || '' 
@@ -318,6 +319,7 @@ const ProspecPage = () => {
           razaoSocial: documentacaoFinal.razaoSocial,
           cnpj: documentacaoFinal.cnpj,
           contratoSocial: documentacaoFinal.contratoSocial,
+          logradouroUC: documentacaoFinal.logradouroUC,
           documentoPessoalRepresentante: documentacaoFinal.documentoPessoalRepresentante,
           enderecoUC: documentacaoFinal.enderecoUC,
           isArrendamento: documentacaoFinal.isArrendamento,
