@@ -210,7 +210,7 @@ const ProspecPage = () => {
       isArrendamento: documentacaoUC.isArrendamento || false,
       contratoLocacao: documentacaoUC.contratoLocacao || null,
       enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
-      logadouroUC: documentacaoUC.logadouroUC || '',
+      logradouroUC: documentacaoUC.logradouroUC || documentacaoUC.logadouro_uc || '',
       termoAdesao: documentacaoUC.termoAdesao || null,
       whatsappRepresentante: documentacaoUC.whatsappRepresentante || '', 
       emailRepresentante: documentacaoUC.emailRepresentante || '' 
@@ -305,6 +305,7 @@ const ProspecPage = () => {
         // Contatos
         whatsappRepresentante: dadosAtualizados.whatsappRepresentante,
         emailRepresentante: dadosAtualizados.emailRepresentante,
+        logradouroUC: dadosAtualizados.logradouroUC,
         
         // IDs
         propostaId: propostaId,
