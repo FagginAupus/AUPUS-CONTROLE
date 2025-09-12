@@ -210,7 +210,7 @@ const ProspecPage = () => {
       isArrendamento: documentacaoUC.isArrendamento || false,
       contratoLocacao: documentacaoUC.contratoLocacao || null,
       enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
-      logradouroUC: documentacaoUC.logradouroUC || documentacaoUC.logadouro_uc || '',
+      logradouroUC: documentacaoUC.logradouroUC || documentacaoUC.logradouro_uc || '',
       termoAdesao: documentacaoUC.termoAdesao || null,
       whatsappRepresentante: documentacaoUC.whatsappRepresentante || '', 
       emailRepresentante: documentacaoUC.emailRepresentante || '' 
@@ -1742,7 +1742,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
             )}
 
             <div className="common-fields">
-              <div className="endereco-logadouro-grid">
+              <div className="endereco-logradouro-grid">
 
                 <div className="endereco-column">
                   <div className="form-group">
@@ -1754,13 +1754,13 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                       placeholder="Endereço resumido da Unidade Consumidora"
                     />
                   </div>
-                  <div className="logadouro-column">
-                    <div className="form-group logadouro-field">
+                  <div className="logradouro-column">
+                    <div className="form-group logradouro-field">
                       <label>Logadouro da UC</label>
                       <textarea
-                        value={dados.logadouroUC || ''}
-                        onChange={(e) => setDados({...dados, logadouroUC: e.target.value})}
-                        placeholder="Descrição detalhada do logadouro, idêntico ao que está na fatura da Equatorial"
+                        value={dados.logradouroUC || ''}
+                        onChange={(e) => setDados({...dados, logradouroUC: e.target.value})}
+                        placeholder="Descrição detalhada do logradouro, idêntico ao que está na fatura da Equatorial"
                         rows="6"
                       ></textarea>
                     </div>
