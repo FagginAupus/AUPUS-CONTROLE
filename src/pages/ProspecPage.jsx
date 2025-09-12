@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import storageService from '../services/storageService'; 
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
+import GerarTermoButtonTESTE from '../components/GerarTermoButton';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -21,18 +22,18 @@ import {
 } from 'lucide-react';
 
 const getApiBaseUrl = () => {
-  return process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:8000';
+  return process.env.REACT_APP_API_URL?.replace('/api', '');
 };
 
 const getApiUrl = () => {
-  return process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+  return process.env.REACT_APP_API_URL;
 };
 
 const construirUrlDocumento = (nomeArquivo) => {
   if (!nomeArquivo) return '';
   
   // Construir URL base removendo "/api" apenas do final
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+  const apiUrl = process.env.REACT_APP_API_URL;
   const baseUrl = apiUrl.replace(/\/api$/, ''); // Remove "/api" apenas se estiver no final
   
   return `${baseUrl}/storage/propostas/documentos/${nomeArquivo}`;
@@ -280,8 +281,7 @@ const ProspecPage = () => {
         }
       }
 
-      const numeroUC = item.numeroUC || item.numero_unidade;
-
+      // ✅ DADOS LIMPOS - SEM DUPLICAÇÕES
       const dadosLimpos = {
         // Dados básicos
         nomeCliente: dadosAtualizados.nomeCliente,
@@ -352,10 +352,8 @@ const ProspecPage = () => {
     } finally {
       setLoading(false);
     }
-    
   };
-  
-
+    
   // Formatar UCs a partir do item da tabela
   const formatarUCsDoItem = (item) => {
     if (item.unidades_consumidoras) {
@@ -1172,7 +1170,6 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     documentoPessoalRepresentante: item.documentoPessoalRepresentante || null,
     enderecoUC: item.enderecoUC || '',
     isArrendamento: item.isArrendamento || false,
-    logradouroUC: item.logradouroUC || '',
     contratoLocacao: item.contratoLocacao || null,
     enderecoRepresentante: item.enderecoRepresentante || '',
     termoAdesao: item.termoAdesao || null
@@ -1575,7 +1572,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                         <button
                           type="button"
                           className="btn-visualizar-doc"
-                          onClick={() => window.open(`${process.env.REACT_APP_API_URL.replace('/api', '') || 'http://localhost:8000'}/storage/propostas/faturas/${faturaExistente}`, '_blank')}
+                          onClick={() => window.open(`${process.env.REACT_APP_API_URL.replace('/api', '') }/storage/propostas/faturas/${faturaExistente}`, '_blank')}
                           title="Visualizar fatura"
                         >
                           <Eye size={14} />
@@ -1760,7 +1757,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   </div>
                   <div className="logradouro-column">
                     <div className="form-group logradouro-field">
-                      <label>Logradouro da UC</label>
+                      <label>Logadouro da UC</label>
                       <textarea
                         value={dados.logradouroUC || ''}
                         onChange={(e) => setDados({...dados, logradouroUC: e.target.value})}
@@ -1822,7 +1819,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   <div className="form-row">
                     {/* WhatsApp do Representante */}
                     <div className="form-group">
-                      <label>WhatsApp do Representante</label>
+                      <label>WhatsApp do receptor do Termo</label>
                       <input
                         type="tel"
                         value={dados.whatsappRepresentante || ''}
@@ -1833,7 +1830,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
 
                     {/* Email do Representante */}
                     <div className="form-group">
-                      <label>Email do Representante</label>
+                      <label>Email do receptor do Termo</label>
                       <input
                         type="email"
                         value={dados.emailRepresentante || ''}
@@ -1843,19 +1840,17 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     </div>
                   </div>
                   <div className="file-with-download">
-                    <button
-                      type="button"
-                      className="btn-download-termo"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = '/documentos/TERMO-AUPUS.pdf';
-                        link.download = 'TERMO-AUPUS.pdf';
-                        link.click();
-                      }}
-                      title="Baixar Termo de Adesão Padrão"
-                    >
-                      📄 Baixar Termo Padrão
-                    </button>
+                    <div className="secao-modal">
+                      <h4 className="titulo-secao">📄 Termo de Adesão</h4>
+                      <GerarTermoButtonTESTE
+                        proposta={item} // ← USAR 'item' em vez de 'modalEdicao.item'
+                        dados={dados}
+                        onSalvarAntes={async (dadosParaSalvar) => {
+                          // Salvar antes de gerar o termo
+                          await onSave(dadosParaSalvar); // ← USAR 'onSave' em vez de 'salvarEdicao'
+                        }}
+                      />
+                    </div>
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
