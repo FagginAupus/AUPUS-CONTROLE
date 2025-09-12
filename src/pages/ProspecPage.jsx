@@ -1760,7 +1760,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   </div>
                   <div className="logradouro-column">
                     <div className="form-group logradouro-field">
-                      <label>Logadouro da UC</label>
+                      <label>Logradouro da UC</label>
                       <textarea
                         value={dados.logradouroUC || ''}
                         onChange={(e) => setDados({...dados, logradouroUC: e.target.value})}
