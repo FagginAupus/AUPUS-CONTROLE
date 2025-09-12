@@ -631,7 +631,15 @@ class StorageService {
                 economia: proposta.economia ? `${proposta.economia}%` : undefined,
                 bandeira: proposta.bandeira ? `${proposta.bandeira}%` : undefined,
                 
-                logadouroUC: proposta.logadouroUC,
+                // ✅ CAMPOS DE ENDEREÇO (CORREÇÃO - estava faltando enderecoUC)
+                logradouroUC: proposta.logradouroUC,
+                enderecoUC: proposta.enderecoUC,  // 🔧 ADICIONAR ESTE CAMPO
+                
+                // ✅ CONTATOS DO REPRESENTANTE
+                whatsappRepresentante: proposta.whatsappRepresentante,
+                emailRepresentante: proposta.emailRepresentante,
+                enderecoRepresentante: proposta.enderecoRepresentante,
+                
                 // UC específica
                 numeroUC: proposta.numeroUC,
                 apelido: proposta.apelido,

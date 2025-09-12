@@ -280,7 +280,8 @@ const ProspecPage = () => {
         }
       }
 
-      // ✅ DADOS LIMPOS - SEM DUPLICAÇÕES
+      const numeroUC = item.numeroUC || item.numero_unidade;
+
       const dadosLimpos = {
         // Dados básicos
         nomeCliente: dadosAtualizados.nomeCliente,
@@ -351,8 +352,10 @@ const ProspecPage = () => {
     } finally {
       setLoading(false);
     }
-  };
     
+  };
+  
+
   // Formatar UCs a partir do item da tabela
   const formatarUCsDoItem = (item) => {
     if (item.unidades_consumidoras) {
@@ -1169,6 +1172,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     documentoPessoalRepresentante: item.documentoPessoalRepresentante || null,
     enderecoUC: item.enderecoUC || '',
     isArrendamento: item.isArrendamento || false,
+    logradouroUC: item.logradouroUC || '',
     contratoLocacao: item.contratoLocacao || null,
     enderecoRepresentante: item.enderecoRepresentante || '',
     termoAdesao: item.termoAdesao || null
