@@ -92,7 +92,7 @@ const GerarTermoButton = ({
       // 2. CHAMADA CORRETA PARA O NOVO ENDPOINT
       console.log('🚀 Enviando para processamento completo no backend...');
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${proposta.id}/gerar-termo-completo`,
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-termo-completo`,
         {
           method: 'POST',
           headers: {
