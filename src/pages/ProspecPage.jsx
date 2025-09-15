@@ -1877,18 +1877,13 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   <GerarTermoButton
                     proposta={{ id: dados.propostaId || item.propostaId }}
                     dados={dados}
+                    statusDocumento={statusDocumento}
+                    setStatusDocumento={setStatusDocumento}
                     onSalvarAntes={async (dadosParaSalvar) => {
                       await onSave(dadosParaSalvar);
                     }}
                   />
-                  
-                  {/* Termo existente upload manual */}
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => handleFileChange('termoAdesao', e.target.files[0])}
-                  />
-                  
+                              
                   {dados.termoAdesao && (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={typeof dados.termoAdesao === 'string' ? dados.termoAdesao : dados.termoAdesao.name}>
