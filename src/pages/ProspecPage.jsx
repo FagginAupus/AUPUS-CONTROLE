@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import storageService from '../services/storageService'; 
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
-import GerarTermoButtonTESTE from '../components/GerarTermoButton';
+import GerarTermoButton from '../components/GerarTermoButton';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -1137,10 +1137,12 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDisponiveis }) => {
   const { user, getMyTeam } = useAuth(); 
   const { showNotification } = useNotification();
+  const [statusDocumento, setStatusDocumento] = useState(null);
   const [dados, setDados] = useState({ 
     ...item,
     consultor_id: item.consultor_id || null,
     consultor: item.consultor || '',
+    
     
     // ✅ EXTRAIR valores numéricos dos descontos na inicialização
     descontoTarifa: (() => {
@@ -1175,6 +1177,37 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     termoAdesao: item.termoAdesao || null
   });
 
+  const buscarStatusDocumento = async () => {
+    if (!item?.propostaId && !item?.id) return;
+    
+    const propostaId = item.propostaId || item.id?.split('-')[0];
+    if (!propostaId) return;
+    
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        setStatusDocumento(result.documento);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar status do documento:', error);
+    }
+  };
+
+  // ADICIONAR useEffect para buscar status:
+  useEffect(() => {
+    buscarStatusDocumento();
+  }, [item?.propostaId, item?.id]);
+  
   const [faturaArquivo, setFaturaArquivo] = useState(null);
 
 

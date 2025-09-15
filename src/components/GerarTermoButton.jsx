@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Send, Clock, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import './GerarTermoButton.css';
-const [statusDocumento, setStatusDocumento] = useState(null);
 
 const GerarTermoButton = ({ 
   proposta, 
