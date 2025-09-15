@@ -1842,8 +1842,8 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   <div className="file-with-download">
                     <div className="secao-modal">
                       <h4 className="titulo-secao">📄 Termo de Adesão</h4>
-                      <GerarTermoButtonTESTE
-                        proposta={item} // ← USAR 'item' em vez de 'modalEdicao.item'
+                      <GerarTermoButton
+                        proposta={item}
                         dados={dados}
                         onSalvarAntes={async (dadosParaSalvar) => {
                           // Salvar antes de gerar o termo
@@ -1857,6 +1857,42 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                       onChange={(e) => handleFileChange('termoAdesao', e.target.files[0])}
                     />
                   </div>
+                  {statusDocumento && statusDocumento.status === 'Assinado' && (
+                    <div className="form-group">
+                      <label className="label-with-icon">
+                        <FileText size={16} />
+                        Termo Assinado
+                      </label>
+                      <div className="arquivo-existente">
+                        <span className="arquivo-info">
+                          ✅ Termo assinado em {statusDocumento.data_assinatura || statusDocumento.atualizado_em}
+                        </span>
+                        <div style={{display: 'flex', gap: '4px'}}>
+                          <button
+                            type="button"
+                            className="btn-visualizar-doc"
+                            onClick={() => window.open(`${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-assinado`, '_blank')}
+                            title="Visualizar PDF assinado"
+                          >
+                            👁️
+                          </button>
+                          <button
+                            type="button" 
+                            className="btn-baixar-doc"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-assinado`;
+                              link.download = `termo_assinado_${dados.numeroUC}.pdf`;
+                              link.click();
+                            }}
+                            title="Baixar PDF assinado"
+                          >
+                            ⬇️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {dados.termoAdesao ? (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={typeof dados.termoAdesao === 'string' ? dados.termoAdesao : dados.termoAdesao.name}>

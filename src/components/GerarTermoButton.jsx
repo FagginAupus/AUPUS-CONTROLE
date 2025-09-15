@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Send, Clock, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import './GerarTermoButton.css';
+const [statusDocumento, setStatusDocumento] = useState(null);
 
 const GerarTermoButton = ({ 
   proposta, 
@@ -76,6 +77,11 @@ const GerarTermoButton = ({
   };
 
   const gerarTermo = async () => {
+    if (statusDocumento && statusDocumento.status === 'Aguardando Assinatura') {
+      alert('❌ Já existe um termo pendente de assinatura. Aguarde a assinatura ou cancele o termo atual.');
+      return;
+    }
+
     if (!todosCamposPreenchidos) {
       alert('Preencha todos os campos obrigatórios antes de gerar o termo de adesão.');
       return;
@@ -186,7 +192,9 @@ const GerarTermoButton = ({
       <button
         type="button"
         onClick={statusDocumento ? abrirLinkAssinatura : gerarTermo}
-        disabled={disabled || loading || loadingStatus || (!statusDocumento && !todosCamposPreenchidos)}
+        disabled={disabled || loading || loadingStatus || 
+         (!statusDocumento && !todosCamposPreenchidos) || 
+         (statusDocumento && statusDocumento.status === 'Aguardando Assinatura')}
         className={`btn ${obterClasseStatus()} ${loading ? 'loading' : ''}`}
       >
         {loading ? (
