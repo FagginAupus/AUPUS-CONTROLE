@@ -1879,6 +1879,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     dados={dados}
                     statusDocumento={statusDocumento}
                     setStatusDocumento={setStatusDocumento}
+                    onClose={() => setModalAberto(false)} // ✅ Se setModalAberto existe
                     onSalvarAntes={async (dadosParaSalvar) => {
                       await onSave(dadosParaSalvar);
                     }}

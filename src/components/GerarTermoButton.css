@@ -160,34 +160,88 @@
 .opcoes-envio input[type="checkbox"] {
   margin: 0;
 }
-
+/* Adicionar no GerarTermoButton.css */
 .status-info {
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 8px;
-  font-size: 12px;
-  margin-bottom: 8px;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
-.status-info.text-success {
-  background: #d4edda;
-  border-color: #c3e6cb;
-  color: #155724;
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.status-info.text-warning {
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.pending,
+.status-badge.pendente {
   background: #fff3cd;
-  border-color: #ffeaa7;
   color: #856404;
+  border: 1px solid #ffeaa7;
 }
 
-.campos-faltantes {
-  background: #fff5f5;
-  border: 1px solid #fed7d7;
-  border-radius: 4px;
-  padding: 8px;
-  font-size: 11px;
-  color: #e53e3e;
-  margin-bottom: 8px;
+.status-badge.signed,
+.status-badge.assinado {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-details p {
+  margin: 8px 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.status-details strong {
+  color: #495057;
+}
+
+.acoes-documento {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.acoes-documento .btn {
+  flex: 1;
+  min-width: 140px;
+}
+
+@media (max-width: 768px) {
+  .acoes-documento {
+    flex-direction: column;
+  }
+  
+  .acoes-documento .btn {
+    width: 100%;
+  }
+}
+
+.checkbox-input {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+  
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  position: static !important;
+  
+  accent-color: #007bff;
+  background-color: white !important;
+  border: 2px solid #ced4da !important;
+  border-radius: 3px;
 }
