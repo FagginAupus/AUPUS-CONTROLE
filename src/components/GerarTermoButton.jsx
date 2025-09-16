@@ -203,21 +203,19 @@ const GerarTermoButton = ({
     }
   };
 
-  // NOVA FUNÇÃO: Enviar PDF para Autentique - USANDO ENDPOINT DEFINITIVO
   const enviarParaAutentique = async () => {
     if (!pdfGerado && !statusDocumento) {
       alert('Gere o PDF primeiro antes de enviar.');
       return;
     }
 
-    // ✅ ADICIONAR ESTAS VALIDAÇÕES AQUI:
+    // Validações (manter como está)
     if (envioWhatsApp) {
       if (!dados.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') {
         alert('❌ Para enviar por WhatsApp, é necessário informar o número do representante');
         return;
       }
       
-      // Validar formato básico
       const telefone = dados.whatsappRepresentante.replace(/\D/g, '');
       if (telefone.length < 10 || telefone.length > 13) {
         alert('❌ Formato de WhatsApp inválido. Use: (11) 99999-9999');
@@ -229,7 +227,6 @@ const GerarTermoButton = ({
       alert('❌ Selecione pelo menos uma forma de envio');
       return;
     }
-
 
     setLoading(true);
     try {
@@ -259,17 +256,37 @@ const GerarTermoButton = ({
       if (response.ok && result.success) {
         console.log('✅ Enviado para Autentique:', result.documento);
         
-        const canaisEnvio = [];
-        if (envioEmail) canaisEnvio.push('E-mail');
-        if (envioWhatsApp) canaisEnvio.push('WhatsApp');
+        // ✅ USAR OS NOVOS CAMPOS DO BACKEND
+        const documento = result.documento;
         
-        alert(`✅ ${result.message}\n\nEnviado via: ${canaisEnvio.join(' e ')}\nPara: ${result.documento.email_signatario}`);
+        // ✅ MENSAGEM CORRIGIDA BASEADA NOS CANAIS REAIS
+        let mensagemSucesso = `✅ ${result.message}`;
+        
+        if (documento.canais_envio_texto) {
+          mensagemSucesso += `\n\n📤 Enviado via: ${documento.canais_envio_texto}`;
+        }
+        
+        if (documento.destinatario_exibicao) {
+          // ✅ DETERMINAR SE É EMAIL OU TELEFONE
+          const isEmail = documento.destinatario_exibicao.includes('@');
+          const tipoPara = isEmail ? '📧 Para' : '📱 Para';
+          mensagemSucesso += `\n${tipoPara}: ${documento.destinatario_exibicao}`;
+        }
+        
+        // ✅ INFORMAÇÕES ADICIONAIS SE DISPONÍVEIS
+        if (documento.envio_email && documento.envio_whatsapp) {
+          mensagemSucesso += `\n\nℹ️ O documento será assinado via e-mail, com notificação por WhatsApp.`;
+        }
+        
+        alert(mensagemSucesso);
 
-        if (result.documento.link_assinatura && 
+        // Abrir link de assinatura se disponível
+        if (documento.link_assinatura && 
             window.confirm('Deseja abrir o link de assinatura agora?')) {
-          window.open(result.documento.link_assinatura, '_blank');
+          window.open(documento.link_assinatura, '_blank');
         }
 
+        // Fechar modal após sucesso
         setTimeout(() => {
           if (typeof onClose === 'function') {
             onClose();
@@ -777,21 +794,67 @@ const GerarTermoButton = ({
             <div className="status-header">
               <strong>⏳ Aguardando Assinatura</strong>
               <span className="status-badge pendente">
-                {statusDocumento.status || 'Pendente'}
+                {statusDocumento.status_label || statusDocumento.status || 'Pendente'}
               </span>
             </div>
             
             <div className="status-details">
-              <p><strong>📧 Enviado para:</strong> {statusDocumento.email_signatario}</p>
-              <p><strong>📅 Criado em:</strong> {statusDocumento.criado_em}</p>
+              {/* ✅ VERIFICAR SE É DUPLO ENVIO */}
+              {statusDocumento.duplo_envio || (statusDocumento.envio_email && statusDocumento.envio_whatsapp) ? (
+                // ✅ DUPLO ENVIO - Mostrar ambos os canais
+                <>
+                  <p><strong>📤 Enviado simultaneamente via:</strong> E-mail e WhatsApp</p>
+                  <p><strong>📧 E-mail:</strong> {statusDocumento.signer_email || statusDocumento.email_signatario}</p>
+                  <p><strong>📱 WhatsApp:</strong> {statusDocumento.whatsapp_formatado || dados?.whatsappRepresentante}</p>
+                  
+                  {statusDocumento.total_signatarios > 1 && (
+                    <p><strong>🔗 Links criados:</strong> {statusDocumento.total_signatarios} (um para cada canal)</p>
+                  )}
+                  
+                  <div className="duplo-envio-info">
+                    <small>ℹ️ O cliente pode assinar através de qualquer um dos dois canais. Ambos os links são válidos e independentes.</small>
+                  </div>
+                </>
+              ) : statusDocumento.envio_whatsapp && !statusDocumento.envio_email ? (
+                // ENVIADO APENAS POR WHATSAPP
+                <>
+                  <p><strong>📱 Enviado por WhatsApp para:</strong> {statusDocumento.whatsapp_formatado || statusDocumento.destinatario_exibicao}</p>
+                  <p><small>ℹ️ Cliente receberá o link de assinatura via WhatsApp</small></p>
+                </>
+              ) : (
+                // ENVIADO APENAS POR EMAIL (padrão)
+                <>
+                  <p><strong>📧 Enviado por E-mail para:</strong> {statusDocumento.signer_email || statusDocumento.email_signatario}</p>
+                </>
+              )}
+              
+              <p><strong>📅 Enviado em:</strong> {statusDocumento.criado_em}</p>
+              
               {statusDocumento.link_assinatura && (
-                <p><strong>🔗 Link ativo</strong> - Cliente pode assinar</p>
+                <p><strong>🔗 Link(s) de assinatura</strong> disponível(eis) e ativo(s)</p>
               )}
             </div>
           </div>
 
+          {/* ✅ CSS para destacar informações de duplo envio */}
+          <style jsx>{`
+            .duplo-envio-info {
+              margin-top: 12px;
+              padding: 8px 12px;
+              background: #e7f3ff;
+              border: 1px solid #b3d9ff;
+              border-radius: 6px;
+              color: #0066cc;
+            }
+            
+            .duplo-envio-info small {
+              font-size: 12px;
+              line-height: 1.4;
+            }
+          `}</style>
+
           <div className="acoes-documento">
-            {/* BOTÃO PARA VISUALIZAR O PDF QUE FOI ENVIADO */}
+            {/* Manter os botões existentes */}
             <button
               onClick={visualizarPDFTermo}
               className="btn btn-info"
@@ -801,24 +864,28 @@ const GerarTermoButton = ({
               Ver Termo Enviado
             </button>
 
-            {/* BOTÃO PARA ABRIR LINK DE ASSINATURA */}
             {statusDocumento.link_assinatura && (
               <button
                 onClick={() => window.open(statusDocumento.link_assinatura, '_blank')}
                 className="btn btn-success"
-                title="Abrir link de assinatura (mesmo link que o cliente recebeu)"
+                title={statusDocumento.duplo_envio ? 
+                  "Abrir um dos links de assinatura (cliente pode usar qualquer um)" :
+                  "Abrir link de assinatura (mesmo link que o cliente recebeu)"
+                }
               >
                 <FileText size={16} />
-                Link de Assinatura
+                {statusDocumento.duplo_envio ? 'Ver Links' : 'Link de Assinatura'}
               </button>
             )}
 
-            {/* BOTÃO PARA CANCELAR */}
             <button
               onClick={cancelarDocumento}
               disabled={loading}
               className={`btn btn-danger ${loading ? 'loading' : ''}`}
-              title="Cancelar link de assinatura enviado ao cliente"
+              title={statusDocumento.duplo_envio ? 
+                "Cancelar todos os links de assinatura enviados ao cliente" :
+                "Cancelar link de assinatura enviado ao cliente"
+              }
             >
               {loading ? (
                 <>
@@ -828,7 +895,7 @@ const GerarTermoButton = ({
               ) : (
                 <>
                   <X size={16} />
-                  Cancelar Link
+                  {statusDocumento.duplo_envio ? 'Cancelar Links' : 'Cancelar Link'}
                 </>
               )}
             </button>
