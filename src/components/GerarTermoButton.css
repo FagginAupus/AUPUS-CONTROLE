@@ -505,3 +505,31 @@
   background: linear-gradient(135deg, #6c757d, #495057);
   cursor: not-allowed;
 }
+
+/* Estado disabled dos checkboxes */
+.checkbox-label-custom.disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background: #f8f9fa !important;
+  border-color: #e9ecef !important;
+}
+
+.checkbox-label-custom.disabled:hover {
+  border-color: #e9ecef !important;
+  background: #f8f9fa !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.checkbox-label-custom.disabled .checkbox-visual-custom {
+  border-color: #e9ecef !important;
+  background: #f8f9fa !important;
+}
+
+.checkbox-label-custom.disabled .checkbox-icon-custom {
+  color: #adb5bd !important;
+}
+
+.checkbox-label-custom.disabled .checkbox-text-custom {
+  color: #6c757d !important;
+}

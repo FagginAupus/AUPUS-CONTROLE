@@ -133,6 +133,30 @@ const GerarTermoButton = ({
     }
   }, [statusDocumento, pdfGerado]);
 
+  // NOVO useEffect - Lógica automática de checkboxes baseada nos campos preenchidos
+  useEffect(() => {
+    const emailPreenchido = dados?.emailRepresentante && dados.emailRepresentante.trim() !== '';
+    const whatsappPreenchido = dados?.whatsappRepresentante && dados.whatsappRepresentante.trim() !== '';
+    
+    if (emailPreenchido && whatsappPreenchido) {
+      // Ambos preenchidos - preferir WhatsApp
+      setEnvioWhatsApp(true);
+      setEnvioEmail(false);
+    } else if (emailPreenchido && !whatsappPreenchido) {
+      // Só email preenchido
+      setEnvioEmail(true);
+      setEnvioWhatsApp(false);
+    } else if (!emailPreenchido && whatsappPreenchido) {
+      // Só WhatsApp preenchido
+      setEnvioWhatsApp(true);
+      setEnvioEmail(false);
+    } else {
+      // Nenhum preenchido - deixar ambos desmarcados
+      setEnvioEmail(false);
+      setEnvioWhatsApp(false);
+    }
+  }, [dados?.emailRepresentante, dados?.whatsappRepresentante]);
+
   const todosCamposPreenchidos = Boolean(dados?.nomeRepresentante) && 
                                Boolean(dados?.emailRepresentante) && 
                                Boolean(dados?.whatsappRepresentante);
@@ -209,7 +233,14 @@ const GerarTermoButton = ({
       return;
     }
 
-    // Validações (manter como está)
+    // Validação para envio Autentique - só validar campo se checkbox marcado
+    if (envioEmail) {
+      if (!dados.emailRepresentante || dados.emailRepresentante.trim() === '') {
+        alert('❌ Para enviar por E-mail, é necessário informar o email do representante');
+        return;
+      }
+    }
+
     if (envioWhatsApp) {
       if (!dados.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') {
         alert('❌ Para enviar por WhatsApp, é necessário informar o número do representante');
@@ -228,6 +259,7 @@ const GerarTermoButton = ({
       return;
     }
 
+    // Resto da função continua igual...
     setLoading(true);
     try {
       console.log('📤 Enviando PDF para Autentique...');
@@ -256,10 +288,8 @@ const GerarTermoButton = ({
       if (response.ok && result.success) {
         console.log('✅ Enviado para Autentique:', result.documento);
         
-        // ✅ USAR OS NOVOS CAMPOS DO BACKEND
         const documento = result.documento;
         
-        // ✅ MENSAGEM CORRIGIDA BASEADA NOS CANAIS REAIS
         let mensagemSucesso = `✅ ${result.message}`;
         
         if (documento.canais_envio_texto) {
@@ -267,40 +297,34 @@ const GerarTermoButton = ({
         }
         
         if (documento.destinatario_exibicao) {
-          // ✅ DETERMINAR SE É EMAIL OU TELEFONE
           const isEmail = documento.destinatario_exibicao.includes('@');
           const tipoPara = isEmail ? '📧 Para' : '📱 Para';
           mensagemSucesso += `\n${tipoPara}: ${documento.destinatario_exibicao}`;
         }
         
-        // ✅ INFORMAÇÕES ADICIONAIS SE DISPONÍVEIS
-        if (documento.envio_email && documento.envio_whatsapp) {
-          mensagemSucesso += `\n\nℹ️ O documento será assinado via e-mail, com notificação por WhatsApp.`;
-        }
-        
         alert(mensagemSucesso);
 
-        // Abrir link de assinatura se disponível
         if (documento.link_assinatura && 
             window.confirm('Deseja abrir o link de assinatura agora?')) {
           window.open(documento.link_assinatura, '_blank');
         }
-
-        // Fechar modal após sucesso
-        setTimeout(() => {
-          if (typeof onClose === 'function') {
-            onClose();
-          }
-        }, 1500);
-
+        
+        setStatusDocumento(documento);
+        setEtapa('pendente-assinatura');
+        setPdfGerado(null);
+        
+        if (onClose && typeof onClose === 'function') {
+          setTimeout(() => onClose(), 2000);
+        }
+        
       } else {
         console.error('❌ Erro ao enviar:', result);
-        alert(`❌ Erro: ${result.message}`);
+        alert(`❌ Erro: ${result.message || 'Erro desconhecido'}`);
       }
 
     } catch (error) {
       console.error('❌ Erro interno:', error);
-      alert('❌ Erro interno ao enviar. Tente novamente.');
+      alert('❌ Erro interno. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -645,26 +669,28 @@ const GerarTermoButton = ({
           {mostrarOpcoesEnvio && (
             <div className="opcoes-envio">
               <h5>Como enviar?</h5>
-              <p className="opcoes-help">Selecione uma ou ambas as opções:</p>
+              <p className="opcoes-help">Selecione apenas uma opção:</p>
               
               {/* Checkbox Email - com ícone Lucide */}
               <label 
-                className={`checkbox-label-custom ${envioEmail ? 'checked' : ''}`}
+                className={`checkbox-label-custom ${envioEmail ? 'checked' : ''} ${(!dados?.emailRepresentante || dados.emailRepresentante.trim() === '') ? 'disabled' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  setEnvioEmail(!envioEmail);
+                  // Só permitir clicar se campo estiver preenchido
+                  if (dados?.emailRepresentante && dados.emailRepresentante.trim() !== '') {
+                    setEnvioEmail(true);
+                    setEnvioWhatsApp(false); // Desmarcar o outro
+                  }
                 }}
               >
                 <div className="checkbox-container-custom">
                   <input
                     type="checkbox"
                     checked={envioEmail}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setEnvioEmail(e.target.checked);
-                    }}
+                    onChange={() => {}} // Desabilitado - usar apenas o onClick do label
                     className="checkbox-input-hidden"
                     id="envio-email"
+                    disabled={!dados?.emailRepresentante || dados.emailRepresentante.trim() === ''}
                   />
                   <div className={`checkbox-visual-custom ${envioEmail ? 'checked' : ''}`}>
                     {envioEmail && (
@@ -685,28 +711,35 @@ const GerarTermoButton = ({
                 </div>
                 <div className="checkbox-content-custom">
                   <Mail size={16} className="checkbox-icon-custom" />
-                  <span className="checkbox-text-custom">E-mail</span>
+                  <span className="checkbox-text-custom">
+                    E-mail
+                    {(!dados?.emailRepresentante || dados.emailRepresentante.trim() === '') && 
+                      <small style={{color: '#dc3545', marginLeft: '8px'}}>(campo não preenchido)</small>
+                    }
+                  </span>
                 </div>
               </label>
               
               {/* Checkbox WhatsApp - com ícone Lucide */}
               <label 
-                className={`checkbox-label-custom ${envioWhatsApp ? 'checked' : ''}`}
+                className={`checkbox-label-custom ${envioWhatsApp ? 'checked' : ''} ${(!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') ? 'disabled' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  setEnvioWhatsApp(!envioWhatsApp);
+                  // Só permitir clicar se campo estiver preenchido
+                  if (dados?.whatsappRepresentante && dados.whatsappRepresentante.trim() !== '') {
+                    setEnvioWhatsApp(true);
+                    setEnvioEmail(false); // Desmarcar o outro
+                  }
                 }}
               >
                 <div className="checkbox-container-custom">
                   <input
                     type="checkbox"
                     checked={envioWhatsApp}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setEnvioWhatsApp(e.target.checked);
-                    }}
+                    onChange={() => {}} // Desabilitado - usar apenas o onClick do label
                     className="checkbox-input-hidden"
                     id="envio-whatsapp"
+                    disabled={!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === ''}
                   />
                   <div className={`checkbox-visual-custom ${envioWhatsApp ? 'checked' : ''}`}>
                     {envioWhatsApp && (
@@ -727,27 +760,40 @@ const GerarTermoButton = ({
                 </div>
                 <div className="checkbox-content-custom">
                   <MessageCircle size={16} className="checkbox-icon-custom" />
-                  <span className="checkbox-text-custom">WhatsApp</span>
+                  <span className="checkbox-text-custom">
+                    WhatsApp
+                    {(!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') && 
+                      <small style={{color: '#dc3545', marginLeft: '8px'}}>(campo não preenchido)</small>
+                    }
+                  </span>
                 </div>
               </label>
               
-              {/* Validação visual */}
+              {/* Validação visual - ATUALIZADA */}
               {!envioEmail && !envioWhatsApp && (
                 <div className="opcoes-erro">
                   <X size={14} />
-                  <span>Selecione pelo menos uma opção de envio</span>
+                  <span>
+                    {(!dados?.emailRepresentante || dados.emailRepresentante.trim() === '') && (!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') ?
+                      'Preencha pelo menos um dos campos (E-mail ou WhatsApp) para enviar' :
+                      'Selecione uma opção de envio'
+                    }
+                  </span>
                 </div>
               )}
 
-              {envioEmail && envioWhatsApp && (
+              {/* REMOVER a mensagem de duplo envio - não vai mais acontecer */}
+              {(envioEmail || envioWhatsApp) && (
                 <div className="opcoes-sucesso">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="20,6 9,17 4,12"></polyline>
                   </svg>
-                  <span>Será enviado por E-mail e WhatsApp</span>
+                  <span>
+                    Será enviado por {envioEmail ? 'E-mail' : 'WhatsApp'}
+                  </span>
                 </div>
               )}
-                            
+                                
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -766,14 +812,13 @@ const GerarTermoButton = ({
                   <>
                     <Send size={16} />
                     Confirmar Envio
-                    {envioEmail && envioWhatsApp ? ' (E-mail + WhatsApp)' : 
-                    envioEmail ? ' (E-mail)' : 
-                    envioWhatsApp ? ' (WhatsApp)' : ''}
+                    {envioEmail ? ' (E-mail)' : envioWhatsApp ? ' (WhatsApp)' : ''}
                   </>
                 )}
               </button>
             </div>
           )}
+
 
           <button
             onClick={() => {
