@@ -472,3 +472,36 @@
   font-size: 12px !important;
   margin: 8px 0 !important;
 }
+
+/* Status Badge para documento assinado */
+.gerar-termo-container .status-badge.assinado {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+/* Informação adicional para documento assinado */
+.gerar-termo-container .info-adicional {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e8f5e8;
+  border-left: 4px solid #28a745;
+  border-radius: 4px;
+}
+
+.gerar-termo-container .info-adicional small {
+  color: #155724;
+  font-weight: 500;
+}
+
+/* Estilo especial para botão de documento assinado */
+.gerar-termo-container .btn-success:disabled {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  cursor: not-allowed;
+}

@@ -1,7 +1,7 @@
 // src/components/GerarTermoButton.jsx - NOVO FLUXO SEPARADO
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Send, Eye, X, Loader, Mail, MessageCircle } from 'lucide-react';
+import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download } from 'lucide-react';
 import './GerarTermoButton.css';
 
 const GerarTermoButton = ({ 
@@ -15,11 +15,13 @@ const GerarTermoButton = ({
   const statusDocumento = statusDocumentoProp || statusDocumentoLocal;
   const setStatusDocumento = setStatusDocumentoProp || setStatusDocumentoLocal;
   const [loading, setLoading] = useState(false);
-  const [etapa, setEtapa] = useState('inicial'); // 'inicial', 'pdf-gerado', 'pendente-assinatura', 'assinado'
+  const [etapa, setEtapa] = useState('inicial'); 
   const [pdfGerado, setPdfGerado] = useState(null);
   const [mostrarOpcoesEnvio, setMostrarOpcoesEnvio] = useState(false);
   const [envioWhatsApp, setEnvioWhatsApp] = useState(false);
   const [envioEmail, setEnvioEmail] = useState(true);
+  const [mostrarUploadManual, setMostrarUploadManual] = useState(false);
+  const [arquivoUpload, setArquivoUpload] = useState(null);
 
   useEffect(() => {
     if (!dados?.propostaId) return;
@@ -111,24 +113,25 @@ const GerarTermoButton = ({
 
     // Determinar etapa atual baseada no status do documento
     useEffect(() => {
-      if (statusDocumento) {
-        if (statusDocumento.status === 'SIGNED' || statusDocumento.status === 'Assinado') {
-          setEtapa('assinado');
-        } else if (
-          statusDocumento.status === 'PENDING' || 
-          statusDocumento.status === 'Pendente' ||
-          statusDocumento.status === 'Aguardando Assinatura' // ← ADICIONAR ESTA LINHA
-        ) {
-          setEtapa('pendente-assinatura');
-        } else {
-          setEtapa('inicial');
-        }
-      } else if (pdfGerado) {
-        setEtapa('pdf-gerado');
+    if (statusDocumento) {
+      if (statusDocumento.status === 'signed' || statusDocumento.status === 'SIGNED' || statusDocumento.status === 'Assinado') {
+        setEtapa('assinado');
+      } else if (
+        statusDocumento.status === 'pending' || 
+        statusDocumento.status === 'PENDING' || 
+        statusDocumento.status === 'Pendente' ||
+        statusDocumento.status === 'Aguardando Assinatura'
+      ) {
+        setEtapa('pendente-assinatura');
       } else {
         setEtapa('inicial');
       }
-    }, [statusDocumento, pdfGerado]);
+    } else if (pdfGerado) {
+      setEtapa('pdf-gerado');
+    } else {
+      setEtapa('inicial');
+    }
+  }, [statusDocumento, pdfGerado]);
 
   const todosCamposPreenchidos = Boolean(dados?.nomeRepresentante) && 
                                Boolean(dados?.emailRepresentante) && 
@@ -461,6 +464,99 @@ const GerarTermoButton = ({
     }
   };
 
+  const visualizarPDFAssinado = async () => {
+    if (!dados?.propostaId) {
+      alert('❌ ID da proposta não encontrado.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('📥 Buscando PDF assinado da proposta:', dados.propostaId);
+      
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-assinado`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success && result.documento?.url) {
+        console.log('✅ PDF assinado encontrado:', result.documento);
+        console.log('🔍 Fonte:', result.source); // 'autentique' | 'local_cache'
+        
+        // Abrir PDF em nova aba
+        window.open(result.documento.url, '_blank');
+        
+      } else if (result.needs_manual_upload) {
+        // Caso especial: documento histórico precisa de upload
+        console.log('📋 Upload manual necessário');
+        setMostrarUploadManual(true);
+        
+      } else {
+        console.error('❌ Erro ao buscar PDF assinado:', result);
+        alert(`❌ ${result.message || 'Erro ao buscar documento assinado.'}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Erro interno ao buscar PDF assinado:', error);
+      alert('❌ Erro interno. Verifique sua conexão e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadTermoManual = async () => {
+    if (!arquivoUpload) {
+      alert('Selecione um arquivo PDF primeiro.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('arquivo', arquivoUpload);
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/upload-termo-assinado`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+          },
+          body: formData
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert('✅ Termo assinado enviado com sucesso!');
+        setMostrarUploadManual(false);
+        setArquivoUpload(null);
+        
+        // Abrir o PDF enviado
+        if (result.documento?.url) {
+          window.open(result.documento.url, '_blank');
+        }
+      } else {
+        alert(`❌ Erro: ${result.message}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Erro no upload:', error);
+      alert('❌ Erro interno no upload.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Campos obrigatórios faltantes
   const camposFaltantes = [];
   if (!dados?.nomeRepresentante) camposFaltantes.push('Nome do Representante');
@@ -740,22 +836,77 @@ const GerarTermoButton = ({
         </>
       )}
 
-      {/* ETAPA ASSINADO - Documento já assinado */}
+      {/* ETAPA ASSINADO - com upload manual */}
       {etapa === 'assinado' && statusDocumento && (
         <>
-          <div className="status-info text-success">
-            <strong>✅ Termo Assinado!</strong>
-            <br />
-            <small>Assinado em: {statusDocumento.data_assinatura}</small>
+          <div className="status-info">
+            <div className="status-header">
+              <strong>✅ Documento Assinado</strong>
+              <span className="status-badge assinado">
+                {statusDocumento.status_label || 'Assinado'}
+              </span>
+            </div>
+            
+            <div className="status-details">
+              <p><strong>👤 Assinado por:</strong> {statusDocumento.email_signatario || 'Cliente'}</p>
+              <p><strong>📅 Assinado em:</strong> {statusDocumento.data_assinatura || statusDocumento.updated_at}</p>
+            </div>
           </div>
 
-          <button
-            onClick={visualizarPDFTermo}
-            className="btn btn-success"
-          >
-            <Eye size={16} />
-            Visualizar Termo Assinado
-          </button>
+          <div className="acoes-documento">
+            <button
+              onClick={visualizarPDFAssinado}
+              disabled={loading}
+              className={`btn btn-success ${loading ? 'loading' : ''}`}
+            >
+              {loading ? (
+                <>
+                  <Loader className="animate-spin" size={16} />
+                  Carregando...
+                </>
+              ) : (
+                <>
+                  <Eye size={16} />
+                  Ver Documento Assinado
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* MODAL DE UPLOAD MANUAL */}
+          {mostrarUploadManual && (
+            <div className="upload-manual-container">
+              <h5>📄 Upload do Termo Assinado</h5>
+              <p>Este documento foi assinado antes da implementação digital. Por favor, faça o upload do termo assinado:</p>
+              
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setArquivoUpload(e.target.files[0])}
+                className="upload-input"
+              />
+              
+              <div className="upload-actions">
+                <button
+                  onClick={uploadTermoManual}
+                  disabled={!arquivoUpload || loading}
+                  className="btn btn-primary"
+                >
+                  {loading ? 'Enviando...' : 'Enviar Termo'}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setMostrarUploadManual(false);
+                    setArquivoUpload(null);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
