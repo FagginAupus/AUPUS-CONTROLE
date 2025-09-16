@@ -1,7 +1,7 @@
 // src/components/GerarTermoButton.jsx - NOVO FLUXO SEPARADO
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Send, Eye, X, Loader } from 'lucide-react';
+import { FileText, Send, Eye, X, Loader, Mail, MessageCircle } from 'lucide-react';
 import './GerarTermoButton.css';
 
 const GerarTermoButton = ({ 
@@ -511,25 +511,109 @@ const GerarTermoButton = ({
           {mostrarOpcoesEnvio && (
             <div className="opcoes-envio">
               <h5>Como enviar?</h5>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={envioEmail}
-                  onChange={(e) => setEnvioEmail(e.target.checked)}
-                  className="checkbox-input"
-                />
-                <span className="checkbox-text">E-mail</span>
+              <p className="opcoes-help">Selecione uma ou ambas as opções:</p>
+              
+              {/* Checkbox Email - com ícone Lucide */}
+              <label 
+                className={`checkbox-label-custom ${envioEmail ? 'checked' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setEnvioEmail(!envioEmail);
+                }}
+              >
+                <div className="checkbox-container-custom">
+                  <input
+                    type="checkbox"
+                    checked={envioEmail}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setEnvioEmail(e.target.checked);
+                    }}
+                    className="checkbox-input-hidden"
+                    id="envio-email"
+                  />
+                  <div className={`checkbox-visual-custom ${envioEmail ? 'checked' : ''}`}>
+                    {envioEmail && (
+                      <svg 
+                        width="12" 
+                        height="12" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20,6 9,17 4,12"></polyline>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="checkbox-content-custom">
+                  <Mail size={16} className="checkbox-icon-custom" />
+                  <span className="checkbox-text-custom">E-mail</span>
+                </div>
               </label>
               
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={envioWhatsApp}
-                  onChange={(e) => setEnvioWhatsApp(e.target.checked)}
-                  className="checkbox-input"
-                />
-                <span className="checkbox-text">WhatsApp</span>
+              {/* Checkbox WhatsApp - com ícone Lucide */}
+              <label 
+                className={`checkbox-label-custom ${envioWhatsApp ? 'checked' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setEnvioWhatsApp(!envioWhatsApp);
+                }}
+              >
+                <div className="checkbox-container-custom">
+                  <input
+                    type="checkbox"
+                    checked={envioWhatsApp}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setEnvioWhatsApp(e.target.checked);
+                    }}
+                    className="checkbox-input-hidden"
+                    id="envio-whatsapp"
+                  />
+                  <div className={`checkbox-visual-custom ${envioWhatsApp ? 'checked' : ''}`}>
+                    {envioWhatsApp && (
+                      <svg 
+                        width="12" 
+                        height="12" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20,6 9,17 4,12"></polyline>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="checkbox-content-custom">
+                  <MessageCircle size={16} className="checkbox-icon-custom" />
+                  <span className="checkbox-text-custom">WhatsApp</span>
+                </div>
               </label>
+              
+              {/* Validação visual */}
+              {!envioEmail && !envioWhatsApp && (
+                <div className="opcoes-erro">
+                  <X size={14} />
+                  <span>Selecione pelo menos uma opção de envio</span>
+                </div>
+              )}
+              
+              {envioEmail && envioWhatsApp && (
+                <div className="opcoes-sucesso">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                  </svg>
+                  <span>Será enviado por E-mail e WhatsApp</span>
+                </div>
+              )}
+              
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -537,7 +621,7 @@ const GerarTermoButton = ({
                   enviarParaAutentique();
                 }}
                 disabled={loading || (!envioEmail && !envioWhatsApp)}
-                className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                className={`btn btn-primary ${loading ? 'loading' : ''} ${(!envioEmail && !envioWhatsApp) ? 'btn-disabled' : ''}`}
               >
                 {loading ? (
                   <>
@@ -548,6 +632,9 @@ const GerarTermoButton = ({
                   <>
                     <Send size={16} />
                     Confirmar Envio
+                    {envioEmail && envioWhatsApp ? ' (E-mail + WhatsApp)' : 
+                    envioEmail ? ' (E-mail)' : 
+                    envioWhatsApp ? ' (WhatsApp)' : ''}
                   </>
                 )}
               </button>

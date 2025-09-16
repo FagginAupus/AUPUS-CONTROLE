@@ -17,6 +17,8 @@ import {
   TrendingUp,
   Edit, 
   Eye,
+  Mail,      
+  MessageCircle,
   Trash2,
   X,
 } from 'lucide-react';
@@ -1879,7 +1881,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     dados={dados}
                     statusDocumento={statusDocumento}
                     setStatusDocumento={setStatusDocumento}
-                    onClose={() => setModalAberto(false)} // ✅ Se setModalAberto existe
+                    onClose={onClose}
                     onSalvarAntes={async (dadosParaSalvar) => {
                       await onSave(dadosParaSalvar);
                     }}

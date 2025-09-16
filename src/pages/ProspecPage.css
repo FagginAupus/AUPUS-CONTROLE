@@ -1831,3 +1831,18 @@ button.btn-visualizar-doc:hover {
 .btn-remover-arquivo:hover {
   background-color: rgba(244, 67, 54, 0.1);
 }
+
+.modal-edicao-expandido .form-row:has(.gerar-termo-container) {
+  grid-template-columns: 1fr !important;
+  width: 100% !important;
+}
+
+.modal-edicao-expandido .form-group:has(.gerar-termo-container) {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
+.modal-edicao-expandido .gerar-termo-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
