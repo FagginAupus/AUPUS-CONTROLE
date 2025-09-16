@@ -207,6 +207,27 @@ const GerarTermoButton = ({
       return;
     }
 
+    // ✅ ADICIONAR ESTAS VALIDAÇÕES AQUI:
+    if (envioWhatsApp) {
+      if (!dados.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') {
+        alert('❌ Para enviar por WhatsApp, é necessário informar o número do representante');
+        return;
+      }
+      
+      // Validar formato básico
+      const telefone = dados.whatsappRepresentante.replace(/\D/g, '');
+      if (telefone.length < 10 || telefone.length > 13) {
+        alert('❌ Formato de WhatsApp inválido. Use: (11) 99999-9999');
+        return;
+      }
+    }
+
+    if (!envioEmail && !envioWhatsApp) {
+      alert('❌ Selecione pelo menos uma forma de envio');
+      return;
+    }
+
+
     setLoading(true);
     try {
       console.log('📤 Enviando PDF para Autentique...');
@@ -604,7 +625,7 @@ const GerarTermoButton = ({
                   <span>Selecione pelo menos uma opção de envio</span>
                 </div>
               )}
-              
+
               {envioEmail && envioWhatsApp && (
                 <div className="opcoes-sucesso">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -613,7 +634,7 @@ const GerarTermoButton = ({
                   <span>Será enviado por E-mail e WhatsApp</span>
                 </div>
               )}
-              
+                            
               <button
                 onClick={(e) => {
                   e.preventDefault();

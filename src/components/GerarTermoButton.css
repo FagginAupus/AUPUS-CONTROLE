@@ -459,3 +459,16 @@
   border: 2px solid #ced4da !important;
   border-radius: 3px;
 }
+
+.opcoes-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 12px !important;
+  background: #e7f3ff !important;
+  border: 1px solid #b3d9ff !important;
+  border-radius: 6px !important;
+  color: #0066cc !important;
+  font-size: 12px !important;
+  margin: 8px 0 !important;
+}
