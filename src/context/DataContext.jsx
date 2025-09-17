@@ -108,31 +108,23 @@ export const DataProvider = ({ children }) => {
     const currentControle = controleData || controle.data;
     const currentUgs = ugsData || ugs.data;
 
-    console.log('🔍 DEBUG - Dados do controle para estatísticas:', currentControle);
-    console.log('🔍 DEBUG - Total de registros:', currentControle.length);
-
     // Calcular status da troca de titularidade
     const statusTroca = {
       esteira: currentControle.filter(item => {
         const status = item.status_troca || item.statusTroca || 'Esteira';
-        console.log('🔍 DEBUG - Item status_troca:', status, '| Comparando com: Esteira');
         return status === 'Esteira';
       }).length,
       
       emAndamento: currentControle.filter(item => {
         const status = item.status_troca || item.statusTroca || 'Esteira';
-        console.log('🔍 DEBUG - Item status_troca:', status, '| Comparando com: Em andamento');
         return status === 'Em andamento'; // ✅ CORRETO: 'Em andamento' (com 'E' maiúsculo)
       }).length,
       
       associado: currentControle.filter(item => {
         const status = item.status_troca || item.statusTroca || 'Esteira';
-        console.log('🔍 DEBUG - Item status_troca:', status, '| Comparando com: Associado');
         return status === 'Associado';
       }).length
     };
-
-    console.log('🔍 DEBUG - Status calculados:', statusTroca);
 
     // Debug: Mostrar distribuição de status
     const statusDistribution = currentControle.reduce((acc, item) => {
@@ -141,7 +133,6 @@ export const DataProvider = ({ children }) => {
       return acc;
     }, {});
     
-    console.log('🔍 DEBUG - Distribuição real dos status no banco:', statusDistribution);
 
     const canceladas = currentPropostas.filter(p => p.status === 'Cancelada').length;
     const propostasValidas = currentPropostas.length - canceladas;

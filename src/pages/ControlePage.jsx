@@ -366,7 +366,6 @@ const ControlePage = () => {
       }
 
       if (response?.success) {
-        console.log('✅ DEBUG - Sucesso, fechando modal');
         
         // ✅ ADICIONAR: Refresh automático após atribuir/remover UG
         console.log('🔄 Atualizando dados automaticamente após processar UG...');

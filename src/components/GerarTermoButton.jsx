@@ -104,7 +104,7 @@ const GerarTermoButton = ({
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [dados?.propostaId, dados?.numeroUC, dados?.numero_uc, setStatusDocumento]);
+  }, [dados?.propostaId, dados?.numeroUC, dados?.numero_uc]);
 
   // Determinar etapa atual baseada no status do documento
   useEffect(() => {
@@ -213,7 +213,7 @@ const GerarTermoButton = ({
       console.log('📄 Gerando PDF para UC específica:', numeroUC);
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf`,
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf-apenas`, // ✅ URL CORRIGIDA
         {
           method: 'POST',
           headers: {
@@ -222,7 +222,7 @@ const GerarTermoButton = ({
           },
           body: JSON.stringify({
             ...dados,
-            numeroUC: numeroUC, // ✅ GARANTIR QUE SEMPRE ENVIA numeroUC
+            numeroUC: numeroUC,
           })
         }
       );
