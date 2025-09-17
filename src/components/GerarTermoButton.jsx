@@ -170,7 +170,6 @@ const GerarTermoButton = ({
     statusDocumento,
   });
 
-  
 
   // NOVA FUNÇÃO: Gerar PDF apenas (sem enviar) - USANDO ENDPOINTS DEFINITIVOS
   const gerarPdfApenas = async () => {
@@ -275,7 +274,10 @@ const GerarTermoButton = ({
         ...dados,
         nome_arquivo_temp: pdfGerado?.nome,
         enviar_whatsapp: envioWhatsApp,
-        enviar_email: envioEmail
+        enviar_email: envioEmail,
+        // ✅ ADICIONAR DADOS ESPECÍFICOS PARA IDENTIFICAÇÃO
+        numeroUC: dados.numeroUC || dados.numero_uc,
+        nomeCliente: dados.nomeCliente || dados.nome_cliente
       };
 
       const response = await fetch(
@@ -528,7 +530,12 @@ const GerarTermoButton = ({
                 'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify(dados)
+              body: JSON.stringify({
+                ...dados,
+                // ✅ GARANTIR QUE DADOS DA UC ESTÃO DISPONÍVEIS
+                numeroUC: dados.numeroUC || dados.numero_uc,
+                nomeCliente: dados.nomeCliente || dados.nome_cliente
+              })
             }
           );
 
