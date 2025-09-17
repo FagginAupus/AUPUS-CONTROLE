@@ -113,25 +113,32 @@ const GerarTermoButton = ({
 
     // Determinar etapa atual baseada no status do documento
     useEffect(() => {
-    if (statusDocumento) {
-      if (statusDocumento.status === 'signed' || statusDocumento.status === 'SIGNED' || statusDocumento.status === 'Assinado') {
-        setEtapa('assinado');
-      } else if (
-        statusDocumento.status === 'pending' || 
-        statusDocumento.status === 'PENDING' || 
-        statusDocumento.status === 'Pendente' ||
-        statusDocumento.status === 'Aguardando Assinatura'
-      ) {
-        setEtapa('pendente-assinatura');
+      if (statusDocumento) {
+        if (statusDocumento.status === 'signed' || statusDocumento.status === 'SIGNED' || statusDocumento.status === 'Assinado') {
+          setEtapa('assinado');
+        } else if (
+          statusDocumento.status === 'rejected' || 
+          statusDocumento.status === 'REJECTED' || 
+          statusDocumento.status === 'Rejeitado'
+        ) {
+          // ✅ NOVA ETAPA: Documento foi rejeitado
+          setEtapa('rejeitado');
+        } else if (
+          statusDocumento.status === 'pending' || 
+          statusDocumento.status === 'PENDING' || 
+          statusDocumento.status === 'Pendente' ||
+          statusDocumento.status === 'Aguardando Assinatura'
+        ) {
+          setEtapa('pendente-assinatura');
+        } else {
+          setEtapa('inicial');
+        }
+      } else if (pdfGerado) {
+        setEtapa('pdf-gerado');
       } else {
         setEtapa('inicial');
       }
-    } else if (pdfGerado) {
-      setEtapa('pdf-gerado');
-    } else {
-      setEtapa('inicial');
-    }
-  }, [statusDocumento, pdfGerado]);
+    }, [statusDocumento, pdfGerado]);
 
   // NOVO useEffect - Lógica automática de checkboxes baseada nos campos preenchidos
   useEffect(() => {
@@ -330,13 +337,55 @@ const GerarTermoButton = ({
     }
   };
 
-  // NOVA FUNÇÃO: Cancelar documento na Autentique
-  // ================================================================
-  // CORREÇÃO SIMPLES: Usar a rota que já existe e funciona
-  // Substituir a função cancelarDocumento no GerarTermoButton.jsx
-  // ================================================================
+  const resetarDocumentoRejeitado = async () => {
+    if (!dados?.propostaId) return;
 
-  // FUNÇÃO CORRIGIDA: Cancelar documento na Autentique
+    if (!window.confirm('Deseja gerar um novo termo? O documento rejeitado será removido.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('🔄 Resetando documento rejeitado...');
+      
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/resetar-rejeitado`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ Documento rejeitado resetado:', result);
+        
+        // Resetar estado completamente
+        setStatusDocumento(null);
+        setPdfGerado(null);
+        setEtapa('inicial');
+        setMostrarOpcoesEnvio(false);
+        
+        alert(`✅ ${result.message}`);
+
+      } else {
+        console.error('❌ Erro ao resetar:', result);
+        alert(`❌ Erro: ${result.message || 'Erro desconhecido'}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Erro interno:', error);
+      alert('❌ Erro interno. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  // NOVA FUNÇÃO: Cancelar documento na Autentique
+
   const cancelarDocumento = async () => {
     if (!statusDocumento) return;
 
@@ -947,6 +996,59 @@ const GerarTermoButton = ({
         </>
       )}
 
+      {/* ✅ NOVA ETAPA REJEITADO - Documento foi rejeitado pelo cliente */}
+      {etapa === 'rejeitado' && statusDocumento && (
+        <>
+          <div className="status-info">
+            <div className="status-header">
+              <strong>❌ Documento Rejeitado</strong>
+              <span className="status-badge rejeitado">
+                {statusDocumento.status_label || 'Rejeitado'}
+              </span>
+            </div>
+            
+            <div className="status-details">
+              <p><strong>👤 Rejeitado por:</strong> {statusDocumento.email_signatario || 'Cliente'}</p>
+              <p><strong>📅 Rejeitado em:</strong> {statusDocumento.updated_at ? new Date(statusDocumento.updated_at).toLocaleString('pt-BR') : 'Data não disponível'}</p>
+              
+              {statusDocumento.rejection_reason && (
+                <div className="rejection-reason">
+                  <p><strong>📝 Motivo da rejeição:</strong></p>
+                  <div className="reason-text">{statusDocumento.rejection_reason}</div>
+                </div>
+              )}
+            </div>
+            
+            <div className="rejection-info">
+              <small>
+                ℹ️ O cliente rejeitou a assinatura do documento. 
+                Você pode gerar um novo termo com as informações atualizadas.
+              </small>
+            </div>
+          </div>
+
+          <div className="acoes-documento">
+            <button
+              onClick={resetarDocumentoRejeitado}
+              disabled={loading}
+              className={`btn btn-primary ${loading ? 'loading' : ''}`}
+            >
+              {loading ? (
+                <>
+                  <Loader className="animate-spin" size={16} />
+                  Resetando...
+                </>
+              ) : (
+                <>
+                  <FileText size={16} />
+                  Gerar Novo Termo
+                </>
+              )}
+            </button>
+          </div>
+        </>
+      )}
+      
       {/* ETAPA ASSINADO - com upload manual */}
       {etapa === 'assinado' && statusDocumento && (
         <>

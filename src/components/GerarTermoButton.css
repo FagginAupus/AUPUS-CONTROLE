@@ -533,3 +533,111 @@
 .checkbox-label-custom.disabled .checkbox-text-custom {
   color: #6c757d !important;
 }
+
+/* ============================================================================
+   ADIÇÃO EM: src/components/GerarTermoButton.css
+   Estilos para documento rejeitado
+   ============================================================================ */
+
+/* Status Badge para documento rejeitado */
+.gerar-termo-container .status-badge.rejeitado {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+/* Container de informações sobre rejeição */
+.gerar-termo-container .rejection-info {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-left: 4px solid #dc3545;
+  border-radius: 6px;
+  color: #721c24;
+}
+
+.gerar-termo-container .rejection-info small {
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Container do motivo da rejeição */
+.gerar-termo-container .rejection-reason {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+}
+
+.gerar-termo-container .rejection-reason p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: #856404;
+}
+
+.gerar-termo-container .reason-text {
+  background: white;
+  padding: 10px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  color: #495057;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Estilo especial para botão de gerar novo termo após rejeição */
+.gerar-termo-container .btn-primary.loading {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  cursor: not-allowed;
+}
+
+/* Animação sutil para destacar a ação disponível */
+@keyframes pulseRejected {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+.gerar-termo-container .status-badge.rejeitado {
+  animation: pulseRejected 2s infinite;
+}
+
+/* Responsividade para seção de documento rejeitado */
+@media (max-width: 768px) {
+  .gerar-termo-container .rejection-info {
+    padding: 10px 12px;
+    margin-top: 10px;
+  }
+  
+  .gerar-termo-container .rejection-reason {
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .gerar-termo-container .reason-text {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+}
+
+/* Estado hover para botão de gerar novo termo */
+.gerar-termo-container .btn-primary:not(:disabled):not(.loading):hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  transition: all 0.2s ease;
+}
