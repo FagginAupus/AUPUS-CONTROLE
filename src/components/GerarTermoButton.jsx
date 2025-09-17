@@ -28,74 +28,79 @@ const GerarTermoButton = ({
     
     const numeroUC = dados.numeroUC || dados.numero_uc;
     if (!numeroUC) {
-      console.log('⚠️ GerarTermoButton: numeroUC não encontrado, mantendo estado inicial');
+      console.log('⚠️ GerarTermoButton: numeroUC não encontrado, resetando estado');
       setEtapa('inicial');
       setStatusDocumento(null);
       setPdfGerado(null);
       return;
     }
 
-    // ✅ ADICIONAR TIMEOUT PARA EVITAR MUITAS REQUISIÇÕES
+    console.log(`🔍 Verificando estado para UC específica: ${numeroUC}`);
+
     const timeoutId = setTimeout(() => {
       verificarEstado();
-    }, 500); // Aguardar 500ms antes de executar
+    }, 500);
 
     const verificarEstado = async () => {
-    try {
-      // 1. Verificar PDF temporário
-      const pdfTempResponse = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-temporario`,
-        {
+      try {
+        // ✅ 1. Verificar PDF temporário ESPECÍFICO da UC
+        const pdfTempResponse = await fetch(
+          `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-temporario?numero_uc=${numeroUC}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            }
+          }
+        );
+
+        if (pdfTempResponse.ok) {
+          const result = await pdfTempResponse.json();
+          if (result.success && result.pdf) {
+            console.log('📄 PDF temporário encontrado para UC:', numeroUC, result.pdf);
+            setPdfGerado(result.pdf);
+            setEtapa('pdf-gerado');
+            return;
+          }
+        }
+
+        // ✅ 2. Verificar documento enviado ESPECÍFICO da UC
+        const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
+
+        console.log(`📡 Consultando status para UC: ${numeroUC}`, statusUrl);
+
+        const statusResponse = await fetch(statusUrl, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
           }
-        }
-      );
+        });
 
-      if (pdfTempResponse.ok) {
-        const result = await pdfTempResponse.json();
-        if (result.success) {
-          console.log('📄 PDF temporário encontrado:', result.pdf);
-          setPdfGerado(result.pdf);
-          setEtapa('pdf-gerado');
-          return;
-        }
-      }
-
-      // 2. ✅ CORREÇÃO: SEMPRE incluir numeroUC na consulta
-      if (!numeroUC) {
-        console.log('⚠️ Sem numeroUC para consultar documento específico');
-        return;
-      }
-
-      const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
-
-      const statusResponse = await fetch(statusUrl, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (statusResponse.ok) {
-        const result = await statusResponse.json();
-        if (result.success && result.documento) {
-          // ✅ VERIFICAÇÃO DUPLA: garantir que é o documento da UC certa
-          if (result.documento.numero_uc === numeroUC) {
-            console.log('📄 Documento específico encontrado para UC:', numeroUC);
-            setStatusDocumento(result.documento);
+        if (statusResponse.ok) {
+          const result = await statusResponse.json();
+          if (result.success && result.documento) {
+            // ✅ VERIFICAÇÃO RIGOROSA: só aceitar se for EXATAMENTE a UC correta
+            if (result.documento.numero_uc === numeroUC) {
+              console.log('✅ Documento específico encontrado para UC:', numeroUC, result.documento);
+              setStatusDocumento(result.documento);
+            } else {
+              console.log(`❌ Documento retornado é de UC diferente: ${result.documento.numero_uc} (esperado: ${numeroUC})`);
+              setStatusDocumento(null);
+            }
           } else {
-            console.log('⚠️ Documento encontrado é de UC diferente:', result.documento.numero_uc);
+            console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC}`);
+            setStatusDocumento(null);
           }
+        } else {
+          console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC}`);
+          setStatusDocumento(null);
         }
+
+      } catch (error) {
+        console.error('Erro ao verificar estado para UC:', numeroUC, error);
+        setStatusDocumento(null);
       }
+    };
 
-    } catch (error) {
-      console.error('Erro ao verificar estado:', error);
-    }
-  };
-
-    // ✅ CLEANUP: Cancelar timeout se componente desmontar
     return () => {
       clearTimeout(timeoutId);
     };
@@ -185,117 +190,78 @@ const GerarTermoButton = ({
       return;
     }
 
-    setLoading(true);
-    try {
-      // Salvar dados antes se necessário
-      if (onSalvarAntes) {
-        try {
-          await onSalvarAntes({
-            ...dados,
-            termoAdesao: null
-          });
-        } catch (saveError) {
-          if (saveError.message?.includes('429') || saveError.message?.includes('Too Many')) {
-            console.log('⚠️ Rate limit no salvamento, continuando com geração do PDF...');
-          } else {
-            throw saveError; // Re-lançar se não for rate limit
-          }
-        }
+    // ✅ ADICIONAR numeroUC obrigatório
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+    if (!numeroUC) {
+      alert('❌ Número da UC é obrigatório para gerar o termo.');
+      return;
+    }
+
+    // ✅ SALVAR ANTES SE NECESSÁRIO
+    if (onSalvarAntes && typeof onSalvarAntes === 'function') {
+      try {
+        await onSalvarAntes(dados);
+      } catch (error) {
+        console.error('Erro ao salvar antes:', error);
+        return;
       }
+    }
 
-      console.log('📄 Gerando PDF apenas...');
-      
-      // ✅ FUNÇÃO COM RETRY
-      const tentarGerarPDF = async (tentativa = 1, maxTentativas = 3) => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf-apenas`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                ...dados,
-                numeroUC: dados.numeroUC || dados.numero_uc,
-                nomeCliente: dados.nomeCliente || dados.nome_cliente
-              })
-            }
-          );
+    setLoading(true);
 
-          if (response.status === 429 && tentativa < maxTentativas) {
-            const waitTime = tentativa * 2000; // 2s, 4s, 6s
-            console.log(`⏳ Rate limit (tentativa ${tentativa}/${maxTentativas}), aguardando ${waitTime}ms...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            return await tentarGerarPDF(tentativa + 1, maxTentativas);
-          }
+    try {
+      console.log('📄 Gerando PDF para UC específica:', numeroUC);
 
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          return await response.json();
-        } catch (error) {
-          if (tentativa < maxTentativas && (error.message.includes('429') || error.message.includes('Too Many'))) {
-            const waitTime = tentativa * 2000;
-            console.log(`⏳ Erro de rate limit (tentativa ${tentativa}/${maxTentativas}), aguardando ${waitTime}ms...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            return await tentarGerarPDF(tentativa + 1, maxTentativas);
-          }
-          throw error;
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ...dados,
+            numeroUC: numeroUC, // ✅ GARANTIR QUE SEMPRE ENVIA numeroUC
+          })
         }
-      };
+      );
 
-      const result = await tentarGerarPDF();
+      const result = await response.json();
 
-      if (result.success) {
-        console.log('✅ PDF gerado no backend:', result.pdf);
+      if (response.ok && result.success) {
+        console.log('✅ PDF gerado para UC:', numeroUC, result.pdf);
         setPdfGerado(result.pdf);
         setEtapa('pdf-gerado');
-        alert('✅ PDF gerado com sucesso! Você pode visualizá-lo antes de enviar.');
       } else {
-        console.error('❌ Erro ao gerar PDF:', result);
-        alert(`❌ Erro: ${result.message}`);
+        console.error('❌ Erro ao gerar PDF:', result.message);
+        alert(`❌ ${result.message || 'Erro desconhecido'}`);
       }
 
     } catch (error) {
-      console.error('❌ Erro interno:', error);
-      if (error.message?.includes('429') || error.message?.includes('Too Many')) {
-        alert('❌ Muitas requisições simultâneas. Aguarde alguns segundos e tente novamente.');
-      } else {
-        alert('❌ Erro interno ao gerar PDF. Tente novamente.');
-      }
+      console.error('❌ Erro interno ao gerar PDF:', error);
+      alert('❌ Erro interno. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   const enviarParaAutentique = async () => {
-    if (!pdfGerado && !statusDocumento) {
-      alert('Gere o PDF primeiro antes de enviar.');
+    // ✅ VALIDAÇÕES OBRIGATÓRIAS
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+    if (!numeroUC) {
+      alert('❌ Número da UC é obrigatório para enviar termo.');
       return;
     }
 
-    // Validação para envio Autentique - só validar campo se checkbox marcado
-    if (envioEmail) {
-      if (!dados.emailRepresentante || dados.emailRepresentante.trim() === '') {
-        alert('❌ Para enviar por E-mail, é necessário informar o email do representante');
-        return;
-      }
+    if (!dados.nomeRepresentante || dados.nomeRepresentante.trim() === '') {
+      alert('❌ É necessário informar o nome do representante.');
+      return;
     }
 
-    if (envioWhatsApp) {
-      if (!dados.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') {
-        alert('❌ Para enviar por WhatsApp, é necessário informar o número do representante');
-        return;
-      }
-      
-      const telefone = dados.whatsappRepresentante.replace(/\D/g, '');
-      if (telefone.length < 10 || telefone.length > 13) {
-        alert('❌ Formato de WhatsApp inválido. Use: (11) 99999-9999');
-        return;
-      }
+    if (!dados.emailRepresentante && !dados.whatsappRepresentante) {
+      alert('❌ Informe pelo menos um meio de contato (email ou WhatsApp).');
+      return;
     }
 
     if (!envioEmail && !envioWhatsApp) {
@@ -303,20 +269,21 @@ const GerarTermoButton = ({
       return;
     }
 
-    // Resto da função continua igual...
     setLoading(true);
+    
     try {
-      console.log('📤 Enviando PDF para Autentique...');
+      console.log('📤 Enviando PDF para Autentique - UC:', numeroUC);
       
       const dadosEnvio = {
         ...dados,
+        numeroUC: numeroUC, // ✅ GARANTIR QUE SEMPRE ENVIA numeroUC
         nome_arquivo_temp: pdfGerado?.nome,
         enviar_whatsapp: envioWhatsApp,
         enviar_email: envioEmail,
-        // ✅ ADICIONAR DADOS ESPECÍFICOS PARA IDENTIFICAÇÃO
-        numeroUC: dados.numeroUC || dados.numero_uc,
         nomeCliente: dados.nomeCliente || dados.nome_cliente
       };
+
+      console.log('📋 Dados de envio:', dadosEnvio);
 
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/enviar-para-autentique`,
@@ -333,44 +300,44 @@ const GerarTermoButton = ({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('✅ Enviado para Autentique:', result.documento);
+        console.log('✅ Enviado para Autentique - UC:', numeroUC, result.documento);
         
         const documento = result.documento;
         
-        let mensagemSucesso = `✅ ${result.message}`;
-        
-        if (documento.canais_envio_texto) {
-          mensagemSucesso += `\n\n📤 Enviado via: ${documento.canais_envio_texto}`;
-        }
-        
-        if (documento.destinatario_exibicao) {
-          const isEmail = documento.destinatario_exibicao.includes('@');
-          const tipoPara = isEmail ? '📧 Para' : '📱 Para';
-          mensagemSucesso += `\n${tipoPara}: ${documento.destinatario_exibicao}`;
-        }
-        
-        alert(mensagemSucesso);
-
-        if (documento.link_assinatura && 
-            window.confirm('Deseja abrir o link de assinatura agora?')) {
-          window.open(documento.link_assinatura, '_blank');
-        }
-        
-        setStatusDocumento(documento);
-        setEtapa('pendente-assinatura');
-        setPdfGerado(null);
-        
-        if (onClose && typeof onClose === 'function') {
-          setTimeout(() => onClose(), 2000);
+        // ✅ VERIFICAR SE O DOCUMENTO RETORNADO É DA UC CORRETA
+        if (!documento.numero_uc || documento.numero_uc === numeroUC) {
+          setStatusDocumento(documento);
+          setEtapa('pendente-assinatura');
+          setPdfGerado(null);
+          
+          let mensagemSucesso = `✅ ${result.message} (UC: ${numeroUC})`;
+          
+          if (documento.canais_envio_texto) {
+            mensagemSucesso += `\n\n📤 Enviado via: ${documento.canais_envio_texto}`;
+          }
+          
+          if (documento.destinatario_exibicao) {
+            const tipoPara = documento.destinatario_exibicao.includes('@') ? '📧 Para' : '📱 Para';
+            mensagemSucesso += `\n${tipoPara}: ${documento.destinatario_exibicao}`;
+          }
+          
+          alert(mensagemSucesso);
+          
+          if (onClose && typeof onClose === 'function') {
+            setTimeout(() => onClose(), 2000);
+          }
+        } else {
+          console.error('❌ Documento retornado é de UC diferente:', documento.numero_uc, 'esperado:', numeroUC);
+          alert(`❌ Erro: documento criado para UC incorreta (${documento.numero_uc})`);
         }
         
       } else {
-        console.error('❌ Erro ao enviar:', result);
+        console.error('❌ Erro ao enviar para UC:', numeroUC, result);
         alert(`❌ Erro: ${result.message || 'Erro desconhecido'}`);
       }
 
     } catch (error) {
-      console.error('❌ Erro interno:', error);
+      console.error('❌ Erro interno ao enviar para UC:', numeroUC, error);
       alert('❌ Erro interno. Tente novamente.');
     } finally {
       setLoading(false);
