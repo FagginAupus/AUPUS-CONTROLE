@@ -546,9 +546,10 @@ const ControlePage = () => {
       const response = await apiService.put(`/controle/${payload.controleId}/uc-detalhes`, {
         consumo_medio: payload.consumo_medio,
         usa_calibragem_global: payload.usa_calibragem_global,
-        calibragem_individual: payload.calibragemIndividual,
+        ...(payload.calibragem_individual !== null && payload.calibragem_individual !== undefined ? {
+          calibragem_individual: payload.calibragem_individual
+        } : {}),
         observacoes: payload.observacoes,
-        // ✅ NOVOS CAMPOS DE DESCONTO
         desconto_tarifa: payload.desconto_tarifa,
         desconto_bandeira: payload.desconto_bandeira
       });
@@ -1270,20 +1271,24 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             is_null: calibragemIndividualValue === null,
             is_undefined: calibragemIndividualValue === undefined,
             is_empty_string: calibragemIndividualValue === '',
-            is_zero: calibragemIndividualValue === 0
+            is_zero: calibragemIndividualValue === 0,
+            parseFloat_result: parseFloat(calibragemIndividualValue),
+            is_valid_number: !isNaN(parseFloat(calibragemIndividualValue))
           });
 
+          // ✅ DETECTAR CALIBRAGEM INDIVIDUAL - Aceitar string ou número > 0
           const temCalibragemIndividual = calibragemIndividualValue !== null && 
-                                calibragemIndividualValue !== undefined && 
-                                calibragemIndividualValue !== '' &&
-                                !(typeof calibragemIndividualValue === 'number' && calibragemIndividualValue === 0);
+                                          calibragemIndividualValue !== undefined && 
+                                          calibragemIndividualValue !== '' &&
+                                          !isNaN(parseFloat(calibragemIndividualValue)) &&
+                                          parseFloat(calibragemIndividualValue) > 0;
 
           const usarCalibragemGlobal = !temCalibragemIndividual;
-          
+
           console.log('🎯 Resultado da lógica:', {
             tem_calibragem_individual: temCalibragemIndividual,
             usar_calibragem_global: usarCalibragemGlobal,
-            valor_final: calibragemIndividualValue
+            valor_numerico: parseFloat(calibragemIndividualValue) || 0
           });
 
           setDados({
@@ -1295,7 +1300,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             observacoes: dadosUC.observacoes || '',
             // CALIBRAGEM
             calibragemIndividual: calibragemIndividualValue || '',
-            usa_calibragem_global: usarCalibragemGlobal,
+            calibragemIndividual: parseFloat(calibragemIndividualValue) || '',
             calibragem_global: dadosUC.calibragem_global || 0,
             // ✅ DESCONTOS CORRIGIDOS
             desconto_tarifa: descontoTarifaAtual,
@@ -1455,7 +1460,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             type="number"
             id="consumo_medio"
             min="0"
-            step="0.01"
+            step="1"
             value={dados.consumo_medio}
             onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
             required
@@ -1518,7 +1523,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   id="desconto_tarifa"
                   min="0"
                   max="100"
-                  step="0.01"
+                  step="1"
                   value={dados.desconto_tarifa}
                   onChange={(e) => setDados(prev => ({ ...prev, desconto_tarifa: e.target.value }))}
                   className="form-control"
@@ -1540,7 +1545,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   id="desconto_bandeira"
                   min="0"
                   max="100"
-                  step="0.01"
+                  step="1"
                   value={dados.desconto_bandeira}
                   onChange={(e) => setDados(prev => ({ ...prev, desconto_bandeira: e.target.value }))}
                   className="form-control"
@@ -1604,7 +1609,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                 id="calibragem_individual"
                 min="0"
                 max="100"
-                step="0.01"
+                step="1"
                 value={dados.calibragemIndividual}
                 onChange={(e) => setDados(prev => ({ ...prev, calibragemIndividual: e.target.value }))}
                 required={!dados.usa_calibragem_global}
