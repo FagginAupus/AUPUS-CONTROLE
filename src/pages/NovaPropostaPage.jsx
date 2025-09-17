@@ -725,7 +725,18 @@ const NovaPropostaPage = () => {
                   />
                 ) : (
                   <select
-                    {...register('consultor_id', { required: 'Consultor é obrigatório' })}
+                    {...register('consultor_id', { 
+                      required: false,
+                      validate: (value) => {
+                        // Permitir tanto null quanto string vazia para "Sem consultor"
+                        if (!value || value === '') {
+                          return true; // Válido
+                        }
+                        // Se tem valor, verificar se existe na lista
+                        const consultorExiste = consultoresDisponiveis.some(c => c.id === value);
+                        return consultorExiste || 'Consultor selecionado não é válido';
+                      }
+                    })}
                     className="form-input"
                   >
                     <option value="">Selecione o consultor</option>
