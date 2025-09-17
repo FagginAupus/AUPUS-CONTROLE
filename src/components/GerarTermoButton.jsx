@@ -41,51 +41,59 @@ const GerarTermoButton = ({
     }, 500); // Aguardar 500ms antes de executar
 
     const verificarEstado = async () => {
-      try {
-        // 1. Verificar PDF temporário
-        const pdfTempResponse = await fetch(
-          `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-temporario`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-            }
-          }
-        );
-
-        if (pdfTempResponse.ok) {
-          const result = await pdfTempResponse.json();
-          if (result.success) {
-            console.log('📄 PDF temporário encontrado:', result.pdf);
-            setPdfGerado(result.pdf);
-            setEtapa('pdf-gerado');
-            return;
-          }
-        }
-
-        // 2. Se não tem PDF temporário, verificar documento enviado
-        const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
-
-        const statusResponse = await fetch(statusUrl, {
+    try {
+      // 1. Verificar PDF temporário
+      const pdfTempResponse = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-temporario`,
+        {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (statusResponse.ok) {
-          const result = await statusResponse.json();
-          if (result.success && result.documento) {
-            if (!numeroUC || result.documento.numero_uc === numeroUC) {
-              console.log('📄 Documento específico encontrado para UC:', numeroUC);
-              setStatusDocumento(result.documento);
-            }
           }
         }
+      );
 
-      } catch (error) {
-        console.error('Erro ao verificar estado:', error);
+      if (pdfTempResponse.ok) {
+        const result = await pdfTempResponse.json();
+        if (result.success) {
+          console.log('📄 PDF temporário encontrado:', result.pdf);
+          setPdfGerado(result.pdf);
+          setEtapa('pdf-gerado');
+          return;
+        }
       }
-    };
+
+      // 2. ✅ CORREÇÃO: SEMPRE incluir numeroUC na consulta
+      if (!numeroUC) {
+        console.log('⚠️ Sem numeroUC para consultar documento específico');
+        return;
+      }
+
+      const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
+
+      const statusResponse = await fetch(statusUrl, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (statusResponse.ok) {
+        const result = await statusResponse.json();
+        if (result.success && result.documento) {
+          // ✅ VERIFICAÇÃO DUPLA: garantir que é o documento da UC certa
+          if (result.documento.numero_uc === numeroUC) {
+            console.log('📄 Documento específico encontrado para UC:', numeroUC);
+            setStatusDocumento(result.documento);
+          } else {
+            console.log('⚠️ Documento encontrado é de UC diferente:', result.documento.numero_uc);
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Erro ao verificar estado:', error);
+    }
+  };
 
     // ✅ CLEANUP: Cancelar timeout se componente desmontar
     return () => {

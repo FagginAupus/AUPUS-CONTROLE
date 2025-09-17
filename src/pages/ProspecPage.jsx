@@ -1197,12 +1197,15 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     const propostaId = item.propostaId || item.id?.split('-')[0];
     if (!propostaId) return;
     
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+    if (!numeroUC) {
+      console.log('⚠️ Sem numeroUC para buscar documento específico');
+      return;
+    }
+    
     try {
-      // ✅ CORREÇÃO: Incluir número da UC na consulta
-      const numeroUC = dados.numeroUC || dados.numero_uc;
-      const statusUrl = numeroUC 
-        ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status?numero_uc=${numeroUC}`
-        : `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status`;
+      // ✅ CORREÇÃO: SEMPRE incluir numero_uc
+      const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status?numero_uc=${numeroUC}`;
 
       const response = await fetch(statusUrl, {
         headers: {
@@ -1214,11 +1217,16 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.documento) {
-          // ✅ CORREÇÃO: Usar função específica por UC
-          const numeroUCDocumento = result.documento.numero_uc;
-          if (numeroUCDocumento) {
-            setStatusDocumentoUC(numeroUCDocumento, result.documento);
+          // ✅ VERIFICAÇÃO DUPLA: garantir que é o documento da UC certa
+          if (result.documento.numero_uc === numeroUC) {
+            setStatusDocumentoUC(numeroUC, result.documento);
+            console.log('📄 Status documento atualizado para UC:', numeroUC);
+          } else {
+            console.log('⚠️ Documento retornado é de UC diferente:', result.documento.numero_uc);
           }
+        } else {
+          // Se não encontrou documento, limpar status da UC
+          setStatusDocumentoUC(numeroUC, null);
         }
       }
     } catch (error) {
