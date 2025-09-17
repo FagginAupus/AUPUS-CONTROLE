@@ -157,23 +157,23 @@ const GerarTermoButton = ({
     }
   }, [dados?.emailRepresentante, dados?.whatsappRepresentante]);
 
-  const todosCamposPreenchidos = Boolean(dados?.nomeRepresentante) && 
-                               Boolean(dados?.emailRepresentante) && 
-                               Boolean(dados?.whatsappRepresentante);
-
   console.log('DEBUG GerarTermoButton:', {
     etapa,
     pdfGerado,
     statusDocumento,
-    todosCamposPreenchidos
   });
 
   
 
   // NOVA FUNÇÃO: Gerar PDF apenas (sem enviar) - USANDO ENDPOINTS DEFINITIVOS
   const gerarPdfApenas = async () => {
-    if (!todosCamposPreenchidos) {
-      alert('Preencha todos os campos obrigatórios antes de gerar o termo.');
+    if (!dados.nomeRepresentante || dados.nomeRepresentante.trim() === '') {
+      alert('❌ É necessário informar o nome do representante para gerar o termo.');
+      return;
+    }
+
+    if (!dados.nomeCliente || dados.nomeCliente.trim() === '') {
+      alert('❌ É necessário informar o nome do cliente para gerar o termo.');
       return;
     }
 
@@ -601,8 +601,7 @@ const GerarTermoButton = ({
   // Campos obrigatórios faltantes
   const camposFaltantes = [];
   if (!dados?.nomeRepresentante) camposFaltantes.push('Nome do Representante');
-  if (!dados?.emailRepresentante) camposFaltantes.push('Email do receptor do Termo');
-  if (!dados?.whatsappRepresentante) camposFaltantes.push('WhatsApp do receptor do Termo');
+  if (!dados?.nomeCliente) camposFaltantes.push('Nome do Cliente');
 
   // RENDERIZAÇÃO BASEADA NA ETAPA
   return (
@@ -611,7 +610,7 @@ const GerarTermoButton = ({
       {/* ETAPA INICIAL - Nenhum termo gerado */}
       {etapa === 'inicial' && (
         <>
-          {!todosCamposPreenchidos && (
+          {(!dados?.nomeRepresentante || !dados?.nomeCliente) && (
             <div className="campos-faltantes">
               <strong>Campos obrigatórios:</strong> {camposFaltantes.join(', ')}
             </div>
@@ -619,7 +618,7 @@ const GerarTermoButton = ({
           
           <button
             onClick={gerarPdfApenas}
-            disabled={loading || !todosCamposPreenchidos}
+            disabled={loading || !dados?.nomeRepresentante || !dados?.nomeCliente}
             className={`btn btn-primary ${loading ? 'loading' : ''}`}
           >
             {loading ? (
