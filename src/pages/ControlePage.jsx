@@ -21,7 +21,12 @@ import {
   Target,
   Building, 
   Zap,
-  X       
+  Percent,      
+  TrendingUp,   
+  Flag,
+  X,
+  FileText,    
+  Save        
 } from 'lucide-react';
 import './ControlePage.css';
 
@@ -1171,16 +1176,22 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
   );
 };
 const ModalUCDetalhes = ({ item, onSave, onClose }) => {
+  const { showNotification } = useNotification();
   const [loading, setLoading] = useState(true);
   const [dados, setDados] = useState({
     numero_proposta: '',
     nome_cliente: '',
     numero_uc: '',
     apelido: '',
-    consumo_medio: '',
-    calibragemIndividual: '',
-    usa_calibragem_global: true,
-    calibragem_global: 0
+    consumo_medio: 0,
+    calibragem: 0,
+    observacoes: '',
+    // ✅ NOVOS CAMPOS DE DESCONTO
+    desconto_tarifa: 20,
+    desconto_bandeira: 20,
+    proposta_desconto_tarifa: 20,
+    proposta_desconto_bandeira: 20,
+    usa_desconto_proposta: true  // Toggle para usar desconto da proposta ou individual
   });
 
   // Carregar dados da UC
@@ -1193,20 +1204,36 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         const response = await apiService.get(`/controle/${item.controleId}/uc-detalhes`);
         
         if (response?.success) {
+          const dadosUC = response.data;
+          
+          // ✅ PROCESSAR DESCONTOS
+          const descontoTarifaAtual = dadosUC.desconto_tarifa_numerico || dadosUC.proposta_desconto_tarifa_numerico || 20;
+          const descontoBandeiraAtual = dadosUC.desconto_bandeira_numerico || dadosUC.proposta_desconto_bandeira_numerico || 20;
+          const usaDescontoProposta = !dadosUC.desconto_tarifa || dadosUC.desconto_tarifa === dadosUC.proposta_desconto_tarifa;
+
           setDados({
-            numero_proposta: response.data.numero_proposta || '',
-            nome_cliente: response.data.nome_cliente || '',
-            numero_uc: response.data.numero_uc || '',
-            apelido: response.data.apelido || '',
-            consumo_medio: response.data.consumo_medio || '',
-            calibragemIndividual: response.data.calibragemIndividual || '',
-            usa_calibragem_global: response.data.usa_calibragem_global,
-            calibragem_global: response.data.calibragem_global || 0,
+            numero_proposta: dadosUC.numero_proposta || '',
+            nome_cliente: dadosUC.nome_cliente || '',
+            numero_uc: dadosUC.numero_uc || '',
+            apelido: dadosUC.apelido || '',
+            consumo_medio: dadosUC.consumo_medio || '',
+            observacoes: dadosUC.observacoes || '',
+            // Calibragem
+            calibragemIndividual: dadosUC.calibragemIndividual || '',
+            usa_calibragem_global: dadosUC.usa_calibragem_global,
+            calibragem_global: dadosUC.calibragem_global || 0,
+            // ✅ DESCONTOS
+            desconto_tarifa: descontoTarifaAtual,
+            desconto_bandeira: descontoBandeiraAtual,
+            usa_desconto_proposta: usaDescontoProposta,
+            proposta_desconto_tarifa: dadosUC.proposta_desconto_tarifa_numerico || 20,
+            proposta_desconto_bandeira: dadosUC.proposta_desconto_bandeira_numerico || 20,
             controleId: item.controleId
           });
         }
       } catch (error) {
         console.error('❌ Erro ao carregar dados da UC:', error);
+        showNotification('Erro ao carregar dados da UC: ' + error.message, 'error');
       } finally {
         setLoading(false);
       }
@@ -1214,26 +1241,51 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
     if (item?.controleId) {
       carregarDadosUC();
-    }
-  }, [item]);
+  }
+}, [item, showNotification]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validações
+    // Validações existentes
     if (!dados.consumo_medio || parseFloat(dados.consumo_medio) < 0) {
       alert('Consumo médio deve ser um valor positivo');
       return;
     }
 
     if (!dados.usa_calibragem_global) {
-      if (!dados.calibragemIndividual  || parseFloat(dados.calibragemIndividual ) < 0 || parseFloat(dados.calibragemIndividual ) > 100) {
+      if (!dados.calibragemIndividual || parseFloat(dados.calibragemIndividual) < 0 || parseFloat(dados.calibragemIndividual) > 100) {
         alert('Calibragem individual deve ser entre 0 e 100%');
         return;
       }
     }
 
-    onSave(dados);
+    // ✅ NOVA VALIDAÇÃO PARA DESCONTOS
+    if (!dados.usa_desconto_proposta) {
+      if (dados.desconto_tarifa < 0 || dados.desconto_tarifa > 100) {
+        alert('Desconto de tarifa deve ser entre 0 e 100%');
+        return;
+      }
+      if (dados.desconto_bandeira < 0 || dados.desconto_bandeira > 100) {
+        alert('Desconto de bandeira deve ser entre 0 e 100%');
+        return;
+      }
+    }
+
+    // ✅ PAYLOAD ATUALIZADO
+    const payload = {
+      consumo_medio: parseFloat(dados.consumo_medio),
+      usa_calibragem_global: dados.usa_calibragem_global,
+      calibragemIndividual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
+      observacoes: dados.observacoes,
+      // DESCONTOS - só enviar se não estiver usando da proposta
+      ...(dados.usa_desconto_proposta ? {} : {
+        desconto_tarifa: parseFloat(dados.desconto_tarifa),
+        desconto_bandeira: parseFloat(dados.desconto_bandeira)
+      })
+    };
+
+    onSave(payload);
   };
 
   const handleCalibragemGlobalChange = (checked) => {
@@ -1243,6 +1295,25 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
       calibragemIndividual: checked ? '' : prev.calibragemIndividual
     }));
   };
+
+  const toggleDescontoProposta = (checked) => {
+    if (checked) {
+      // Usar descontos da proposta
+      setDados(prev => ({
+        ...prev,
+        usa_desconto_proposta: true,
+        desconto_tarifa: prev.proposta_desconto_tarifa,
+        desconto_bandeira: prev.proposta_desconto_bandeira
+      }));
+    } else {
+      // Usar descontos individuais
+      setDados(prev => ({
+        ...prev,
+        usa_desconto_proposta: false
+      }));
+    }
+  };
+
 
   if (loading) {
     return (
@@ -1274,86 +1345,216 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
-          {/* Informações da Proposta (Apenas Leitura) */}
-          <div className="proposta-info">
-            <h4 className="section-title-with-icon">
-              <Database size={16} />
-              Informações da Proposta
-            </h4>
-            <p><strong>Proposta:</strong> {dados.numero_proposta}</p>
-            <p><strong>Cliente:</strong> {dados.nome_cliente}</p>
-            <p><strong>UC:</strong> {dados.numero_uc} - {dados.apelido}</p>
+        {/* Informações da Proposta (Apenas Leitura) */}
+        <div className="proposta-info">
+          <h4 className="section-title-with-icon">
+            <Database size={16} />
+            Informações da Proposta
+          </h4>
+          <p><strong>Proposta:</strong> {dados.numero_proposta}</p>
+          <p><strong>Cliente:</strong> {dados.nome_cliente}</p>
+          <p><strong>UC:</strong> {dados.numero_uc} - {dados.apelido}</p>
+        </div>
+
+        {/* Consumo Médio (Editável) */}
+        <div className="form-group" style={{ marginBottom: '20px' }}>
+          <label htmlFor="consumo_medio" className="label-with-icon">
+            <Settings size={16} />
+            <strong>Consumo Médio (kWh):</strong>
+          </label>
+          <input
+            type="number"
+            id="consumo_medio"
+            min="0"
+            step="0.01"
+            value={dados.consumo_medio}
+            onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
+            required
+            className="form-input"
+          />
+        </div>
+
+        {/* ✅ NOVA SEÇÃO: Configuração de Descontos */}
+        <div className="desconto-section" style={{ marginBottom: '25px', padding: '15px', border: '1px solid #e3e3e3', borderRadius: '8px', background: '#fafafa' }}>
+          <h4 className="section-title-with-icon" style={{ marginBottom: '15px', color: '#2c3e50' }}>
+            <Percent size={16} />
+            Configuração de Descontos
+          </h4>
+
+          {/* Toggle para usar desconto da proposta */}
+          <div className="form-group" style={{ marginBottom: '15px' }}>
+            <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={dados.usa_desconto_proposta}
+                onChange={(e) => toggleDescontoProposta(e.target.checked)}
+                style={{ accentColor: '#007bff' }}
+              />
+              <span style={{ fontWeight: '500' }}>
+                Usar descontos da proposta original
+              </span>
+            </label>
           </div>
 
-          {/* Consumo Médio (Editável) */}
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label htmlFor="consumo_medio" className="label-with-icon">
-              <Settings size={16} />
-              <strong>Consumo Médio (kWh):</strong>
-            </label>
-            <input
-              type="number"
-              id="consumo_medio"
-              min="0"
-              step="0.01"
-              value={dados.consumo_medio}
-              onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
-              required
-              className="form-input"
-            />
+          {/* Mostrar descontos da proposta original */}
+          <div className="proposta-descontos" style={{ 
+            background: '#e8f4fd', 
+            padding: '10px', 
+            borderRadius: '6px', 
+            marginBottom: '15px',
+            fontSize: '0.9rem'
+          }}>
+            <p style={{ margin: '0 0 5px 0', color: '#666' }}>
+              <strong>Descontos da Proposta:</strong>
+            </p>
+            <p style={{ margin: '0' }}>
+              <TrendingUp size={14} style={{ display: 'inline', marginRight: '4px' }} />
+              Tarifa: <span style={{ fontWeight: '600', color: '#007bff' }}>{dados.proposta_desconto_tarifa}%</span>
+              {' | '}
+              <Flag size={14} style={{ display: 'inline', marginRight: '4px' }} />
+              Bandeira: <span style={{ fontWeight: '600', color: '#007bff' }}>{dados.proposta_desconto_bandeira}%</span>
+            </p>
           </div>
 
-          {/* Calibragem */}
-          <div className="form-group">
-            <label className="label-with-icon">
-              <Target size={16} />
-              <strong>Calibragem:</strong>
-            </label>
-            
-            {/* Checkbox simples para usar calibragem global */}
-            <div style={{ marginBottom: '15px' }}>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={dados.usa_calibragem_global}
-                  onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
-                  className="checkbox-input"
-                />
-                <div className="checkbox-icon-custom">
-                  {dados.usa_calibragem_global ? (
-                    <CheckCircle size={14} />
-                  ) : (
-                    <Circle size={14} />
-                  )}
-                </div>
-                <span className="checkbox-text">
-                  Usar calibragem global ({dados.calibragem_global}%)
-                </span>
-              </label>
-            </div>
-
-            {/* Campo de calibragem individual - APENAS quando desmarcado */}
-            {!dados.usa_calibragem_global && (
-              <div>
-                <label htmlFor="calibragem_individual">
-                  Calibragem específica (%):
+          {/* Campos de desconto individual */}
+          <div className="descontos-individuais" style={{ opacity: dados.usa_desconto_proposta ? 0.5 : 1 }}>
+            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div className="form-group">
+                <label htmlFor="desconto_tarifa" className="label-with-icon">
+                  <TrendingUp size={14} />
+                  <strong>Desconto Tarifa (%):</strong>
                 </label>
                 <input
                   type="number"
-                  id="calibragem_individual"
+                  id="desconto_tarifa"
                   min="0"
                   max="100"
                   step="0.01"
-                  value={dados.calibragemIndividual }
-                  onChange={(e) => setDados(prev => ({ ...prev, calibragemIndividual : e.target.value }))}
-                  required={!dados.usa_calibragem_global}
-                  className="form-input"
-                  placeholder="Ex: 5.5"
+                  value={dados.desconto_tarifa}
+                  onChange={(e) => setDados(prev => ({ ...prev, desconto_tarifa: e.target.value }))}
+                  className="form-control"
+                  disabled={dados.usa_desconto_proposta}
+                  style={{
+                    background: dados.usa_desconto_proposta ? '#f8f9fa' : 'white',
+                    cursor: dados.usa_desconto_proposta ? 'not-allowed' : 'text'
+                  }}
                 />
               </div>
+
+              <div className="form-group">
+                <label htmlFor="desconto_bandeira" className="label-with-icon">
+                  <Flag size={14} />
+                  <strong>Desconto Bandeira (%):</strong>
+                </label>
+                <input
+                  type="number"
+                  id="desconto_bandeira"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={dados.desconto_bandeira}
+                  onChange={(e) => setDados(prev => ({ ...prev, desconto_bandeira: e.target.value }))}
+                  className="form-control"
+                  disabled={dados.usa_desconto_proposta}
+                  style={{
+                    background: dados.usa_desconto_proposta ? '#f8f9fa' : 'white',
+                    cursor: dados.usa_desconto_proposta ? 'not-allowed' : 'text'
+                  }}
+                />
+              </div>
+            </div>
+
+            {!dados.usa_desconto_proposta && (
+              <p style={{ 
+                marginTop: '10px', 
+                fontSize: '0.85rem', 
+                color: '#dc3545',
+                fontStyle: 'italic' 
+              }}>
+                ⚠️ Descontos individuais substituem os valores da proposta original
+              </p>
             )}
           </div>
-        </form>
+        </div>
+
+        {/* Calibragem - manter como está */}
+        <div className="form-group">
+          <label className="label-with-icon">
+            <Target size={16} />
+            <strong>Calibragem:</strong>
+          </label>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={dados.usa_calibragem_global}
+                onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
+                className="checkbox-input"
+              />
+              <div className="checkbox-icon-custom">
+                {dados.usa_calibragem_global ? (
+                  <CheckCircle size={14} />
+                ) : (
+                  <Circle size={14} />
+                )}
+              </div>
+              <span className="checkbox-text">
+                Usar calibragem global ({dados.calibragem_global}%)
+              </span>
+            </label>
+          </div>
+
+          {!dados.usa_calibragem_global && (
+            <div>
+              <label htmlFor="calibragem_individual">
+                Calibragem específica (%):
+              </label>
+              <input
+                type="number"
+                id="calibragem_individual"
+                min="0"
+                max="100"
+                step="0.01"
+                value={dados.calibragemIndividual}
+                onChange={(e) => setDados(prev => ({ ...prev, calibragemIndividual: e.target.value }))}
+                required={!dados.usa_calibragem_global}
+                className="form-input"
+                placeholder="Ex: 5.5"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ✅ NOVO CAMPO: Observações */}
+        <div className="form-group" style={{ marginBottom: '25px' }}>
+          <label htmlFor="observacoes" className="label-with-icon">
+            <FileText size={16} />
+            <strong>Observações:</strong>
+          </label>
+          <textarea
+            id="observacoes"
+            rows="3"
+            value={dados.observacoes}
+            onChange={(e) => setDados(prev => ({ ...prev, observacoes: e.target.value }))}
+            className="form-control"
+            placeholder="Observações sobre esta UC..."
+            style={{ resize: 'vertical' }}
+          />
+        </div>
+
+        {/* Botões */}
+        <div className="modal-footer modal-footer-controle">
+          <button type="button" onClick={onClose} className="btn btn-secondary">
+            <X size={16} />
+            Cancelar
+          </button>
+          <button type="submit" className="btn btn-primary">
+            <Save size={16} />
+            Salvar Alterações
+          </button>
+        </div>
+      </form>
 
         <div className="modal-footer modal-footer-controle">
           <button type="button" onClick={onClose} className="btn btn-secondary">
