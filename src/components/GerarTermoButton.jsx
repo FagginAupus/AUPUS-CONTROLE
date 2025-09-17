@@ -48,22 +48,30 @@ const GerarTermoButton = ({
           }
         }
 
-        // 2. Se não tem PDF temporário, verificar documento enviado
-        const statusResponse = await fetch(
-          `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status`,  // ✅ GET /status
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-              'Content-Type': 'application/json'
-            }
+        // 2. ✅ CORREÇÃO: Verificar documento específico da UC
+        const numeroUC = dados.numeroUC || dados.numero_uc;
+        const statusUrl = numeroUC 
+          ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`
+          : `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status`;
+
+        const statusResponse = await fetch(statusUrl, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
           }
-        );
+        });
 
         if (statusResponse.ok) {
           const result = await statusResponse.json();
           if (result.success && result.documento) {
-            console.log('📄 Documento existente encontrado:', result.documento);
-            setStatusDocumento(result.documento);
+            // ✅ VERIFICAR SE O DOCUMENTO É REALMENTE DESTA UC
+            if (!numeroUC || result.documento.numero_uc === numeroUC) {
+              console.log('📄 Documento específico encontrado para UC:', numeroUC);
+              setStatusDocumento(result.documento);
+            } else {
+              console.log('📄 Documento encontrado mas é de outra UC');
+              // Não definir status para esta UC
+            }
           }
         }
 
@@ -80,26 +88,29 @@ const GerarTermoButton = ({
       if (!dados?.propostaId) return;
 
       try {
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-              'Content-Type': 'application/json'
-            }
+        // ✅ CORREÇÃO: Incluir número da UC na consulta
+        const numeroUC = dados.numeroUC || dados.numero_uc;
+        const statusUrl = numeroUC 
+          ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`
+          : `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status`;
+
+        const response = await fetch(statusUrl, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
           }
-        );
+        });
 
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.documento) {
-            console.log('📄 Documento existente encontrado:', result.documento);
-            
-            // ✅ VERIFICAR SE setStatusDocumento É FUNÇÃO
-            if (typeof setStatusDocumento === 'function') {
-              setStatusDocumento(result.documento);
-            } else {
-              console.error('setStatusDocumento não é uma função:', setStatusDocumento);
+            // ✅ VERIFICAR SE É REALMENTE DESTA UC
+            if (!numeroUC || result.documento.numero_uc === numeroUC) {
+              console.log('📄 Documento específico encontrado:', result.documento);
+              
+              if (typeof setStatusDocumento === 'function') {
+                setStatusDocumento(result.documento);
+              }
             }
           }
         }
