@@ -1326,22 +1326,23 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
       }
     }
 
-    // ✅ CORREÇÃO: Garantir que controleId está sendo passado
+    // ✅ PAYLOAD CORRIGIDO
     const payload = {
       controleId: dados.controleId || item.controleId,
       consumo_medio: parseFloat(dados.consumo_medio),
       usa_calibragem_global: dados.usa_calibragem_global,
-      // ✅ CORREÇÃO: Enviar null quando usar global, ou o valor quando usar individual
       calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
       observacoes: dados.observacoes,
-      // DESCONTOS - só enviar se não estiver usando da proposta
+      
+      // ✅ DESCONTOS - lógica corrigida
+      usa_desconto_proposta: dados.usa_desconto_proposta,
       ...(dados.usa_desconto_proposta ? {} : {
         desconto_tarifa: parseFloat(dados.desconto_tarifa),
         desconto_bandeira: parseFloat(dados.desconto_bandeira)
       })
     };
 
-    console.log('🔍 Payload sendo enviado:', payload); // ✅ DEBUG
+    console.log('🔍 Payload sendo enviado:', payload);
     onSave(payload);
   };
 
