@@ -1139,7 +1139,19 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDisponiveis }) => {
   const { user, getMyTeam } = useAuth(); 
   const { showNotification } = useNotification();
-  const [statusDocumento, setStatusDocumento] = useState(null);
+  const [statusDocumentos, setStatusDocumentos] = useState({}); 
+  // ✅ Função para obter status específico da UC
+  const getStatusDocumentoUC = (numeroUC) => {
+    return statusDocumentos[numeroUC] || null;
+  };
+
+  // ✅ Função para definir status específico da UC
+  const setStatusDocumentoUC = (numeroUC, status) => {
+    setStatusDocumentos(prev => ({
+      ...prev,
+      [numeroUC]: status
+    }));
+  };
   const [dados, setDados] = useState({ 
     ...item,
     consultor_id: item.consultor_id || null,
@@ -1186,29 +1198,34 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     if (!propostaId) return;
     
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-            'Content-Type': 'application/json'
-          }
+      // ✅ CORREÇÃO: Incluir número da UC na consulta
+      const numeroUC = dados.numeroUC || dados.numero_uc;
+      const statusUrl = numeroUC 
+        ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status?numero_uc=${numeroUC}`
+        : `${process.env.REACT_APP_API_URL}/documentos/propostas/${propostaId}/status`;
+
+      const response = await fetch(statusUrl, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (response.ok) {
         const result = await response.json();
-        setStatusDocumento(result.documento);
+        if (result.success && result.documento) {
+          // ✅ CORREÇÃO: Usar função específica por UC
+          const numeroUCDocumento = result.documento.numero_uc;
+          if (numeroUCDocumento) {
+            setStatusDocumentoUC(numeroUCDocumento, result.documento);
+          }
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar status do documento:', error);
     }
   };
 
-  // ADICIONAR useEffect para buscar status:
-  useEffect(() => {
-    buscarStatusDocumento();
-  }, [item?.propostaId, item?.id]);
   
   const [faturaArquivo, setFaturaArquivo] = useState(null);
 
@@ -1879,8 +1896,8 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   <GerarTermoButton
                     proposta={{ id: dados.propostaId || item.propostaId }}
                     dados={dados}
-                    statusDocumento={statusDocumento}
-                    setStatusDocumento={setStatusDocumento}
+                    statusDocumento={getStatusDocumentoUC(dados.numeroUC || dados.numero_uc)} // ✅ Status específico
+                    setStatusDocumento={(status) => setStatusDocumentoUC(dados.numeroUC || dados.numero_uc, status)} // ✅ Setter específico
                     onClose={onClose}
                     onSalvarAntes={async (dadosParaSalvar) => {
                       await onSave(dadosParaSalvar);

@@ -25,6 +25,20 @@ const GerarTermoButton = ({
 
   useEffect(() => {
     if (!dados?.propostaId) return;
+    
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+    if (!numeroUC) {
+      console.log('⚠️ GerarTermoButton: numeroUC não encontrado, mantendo estado inicial');
+      setEtapa('inicial');
+      setStatusDocumento(null);
+      setPdfGerado(null);
+      return;
+    }
+
+    // ✅ ADICIONAR TIMEOUT PARA EVITAR MUITAS REQUISIÇÕES
+    const timeoutId = setTimeout(() => {
+      verificarEstado();
+    }, 500); // Aguardar 500ms antes de executar
 
     const verificarEstado = async () => {
       try {
@@ -48,11 +62,8 @@ const GerarTermoButton = ({
           }
         }
 
-        // 2. ✅ CORREÇÃO: Verificar documento específico da UC
-        const numeroUC = dados.numeroUC || dados.numero_uc;
-        const statusUrl = numeroUC 
-          ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`
-          : `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status`;
+        // 2. Se não tem PDF temporário, verificar documento enviado
+        const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
 
         const statusResponse = await fetch(statusUrl, {
           headers: {
@@ -64,13 +75,9 @@ const GerarTermoButton = ({
         if (statusResponse.ok) {
           const result = await statusResponse.json();
           if (result.success && result.documento) {
-            // ✅ VERIFICAR SE O DOCUMENTO É REALMENTE DESTA UC
             if (!numeroUC || result.documento.numero_uc === numeroUC) {
               console.log('📄 Documento específico encontrado para UC:', numeroUC);
               setStatusDocumento(result.documento);
-            } else {
-              console.log('📄 Documento encontrado mas é de outra UC');
-              // Não definir status para esta UC
             }
           }
         }
@@ -80,78 +87,41 @@ const GerarTermoButton = ({
       }
     };
 
-    verificarEstado();
-  }, [dados?.propostaId, setStatusDocumento]);
-
-  useEffect(() => {
-    const buscarStatusDocumento = async () => {
-      if (!dados?.propostaId) return;
-
-      try {
-        // ✅ CORREÇÃO: Incluir número da UC na consulta
-        const numeroUC = dados.numeroUC || dados.numero_uc;
-        const statusUrl = numeroUC 
-          ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`
-          : `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status`;
-
-        const response = await fetch(statusUrl, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.documento) {
-            // ✅ VERIFICAR SE É REALMENTE DESTA UC
-            if (!numeroUC || result.documento.numero_uc === numeroUC) {
-              console.log('📄 Documento específico encontrado:', result.documento);
-              
-              if (typeof setStatusDocumento === 'function') {
-                setStatusDocumento(result.documento);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao buscar status do documento:', error);
-      }
+    // ✅ CLEANUP: Cancelar timeout se componente desmontar
+    return () => {
+      clearTimeout(timeoutId);
     };
+  }, [dados?.propostaId, dados?.numeroUC, dados?.numero_uc, setStatusDocumento]);
 
-    buscarStatusDocumento();
-  }, [dados?.propostaId, setStatusDocumento]);
-
-    // Determinar etapa atual baseada no status do documento
-    useEffect(() => {
-      if (statusDocumento) {
-        if (statusDocumento.status === 'signed' || statusDocumento.status === 'SIGNED' || statusDocumento.status === 'Assinado') {
-          setEtapa('assinado');
-        } else if (
-          statusDocumento.status === 'rejected' || 
-          statusDocumento.status === 'REJECTED' || 
-          statusDocumento.status === 'Rejeitado'
-        ) {
-          // ✅ NOVA ETAPA: Documento foi rejeitado
-          setEtapa('rejeitado');
-        } else if (
-          statusDocumento.status === 'pending' || 
-          statusDocumento.status === 'PENDING' || 
-          statusDocumento.status === 'Pendente' ||
-          statusDocumento.status === 'Aguardando Assinatura'
-        ) {
-          setEtapa('pendente-assinatura');
-        } else {
-          setEtapa('inicial');
-        }
-      } else if (pdfGerado) {
-        setEtapa('pdf-gerado');
+  // Determinar etapa atual baseada no status do documento
+  useEffect(() => {
+    if (statusDocumento) {
+      if (statusDocumento.status === 'signed' || statusDocumento.status === 'SIGNED' || statusDocumento.status === 'Assinado') {
+        setEtapa('assinado');
+      } else if (
+        statusDocumento.status === 'rejected' || 
+        statusDocumento.status === 'REJECTED' || 
+        statusDocumento.status === 'Rejeitado'
+      ) {
+        // ✅ NOVA ETAPA: Documento foi rejeitado
+        setEtapa('rejeitado');
+      } else if (
+        statusDocumento.status === 'pending' || 
+        statusDocumento.status === 'PENDING' || 
+        statusDocumento.status === 'Pendente' ||
+        statusDocumento.status === 'Aguardando Assinatura'
+      ) {
+        setEtapa('pendente-assinatura');
       } else {
         setEtapa('inicial');
       }
-    }, [statusDocumento, pdfGerado]);
+    } else if (pdfGerado) {
+      setEtapa('pdf-gerado');
+    } else {
+      setEtapa('inicial');
+    }
+  }, [statusDocumento, pdfGerado]);
 
-  // NOVO useEffect - Lógica automática de checkboxes baseada nos campos preenchidos
   useEffect(() => {
     const emailPreenchido = dados?.emailRepresentante && dados.emailRepresentante.trim() !== '';
     const whatsappPreenchido = dados?.whatsappRepresentante && dados.whatsappRepresentante.trim() !== '';
@@ -174,6 +144,19 @@ const GerarTermoButton = ({
       setEnvioWhatsApp(false);
     }
   }, [dados?.emailRepresentante, dados?.whatsappRepresentante]);
+
+  useEffect(() => {
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+    
+    if (!numeroUC) {
+      // Se não tem numeroUC, resetar completamente
+      console.log('🔄 GerarTermoButton: Resetando estado (sem numeroUC)');
+      setEtapa('inicial');
+      setStatusDocumento(null);
+      setPdfGerado(null);
+      setMostrarOpcoesEnvio(false);
+    }
+  }, [dados?.numeroUC, dados?.numero_uc, setStatusDocumento]);
 
   console.log('DEBUG GerarTermoButton:', {
     etapa,
@@ -198,39 +181,71 @@ const GerarTermoButton = ({
     try {
       // Salvar dados antes se necessário
       if (onSalvarAntes) {
-        await onSalvarAntes({
-          ...dados,
-          termoAdesao: null // Limpar termo antigo
-        });
+        try {
+          await onSalvarAntes({
+            ...dados,
+            termoAdesao: null
+          });
+        } catch (saveError) {
+          if (saveError.message?.includes('429') || saveError.message?.includes('Too Many')) {
+            console.log('⚠️ Rate limit no salvamento, continuando com geração do PDF...');
+          } else {
+            throw saveError; // Re-lançar se não for rate limit
+          }
+        }
       }
 
       console.log('📄 Gerando PDF apenas...');
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf-apenas`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(dados)
-        }
-      );
+      
+      // ✅ FUNÇÃO COM RETRY
+      const tentarGerarPDF = async (tentativa = 1, maxTentativas = 3) => {
+        try {
+          const response = await fetch(
+            `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf-apenas`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                ...dados,
+                numeroUC: dados.numeroUC || dados.numero_uc,
+                nomeCliente: dados.nomeCliente || dados.nome_cliente
+              })
+            }
+          );
 
-      const result = await response.json();
+          if (response.status === 429 && tentativa < maxTentativas) {
+            const waitTime = tentativa * 2000; // 2s, 4s, 6s
+            console.log(`⏳ Rate limit (tentativa ${tentativa}/${maxTentativas}), aguardando ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            return await tentarGerarPDF(tentativa + 1, maxTentativas);
+          }
 
-      if (response.ok && result.success) {
-        if (result.requires_frontend_processing) {
-          // PDF precisa ser processado no frontend
-          console.log('📤 Processando PDF no frontend...');
-          await processarPDFNoFrontend(result.dados, result.template_url);
-        } else {
-          // PDF foi gerado no backend
-          console.log('✅ PDF gerado no backend:', result.pdf);
-          setPdfGerado(result.pdf);
-          setEtapa('pdf-gerado');
-          alert('✅ PDF gerado com sucesso! Você pode visualizá-lo antes de enviar.');
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          if (tentativa < maxTentativas && (error.message.includes('429') || error.message.includes('Too Many'))) {
+            const waitTime = tentativa * 2000;
+            console.log(`⏳ Erro de rate limit (tentativa ${tentativa}/${maxTentativas}), aguardando ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            return await tentarGerarPDF(tentativa + 1, maxTentativas);
+          }
+          throw error;
         }
+      };
+
+      const result = await tentarGerarPDF();
+
+      if (result.success) {
+        console.log('✅ PDF gerado no backend:', result.pdf);
+        setPdfGerado(result.pdf);
+        setEtapa('pdf-gerado');
+        alert('✅ PDF gerado com sucesso! Você pode visualizá-lo antes de enviar.');
       } else {
         console.error('❌ Erro ao gerar PDF:', result);
         alert(`❌ Erro: ${result.message}`);
@@ -238,7 +253,11 @@ const GerarTermoButton = ({
 
     } catch (error) {
       console.error('❌ Erro interno:', error);
-      alert('❌ Erro interno ao gerar PDF. Tente novamente.');
+      if (error.message?.includes('429') || error.message?.includes('Too Many')) {
+        alert('❌ Muitas requisições simultâneas. Aguarde alguns segundos e tente novamente.');
+      } else {
+        alert('❌ Erro interno ao gerar PDF. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
