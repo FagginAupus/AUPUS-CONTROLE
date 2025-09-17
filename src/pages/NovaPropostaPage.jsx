@@ -170,10 +170,10 @@ const NovaPropostaPage = () => {
       
       if (user?.role === 'admin') {
         const consultores = team.filter(member => member.role === 'consultor');
-        // Adicionar opção "sem consultor" com ID especial
+        // ✅ CORREÇÃO: Usar null em vez de string vazia
         setConsultoresDisponiveis([
           ...consultores.map(member => ({ id: member.id, name: member.name })),
-          { id: '', name: 'Sem consultor (AUPUS direto)' }
+          { id: null, name: 'Sem consultor (AUPUS direto)' } // ← MUDANÇA AQUI
         ]);
       } else if (user?.role === 'consultor') {
         const funcionarios = team.filter(member => 
@@ -252,16 +252,17 @@ const NovaPropostaPage = () => {
   useEffect(() => {
     // Só ajustar recorrência se o usuário pode vê-la
     if (user?.role === 'admin' || user?.role === 'consultor') {
-      if (watchConsultor === 'Sem consultor (AUPUS direto)') {
+      // ✅ CORREÇÃO: Comparar com null em vez de string
+      if (watchConsultor === null || watchConsultor === '') {
         setValue('recorrencia', '0%');
-      } else if (watchConsultor && watchConsultor !== 'Sem consultor (AUPUS direto)') {
+      } else if (watchConsultor && watchConsultor !== null && watchConsultor !== '') {
         setValue('recorrencia', '3%');
       }
     } else {
       // Para gerente e vendedor, sempre setar como vazio ou valor padrão oculto
       setValue('recorrencia', '');
-  }
-}, [watchConsultor, setValue, user?.role]);
+    }
+  }, [watchConsultor, setValue, user?.role]);
 
   const limparFormulario = () => {
     reset({
@@ -335,8 +336,11 @@ const NovaPropostaPage = () => {
     try {
       console.log('📋 Dados do formulário:', data);
 
-      const consultorSelecionado = consultoresDisponiveis.find(c => c.id === data.consultor_id);
-      const consultorNome = consultorSelecionado?.name || data.consultor || '';
+      let consultorNome = 'Sem consultor';
+      if (data.consultor_id && data.consultor_id !== '') {
+        const consultorSelecionado = consultoresDisponiveis.find(c => c.id === data.consultor_id);
+        consultorNome = consultorSelecionado?.name || 'Consultor não encontrado';
+      }
 
       if (!consultorNome) {
         showNotification('Selecione um consultor responsável', 'error');
@@ -354,7 +358,7 @@ const NovaPropostaPage = () => {
       
       const propostaParaBackend = {
         nomeCliente: data.nomeCliente,
-        consultor_id: data.consultor_id,
+        consultor_id: data.consultor_id || null,
         consultor: consultorNome,
         data_proposta: data.dataProposta,
         status: 'Aguardando',
@@ -726,7 +730,7 @@ const NovaPropostaPage = () => {
                   >
                     <option value="">Selecione o consultor</option>
                     {consultoresDisponiveis.map((consultor, index) => (
-                      <option key={index} value={consultor.id}>
+                      <option key={index} value={consultor.id || ''}>
                         {consultor.name}
                       </option>
                     ))}

@@ -608,6 +608,12 @@ class StorageService {
     // ========================================
 
     mapearPropostaParaBackend(proposta) {
+
+        let consultorIdFinal = proposta.consultor_id;
+        if (consultorIdFinal === '' || consultorIdFinal === 'null' || consultorIdFinal === undefined) {
+            consultorIdFinal = null;
+        }
+
         console.log('🔄 Mapeando proposta para backend:', proposta);
 
         // ✅ SE FOR CANCELAMENTO DE UC, ENVIAR APENAS OS CAMPOS NECESSÁRIOS
