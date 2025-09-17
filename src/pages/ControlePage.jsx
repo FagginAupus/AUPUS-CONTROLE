@@ -1262,10 +1262,29 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           });
 
           // LÓGICA DA CALIBRAGEM (mantém como estava)
-          const temCalibragemIndividual = dadosUC.calibragem_individual !== null && 
-                                          dadosUC.calibragem_individual !== undefined && 
-                                          dadosUC.calibragem_individual !== '';
-          const usarGlobal = !temCalibragemIndividual;
+          const calibragemIndividualValue = dadosUC.calibragem_individual;
+
+          console.log('🎯 Debug calibragem:', {
+            calibragem_individual_raw: calibragemIndividualValue,
+            tipo: typeof calibragemIndividualValue,
+            is_null: calibragemIndividualValue === null,
+            is_undefined: calibragemIndividualValue === undefined,
+            is_empty_string: calibragemIndividualValue === '',
+            is_zero: calibragemIndividualValue === 0
+          });
+
+          const temCalibragemIndividual = calibragemIndividualValue !== null && 
+                                calibragemIndividualValue !== undefined && 
+                                calibragemIndividualValue !== '' &&
+                                !(typeof calibragemIndividualValue === 'number' && calibragemIndividualValue === 0);
+
+          const usarCalibragemGlobal = !temCalibragemIndividual;
+          
+          console.log('🎯 Resultado da lógica:', {
+            tem_calibragem_individual: temCalibragemIndividual,
+            usar_calibragem_global: usarCalibragemGlobal,
+            valor_final: calibragemIndividualValue
+          });
 
           setDados({
             numero_proposta: dadosUC.numero_proposta || '',
@@ -1275,8 +1294,8 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             consumo_medio: dadosUC.consumo_medio || '',
             observacoes: dadosUC.observacoes || '',
             // CALIBRAGEM
-            calibragemIndividual: dadosUC.calibragem_individual || '',
-            usa_calibragem_global: usarGlobal,
+            calibragemIndividual: calibragemIndividualValue || '',
+            usa_calibragem_global: usarCalibragemGlobal,
             calibragem_global: dadosUC.calibragem_global || 0,
             // ✅ DESCONTOS CORRIGIDOS
             desconto_tarifa: descontoTarifaAtual,
