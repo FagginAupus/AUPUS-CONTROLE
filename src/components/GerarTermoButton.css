@@ -641,3 +641,241 @@
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
   transition: all 0.2s ease;
 }
+
+/* ✅ ESTILOS PARA UPLOAD MANUAL - ADICIONAR ao arquivo GerarTermoButton.css */
+
+/* Seção PDF gerado com duas opções */
+.acoes-pdf-gerado {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.btn-visualizar-pdf {
+  align-self: flex-start;
+}
+
+.opcoes-pos-pdf {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.opcoes-pos-pdf h5 {
+  margin: 0 0 8px 0;
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.opcoes-help {
+  margin: 0 0 16px 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.opcoes-envio-manual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-autentique {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-autentique:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-upload-manual {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-upload-manual:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* Container do upload manual */
+.upload-manual-container {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.upload-manual-container h5 {
+  margin: 0 0 8px 0;
+  color: #1976d2;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.upload-help {
+  margin: 0 0 16px 0;
+  color: #424242;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.upload-area {
+  margin-bottom: 16px;
+}
+
+.upload-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #2196f3;
+  border-radius: 6px;
+  background: white;
+  color: #424242;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.upload-input:hover {
+  border-color: #1976d2;
+  background: #f5f5f5;
+}
+
+.upload-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.arquivo-selecionado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid #2196f3;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.arquivo-info {
+  color: #424242;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-remover-arquivo {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.btn-remover-arquivo:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.upload-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.upload-actions .btn {
+  min-width: 120px;
+  padding: 10px 16px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .opcoes-envio-manual {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .btn-autentique,
+  .btn-upload-manual {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .upload-manual-container {
+    padding: 16px;
+  }
+  
+  .upload-actions {
+    flex-direction: column;
+  }
+  
+  .upload-actions .btn {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .opcoes-pos-pdf {
+    padding: 12px;
+  }
+  
+  .opcoes-envio-manual {
+    gap: 6px;
+  }
+  
+  .btn-autentique,
+  .btn-upload-manual {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}

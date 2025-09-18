@@ -20,8 +20,9 @@ const GerarTermoButton = ({
   const [mostrarOpcoesEnvio, setMostrarOpcoesEnvio] = useState(false);
   const [envioWhatsApp, setEnvioWhatsApp] = useState(false);
   const [envioEmail, setEnvioEmail] = useState(true);
-  const [mostrarUploadManual, setMostrarUploadManual] = useState(false);
   const [arquivoUpload, setArquivoUpload] = useState(null);
+  const [mostrarUploadManual, setMostrarUploadManual] = useState(false);
+  const [arquivoUploadManual, setArquivoUploadManual] = useState(null);
 
   useEffect(() => {
     if (!dados?.propostaId) return;
@@ -176,7 +177,6 @@ const GerarTermoButton = ({
     pdfGerado,
     statusDocumento,
   });
-
 
   // NOVA FUNÇÃO: Gerar PDF apenas (sem enviar) - USANDO ENDPOINTS DEFINITIVOS
   const gerarPdfApenas = async () => {
@@ -614,19 +614,36 @@ const GerarTermoButton = ({
     }
   };
 
+  const mostrarOpcoesUploadManual = () => {
+    setMostrarUploadManual(true);
+  };
+
   const uploadTermoManual = async () => {
-    if (!arquivoUpload) {
-      alert('Selecione um arquivo PDF primeiro.');
+    if (!arquivoUploadManual) {
+      alert('❌ Selecione um arquivo PDF primeiro.');
+      return;
+    }
+
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+    if (!numeroUC) {
+      alert('❌ Número da UC é obrigatório.');
       return;
     }
 
     const formData = new FormData();
-    formData.append('arquivo', arquivoUpload);
+    formData.append('arquivo', arquivoUploadManual);
+    formData.append('numeroUC', numeroUC);
 
     setLoading(true);
     try {
+      console.log('📎 Iniciando upload manual do termo...', {
+        proposta_id: dados.propostaId,
+        numero_uc: numeroUC,
+        arquivo: arquivoUploadManual.name
+      });
+
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/upload-termo-assinado`,
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/upload-termo-manual`,
         {
           method: 'POST',
           headers: {
@@ -639,24 +656,57 @@ const GerarTermoButton = ({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        alert('✅ Termo assinado enviado com sucesso!');
-        setMostrarUploadManual(false);
-        setArquivoUpload(null);
+        console.log('✅ Upload manual realizado com sucesso:', result);
         
-        // Abrir o PDF enviado
+        alert(`✅ ${result.message}`);
+        
+        // ✅ RESETAR ESTADOS E ATUALIZAR PARA 'ASSINADO'
+        setArquivoUploadManual(null);
+        setMostrarUploadManual(false);
+        setPdfGerado(null); // Limpar PDF temporário
+        
+        // ✅ CRIAR statusDocumento simulando retorno da Autentique
+        const novoStatusDocumento = {
+          id: result.documento.id,
+          status: 'signed',
+          status_label: 'Assinado',
+          numero_uc: numeroUC,
+          uploaded_manually: true,
+          data_assinatura: result.documento.data_upload,
+          email_signatario: 'Upload Manual',
+          nome_documento: result.documento.nome,
+          url_documento: result.documento.url
+        };
+        
+        setStatusDocumento(novoStatusDocumento);
+        setEtapa('assinado');
+        
+        // ✅ ABRIR O DOCUMENTO AUTOMATICAMENTE
         if (result.documento?.url) {
           window.open(result.documento.url, '_blank');
         }
+
+        // ✅ NOTIFICAR COMPONENTE PAI PARA REFRESH (se existir callback)
+        if (typeof onSalvarAntes === 'function') {
+          onSalvarAntes(dados);
+        }
+
       } else {
-        alert(`❌ Erro: ${result.message}`);
+        console.error('❌ Erro no upload manual:', result);
+        alert(`❌ Erro: ${result.message || 'Falha no upload do arquivo'}`);
       }
 
     } catch (error) {
-      console.error('❌ Erro no upload:', error);
-      alert('❌ Erro interno no upload.');
+      console.error('❌ Erro interno no upload manual:', error);
+      alert('❌ Erro interno no upload. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelarUploadManual = () => {
+    setMostrarUploadManual(false);
+    setArquivoUploadManual(null);
   };
 
   // Campos obrigatórios faltantes
@@ -706,189 +756,205 @@ const GerarTermoButton = ({
             <small>Tamanho: {Math.round(pdfGerado.tamanho / 1024)} KB | {pdfGerado.gerado_em}</small>
           </div>
 
-          <button
-            onClick={visualizarPDFTermo}
-            className="btn btn-warning"
-          >
-            <Eye size={16} />
-            Visualizar PDF
-          </button>
+          <div className="acoes-pdf-gerado">
+            {/* Botão Visualizar PDF */}
+            <button
+              onClick={visualizarPDFTermo}
+              className="btn btn-warning btn-visualizar-pdf"
+              disabled={loading}
+            >
+              <Eye size={16} />
+              Visualizar PDF
+            </button>
 
-          <button
-            onClick={(e) => {
-              e.preventDefault(); // Prevenir submit do form
-              e.stopPropagation(); // Prevenir propagação
-              setMostrarOpcoesEnvio(!mostrarOpcoesEnvio);
-            }}
-            className="btn btn-success"
-          >
-            <Send size={16} />
-            Enviar para Assinatura
-          </button>
+            {/* ✅ NOVA SEÇÃO: Duas opções principais */}
+            <div className="opcoes-pos-pdf">
+              <h5>Como prosseguir com o termo?</h5>
+              <p className="opcoes-help">Escolha uma das opções abaixo:</p>
+              
+              <div className="opcoes-envio-manual">
+                {/* ✅ OPÇÃO 1: Enviar pela Autentique */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMostrarOpcoesEnvio(!mostrarOpcoesEnvio);
+                  }}
+                  className="btn btn-success btn-autentique"
+                  disabled={loading}
+                >
+                  <Send size={16} />
+                  Enviar pela Autentique
+                </button>
 
-          {mostrarOpcoesEnvio && (
-            <div className="opcoes-envio">
-              <h5>Como enviar?</h5>
-              <p className="opcoes-help">Selecione apenas uma opção:</p>
-              
-              {/* Checkbox Email - com ícone Lucide */}
-              <label 
-                className={`checkbox-label-custom ${envioEmail ? 'checked' : ''} ${(!dados?.emailRepresentante || dados.emailRepresentante.trim() === '') ? 'disabled' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Só permitir clicar se campo estiver preenchido
-                  if (dados?.emailRepresentante && dados.emailRepresentante.trim() !== '') {
-                    setEnvioEmail(true);
-                    setEnvioWhatsApp(false); // Desmarcar o outro
-                  }
-                }}
-              >
-                <div className="checkbox-container-custom">
-                  <input
-                    type="checkbox"
-                    checked={envioEmail}
-                    onChange={() => {}} // Desabilitado - usar apenas o onClick do label
-                    className="checkbox-input-hidden"
-                    id="envio-email"
-                    disabled={!dados?.emailRepresentante || dados.emailRepresentante.trim() === ''}
-                  />
-                  <div className={`checkbox-visual-custom ${envioEmail ? 'checked' : ''}`}>
-                    {envioEmail && (
-                      <svg 
-                        width="12" 
-                        height="12" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20,6 9,17 4,12"></polyline>
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                <div className="checkbox-content-custom">
-                  <Mail size={16} className="checkbox-icon-custom" />
-                  <span className="checkbox-text-custom">
-                    E-mail
-                    {(!dados?.emailRepresentante || dados.emailRepresentante.trim() === '') && 
-                      <small style={{color: '#dc3545', marginLeft: '8px'}}>(campo não preenchido)</small>
-                    }
-                  </span>
-                </div>
-              </label>
-              
-              {/* Checkbox WhatsApp - com ícone Lucide */}
-              <label 
-                className={`checkbox-label-custom ${envioWhatsApp ? 'checked' : ''} ${(!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') ? 'disabled' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Só permitir clicar se campo estiver preenchido
-                  if (dados?.whatsappRepresentante && dados.whatsappRepresentante.trim() !== '') {
-                    setEnvioWhatsApp(true);
-                    setEnvioEmail(false); // Desmarcar o outro
-                  }
-                }}
-              >
-                <div className="checkbox-container-custom">
-                  <input
-                    type="checkbox"
-                    checked={envioWhatsApp}
-                    onChange={() => {}} // Desabilitado - usar apenas o onClick do label
-                    className="checkbox-input-hidden"
-                    id="envio-whatsapp"
-                    disabled={!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === ''}
-                  />
-                  <div className={`checkbox-visual-custom ${envioWhatsApp ? 'checked' : ''}`}>
-                    {envioWhatsApp && (
-                      <svg 
-                        width="12" 
-                        height="12" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20,6 9,17 4,12"></polyline>
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                <div className="checkbox-content-custom">
-                  <MessageCircle size={16} className="checkbox-icon-custom" />
-                  <span className="checkbox-text-custom">
-                    WhatsApp
-                    {(!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') && 
-                      <small style={{color: '#dc3545', marginLeft: '8px'}}>(campo não preenchido)</small>
-                    }
-                  </span>
-                </div>
-              </label>
-              
-              {/* Validação visual - ATUALIZADA */}
-              {!envioEmail && !envioWhatsApp && (
-                <div className="opcoes-erro">
-                  <X size={14} />
-                  <span>
-                    {(!dados?.emailRepresentante || dados.emailRepresentante.trim() === '') && (!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') ?
-                      'Preencha pelo menos um dos campos (E-mail ou WhatsApp) para enviar' :
-                      'Selecione uma opção de envio'
-                    }
-                  </span>
-                </div>
-              )}
-
-              {/* REMOVER a mensagem de duplo envio - não vai mais acontecer */}
-              {(envioEmail || envioWhatsApp) && (
-                <div className="opcoes-sucesso">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20,6 9,17 4,12"></polyline>
-                  </svg>
-                  <span>
-                    Será enviado por {envioEmail ? 'E-mail' : 'WhatsApp'}
-                  </span>
-                </div>
-              )}
-                                
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  enviarParaAutentique();
-                }}
-                disabled={loading || (!envioEmail && !envioWhatsApp)}
-                className={`btn btn-primary ${loading ? 'loading' : ''} ${(!envioEmail && !envioWhatsApp) ? 'btn-disabled' : ''}`}
-              >
-                {loading ? (
-                  <>
-                    <Loader className="animate-spin" size={16} />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} />
-                    Confirmar Envio
-                    {envioEmail ? ' (E-mail)' : envioWhatsApp ? ' (WhatsApp)' : ''}
-                  </>
-                )}
-              </button>
+                {/* ✅ OPÇÃO 2: Upload Manual */}
+                <button
+                  onClick={mostrarOpcoesUploadManual}
+                  className="btn btn-primary btn-upload-manual"
+                  disabled={loading}
+                >
+                  <FileText size={16} />
+                  Adicionar Termo Já Assinado
+                </button>
+              </div>
             </div>
-          )}
 
+            {/* ✅ Opções de envio Autentique (mantém funcionamento atual) */}
+            {mostrarOpcoesEnvio && (
+              <div className="opcoes-envio">
+                <h5>Como enviar?</h5>
+                <p className="opcoes-help">Selecione apenas uma opção:</p>
+                
+                {/* Checkbox Email - com ícone Lucide */}
+                <label 
+                  className={`checkbox-label-custom ${envioEmail ? 'checked' : ''} ${
+                    !dados?.emailRepresentante || dados.emailRepresentante.trim() === '' ? 'disabled' : ''
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="checkbox-input"
+                    checked={envioEmail}
+                    disabled={!dados?.emailRepresentante || dados.emailRepresentante.trim() === ''}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setEnvioEmail(true);
+                        setEnvioWhatsApp(false);
+                      } else {
+                        setEnvioEmail(false);
+                      }
+                    }}
+                  />
+                  <div className="checkbox-visual-custom">
+                    {envioEmail && <Check size={12} />}
+                  </div>
+                  <Mail className="checkbox-icon-custom" size={16} />
+                  <span className="checkbox-text-custom">
+                    Enviar por Email {!dados?.emailRepresentante ? '(Email não informado)' : `(${dados.emailRepresentante})`}
+                  </span>
+                </label>
 
-          <button
-            onClick={() => {
-              setPdfGerado(null);
-              setEtapa('inicial');
-            }}
-            className="btn btn-secondary"
-          >
-            🔄 Gerar Novamente
-          </button>
+                {/* Checkbox WhatsApp - com ícone Lucide */}
+                <label 
+                  className={`checkbox-label-custom ${envioWhatsApp ? 'checked' : ''} ${
+                    !dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === '' ? 'disabled' : ''
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="checkbox-input"
+                    checked={envioWhatsApp}
+                    disabled={!dados?.whatsappRepresentante || dados.whatsappRepresentante.trim() === ''}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setEnvioWhatsApp(true);
+                        setEnvioEmail(false);
+                      } else {
+                        setEnvioWhatsApp(false);
+                      }
+                    }}
+                  />
+                  <div className="checkbox-visual-custom">
+                    {envioWhatsApp && <Check size={12} />}
+                  </div>
+                  <MessageCircle className="checkbox-icon-custom" size={16} />
+                  <span className="checkbox-text-custom">
+                    Enviar por WhatsApp {!dados?.whatsappRepresentante ? '(WhatsApp não informado)' : `(${dados.whatsappRepresentante})`}
+                  </span>
+                </label>
+
+                {(envioEmail || envioWhatsApp) && (
+                  <div className="opcoes-info">
+                    <strong>ℹ️ Informação:</strong> O cliente receberá um link para assinar digitalmente o documento.
+                  </div>
+                )}
+
+                {/* Botão Enviar */}
+                <button
+                  onClick={enviarParaAutentique}
+                  disabled={loading || (!envioEmail && !envioWhatsApp)}
+                  className={`btn btn-success btn-confirmar-envio ${loading ? 'loading' : ''}`}
+                >
+                  {loading ? (
+                    <>
+                      <Loader className="animate-spin" size={16} />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Confirmar Envio
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* ✅ NOVA SEÇÃO: Opções de Upload Manual */}
+            {mostrarUploadManual && (
+              <div className="upload-manual-container">
+                <h5>📎 Adicionar Termo Já Assinado</h5>
+                <p className="upload-help">
+                  Se você já possui o termo assinado pelo cliente, pode fazer o upload direto aqui. 
+                  O sistema irá automaticamente alterar o status da UC para "Fechada" e adicionar ao controle.
+                </p>
+                
+                <div className="upload-area">
+                  <input
+                    type="file"
+                    id="arquivo-upload-manual"
+                    accept=".pdf"
+                    onChange={(e) => setArquivoUploadManual(e.target.files[0])}
+                    className="upload-input"
+                  />
+                  
+                  {arquivoUploadManual && (
+                    <div className="arquivo-selecionado">
+                      <span className="arquivo-info">
+                        📄 {arquivoUploadManual.name} ({Math.round(arquivoUploadManual.size / 1024)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setArquivoUploadManual(null)}
+                        className="btn-remover-arquivo"
+                        title="Remover arquivo"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="upload-actions">
+                  <button
+                    onClick={uploadTermoManual}
+                    disabled={!arquivoUploadManual || loading}
+                    className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader className="animate-spin" size={16} />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <FileText size={16} />
+                        Confirmar Upload
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={cancelarUploadManual}
+                    className="btn btn-secondary"
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
 
