@@ -9,6 +9,8 @@ import { useData } from '../context/DataContext';
 import storageService from '../services/storageService'; 
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 import GerarTermoButton from '../components/GerarTermoButton';
+import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
+import exportXmlService from '../services/exportXmlService';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -628,13 +630,31 @@ const ProspecPage = () => {
     navigate('/nova-proposta');
   };
 
-  const exportarDados = async () => {
+  const abrirModalExportacao = () => {
+    setModalExportacao(true);
+  };
+
+  const executarExportacao = async (filtros) => {
     try {
-      await storageService.exportarDadosFiltrados('prospec', dadosFiltrados);
-      showNotification('Dados exportados com sucesso!', 'success');
+      setLoading(true);
+      showNotification('Preparando exportação XML...', 'info');
+
+      let todosOsDados;
+      if (user?.role === 'admin') {
+        todosOsDados = await storageService.getProspec();
+      } else {
+        const dadosCompletos = await storageService.getProspec();
+        todosOsDados = dadosCompletos;
+      }
+
+      const resultado = await exportXmlService.exportarProspecParaXml(todosOsDados, filtros);
+      showNotification(`Exportação concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
+      
     } catch (error) {
-      console.error('❌ Erro ao exportar:', error);
-      showNotification('Erro ao exportar: ' + error.message, 'error');
+      console.error('❌ Erro na exportação:', error);
+      showNotification(`Erro na exportação: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -762,8 +782,13 @@ const ProspecPage = () => {
               <button onClick={criarNovaProposta} className="btn btn-success">
                 ➕ Nova Proposta
               </button>
-              <button onClick={exportarDados} className="btn btn-primary">
-                📊 Exportar CSV
+              <button 
+                onClick={abrirModalExportacao}  // ← TROCAR DE exportarDados
+                className="btn btn-primary"
+                disabled={dadosFiltrados.length === 0}
+              >
+                <Download size={16} />
+                Exportar XML  // ← TROCAR de "Exportar CSV"
               </button>
             </div>
           </div>
@@ -1131,6 +1156,14 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
           </button>
         </div>
       </div>
+
+      <ModalFiltrosExportacao
+        isOpen={modalExportacao}
+        onClose={() => setModalExportacao(false)}
+        onExportar={executarExportacao}
+        tipo="prospec"
+        consultores={consultoresUnicos}
+      />
     </div>
   );
 };
@@ -1236,6 +1269,8 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
 
   
   const [faturaArquivo, setFaturaArquivo] = useState(null);
+
+  const [modalExportacao, setModalExportacao] = useState(false);
 
 
   useEffect(() => {

@@ -77,73 +77,36 @@ const RelatoriosPage = () => {
     }
   }, [user, getMyTeam, showNotification]);
 
+  const [modalExportacao, setModalExportacao] = useState({ isOpen: false, tipo: '' });
+
+  const exportarProspec = () => {
+    setModalExportacao({ isOpen: true, tipo: 'prospec' });
+  };
+
+  const exportarControle = () => {
+    setModalExportacao({ isOpen: true, tipo: 'controle' });
+  };
   useEffect(() => {
     carregarEstatisticas();
   }, [carregarEstatisticas]);
 
-  const exportarProspec = async () => {
+  const executarExportacao = async (filtros) => {
     try {
       setLoading(true);
-      showNotification('Preparando exportação...', 'info');
-
-      if (user?.role === 'admin') {
-        // Admin exporta todos os dados com consultor responsável
-        const allData = await storageService.getProspec();
-        const dataWithResponsible = allData.map(item => ({
-          ...item,
-          consultor: getConsultorName(item.consultor)
-        }));
-        
-        await storageService.exportarDadosFiltrados('prospec', dataWithResponsible);
-      } else {
-        // Outros usuários exportam apenas dados da equipe
-        const teamNames = getMyTeam().map(member => member.name);
-        const allData = await storageService.getProspec();
-        const filteredData = allData.filter(item => 
-          teamNames.includes(item.consultor)
-        );
-        
-        await storageService.exportarDadosFiltrados('prospec', filteredData);
+      const { tipo } = modalExportacao;
+      
+      let todosOsDados;
+      if (tipo === 'prospec') {
+        todosOsDados = await storageService.getProspec();
+        const resultado = await exportXmlService.exportarProspecParaXml(todosOsDados, filtros);
+        showNotification(`Prospecção exportada! ${resultado.totalRegistros} registros`, 'success');
+      } else if (tipo === 'controle') {
+        todosOsDados = await storageService.getControle();
+        const resultado = await exportXmlService.exportarControleParaXml(todosOsDados, filtros);
+        showNotification(`Controle exportado! ${resultado.totalRegistros} registros`, 'success');
       }
-
-      showNotification('Relatório de prospecção exportado com sucesso!', 'success');
     } catch (error) {
-      console.error('❌ Erro ao exportar prospec:', error);
-      showNotification('Erro ao exportar: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const exportarControle = async () => {
-    try {
-      setLoading(true);
-      showNotification('Preparando exportação...', 'info');
-
-      if (user?.role === 'admin') {
-        // Admin exporta todos os dados com consultor responsável
-        const allData = await storageService.getControle();
-        const dataWithResponsible = allData.map(item => ({
-          ...item,
-          consultor: getConsultorName(item.consultor)
-        }));
-        
-        await storageService.exportarDadosFiltrados('controle', dataWithResponsible);
-      } else {
-        // Outros usuários exportam apenas dados da equipe
-        const teamNames = getMyTeam().map(member => member.name);
-        const allData = await storageService.getControle();
-        const filteredData = allData.filter(item => 
-          teamNames.includes(item.consultor)
-        );
-        
-        await storageService.exportarDadosFiltrados('controle', filteredData);
-      }
-
-      showNotification('Relatório de controle exportado com sucesso!', 'success');
-    } catch (error) {
-      console.error('❌ Erro ao exportar controle:', error);
-      showNotification('Erro ao exportar: ' + error.message, 'error');
+      showNotification(`Erro: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -404,6 +367,15 @@ const RelatoriosPage = () => {
             )}
           </>
         )}
+
+        <ModalFiltrosExportacao
+          isOpen={modalExportacao.isOpen}
+          onClose={() => setModalExportacao({ isOpen: false, tipo: '' })}
+          onExportar={executarExportacao}
+          tipo={modalExportacao.tipo}
+          consultores={consultoresUnicos}
+        />
+        
       </div>
     </div>
   );

@@ -6,7 +6,8 @@ import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
-
+import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
+import exportXmlService from '../services/exportXmlService';
 import { useData } from '../context/DataContext';
 import { 
   Database, 
@@ -55,7 +56,6 @@ const ControlePage = () => {
     }
   }, [isAdmin, calibragem.valor, calibragem.loading, loadCalibragem]);
 
-
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [modalStatusTroca, setModalStatusTroca] = useState({ show: false, item: null, index: -1 });
@@ -69,6 +69,49 @@ const ControlePage = () => {
 
   const { showNotification } = useNotification();
   const debouncedFiltros = useMemo(() => filtros, [filtros]);
+
+  const abrirModalExportacao = () => {
+    setModalExportacao(true);
+  };
+
+  const executarExportacao = async (filtros) => {
+    try {
+      setLoading(true);
+      showNotification('Preparando exportação XML do controle...', 'info');
+
+      let todosOsDados;
+      if (user?.role === 'admin') {
+        todosOsDados = await storageService.getControle();
+      } else {
+        const dadosCompletos = await storageService.getControle();
+        todosOsDados = dadosCompletos;
+      }
+
+      // Transformar dados para formato esperado
+      const dadosParaExportacao = todosOsDados.map(item => ({
+        id: item.id,
+        controle_id: item.id,
+        consultorNome: item.consultor || item.consultorNome,
+        numeroUC: item.numeroUC || item.numero_unidade,
+        apelido: item.apelido,
+        consumoMedio: item.consumoMedio || item.consumo_medio,
+        economia: item.economia || item.valorCalibrado || item.valor_calibrado,
+        bandeira: item.bandeira || item.descontoBandeira || item.desconto_bandeira,
+        dataEntradaControle: item.dataEntradaControle || item.data_entrada_controle,
+        statusTroca: item.statusTroca || item.status_troca,
+        dataTitularidade: item.dataTitularidade || item.data_titularidade
+      }));
+
+      const resultado = await exportXmlService.exportarControleParaXml(dadosParaExportacao, filtros);
+      showNotification(`Exportação concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Erro na exportação:', error);
+      showNotification(`Erro na exportação: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isAdmin && 
@@ -786,8 +829,13 @@ const ControlePage = () => {
               >
                 {controle.loading ? '🔄' : '⟳'} Atualizar
               </button>
-              <button onClick={exportarDados} className="btn btn-primary">
-                📊 Exportar CSV
+              <button 
+                onClick={abrirModalExportacao} 
+                className="btn btn-primary"
+                disabled={dadosFiltrados.length === 0}
+              >
+                <Download size={16} />
+                Exportar XML
               </button>
             </div>
           </div>
@@ -967,6 +1015,14 @@ const ControlePage = () => {
             onClose={() => setModalStatusTroca({ show: false, item: null, index: -1 })}
           />
         )}
+
+        <ModalFiltrosExportacao
+          isOpen={modalExportacao}
+          onClose={() => setModalExportacao(false)}
+          onExportar={executarExportacao}
+          tipo="controle"
+          consultores={consultoresUnicos}
+        />
       </div>
     </div>
   );
