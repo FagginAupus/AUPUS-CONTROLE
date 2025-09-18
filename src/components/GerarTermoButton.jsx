@@ -1,7 +1,7 @@
 // src/components/GerarTermoButton.jsx - NOVO FLUXO SEPARADO
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download } from 'lucide-react';
+import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download, Check } from 'lucide-react';
 import './GerarTermoButton.css';
 
 const GerarTermoButton = ({ 
