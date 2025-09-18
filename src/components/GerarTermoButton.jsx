@@ -44,7 +44,44 @@ const GerarTermoButton = ({
 
     const verificarEstado = async () => {
       try {
-        // ✅ 1. Verificar PDF temporário ESPECÍFICO da UC
+        const numeroUC = dados.numeroUC || dados.numero_uc;
+        
+        // ✅ PRIORIDADE 1: SEMPRE verificar documento assinado/pendente PRIMEIRO
+        const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
+
+        console.log(`📡 Consultando status para UC: ${numeroUC}`, statusUrl);
+
+        const statusResponse = await fetch(statusUrl, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (statusResponse.ok) {
+          const result = await statusResponse.json();
+          if (result.success && result.documento) {
+            // ✅ VERIFICAÇÃO RIGOROSA: só aceitar se for EXATAMENTE a UC correta
+            if (result.documento.numero_uc === numeroUC) {
+              console.log('✅ Documento específico encontrado para UC:', numeroUC, result.documento);
+              setStatusDocumento(result.documento);
+              
+              // ✅ IMPORTANTE: Se encontrou documento, NÃO verificar PDF temporário
+              // O documento real sempre tem prioridade sobre PDF temporário
+              return;
+            } else {
+              console.log(`❌ Documento retornado é de UC diferente: ${result.documento.numero_uc} (esperado: ${numeroUC})`);
+            }
+          } else {
+            console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC}`);
+          }
+        } else {
+          console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC} (status: ${statusResponse.status})`);
+        }
+
+        // ✅ PRIORIDADE 2: Só verificar PDF temporário se NÃO encontrou documento real
+        console.log('📄 Verificando PDF temporário como fallback...');
+        
         const pdfTempResponse = await fetch(
           `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-temporario?numero_uc=${numeroUC}`,
           {
@@ -64,41 +101,17 @@ const GerarTermoButton = ({
           }
         }
 
-        // ✅ 2. Verificar documento enviado ESPECÍFICO da UC
-        const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
-
-        console.log(`📡 Consultando status para UC: ${numeroUC}`, statusUrl);
-
-        const statusResponse = await fetch(statusUrl, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (statusResponse.ok) {
-          const result = await statusResponse.json();
-          if (result.success && result.documento) {
-            // ✅ VERIFICAÇÃO RIGOROSA: só aceitar se for EXATAMENTE a UC correta
-            if (result.documento.numero_uc === numeroUC) {
-              console.log('✅ Documento específico encontrado para UC:', numeroUC, result.documento);
-              setStatusDocumento(result.documento);
-            } else {
-              console.log(`❌ Documento retornado é de UC diferente: ${result.documento.numero_uc} (esperado: ${numeroUC})`);
-              setStatusDocumento(null);
-            }
-          } else {
-            console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC}`);
-            setStatusDocumento(null);
-          }
-        } else {
-          console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC}`);
-          setStatusDocumento(null);
-        }
+        // ✅ PRIORIDADE 3: Se não encontrou nada, resetar estado
+        console.log('🔄 Nenhum documento ou PDF encontrado, resetando estado');
+        setStatusDocumento(null);
+        setPdfGerado(null);
+        setEtapa('inicial');
 
       } catch (error) {
         console.error('Erro ao verificar estado para UC:', numeroUC, error);
         setStatusDocumento(null);
+        setPdfGerado(null);
+        setEtapa('inicial');
       }
     };
 

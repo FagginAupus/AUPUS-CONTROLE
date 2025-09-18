@@ -1944,16 +1944,6 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                       {dados.status || 'Aguardando'}
                     </span>
                   </div>
-                  <div className="status-info">
-                    <small>
-                      <strong>ℹ️ Status Automático:</strong> O status é alterado automaticamente quando:
-                      <ul>
-                        <li>✅ <strong>Fechada:</strong> Termo de adesão assinado</li>
-                        <li>⏳ <strong>Aguardando:</strong> Pendente de documentação</li>
-                        <li>📋 <strong>Em Controle:</strong> Adicionada automaticamente quando fechada</li>
-                      </ul>
-                    </small>
-                  </div>
                 </div>
               </div>
             </div>
