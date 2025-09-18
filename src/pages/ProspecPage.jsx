@@ -1932,27 +1932,28 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
             </div>
           </div>
 
-          {/* Status no final */}
+          {/* Status Automático - Apenas Visualização */}
           <div className="secao-modal">
-            <h4 className="titulo-secao">📊 Status da Proposta</h4>
+            <h4 className="titulo-secao">📊 Status da UC</h4>
             <div className="form-row">
               <div className="form-group">
-                <label>Status</label>
-                <select
-                  value={dados.status || 'Aguardando'}
-                  onChange={(e) => setDados({...dados, status: e.target.value})}
-                >
-                  <option value="Aguardando">Aguardando</option>
-                  <option value="Fechada">Fechada</option>
-                  <option value="Cancelada">Cancelada</option>
-                  <option value="Recusada">Recusada</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <div className="status-help">
-                  <small>
-                    <strong>Atenção:</strong> Para definir como "Fechado", todos os campos de documentação devem estar preenchidos.
-                  </small>
+                <div className="status-display">
+                  <div className="status-atual">
+                    <strong>Status atual:</strong> 
+                    <span className={`status-badge status-${(dados.status || 'Aguardando').toLowerCase()}`}>
+                      {dados.status || 'Aguardando'}
+                    </span>
+                  </div>
+                  <div className="status-info">
+                    <small>
+                      <strong>ℹ️ Status Automático:</strong> O status é alterado automaticamente quando:
+                      <ul>
+                        <li>✅ <strong>Fechada:</strong> Termo de adesão assinado</li>
+                        <li>⏳ <strong>Aguardando:</strong> Pendente de documentação</li>
+                        <li>📋 <strong>Em Controle:</strong> Adicionada automaticamente quando fechada</li>
+                      </ul>
+                    </small>
+                  </div>
                 </div>
               </div>
             </div>

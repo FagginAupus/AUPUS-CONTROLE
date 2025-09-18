@@ -393,6 +393,55 @@ const GerarTermoButton = ({
   };
   // NOVA FUNÇÃO: Cancelar documento na Autentique
 
+  const limparEstadoERetentar = async () => {
+    if (!window.confirm('Deseja limpar o estado atual e tentar novamente? Isso pode remover documentos pendentes.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const numeroUC = dados.numeroUC || dados.numero_uc;
+      console.log('🧹 Limpando estado para nova tentativa...', {
+        proposta_id: dados.propostaId,
+        numero_uc: numeroUC
+      });
+
+      // 1. Cancelar qualquer documento pendente
+      try {
+        await fetch(
+          `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/cancelar-pendente`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        console.log('✅ Documento pendente cancelado');
+      } catch (error) {
+        console.log('⚠️ Nenhum documento pendente para cancelar');
+      }
+
+      // 2. Resetar todos os estados
+      setStatusDocumento(null);
+      setPdfGerado(null);
+      setEtapa('inicial');
+      setMostrarOpcoesEnvio(false);
+      setMostrarUploadManual(false);
+      setArquivoUploadManual(null);
+
+      console.log('✅ Estados resetados, pronto para nova tentativa');
+      alert('✅ Estado limpo com sucesso! Você pode tentar novamente.');
+
+    } catch (error) {
+      console.error('❌ Erro ao limpar estado:', error);
+      alert('❌ Erro ao limpar estado. Recarregue a página e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const cancelarDocumento = async () => {
     if (!statusDocumento) return;
 
@@ -639,7 +688,8 @@ const GerarTermoButton = ({
       console.log('📎 Iniciando upload manual do termo...', {
         proposta_id: dados.propostaId,
         numero_uc: numeroUC,
-        arquivo: arquivoUploadManual.name
+        arquivo: arquivoUploadManual.name,
+        arquivo_tamanho: arquivoUploadManual.size
       });
 
       const response = await fetch(
@@ -653,52 +703,174 @@ const GerarTermoButton = ({
         }
       );
 
-      const result = await response.json();
+      let result;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const textResult = await response.text();
+        console.error('❌ Resposta não é JSON:', textResult.substring(0, 500));
+        throw new Error('Servidor retornou erro HTML ao invés de JSON');
+      }
 
       if (response.ok && result.success) {
         console.log('✅ Upload manual realizado com sucesso:', result);
         
         alert(`✅ ${result.message}`);
         
-        // ✅ RESETAR ESTADOS E ATUALIZAR PARA 'ASSINADO'
+        // ✅ RESETAR ESTADOS DE UPLOAD
         setArquivoUploadManual(null);
         setMostrarUploadManual(false);
-        setPdfGerado(null); // Limpar PDF temporário
+        setPdfGerado(null);
         
-        // ✅ CRIAR statusDocumento simulando retorno da Autentique
-        const novoStatusDocumento = {
-          id: result.documento.id,
-          status: 'signed',
-          status_label: 'Assinado',
-          numero_uc: numeroUC,
-          uploaded_manually: true,
-          data_assinatura: result.documento.data_upload,
-          email_signatario: 'Upload Manual',
-          nome_documento: result.documento.nome,
-          url_documento: result.documento.url
-        };
+        // ✅ FORÇAR RECARGA DO STATUS DO DOCUMENTO
+        console.log('🔄 Forçando recarga do status do documento...');
         
-        setStatusDocumento(novoStatusDocumento);
-        setEtapa('assinado');
+        // Aguardar um pouco para o backend processar
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // ✅ ABRIR O DOCUMENTO AUTOMATICAMENTE
-        if (result.documento?.url) {
-          window.open(result.documento.url, '_blank');
+        // Fazer nova consulta do status
+        try {
+          const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
+          
+          const statusResponse = await fetch(statusUrl, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (statusResponse.ok) {
+            const statusResult = await statusResponse.json();
+            
+            if (statusResult.success && statusResult.documento) {
+              console.log('✅ Status recarregado do servidor:', statusResult.documento);
+              
+              // ✅ DEFINIR statusDocumento com dados do servidor
+              setStatusDocumento(statusResult.documento);
+              setEtapa('assinado');
+              
+              console.log('✅ Estado atualizado para "assinado"');
+              
+              // ✅ ABRIR DOCUMENTO SE DISPONÍVEL
+              if (statusResult.documento.arquivo_url) {
+                console.log('📄 Abrindo documento:', statusResult.documento.arquivo_url);
+                window.open(statusResult.documento.arquivo_url, '_blank');
+              } else if (result.documento?.url) {
+                console.log('📄 Abrindo documento (URL alternativa):', result.documento.url);
+                window.open(result.documento.url, '_blank');
+              }
+              
+            } else {
+              console.warn('⚠️ Status não retornou documento esperado:', statusResult);
+              
+              // Fallback: criar statusDocumento com dados do upload
+              const fallbackStatus = {
+                id: result.documento.id,
+                status: 'signed',
+                status_label: 'Assinado',
+                numero_uc: numeroUC,
+                uploaded_manually: true,
+                data_assinatura: result.documento.data_upload,
+                email_signatario: 'Upload Manual',
+                nome_documento: result.documento.nome,
+                arquivo_url: result.documento.url
+              };
+              
+              setStatusDocumento(fallbackStatus);
+              setEtapa('assinado');
+              
+              if (result.documento?.url) {
+                window.open(result.documento.url, '_blank');
+              }
+            }
+          } else {
+            console.warn('⚠️ Erro ao recarregar status, usando dados do upload');
+            
+            // Usar dados do resultado do upload
+            const fallbackStatus = {
+              id: result.documento.id,
+              status: 'signed',
+              status_label: 'Assinado',
+              numero_uc: numeroUC,
+              uploaded_manually: true,
+              data_assinatura: result.documento.data_upload,
+              email_signatario: 'Upload Manual',
+              nome_documento: result.documento.nome,
+              arquivo_url: result.documento.url
+            };
+            
+            setStatusDocumento(fallbackStatus);
+            setEtapa('assinado');
+            
+            if (result.documento?.url) {
+              window.open(result.documento.url, '_blank');
+            }
+          }
+          
+        } catch (statusError) {
+          console.error('❌ Erro ao recarregar status:', statusError);
+          
+          // Mesmo com erro, tentar definir estado baseado no resultado
+          const fallbackStatus = {
+            id: result.documento.id,
+            status: 'signed',
+            status_label: 'Assinado',
+            numero_uc: numeroUC,
+            uploaded_manually: true,
+            data_assinatura: result.documento.data_upload,
+            email_signatario: 'Upload Manual',
+            nome_documento: result.documento.nome,
+            arquivo_url: result.documento.url
+          };
+          
+          setStatusDocumento(fallbackStatus);
+          setEtapa('assinado');
         }
 
-        // ✅ NOTIFICAR COMPONENTE PAI PARA REFRESH (se existir callback)
+        // ✅ NOTIFICAR COMPONENTE PAI
         if (typeof onSalvarAntes === 'function') {
-          onSalvarAntes(dados);
+          console.log('📡 Notificando componente pai...');
+          
+          const dadosAtualizados = {
+            ...dados,
+            status: 'Fechada' // Forçar status fechada
+          };
+          
+          try {
+            await onSalvarAntes(dadosAtualizados);
+            console.log('✅ Componente pai notificado');
+          } catch (error) {
+            console.warn('⚠️ Erro ao notificar componente pai:', error);
+          }
         }
 
       } else {
         console.error('❌ Erro no upload manual:', result);
+        
+        if (response.status === 409 && result.message?.includes('documento ativo')) {
+          const confirmar = window.confirm(
+            `❌ ${result.message}\n\nDeseja limpar o estado e tentar novamente?`
+          );
+          
+          if (confirmar) {
+            limparEstadoERetentar();
+            return;
+          }
+        }
+        
         alert(`❌ Erro: ${result.message || 'Falha no upload do arquivo'}`);
       }
 
     } catch (error) {
       console.error('❌ Erro interno no upload manual:', error);
-      alert('❌ Erro interno no upload. Verifique sua conexão e tente novamente.');
+      
+      if (error.message.includes('HTML ao invés de JSON')) {
+        alert('❌ Erro interno no servidor. Verifique os logs do sistema e tente novamente.');
+      } else {
+        alert('❌ Erro interno no upload. Verifique sua conexão e tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -747,7 +919,7 @@ const GerarTermoButton = ({
         </>
       )}
 
-      {/* ETAPA PDF GERADO - Mostrar opções de visualizar e enviar */}
+      {/* ✅ ETAPA PDF GERADO - DUAS OPÇÕES: Autentique OU Upload Manual */}
       {etapa === 'pdf-gerado' && pdfGerado && (
         <>
           <div className="status-info text-success">
@@ -789,9 +961,14 @@ const GerarTermoButton = ({
 
                 {/* ✅ OPÇÃO 2: Upload Manual */}
                 <button
-                  onClick={mostrarOpcoesUploadManual}
+                  onClick={(e) => {
+                    e.preventDefault(); // ✅ Prevenir submit do form
+                    e.stopPropagation(); // ✅ Prevenir propagação
+                    mostrarOpcoesUploadManual();
+                  }}
                   className="btn btn-primary btn-upload-manual"
                   disabled={loading}
+                  type="button" // ✅ Forçar tipo button
                 >
                   <FileText size={16} />
                   Adicionar Termo Já Assinado
@@ -915,7 +1092,11 @@ const GerarTermoButton = ({
                       </span>
                       <button
                         type="button"
-                        onClick={() => setArquivoUploadManual(null)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setArquivoUploadManual(null);
+                        }}
                         className="btn-remover-arquivo"
                         title="Remover arquivo"
                       >
