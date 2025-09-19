@@ -37,12 +37,29 @@ const ProtectedRoute = ({ children, requirePage = null }) => {
   }
 
   // Verificação simples de permissões baseada no role
-  const canAccess = (page, userRole) => {
-    if (!page) return true; // Se não especificar página, libera acesso
+  const canAccess = (page, userRole, userPermissions) => {
+    if (!page) return true;
     
+    // Mapeamento de páginas para permissões
+    const pagePermissions = {
+      'dashboard': 'dashboard.view',
+      'prospec': 'propostas.view', 
+      'controle': 'controle.view',
+      'ugs': 'ugs.view',
+      'relatorios': 'relatorios.view'
+    };
+
+    const requiredPermission = pagePermissions[page];
+    
+    // Se tem permissão mapeada, usar Spatie
+    if (requiredPermission && userPermissions) {
+      return userPermissions.includes(requiredPermission);
+    }
+    
+    // Fallback para lógica antiga
     const permissions = {
       'admin': ['dashboard', 'prospec', 'controle', 'ugs', 'relatorios'],
-      'consultor': ['dashboard', 'prospec', 'controle', 'relatorios'],
+      'consultor': ['dashboard', 'prospec', 'controle', 'relatorios'], 
       'gerente': ['dashboard', 'prospec', 'controle'],
       'vendedor': ['dashboard', 'prospec']
     };
@@ -52,7 +69,7 @@ const ProtectedRoute = ({ children, requirePage = null }) => {
   };
 
   // Verificar se tem permissão para acessar a página específica
-  if (requirePage && !canAccess(requirePage, user?.role)) {
+  if (requirePage && !canAccess(requirePage, user?.role, user?.permissions)) {
     return (
       <div style={{ 
         display: 'flex', 

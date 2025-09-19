@@ -14,6 +14,10 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const hasPermission = (permission) => {
+    if (!user || !user.permissions) return false;
+    return user.permissions.includes(permission);
+  };
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -278,21 +282,41 @@ export const AuthProvider = ({ children }) => {
 
   const canAccessPage = (pageName) => {
     if (!user) return false;
-    
-    const permissions = {
-      'dashboard': true,
-      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
-      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
-      'ugs': ['admin'].includes(user.role),
-      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
+
+    // Mapeamento de páginas para permissões Spatie
+    const pagePermissions = {
+      'dashboard': 'dashboard.view',
+      'prospec': 'propostas.view',
+      'controle': 'controle.view', 
+      'ugs': 'ugs.view',
+      'relatorios': 'relatorios.view'
     };
+
+    const requiredPermission = pagePermissions[pageName];
     
-    return permissions[pageName] || false;
+    // Se não tem permissão mapeada, usar lógica antiga como fallback
+    if (!requiredPermission) {
+      const fallbackPermissions = {
+        'admin': ['dashboard', 'prospec', 'controle', 'ugs', 'relatorios'],
+        'consultor': ['dashboard', 'prospec', 'controle', 'relatorios'],
+        'gerente': ['dashboard', 'prospec', 'controle'],
+        'vendedor': ['dashboard', 'prospec']
+      };
+      const userPages = fallbackPermissions[user.role] || ['dashboard'];
+      return userPages.includes(pageName);
+    }
+
+    // Usar permissão Spatie
+    return hasPermission(requiredPermission);
   };
 
   const canCreateUser = (role) => {
     if (!user) return false;
     
+    // Verificar permissão básica primeiro
+    if (!hasPermission('usuarios.create')) return false;
+    
+    // Então verificar lógica hierárquica
     switch (user.role) {
       case 'admin':
         return ['consultor', 'gerente', 'vendedor'].includes(role);
@@ -373,6 +397,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     checkDefaultPassword, 
+    hasPermission,
     
     // Funções de equipe
     getMyTeam,
