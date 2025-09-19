@@ -47,11 +47,16 @@ const NovaPropostaPage = () => {
     
     // Validar arquivo
     if (file) {
-      const allowedTypes = ['application/pdf'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg', 
+      'image/png'
+    ];
+      const maxSize = 100 * 1024 * 1024; // 10MB
       
       if (!allowedTypes.includes(file.type)) {
-        showNotification('Apenas arquivos PDF são permitidos para faturas', 'error');
+        showNotification('Apenas arquivos PDF, JPG e PNG são permitidos para faturas', 'error');
         return;
       }
       

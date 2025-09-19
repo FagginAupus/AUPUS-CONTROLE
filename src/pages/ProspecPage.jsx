@@ -1424,14 +1424,19 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     console.log('📁 Fatura selecionada:', file?.name);
     
     if (file) {
-      const allowedTypes = ['application/pdf'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg',
+        'image/png'
+      ];
+      const maxSize = 100 * 1024 * 1024; // 10MB
       
       if (!allowedTypes.includes(file.type)) {
-        alert('Apenas arquivos PDF são permitidos para faturas');
+        alert('Apenas arquivos PDF, JPG e PNG são permitidos para faturas');
         return;
       }
-      
+            
       if (file.size > maxSize) {
         alert('Arquivo muito grande. Tamanho máximo: 10MB');
         return;
@@ -1646,11 +1651,10 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
               {/* ✅ NOVO INPUT DE UPLOAD */}
               <input
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => handleFaturaUpload(e.target.files[0])}
-                title="Selecione a fatura da UC em formato PDF"
               />
-              
+                            
               {/* ✅ MOSTRAR ARQUIVO SELECIONADO PARA UPLOAD */}
               {faturaArquivo && (
                 <div className="arquivo-selecionado">
