@@ -5,6 +5,8 @@ import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
+import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
+import exportXmlService from '../services/exportXmlService';
 
 const RelatoriosPage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
@@ -15,6 +17,8 @@ const RelatoriosPage = () => {
     totalUGs: 0,
     ultimaProposta: 'N/A'
   });
+
+  const consultoresUnicos = [...new Set([])];
 
   const { showNotification } = useNotification();
 

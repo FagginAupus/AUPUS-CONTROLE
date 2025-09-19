@@ -88,10 +88,12 @@ const ProspecPage = () => {
     loadControle // ← ADICIONAR esta importação
   } = useData();
   
-  const [loading, setLoading] = useState(false); // ← ADICIONAR ESTA LINHA
+  const [loading, setLoading] = useState(false); 
+  const [modalExportacao, setModalExportacao] = useState(false);
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   const [modalVisualizacao, setModalVisualizacao] = useState({ show: false, item: null });
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
+  const consultoresUnicos = [...new Set((propostas.data || []).map(item => item.consultor).filter(Boolean))];
   
   const [filtros, setFiltros] = useState({
     consultor: '',
@@ -663,9 +665,7 @@ const ProspecPage = () => {
     console.log('🔄 Refresh manual dos dados');
     loadPropostas(1, propostas.filters, true); // forceReload = true
   }, [loadPropostas, propostas.filters]);
-
-  // Obter lista única de consultores para filtro
-  const consultoresUnicos = [...new Set((propostas.data || []).map(item => item.consultor).filter(Boolean))];
+  
 
   // Verificar se é admin para mostrar ações de admin
   const isAdmin = user?.role === 'admin';
@@ -789,7 +789,7 @@ const ProspecPage = () => {
                 disabled={dadosFiltrados.length === 0}
               >
                 <Download size={16} />
-                Exportar XML  // ← TROCAR de "Exportar CSV"
+                  Exportar Excel
               </button>
             </div>
           </div>
@@ -1157,14 +1157,6 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
           </button>
         </div>
       </div>
-
-      <ModalFiltrosExportacao
-        isOpen={modalExportacao}
-        onClose={() => setModalExportacao(false)}
-        onExportar={executarExportacao}
-        tipo="prospec"
-        consultores={consultoresUnicos}
-      />
     </div>
   );
 };
@@ -1270,9 +1262,6 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
 
   
   const [faturaArquivo, setFaturaArquivo] = useState(null);
-
-  const [modalExportacao, setModalExportacao] = useState(false);
-
 
   useEffect(() => {
     // Mapear consultor nome para ID quando consultores carregarem
@@ -2010,6 +1999,13 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
             </button>
           </div>
         </form>
+        <ModalFiltrosExportacao
+          isOpen={modalExportacao}
+          onClose={() => setModalExportacao(false)}
+          onExportar={executarExportacao}
+          tipo="prospec"
+          consultores={consultoresUnicos}
+        />
       </div>
     </div>
   );

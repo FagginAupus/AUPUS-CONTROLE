@@ -839,7 +839,7 @@ const ControlePage = () => {
                 disabled={dadosFiltrados.length === 0}
               >
                 <Download size={16} />
-                Exportar XML
+                Exportar Excel
               </button>
             </div>
           </div>
