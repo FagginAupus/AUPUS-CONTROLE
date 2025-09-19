@@ -27,7 +27,8 @@ import {
   Flag,
   X,
   FileText,    
-  Save        
+  Save,
+  Download        
 } from 'lucide-react';
 import './ControlePage.css';
 
@@ -112,6 +113,9 @@ const ControlePage = () => {
       setLoading(false);
     }
   };
+
+  const [modalExportacao, setModalExportacao] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isAdmin && 

@@ -23,6 +23,7 @@ import {
   MessageCircle,
   Trash2,
   X,
+  Download
 } from 'lucide-react';
 
 const getApiBaseUrl = () => {
@@ -668,7 +669,7 @@ const ProspecPage = () => {
 
   // Verificar se é admin para mostrar ações de admin
   const isAdmin = user?.role === 'admin';
-
+  
   return (
     <div className="page-container">
       <div className="container">
