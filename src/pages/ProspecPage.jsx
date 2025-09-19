@@ -10,7 +10,7 @@ import storageService from '../services/storageService';
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 import GerarTermoButton from '../components/GerarTermoButton';
 import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
-import exportXmlService from '../services/exportXmlService';
+import exportExcelService from '../services/exportExcelService';
 import './ProspecPage.css';
 import { 
   FileText, 
@@ -640,8 +640,9 @@ const ProspecPage = () => {
   const executarExportacao = async (filtros) => {
     try {
       setLoading(true);
-      showNotification('Preparando exportação XML...', 'info');
+      showNotification('Preparando exportação Excel da prospecção...', 'info');
 
+      // Buscar todos os dados conforme permissão do usuário
       let todosOsDados;
       if (user?.role === 'admin') {
         todosOsDados = await storageService.getProspec();
@@ -650,8 +651,27 @@ const ProspecPage = () => {
         todosOsDados = dadosCompletos;
       }
 
-      const resultado = await exportXmlService.exportarProspecParaXml(todosOsDados, filtros);
-      showNotification(`Exportação concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
+      // Transformar dados para formato esperado pelo Excel
+      const dadosParaExportacao = todosOsDados.map(item => ({
+        propostaId: item.id,
+        numeroProposta: item.numeroProposta || item.numero_proposta,
+        data: item.data || item.dataProposta || item.data_proposta,
+        nomeCliente: item.nomeCliente || item.nome_cliente,
+        consultor: item.consultor,
+        status: item.status || item.status_proposta,
+        numeroUC: item.numeroUC || item.numero_uc || item.numero_unidade,
+        apelido: item.apelido || item.apelido_uc,
+        consumoMedio: item.consumoMedio || item.consumo_medio,
+        valorFatura: item.valorFatura || item.valor_fatura || item.valor_uc,
+        descontoTarifa: item.descontoTarifa || item.desconto_tarifa,
+        descontoBandeira: item.descontoBandeira || item.desconto_bandeira,
+        observacoes: item.observacoes,
+        beneficios: item.beneficios,
+        recorrencia: item.recorrencia
+      }));
+
+      const resultado = await exportExcelService.exportarProspecParaExcel(dadosParaExportacao, filtros);
+      showNotification(`Exportação Excel concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
       
     } catch (error) {
       console.error('❌ Erro na exportação:', error);
@@ -936,6 +956,14 @@ const ProspecPage = () => {
             consultoresDisponiveis={consultoresDisponiveis}
           />
         )}
+        {/* Modal de Filtros para Exportação */}
+        <ModalFiltrosExportacao
+          isOpen={modalExportacao}
+          onClose={() => setModalExportacao(false)}
+          onExportar={executarExportacao}
+          tipo="prospec"
+          consultores={consultoresUnicos}
+        />
       </div>
     </div>
   );
@@ -1999,13 +2027,6 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
             </button>
           </div>
         </form>
-        <ModalFiltrosExportacao
-          isOpen={modalExportacao}
-          onClose={() => setModalExportacao(false)}
-          onExportar={executarExportacao}
-          tipo="prospec"
-          consultores={consultoresUnicos}
-        />
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
-import exportXmlService from '../services/exportXmlService';
+import exportExcelService from '../services/exportExcelService';
 
 const RelatoriosPage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
@@ -101,13 +101,55 @@ const RelatoriosPage = () => {
       
       let todosOsDados;
       if (tipo === 'prospec') {
+        showNotification('Preparando exportação Excel da prospecção...', 'info');
         todosOsDados = await storageService.getProspec();
-        const resultado = await exportXmlService.exportarProspecParaXml(todosOsDados, filtros);
-        showNotification(`Prospecção exportada! ${resultado.totalRegistros} registros`, 'success');
+        
+        // Transformar dados para formato esperado
+        const dadosParaExportacao = todosOsDados.map(item => ({
+          propostaId: item.id,
+          numeroProposta: item.numeroProposta || item.numero_proposta,
+          data: item.data || item.dataProposta || item.data_proposta,
+          nomeCliente: item.nomeCliente || item.nome_cliente,
+          consultor: item.consultor,
+          status: item.status || item.status_proposta,
+          numeroUC: item.numeroUC || item.numero_uc || item.numero_unidade,
+          apelido: item.apelido || item.apelido_uc,
+          consumoMedio: item.consumoMedio || item.consumo_medio,
+          valorFatura: item.valorFatura || item.valor_fatura || item.valor_uc,
+          descontoTarifa: item.descontoTarifa || item.desconto_tarifa,
+          descontoBandeira: item.descontoBandeira || item.desconto_bandeira,
+          observacoes: item.observacoes,
+          beneficios: item.beneficios,
+          recorrencia: item.recorrencia
+        }));
+        
+        const resultado = await exportExcelService.exportarProspecParaExcel(dadosParaExportacao, filtros);
+        showNotification(`Prospecção exportada em Excel! ${resultado.totalRegistros} registros`, 'success');
+        
       } else if (tipo === 'controle') {
+        showNotification('Preparando exportação Excel do controle...', 'info');
         todosOsDados = await storageService.getControle();
-        const resultado = await exportXmlService.exportarControleParaXml(todosOsDados, filtros);
-        showNotification(`Controle exportado! ${resultado.totalRegistros} registros`, 'success');
+        
+        // Transformar dados para formato esperado
+        const dadosParaExportacao = todosOsDados.map(item => ({
+          id: item.id,
+          controle_id: item.id,
+          consultorNome: item.consultor || item.consultorNome,
+          numeroUC: item.numeroUC || item.numero_unidade || item.numero_uc,
+          apelido: item.apelido || item.apelido_uc,
+          consumoMedio: item.consumoMedio || item.consumo_medio,
+          economia: item.economia || item.valorCalibrado || item.valor_calibrado || item.economia_percentual,
+          bandeira: item.bandeira || item.descontoBandeira || item.desconto_bandeira,
+          contribuicao: item.contribuicao || 'N/A',
+          comissaoPercentual: item.comissaoPercentual || item.comissao_percentual || 5,
+          dataEntradaControle: item.dataEntradaControle || item.data_entrada_controle,
+          statusTroca: item.statusTroca || item.status_troca || 'Pendente',
+          dataTitularidade: item.dataTitularidade || item.data_titularidade,
+          observacoes: item.observacoes || ''
+        }));
+        
+        const resultado = await exportExcelService.exportarControleParaExcel(dadosParaExportacao, filtros);
+        showNotification(`Controle exportado em Excel! ${resultado.totalRegistros} registros`, 'success');
       }
     } catch (error) {
       showNotification(`Erro: ${error.message}`, 'error');
@@ -371,7 +413,6 @@ const RelatoriosPage = () => {
             )}
           </>
         )}
-
         <ModalFiltrosExportacao
           isOpen={modalExportacao.isOpen}
           onClose={() => setModalExportacao({ isOpen: false, tipo: '' })}
@@ -379,7 +420,6 @@ const RelatoriosPage = () => {
           tipo={modalExportacao.tipo}
           consultores={consultoresUnicos}
         />
-        
       </div>
     </div>
   );

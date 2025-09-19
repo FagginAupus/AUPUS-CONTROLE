@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
-import exportXmlService from '../services/exportXmlService';
+import exportExcelService from '../services/exportExcelService';
 import { useData } from '../context/DataContext';
 import { 
   Database, 
@@ -78,8 +78,9 @@ const ControlePage = () => {
   const executarExportacao = async (filtros) => {
     try {
       setLoading(true);
-      showNotification('Preparando exportação XML do controle...', 'info');
+      showNotification('Preparando exportação Excel do controle...', 'info');
 
+      // Buscar todos os dados conforme permissão do usuário
       let todosOsDados;
       if (user?.role === 'admin') {
         todosOsDados = await storageService.getControle();
@@ -88,23 +89,26 @@ const ControlePage = () => {
         todosOsDados = dadosCompletos;
       }
 
-      // Transformar dados para formato esperado
+      // Transformar dados para formato esperado pelo Excel
       const dadosParaExportacao = todosOsDados.map(item => ({
         id: item.id,
         controle_id: item.id,
         consultorNome: item.consultor || item.consultorNome,
-        numeroUC: item.numeroUC || item.numero_unidade,
-        apelido: item.apelido,
+        numeroUC: item.numeroUC || item.numero_unidade || item.numero_uc,
+        apelido: item.apelido || item.apelido_uc,
         consumoMedio: item.consumoMedio || item.consumo_medio,
-        economia: item.economia || item.valorCalibrado || item.valor_calibrado,
+        economia: item.economia || item.valorCalibrado || item.valor_calibrado || item.economia_percentual,
         bandeira: item.bandeira || item.descontoBandeira || item.desconto_bandeira,
+        contribuicao: item.contribuicao || 'N/A',
+        comissaoPercentual: item.comissaoPercentual || item.comissao_percentual || 5,
         dataEntradaControle: item.dataEntradaControle || item.data_entrada_controle,
-        statusTroca: item.statusTroca || item.status_troca,
-        dataTitularidade: item.dataTitularidade || item.data_titularidade
+        statusTroca: item.statusTroca || item.status_troca || 'Pendente',
+        dataTitularidade: item.dataTitularidade || item.data_titularidade,
+        observacoes: item.observacoes || ''
       }));
 
-      const resultado = await exportXmlService.exportarControleParaXml(dadosParaExportacao, filtros);
-      showNotification(`Exportação concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
+      const resultado = await exportExcelService.exportarControleParaExcel(dadosParaExportacao, filtros);
+      showNotification(`Exportação Excel concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
       
     } catch (error) {
       console.error('❌ Erro na exportação:', error);
