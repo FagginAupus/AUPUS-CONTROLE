@@ -672,7 +672,7 @@ const ProspecPage = () => {
 
       const resultado = await exportExcelService.exportarProspecParaExcel(dadosParaExportacao, filtros);
       showNotification(`Exportação Excel concluída! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
-      
+      console.log('Dados prospecção:', dadosParaExportacao[0]);
     } catch (error) {
       console.error('❌ Erro na exportação:', error);
       showNotification(`Erro na exportação: ${error.message}`, 'error');

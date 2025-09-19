@@ -59,54 +59,59 @@ class StorageService {
      * Cada UC vira uma linha na tabela, repetindo dados da proposta
      */
     expandirPropostasParaUCs(propostas) {
+        console.log('🔍 === EXPANDINDO PROPOSTAS PARA UCs ===');
+        console.log('Total de propostas para expandir:', propostas.length);
+        
         const linhasExpandidas = [];
         
-        propostas.forEach(proposta => {
-            /**
-            console.log('🔍 Proposta original do backend:', {
+        propostas.forEach((proposta, propostaIndex) => {
+            console.log(`🔍 PROPOSTA ${propostaIndex + 1} - EXPANSÃO:`, {
                 id: proposta.id,
-                numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
-                documentacao_existe: !!proposta.documentacao,
-                documentacao_conteudo: proposta.documentacao
+                numeroProposta: proposta.numeroProposta,
+                tem_unidades_consumidoras: !!proposta.unidades_consumidoras,
+                total_ucs: proposta.unidades_consumidoras?.length || 0
             });
-            */
             
-            // Verificar se tem UCs no JSON
+            // Verificar se tem UCs no array
             let ucsArray = [];
             
-            // Tentar diferentes formatos de UCs
-            if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
-                ucsArray = proposta.unidadesConsumidoras;
-            } else if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
+            if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
                 ucsArray = proposta.unidades_consumidoras;
+                console.log(`✅ Proposta ${propostaIndex + 1} tem ${ucsArray.length} UCs`);
+            } else if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
+                ucsArray = proposta.unidadesConsumidoras;
+                console.log(`✅ Proposta ${propostaIndex + 1} tem ${ucsArray.length} UCs (campo alternativo)`);
             } else if (typeof proposta.unidadesConsumidoras === 'string') {
                 try {
                     ucsArray = JSON.parse(proposta.unidadesConsumidoras);
+                    console.log(`✅ Proposta ${propostaIndex + 1} - UCs parseadas do JSON:`, ucsArray.length);
                 } catch (e) {
-                    console.warn('Erro ao parsear UCs JSON:', e);
+                    console.warn(`❌ Proposta ${propostaIndex + 1} - Erro ao parsear UCs JSON:`, e);
                     ucsArray = [];
                 }
+            } else {
+                console.warn(`⚠️ Proposta ${propostaIndex + 1} - Nenhuma UC encontrada`);
             }
 
-            // Se não tem UCs, criar uma linha padrão
+            // Se não tem UCs, criar uma linha padrão com dados vazios
             if (!ucsArray || ucsArray.length === 0) {
+                console.log(`⚠️ Proposta ${propostaIndex + 1} - Criando linha padrão SEM UCs`);
                 linhasExpandidas.push({
-                    // ID único para cada linha
                     id: `${proposta.id}-UC-default-${Date.now()}`,
-                    
-                    // Dados da proposta (repetidos para cada UC)
                     propostaId: proposta.id,
-                    numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
-                    nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
+                    numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
+                    nomeCliente: proposta.nomeCliente || proposta.nome_cliente,
                     consultor: proposta.consultor,
-                    data: proposta.data_proposta || proposta.data,
+                    data: proposta.data || proposta.data_proposta,
                     status: proposta.status,
                     observacoes: proposta.observacoes,
                     recorrencia: proposta.recorrencia,
-                    descontoTarifa: this.processarDesconto(proposta.descontoTarifa || proposta.economia),
-                    descontoBandeira: this.processarDesconto(proposta.descontoBandeira || proposta.bandeira),
+                    descontoTarifa: proposta.descontoTarifa,
+                    descontoBandeira: proposta.descontoBandeira,
                     beneficios: proposta.beneficios || [],
                     documentacao: proposta.documentacao || {},
+                    
+                    // ⚠️ DADOS VAZIOS PORQUE NÃO HÁ UCs
                     ucIndex: 0,
                     apelido: '-',
                     numeroUC: '-',
@@ -115,42 +120,42 @@ class StorageService {
                     media: 0,
                     distribuidora: '-',
                     
-                    // Timestamps
                     created_at: proposta.created_at,
                     updated_at: proposta.updated_at
                 });
             } else {
-                // Criar uma linha para cada UC
-                ucsArray.forEach((uc, index) => {
+                // Criar uma linha para cada UC real
+                ucsArray.forEach((uc, ucIndex) => {
+                    console.log(`✅ Proposta ${propostaIndex + 1} - UC ${ucIndex + 1}:`, {
+                        numero_unidade: uc.numero_unidade,
+                        apelido: uc.apelido,
+                        consumo_medio: uc.consumo_medio
+                    });
+
                     linhasExpandidas.push({
-                        // ID único para cada linha UC
-                        id: `${proposta.id}-UC-${index}-${uc.numero_unidade || index}`,
-                        
-                        // Dados da proposta (repetidos para cada UC)
+                        id: `${proposta.id}-UC-${ucIndex}-${uc.numero_unidade || ucIndex}`,
                         propostaId: proposta.id,
-                        numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
-                        nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
+                        numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
+                        nomeCliente: proposta.nomeCliente || proposta.nome_cliente,
                         consultor: proposta.consultor,
-                        data: proposta.data_proposta || proposta.data,
+                        data: proposta.data || proposta.data_proposta,
                         status: uc.status || proposta.status,
                         observacoes: proposta.observacoes,
                         recorrencia: proposta.recorrencia,
-                        descontoTarifa: this.processarDesconto(proposta.descontoTarifa || proposta.economia),
-                        descontoBandeira: this.processarDesconto(proposta.descontoBandeira || proposta.bandeira),
+                        descontoTarifa: proposta.descontoTarifa,
+                        descontoBandeira: proposta.descontoBandeira,
                         beneficios: proposta.beneficios || [],
-                        
                         documentacao: proposta.documentacao || {},
 
-                        // Dados específicos da UC
-                        ucIndex: index,
-                        apelido: uc.apelido || `UC ${uc.numero_unidade || index + 1}`,
-                        numeroUC: uc.numero_unidade || uc.numeroUC || '-',
-                        numeroCliente: uc.numero_cliente || uc.numeroCliente || '-',
-                        ligacao: uc.ligacao || uc.tipo_ligacao || '-',
+                        // ✅ DADOS REAIS DA UC
+                        ucIndex: ucIndex,
+                        apelido: uc.apelido || `UC ${uc.numero_unidade || ucIndex + 1}`,
+                        numeroUC: uc.numero_unidade || uc.numeroUC || '',
+                        numeroCliente: uc.numero_cliente || uc.numeroCliente || '',
+                        ligacao: uc.ligacao || uc.tipo_ligacao || '',
                         media: uc.consumo_medio || uc.media || 0,
-                        distribuidora: uc.distribuidora || '-',
+                        distribuidora: uc.distribuidora || '',
                         
-                        // Timestamps
                         created_at: proposta.created_at,
                         updated_at: proposta.updated_at
                     });
@@ -158,7 +163,16 @@ class StorageService {
             }
         });
         
-        console.log(`✅ Expandidas ${propostas.length} propostas em ${linhasExpandidas.length} linhas de UC`);
+        console.log('✅ EXPANSÃO CONCLUÍDA:', {
+            propostas_originais: propostas.length,
+            linhas_expandidas: linhasExpandidas.length,
+            amostra_primeira_linha: {
+                numeroUC: linhasExpandidas[0]?.numeroUC,
+                apelido: linhasExpandidas[0]?.apelido,
+                media: linhasExpandidas[0]?.media
+            }
+        });
+        
         return linhasExpandidas;
     }
 
@@ -204,57 +218,112 @@ class StorageService {
         return Object.values(propostas)[0]; // Retorna a primeira proposta encontrada
     }
 
+    // 🔧 STORAGE SERVICE - CORREÇÃO FINAL
+    // =====================================
 
-    /**
-     * ✅ MÉTODO ORIGINAL: getProspec sem expansão (para casos específicos)
-     */
+    // Substitua o método getProspec() no seu storageService.js por este:
+
     async getProspec() {
         try {
-            // console.log('📥 Carregando propostas da API para expansão...');
+            console.log('📥 Carregando propostas da API...');
             const response = await apiService.get('/propostas');
             
             let propostas = [];
             if (response?.data?.data && Array.isArray(response.data.data)) {
-                // Resposta paginada
                 propostas = response.data.data;
             } else if (response?.data && Array.isArray(response.data)) {
-                // Array direto
                 propostas = response.data;
             } else if (Array.isArray(response)) {
-                // Array na raiz
                 propostas = response;
             } else {
                 console.warn('⚠️ Estrutura de resposta inesperada:', response);
                 propostas = [];
             }
 
-            // console.log(`📊 Total de propostas recebidas: ${propostas.length}`);
+            console.log(`📊 Total de dados recebidos: ${propostas.length}`);
             
-            // ✅ MAPEAR DADOS DO BACKEND COM DESCONTOS CORRETOS
-            const propostasMapeadas = propostas.map((proposta, index) => {
-                const propostaMapeada = this.mapearPropostaDoBackend(proposta);
+            // 🔍 VERIFICAR SE OS DADOS JÁ VÊM EXPANDIDOS DO BACKEND
+            const primeiroItem = propostas[0];
+            const jaVemExpandido = primeiroItem && (
+                primeiroItem.propostaId !== undefined || // Tem propostaId ao invés de id
+                primeiroItem.numeroUC !== undefined ||   // Tem campos de UC
+                primeiroItem.apelido !== undefined
+            );
+
+            console.log('🔍 Verificação de expansão:', {
+                jaVemExpandido,
+                primeiroItem: primeiroItem ? {
+                    tem_propostaId: !!primeiroItem.propostaId,
+                    tem_numeroUC: !!primeiroItem.numeroUC,
+                    tem_apelido: !!primeiroItem.apelido,
+                    campos: Object.keys(primeiroItem)
+                } : null
+            });
+
+            if (jaVemExpandido) {
+                // ✅ DADOS JÁ VÊM EXPANDIDOS - APENAS MAPEAR
+                console.log('✅ Dados já vêm expandidos do backend, apenas mapeando...');
                 
-                console.log(`📋 Proposta ${index + 1} mapeada:`, {
-                    id: propostaMapeada?.id,
-                    numeroProposta: propostaMapeada?.numeroProposta,
-                    descontos: {
-                        descontoTarifa: propostaMapeada?.descontoTarifa,
-                        descontoBandeira: propostaMapeada?.descontoBandeira
-                    }
+                const dadosMapeados = propostas.map(linha => {
+                    // Os dados já estão no formato correto, apenas ajustar campos
+                    return {
+                        ...linha,
+                        // Garantir compatibilidade com exportação
+                        consumoMedio: linha.media || linha.consumoMedio || linha.consumo_medio || 0,
+                        // Manter campos originais
+                        numeroUC: linha.numeroUC || linha.numero_uc || '-',
+                        apelido: linha.apelido || linha.apelido_uc || '-'
+                    };
                 });
+
+                console.log('✅ Dados mapeados:', {
+                    total: dadosMapeados.length,
+                    amostra: dadosMapeados[0] ? {
+                        numeroUC: dadosMapeados[0].numeroUC,
+                        apelido: dadosMapeados[0].apelido,
+                        consumoMedio: dadosMapeados[0].consumoMedio
+                    } : null
+                });
+
+                return dadosMapeados;
+            } else {
+                // ✅ DADOS SÃO PROPOSTAS NORMAIS - EXPANDIR COMO ANTES
+                console.log('📋 Dados são propostas normais, expandindo...');
                 
-                return propostaMapeada;
-            }).filter(Boolean); // Remove propostas inválidas
-            
-            // ✅ EXPANDIR PARA UCs
-            const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
-            
-            // console.log(`🎯 Total de linhas expandidas: ${linhasExpandidas.length}`);
-            
-            return linhasExpandidas;
+                const propostasMapeadas = propostas.map((proposta, index) => {
+                    const propostaMapeada = this.mapearPropostaDoBackend(proposta);
+                    return propostaMapeada;
+                }).filter(Boolean);
+                
+                const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
+                return linhasExpandidas;
+            }
 
         } catch (error) {
             console.error('❌ Erro ao carregar propostas do storageService:', error);
+            return [];
+        }
+    }
+    async buscarUCsDaTabela(propostaId) {
+        try {
+            const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
+            const apiUrl = process.env.REACT_APP_API_URL || '';
+            
+            const response = await fetch(`${apiUrl}/propostas/${propostaId}/ucs`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.success ? data.data : [];
+            }
+            
+            return [];
+        } catch (error) {
+            console.error('❌ Erro ao buscar UCs da tabela:', error);
             return [];
         }
     }
@@ -531,32 +600,80 @@ class StorageService {
             return null;
         }
 
-        // ✅ PROCESSAR DESCONTOS - PRIORIZAR descontoTarifa/descontoBandeira, depois economia/bandeira
-        let descontoTarifa = 20; // Padrão
-        let descontoBandeira = 20; // Padrão
+        // 🔍 DEBUG COMPLETO DA PROPOSTA DO BANCO
+        console.log('🔍 === PROPOSTA RAW DO BANCO ===', {
+            id: proposta.id,
+            numero_proposta: proposta.numero_proposta,
+            nome_cliente: proposta.nome_cliente,
+            unidades_consumidoras_raw: proposta.unidades_consumidoras,
+            unidades_consumidoras_type: typeof proposta.unidades_consumidoras,
+            unidades_consumidoras_string: JSON.stringify(proposta.unidades_consumidoras),
+            unidades_consumidoras_length: proposta.unidades_consumidoras?.length,
+            campos_disponiveis: Object.keys(proposta)
+        });
 
-        // Verificar se vem com os nomes novos
-        if (proposta.descontoTarifa !== undefined) {
-            descontoTarifa = this.processarDesconto(proposta.descontoTarifa);
+        // ✅ PROCESSAR DESCONTOS
+        let descontoTarifa = 20;
+        let descontoBandeira = 20;
+
+        if (proposta.desconto_tarifa !== undefined) {
+            descontoTarifa = this.processarDesconto(proposta.desconto_tarifa);
         } else if (proposta.economia !== undefined) {
-            // Fallback para o nome antigo
             descontoTarifa = this.processarDesconto(proposta.economia);
         }
 
-        if (proposta.descontoBandeira !== undefined) {
-            descontoBandeira = this.processarDesconto(proposta.descontoBandeira);
+        if (proposta.desconto_bandeira !== undefined) {
+            descontoBandeira = this.processarDesconto(proposta.desconto_bandeira);
         } else if (proposta.bandeira !== undefined) {
-            // Fallback para o nome antigo
             descontoBandeira = this.processarDesconto(proposta.bandeira);
         }
 
-        const unidadesConsumidoras = proposta.unidades_consumidoras || [];
+        // 🔍 PROCESSAR UNIDADES CONSUMIDORAS COM DEBUG DETALHADO
+        let unidadesProcessadas = [];
+        let ucsArray = [];
 
-        const unidadesProcessadas = unidadesConsumidoras.map(uc => ({
-            ...uc,
-            status: uc.status || 'Aguardando' // ✅ Garantir que cada UC tem status
-        }));
+        // Verificar se tem unidades_consumidoras
+        if (proposta.unidades_consumidoras) {
+            if (typeof proposta.unidades_consumidoras === 'string') {
+                try {
+                    ucsArray = JSON.parse(proposta.unidades_consumidoras);
+                    console.log('✅ UCs parseadas do JSON:', ucsArray);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear JSON das UCs:', e);
+                    console.log('❌ JSON inválido:', proposta.unidades_consumidoras);
+                    ucsArray = [];
+                }
+            } else if (Array.isArray(proposta.unidades_consumidoras)) {
+                ucsArray = proposta.unidades_consumidoras;
+                console.log('✅ UCs já eram array:', ucsArray);
+            } else {
+                console.warn('⚠️ Formato desconhecido para unidades_consumidoras:', typeof proposta.unidades_consumidoras);
+            }
+        } else {
+            console.warn('⚠️ Campo unidades_consumidoras não encontrado na proposta');
+        }
 
+        // Processar UCs encontradas
+        if (ucsArray && ucsArray.length > 0) {
+            unidadesProcessadas = ucsArray.map((uc, index) => {
+                console.log(`🔍 Processando UC ${index + 1}:`, {
+                    uc_original: uc,
+                    numero_unidade: uc.numero_unidade,
+                    apelido: uc.apelido,
+                    consumo_medio: uc.consumo_medio
+                });
+
+                return {
+                    ...uc,
+                    status: uc.status || 'Aguardando'
+                };
+            });
+            console.log('✅ UCs processadas finais:', unidadesProcessadas);
+        } else {
+            console.warn('⚠️ Nenhuma UC encontrada na proposta');
+        }
+
+        // ✅ CRIAR PROPOSTA MAPEADA
         const propostaMapeada = {
             // Campos principais
             id: proposta.id,
@@ -578,26 +695,28 @@ class StorageService {
             unidades_consumidoras: unidadesProcessadas, // ✅ UCs PROCESSADAS
             unidadesConsumidoras: unidadesProcessadas, // Compatibilidade
             
-            // Dados da primeira UC para compatibilidade
-            apelido: proposta.apelido || '',
-            numeroUC: proposta.numeroUC || '',
-            numeroCliente: proposta.numeroCliente || '',
-            ligacao: proposta.ligacao || '',
-            media: proposta.media || 0,
-            distribuidora: proposta.distribuidora || '',
+            // 🔍 DADOS DA PRIMEIRA UC PARA COMPATIBILIDADE - COM DEBUG
+            apelido: unidadesProcessadas[0]?.apelido || proposta.apelido || '',
+            numeroUC: unidadesProcessadas[0]?.numero_unidade || proposta.numeroUC || '',
+            numeroCliente: unidadesProcessadas[0]?.numero_cliente || proposta.numeroCliente || '',
+            ligacao: unidadesProcessadas[0]?.ligacao || proposta.ligacao || '',
+            media: unidadesProcessadas[0]?.consumo_medio || proposta.media || 0,
+            distribuidora: unidadesProcessadas[0]?.distribuidora || proposta.distribuidora || '',
             
             // Timestamps
             created_at: proposta.created_at,
             updated_at: proposta.updated_at
         };
 
-
-        console.log('🔄 Proposta mapeada do backend:', {
+        console.log('🔄 PROPOSTA MAPEADA FINAL:', {
             id: propostaMapeada.id,
             numeroProposta: propostaMapeada.numeroProposta,
-            descontos: {
-                descontoTarifa: propostaMapeada.descontoTarifa,
-                descontoBandeira: propostaMapeada.descontoBandeira
+            total_ucs: propostaMapeada.unidades_consumidoras.length,
+            primeira_uc: propostaMapeada.unidades_consumidoras[0],
+            dados_compatibilidade: {
+                apelido: propostaMapeada.apelido,
+                numeroUC: propostaMapeada.numeroUC,
+                media: propostaMapeada.media
             }
         });
 
