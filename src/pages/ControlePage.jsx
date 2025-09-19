@@ -592,32 +592,37 @@ const ControlePage = () => {
       console.log('💾 Salvando detalhes da UC:', payload);
       showNotification('Processando...', 'info');
 
-      // ✅ CORREÇÃO: Usar o controleId que vem do payload
-      const response = await apiService.put(`/controle/${payload.controleId}/uc-detalhes`, {
+      // ✅ PAYLOAD CORRIGIDO - sempre incluir todos os campos
+      const requestPayload = {
         consumo_medio: payload.consumo_medio,
         usa_calibragem_global: payload.usa_calibragem_global,
-        ...(payload.calibragem_individual !== null && payload.calibragem_individual !== undefined ? {
-          calibragem_individual: payload.calibragem_individual
-        } : {}),
+        calibragem_individual: payload.calibragem_individual, // SEMPRE INCLUIR
         observacoes: payload.observacoes,
+        
+        // ✅ DESCONTOS - sempre incluir usa_desconto_proposta
+        usa_desconto_proposta: payload.usa_desconto_proposta,
         desconto_tarifa: payload.desconto_tarifa,
         desconto_bandeira: payload.desconto_bandeira
-      });
+      };
+
+      console.log('🚀 Payload final sendo enviado:', requestPayload);
+
+      const response = await apiService.put(`/controle/${payload.controleId}/uc-detalhes`, requestPayload);
 
       if (response?.success) {
         setModalUCDetalhes({ show: false, item: null, index: -1 });
         showNotification('UC atualizada com sucesso!', 'success');
-
-        // Recarregar dados para garantir consistência
-        await loadControle(controle.currentPage, controle.filters, true);
+        
+        // ✅ RECARREGAR dados após salvar
+        await loadControle(1, controle.filters, true);
       } else {
-        throw new Error(response?.message || 'Erro desconhecido');
+        throw new Error(response?.message || 'Erro ao atualizar UC');
       }
     } catch (error) {
       console.error('❌ Erro ao salvar UC:', error);
       showNotification('Erro ao salvar UC: ' + error.message, 'error');
     }
-  }, [showNotification, loadControle, controle]);
+  }, [controle.filters, loadControle, showNotification]);
 
 
   // Obter listas únicas para filtros
@@ -1291,35 +1296,34 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         const dadosUC = response.data;
         console.log('✅ Dados carregados do backend:', dadosUC);
 
-        // ✅ LÓGICA CORRIGIDA PARA CALIBRAGEM
-        // Se calibragem_individual existe (não é null), usar calibragem individual
-        // Se calibragem_individual é null, usar calibragem global
+        // ✅ LÓGICA CORRIGIDA DOS DESCONTOS
+        // Valores ORIGINAIS da proposta (sempre fixos, só para exibição)
+        const propostaDescontoTarifa = dadosUC.proposta_desconto_tarifa || '20%';
+        const propostaDescontoBandeira = dadosUC.proposta_desconto_bandeira || '20%';
+        
+        // Valores ATUAIS da controle_clube (editáveis)
+        const controleDescontoTarifa = dadosUC.desconto_tarifa; // pode ser null
+        const controleDescontoBandeira = dadosUC.desconto_bandeira; // pode ser null
+        
+        // Se controle_clube tem valores próprios (não null), está usando individual
+        // Se controle_clube é null, está usando da proposta
+        const temDescontoIndividual = controleDescontoTarifa !== null && controleDescontoBandeira !== null;
+        const usaDescontoProposta = !temDescontoIndividual;
+        
+        // Valores para mostrar nos inputs (quando editável)
+        const inputDescontoTarifa = temDescontoIndividual ? 
+          parseFloat(controleDescontoTarifa.replace('%', '')) : 
+          parseFloat(propostaDescontoTarifa.replace('%', ''));
+          
+        const inputDescontoBandeira = temDescontoIndividual ? 
+          parseFloat(controleDescontoBandeira.replace('%', '')) : 
+          parseFloat(propostaDescontoBandeira.replace('%', ''));
+
+        // ✅ CALIBRAGEM (manter como está)
         const calibragemIndividualValue = dadosUC.calibragem_individual;
         const temCalibragemIndividual = calibragemIndividualValue !== null && calibragemIndividualValue !== undefined;
         const usarCalibragemGlobal = !temCalibragemIndividual;
-        
-        console.log('🎯 Debug calibragem:', {
-          calibragem_individual_raw: calibragemIndividualValue,
-          tem_calibragem_individual: temCalibragemIndividual,
-          usar_calibragem_global: usarCalibragemGlobal,
-          calibragem_global: dadosUC.calibragem_global
-        });
 
-        // ✅ LÓGICA DOS DESCONTOS
-        const proposta_desconto_tarifa = dadosUC.proposta_desconto_tarifa || '20%';
-        const proposta_desconto_bandeira = dadosUC.proposta_desconto_bandeira || '20%';
-        
-        const descontoTarifaAtual = dadosUC.desconto_tarifa || proposta_desconto_tarifa;
-        const descontoBandeiraAtual = dadosUC.desconto_bandeira || proposta_desconto_bandeira;
-        
-        const descontoTarifaProposta = dadosUC.desconto_tarifa_numerico || dadosUC.proposta_desconto_tarifa_numerico || 20;
-        const descontoBandeiraProposta = dadosUC.desconto_bandeira_numerico || dadosUC.proposta_desconto_bandeira_numerico || 20;
-        
-        const usaDescontoProposta = 
-          descontoTarifaAtual === proposta_desconto_tarifa && 
-          descontoBandeiraAtual === proposta_desconto_bandeira;
-
-        // ✅ DEFINIR OS DADOS NO ESTADO
         setDados({
           numero_proposta: dadosUC.numero_proposta || '',
           nome_cliente: dadosUC.nome_cliente || '',
@@ -1328,26 +1332,34 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           consumo_medio: dadosUC.consumo_medio || '',
           observacoes: dadosUC.observacoes || '',
           
-          // ✅ CALIBRAGEM CORRIGIDA
+          // CALIBRAGEM
           usa_calibragem_global: usarCalibragemGlobal,
           calibragemIndividual: temCalibragemIndividual ? calibragemIndividualValue.toString() : '',
           calibragem_global: dadosUC.calibragem_global || 0,
           
-          // DESCONTOS
-          desconto_tarifa: descontoTarifaAtual,
-          desconto_bandeira: descontoBandeiraAtual,
+          // ✅ DESCONTOS CORRIGIDOS
           usa_desconto_proposta: usaDescontoProposta,
-          proposta_desconto_tarifa: descontoTarifaProposta,
-          proposta_desconto_bandeira: descontoBandeiraProposta,
+          
+          // Valores ORIGINAIS da proposta (só para exibição no cabeçalho)
+          proposta_desconto_tarifa_original: propostaDescontoTarifa,
+          proposta_desconto_bandeira_original: propostaDescontoBandeira,
+          
+          // Valores para os INPUTS (editáveis)
+          desconto_tarifa: inputDescontoTarifa,
+          desconto_bandeira: inputDescontoBandeira,
+          
           controleId: item.controleId
         });
 
-        console.log('✅ Estado final dos dados:', {
-          usa_calibragem_global: usarCalibragemGlobal,
-          calibragemIndividual: temCalibragemIndividual ? calibragemIndividualValue.toString() : '',
-          tem_calibragem_individual: temCalibragemIndividual
+        console.log('✅ Estado configurado:', {
+          usa_desconto_proposta: usaDescontoProposta,
+          proposta_original_tarifa: propostaDescontoTarifa,
+          proposta_original_bandeira: propostaDescontoBandeira,
+          input_tarifa: inputDescontoTarifa,
+          input_bandeira: inputDescontoBandeira,
+          tem_desconto_individual: temDescontoIndividual
         });
-        
+          
       } catch (error) {
         console.error('❌ Erro ao carregar dados da UC:', error);
         showNotification('Erro ao carregar dados da UC: ' + error.message, 'error');
@@ -1397,15 +1409,13 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
       calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
       observacoes: dados.observacoes,
       
-      // ✅ DESCONTOS - lógica corrigida
+      // ✅ DESCONTOS CORRIGIDOS
       usa_desconto_proposta: dados.usa_desconto_proposta,
-      ...(dados.usa_desconto_proposta ? {} : {
-        desconto_tarifa: parseFloat(dados.desconto_tarifa),
-        desconto_bandeira: parseFloat(dados.desconto_bandeira)
-      })
+      desconto_tarifa: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_tarifa),
+      desconto_bandeira: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_bandeira)
     };
 
-    console.log('🔍 Payload sendo enviado:', payload);
+    console.log('🔍 Payload correto sendo enviado:', payload);
     onSave(payload);
   };
 
@@ -1435,21 +1445,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
   };
 
   const toggleDescontoProposta = (checked) => {
-    if (checked) {
-      // Usar descontos da proposta
-      setDados(prev => ({
-        ...prev,
-        usa_desconto_proposta: true,
-        desconto_tarifa: prev.proposta_desconto_tarifa,
-        desconto_bandeira: prev.proposta_desconto_bandeira
-      }));
-    } else {
-      // Usar descontos individuais
-      setDados(prev => ({
-        ...prev,
-        usa_desconto_proposta: false
-      }));
-    }
+    console.log('🎯 Toggle desconto proposta:', checked);
+    
+    setDados(prev => ({
+      ...prev,
+      usa_desconto_proposta: checked
+      // ✅ NÃO alterar os valores dos inputs aqui!
+      // Os inputs mantêm os valores atuais da controle_clube
+    }));
   };
 
 
@@ -1546,13 +1549,11 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
               <strong>Descontos da Proposta:</strong>
             </p>
             <p style={{ margin: '0' }}>
-              <TrendingUp size={14} style={{ display: 'inline', marginRight: '4px' }} />
-              Tarifa: <span style={{ fontWeight: '600', color: '#007bff' }}>{dados.proposta_desconto_tarifa}%</span>
-              {' | '}
-              <Flag size={14} style={{ display: 'inline', marginRight: '4px' }} />
-              Bandeira: <span style={{ fontWeight: '600', color: '#007bff' }}>{dados.proposta_desconto_bandeira}%</span>
+              Tarifa: <strong>{dados.proposta_desconto_tarifa_original}</strong> | 
+              Bandeira: <strong>{dados.proposta_desconto_bandeira_original}</strong>
             </p>
           </div>
+
 
           {/* Campos de desconto individual */}
           <div className="descontos-individuais" style={{ opacity: dados.usa_desconto_proposta ? 0.5 : 1 }}>
