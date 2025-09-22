@@ -551,11 +551,16 @@ const NovaPropostaPage = () => {
       if (afterCreateProposta) {
         await afterCreateProposta();
       }
-      
+
+      // ✅ REFRESH DOS DADOS ANTES DE NAVEGAR
+      console.log('🔄 Atualizando dados automaticamente após criação de proposta...');
+      await loadPropostas(1, {}, true);
+      await loadControle(1, {}, true);
+
       reset();
       setArquivosFatura({});
       setBeneficiosAdicionais([]);
-      
+
       // Redirecionar
       navigate('/prospec');
 

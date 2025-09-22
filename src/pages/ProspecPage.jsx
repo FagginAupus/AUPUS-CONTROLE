@@ -714,10 +714,22 @@ const ProspecPage = () => {
               <Clock size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <span className="stat-label">Aguardando</span>
-              <span className="stat-value">{dadosFiltrados.filter(item => 
-                  (item.status || 'Aguardando') === 'Aguardando'
-              ).length}</span>
+              <span className="stat-value">
+                {(() => {
+                  const aguardando = dadosFiltrados.filter(item => (item.status || 'Aguardando') === 'Aguardando');
+                  const somaKwh = aguardando.reduce((acc, item) => acc + (parseFloat(item.media) || 0), 0);
+                  return somaKwh.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }) + ' kWh';
+                })()}
+              </span>
+              <span className="stat-label-small">
+                {(() => {
+                  const quantidade = dadosFiltrados.filter(item => (item.status || 'Aguardando') === 'Aguardando').length;
+                  return `${quantidade} ${quantidade === 1 ? 'Proposta' : 'Propostas'} Aguardando`;
+                })()}
+              </span>
             </div>
           </div>
           <div className="stat-card">
@@ -725,10 +737,22 @@ const ProspecPage = () => {
               <CheckCircle size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
             <div className="stat-content">
-              <span className="stat-label">Fechadas</span>
-              <span className="stat-value">{dadosFiltrados.filter(item => 
-                  (item.status || 'Aguardando') === 'Fechada'
-              ).length}</span>
+              <span className="stat-value">
+                {(() => {
+                  const fechadas = dadosFiltrados.filter(item => (item.status || 'Aguardando') === 'Fechada');
+                  const somaKwh = fechadas.reduce((acc, item) => acc + (parseFloat(item.media) || 0), 0);
+                  return somaKwh.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }) + ' kWh';
+                })()}
+              </span>
+              <span className="stat-label-small">
+                {(() => {
+                  const quantidade = dadosFiltrados.filter(item => (item.status || 'Aguardando') === 'Fechada').length;
+                  return `${quantidade} ${quantidade === 1 ? 'Proposta' : 'Propostas'} Fechadas`;
+                })()}
+              </span>
             </div>
           </div>
           <div className="stat-card">
