@@ -44,32 +44,84 @@ const NovaPropostaPage = () => {
 
   const handleFileUpload = (ucIndex, file) => {
     console.log(`📁 Upload de fatura para UC ${ucIndex}:`, file?.name);
+    console.log('🔍 Detalhes do arquivo:', {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size
+    });
     
     // Validar arquivo
     if (file) {
+      // ✅ CORREÇÃO: Lista mais abrangente de MIME types
       const allowedTypes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/jpg', 
-      'image/png'
-    ];
-      const maxSize = 100 * 1024 * 1024; // 10MB
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg',          // Alguns browsers podem reportar assim
+        'image/pjpeg',        // Internet Explorer
+        'image/png',
+        'image/x-png'         // Variação do PNG
+      ];
       
-      if (!allowedTypes.includes(file.type)) {
-        showNotification('Apenas arquivos PDF, JPG e PNG são permitidos para faturas', 'error');
+      // ✅ CORREÇÃO: Validação também por extensão como fallback
+      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+      const fileName = file.name.toLowerCase();
+      const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+      
+      const maxSize = 10 * 1024 * 1024; // ✅ CORREÇÃO: 10MB (não 100MB)
+      
+      // ✅ VALIDAÇÃO MELHORADA: MIME type OU extensão
+      const isMimeTypeValid = allowedTypes.includes(file.type);
+      const isFileValid = isMimeTypeValid || hasValidExtension;
+      
+      console.log('🔍 Validação do arquivo:', {
+        mimeType: file.type,
+        isMimeTypeValid,
+        hasValidExtension,
+        isFileValid,
+        size: file.size,
+        maxSize
+      });
+      
+      if (!isFileValid) {
+        console.error('❌ Tipo de arquivo inválido:', {
+          type: file.type,
+          name: file.name,
+          allowedTypes,
+          allowedExtensions
+        });
+        showNotification(
+          `Apenas arquivos PDF, JPG e PNG são permitidos para faturas. Arquivo enviado: ${file.type}`, 
+          'error'
+        );
         return;
       }
       
       if (file.size > maxSize) {
+        console.error('❌ Arquivo muito grande:', {
+          size: file.size,
+          maxSize,
+          sizeMB: (file.size / 1024 / 1024).toFixed(2)
+        });
         showNotification('Arquivo muito grande. Tamanho máximo: 10MB', 'error');
         return;
       }
+      
+      console.log('✅ Arquivo validado com sucesso para UC', ucIndex);
     }
     
-    setArquivosFatura(prev => ({
-      ...prev,
-      [ucIndex]: file || null
-    }));
+    // ✅ CORREÇÃO: Garantir que o estado seja atualizado
+    setArquivosFatura(prev => {
+      const newState = {
+        ...prev,
+        [ucIndex]: file || null
+      };
+      console.log('📝 Estado arquivosFatura atualizado:', {
+        ucIndex,
+        fileName: file?.name,
+        newState: Object.keys(newState)
+      });
+      return newState;
+    });
   };
 
   const uploadArquivosFatura = async (numeroUC, ucIndex, propostaId) => {

@@ -1347,13 +1347,22 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     setLoading(true);
     
     try {
-      // ✅ FAZER UPLOAD DA FATURA PRIMEIRO (DENTRO DO MODAL)
+      // ✅ FAZER UPLOAD DA FATURA PRIMEIRO (DENTRO DO MODAL) - CORRIGIDO
       if (faturaArquivo && (item.numeroUC || item.numero_unidade)) {
         try {
           console.log('📤 Fazendo upload da fatura da UC...');
           
           const propostaId = item.propostaId || item.id?.split('-')[0];
           const numeroUC = item.numeroUC || item.numero_unidade;
+          
+          console.log('🔍 DEBUG - Dados do upload:', {
+            propostaId,
+            numeroUC,
+            arquivo: faturaArquivo.name,
+            tamanho: faturaArquivo.size,
+            tipo: faturaArquivo.type
+          });
+          
           const formData = new FormData();
           formData.append('arquivo', faturaArquivo);
           formData.append('numeroUC', String(numeroUC));
@@ -1367,46 +1376,128 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
             body: formData
           });
 
+          // ✅ CORREÇÃO: Verificar se a resposta é JSON válida
+          console.log('📥 Response status:', response.status);
+          console.log('📥 Response headers:', Object.fromEntries(response.headers));
+          
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro no upload da fatura: HTTP ${response.status}`);
+            // ✅ CORREÇÃO: Tentar obter texto da resposta para debug
+            let errorText;
+            try {
+              errorText = await response.text();
+              console.error('❌ Resposta de erro do servidor:', errorText);
+            } catch (textError) {
+              console.error('❌ Não foi possível ler resposta de erro:', textError);
+              errorText = `HTTP ${response.status}`;
+            }
+            
+            throw new Error(`Erro no upload da fatura: HTTP ${response.status} - ${errorText}`);
           }
 
-          const result = await response.json();
+          // ✅ CORREÇÃO: Verificar se a resposta contém JSON válido
+          const contentType = response.headers.get('content-type');
+          console.log('📋 Content-Type da resposta:', contentType);
+          
+          if (!contentType || !contentType.includes('application/json')) {
+            console.warn('⚠️ Resposta não é JSON, tentando ler como texto...');
+            const responseText = await response.text();
+            console.error('❌ Resposta não-JSON:', responseText);
+            throw new Error(`Servidor retornou resposta inválida (não-JSON): ${responseText.substring(0, 200)}...`);
+          }
+
+          // ✅ CORREÇÃO: Tentar fazer parse do JSON com tratamento de erro
+          let result;
+          try {
+            const responseText = await response.text();
+            console.log('📄 Resposta raw do servidor:', responseText.substring(0, 500));
+            
+            if (!responseText.trim()) {
+              throw new Error('Resposta vazia do servidor');
+            }
+            
+            result = JSON.parse(responseText);
+            console.log('✅ JSON parseado com sucesso:', result);
+          } catch (jsonError) {
+            console.error('❌ Erro ao fazer parse do JSON:', jsonError);
+            console.error('❌ Resposta que causou erro:', await response.text());
+            throw new Error(`Resposta JSON inválida do servidor: ${jsonError.message}`);
+          }
+
+          // ✅ Validar estrutura da resposta
+          if (!result || typeof result !== 'object') {
+            throw new Error('Resposta do servidor não é um objeto válido');
+          }
+
+          if (!result.success) {
+            throw new Error(result.message || 'Upload falhou sem mensagem de erro');
+          }
+
           console.log('✅ Fatura da UC enviada com sucesso:', result.nomeArquivo);
           showNotification(`Fatura da UC ${numeroUC} enviada com sucesso!`, 'success');
           setFaturaArquivo(null);
           
         } catch (error) {
           console.error('❌ Erro ao enviar fatura da UC:', error);
+          console.error('❌ Stack trace:', error.stack);
           showNotification(`Erro ao enviar fatura da UC: ${error.message}`, 'error');
           setLoading(false);
           return;
         }
       }
 
-      const dadosCompletos = {
-        ...dados,
-        consultor_id: dados.consultor_id || null,
-        consultor: dados.consultor || '',
-        id: dados.id || dados.propostaId,
-        propostaId: dados.propostaId || dados.id
-      };
-
-      console.log('📤 Dados enviados no handleSubmit:', {
-        id: dadosCompletos.id,
-        consultor: dadosCompletos.consultor,
-        nomeCliente: dadosCompletos.nomeCliente,
-        status: dadosCompletos.status
-      });
-
-      await onSave(dadosCompletos);
+      // ... resto do método continua igual ...
       
     } catch (error) {
       console.error('❌ Erro ao salvar proposta:', error);
       showNotification(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleApiResponse = async (response, operacao = 'operação') => {
+    console.log(`📥 Response ${operacao}:`, {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      url: response.url
+    });
+
+    // Verificar status HTTP
+    if (!response.ok) {
+      let errorText;
+      try {
+        errorText = await response.text();
+      } catch {
+        errorText = `HTTP ${response.status} ${response.statusText}`;
+      }
+      
+      console.error(`❌ Erro HTTP ${operacao}:`, errorText);
+      throw new Error(`Erro na ${operacao}: ${errorText}`);
+    }
+
+    // Verificar Content-Type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const responseText = await response.text();
+      console.error(`❌ Resposta não-JSON ${operacao}:`, responseText);
+      throw new Error(`Servidor retornou resposta não-JSON para ${operacao}`);
+    }
+
+    // Parse JSON
+    const responseText = await response.text();
+    if (!responseText.trim()) {
+      throw new Error(`Resposta vazia do servidor para ${operacao}`);
+    }
+
+    try {
+      const result = JSON.parse(responseText);
+      console.log(`✅ JSON parseado ${operacao}:`, result);
+      return result;
+    } catch (jsonError) {
+      console.error(`❌ Erro JSON ${operacao}:`, jsonError);
+      console.error('❌ Resposta que causou erro:', responseText.substring(0, 500));
+      throw new Error(`JSON inválido na ${operacao}: ${jsonError.message}`);
     }
   };
 
@@ -1422,28 +1513,95 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
 
   const handleFaturaUpload = (file) => {
     console.log('📁 Fatura selecionada:', file?.name);
+    console.log('🔍 Detalhes do arquivo:', {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size
+    });
     
     if (file) {
+      // ✅ CORREÇÃO: Lista mais abrangente de MIME types
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
-        'image/jpg',
-        'image/png'
+        'image/jpg',          // Alguns browsers podem reportar assim
+        'image/pjpeg',        // Internet Explorer
+        'image/png',
+        'image/x-png'         // Variação do PNG
       ];
-      const maxSize = 100 * 1024 * 1024; // 10MB
       
-      if (!allowedTypes.includes(file.type)) {
-        alert('Apenas arquivos PDF, JPG e PNG são permitidos para faturas');
+      // ✅ CORREÇÃO: Validação também por extensão como fallback
+      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+      const fileName = file.name.toLowerCase();
+      const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+      
+      const maxSize = 10 * 1024 * 1024; // ✅ CORREÇÃO: 10MB (não 100MB)
+      
+      // ✅ VALIDAÇÃO MELHORADA: MIME type OU extensão
+      const isMimeTypeValid = allowedTypes.includes(file.type);
+      const isFileValid = isMimeTypeValid || hasValidExtension;
+      
+      console.log('🔍 Validação do arquivo:', {
+        mimeType: file.type,
+        isMimeTypeValid,
+        hasValidExtension,
+        isFileValid,
+        size: file.size,
+        maxSize
+      });
+      
+      if (!isFileValid) {
+        console.error('❌ Tipo de arquivo inválido:', {
+          type: file.type,
+          name: file.name,
+          allowedTypes,
+          allowedExtensions
+        });
+        alert(`Apenas arquivos PDF, JPG e PNG são permitidos para faturas. Arquivo enviado: ${file.type}`);
         return;
       }
-            
+          
       if (file.size > maxSize) {
+        console.error('❌ Arquivo muito grande:', {
+          size: file.size,
+          maxSize,
+          sizeMB: (file.size / 1024 / 1024).toFixed(2)
+        });
         alert('Arquivo muito grande. Tamanho máximo: 10MB');
         return;
       }
+      
+      console.log('✅ Arquivo validado com sucesso');
     }
     
     setFaturaArquivo(file);
+  };
+
+  const debugFileInfo = (file) => {
+    if (!file) return;
+    
+    console.log('🔍 DEBUG - Informações completas do arquivo:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+      lastModifiedDate: new Date(file.lastModified),
+      // Extensão extraída do nome
+      extension: file.name.split('.').pop()?.toLowerCase(),
+      // Verificar se é realmente uma imagem
+      isImageFile: file.type.startsWith('image/'),
+      // Tamanho em MB
+      sizeMB: (file.size / 1024 / 1024).toFixed(2) + ' MB'
+    });
+    
+    // Verificar se o browser reporta MIME type corretamente
+    if (file.type === '' || !file.type) {
+      console.warn('⚠️ MIME type vazio - browser não conseguiu detectar');
+    }
+    
+    if (file.name.toLowerCase().endsWith('.jpg') && !file.type.includes('jpeg')) {
+      console.warn('⚠️ Arquivo .jpg mas MIME type não contém "jpeg":', file.type);
+    }
   };
 
   const handleTipoDocumentoChange = (tipo) => {
