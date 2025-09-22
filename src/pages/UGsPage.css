@@ -636,6 +636,39 @@
   .modal-ug .modal-footer {
     padding: 16px !important;
   }
+
+  /* Tabela responsiva - ocultar colunas desnecessárias em mobile */
+  .table th:nth-child(2), /* Potência CA */
+  .table th:nth-child(3), /* Potência CC */
+  .table th:nth-child(4), /* Fator de Capacidade */
+  .table th:nth-child(6), /* UCs Atribuídas */
+  .table td:nth-child(2), /* Potência CA */
+  .table td:nth-child(3), /* Potência CC */
+  .table td:nth-child(4), /* Fator de Capacidade */
+  .table td:nth-child(6) { /* UCs Atribuídas */
+    display: none !important;
+  }
+
+  /* Ajustar largura das colunas restantes para UGs */
+  .table th:nth-child(1), /* Nome da Usina */
+  .table td:nth-child(1) {
+    width: 40% !important;
+  }
+
+  .table th:nth-child(5), /* Capacidade */
+  .table td:nth-child(5) {
+    width: 30% !important;
+  }
+
+  .table th:nth-child(7), /* Média Total */
+  .table td:nth-child(7) {
+    width: 20% !important;
+  }
+
+  .table th:nth-child(8), /* Ações (se admin) */
+  .table td:nth-child(8) {
+    width: 10% !important;
+  }
 }
 
 @media (max-width: 480px) {

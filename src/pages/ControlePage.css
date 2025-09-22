@@ -2264,3 +2264,62 @@ small {
   color: #6c757d !important;
   opacity: 0.7 !important;
 }
+
+/* Responsividade da tabela - Mobile */
+@media (max-width: 768px) {
+  /* Ocultar colunas desnecessárias em mobile */
+  .table th:nth-child(1), /* Proposta */
+  .table th:nth-child(4), /* Consultor */
+  .table th:nth-child(5), /* UG */
+  .table th:nth-child(7), /* Calibrada (se admin) */
+  .table th:nth-child(8), /* Status Troca */
+  .table td:nth-child(1), /* Proposta */
+  .table td:nth-child(4), /* Consultor */
+  .table td:nth-child(5), /* UG */
+  .table td:nth-child(7), /* Calibrada (se admin) */
+  .table td:nth-child(8) { /* Status Troca */
+    display: none !important;
+  }
+
+  /* Ajustar largura das colunas restantes para controle */
+  .table th:nth-child(2), /* Cliente */
+  .table td:nth-child(2) {
+    width: 40% !important;
+  }
+
+  .table th:nth-child(3), /* UC */
+  .table td:nth-child(3) {
+    width: 25% !important;
+  }
+
+  .table th:nth-child(6), /* Média */
+  .table td:nth-child(6) {
+    width: 25% !important;
+  }
+
+  .table th:nth-child(9), /* Ações (se admin) */
+  .table td:nth-child(9) {
+    width: 10% !important;
+  }
+
+  /* Ajustar elementos da tabela para mobile */
+  .table th,
+  .table td {
+    padding: 6px 3px !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Ajustar botões de ação específicos do controle */
+  .action-buttons-controle {
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .btn-uc,
+  .btn-ug {
+    width: 35px !important;
+    height: 25px !important;
+    font-size: 0.65rem !important;
+    padding: 2px !important;
+  }
+}

@@ -1956,4 +1956,56 @@ button.btn-visualizar-doc:hover {
   .status-info li {
     font-size: 12px;
   }
+
+  /* Tabela responsiva - ocultar colunas desnecessárias em mobile */
+  .table th:nth-child(2), /* Nº Proposta */
+  .table th:nth-child(3), /* Data */
+  .table th:nth-child(4), /* Apelido */
+  .table th:nth-child(7), /* Status */
+  .table td:nth-child(2), /* Nº Proposta */
+  .table td:nth-child(3), /* Data */
+  .table td:nth-child(4), /* Apelido */
+  .table td:nth-child(7) { /* Status */
+    display: none !important;
+  }
+
+  /* Ajustar largura das colunas restantes */
+  .table th:nth-child(1), /* Cliente */
+  .table td:nth-child(1) {
+    width: 35% !important;
+  }
+
+  .table th:nth-child(5), /* UC */
+  .table td:nth-child(5) {
+    width: 20% !important;
+  }
+
+  .table th:nth-child(6), /* Média */
+  .table td:nth-child(6) {
+    width: 25% !important;
+  }
+
+  .table th:nth-child(8), /* Ações */
+  .table td:nth-child(8) {
+    width: 20% !important;
+  }
+
+  /* Ajustar padding das células em mobile */
+  .table th,
+  .table td {
+    padding: 8px 4px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Ajustar botões de ação em mobile */
+  .table-actions {
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .table-actions button {
+    padding: 4px 6px !important;
+    font-size: 0.8rem !important;
+    min-width: auto !important;
+  }
 }
