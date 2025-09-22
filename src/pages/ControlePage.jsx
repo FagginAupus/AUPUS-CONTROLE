@@ -9,26 +9,28 @@ import apiService from '../services/apiService';
 import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
 import exportExcelService from '../services/exportExcelService';
 import { useData } from '../context/DataContext';
-import { 
-  Database, 
-  Users, 
-  AlertTriangle, 
+import {
+  Database,
+  Users,
+  AlertTriangle,
   CheckCircle,
-  Circle, 
+  Circle,
   Edit,
   Clock,
-  Home,     
+  Home,
   Settings,
   Target,
-  Building, 
+  Building,
   Zap,
-  Percent,      
-  TrendingUp,   
+  Percent,
+  TrendingUp,
   Flag,
   X,
-  FileText,    
+  FileText,
   Save,
-  Download        
+  Download,
+  Eye,
+  Trash2
 } from 'lucide-react';
 import './ControlePage.css';
 
@@ -1272,7 +1274,9 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     proposta_desconto_tarifa: 20,
     proposta_desconto_bandeira: 20,
     usa_desconto_proposta: true,
-    controleId: ''
+    controleId: '',
+    // DOCUMENTAÇÃO
+    documentacao_troca_titularidade: ''
   });
 
 
@@ -1347,8 +1351,11 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           // Valores para os INPUTS (editáveis)
           desconto_tarifa: inputDescontoTarifa,
           desconto_bandeira: inputDescontoBandeira,
-          
-          controleId: item.controleId
+
+          controleId: item.controleId,
+
+          // DOCUMENTAÇÃO
+          documentacao_troca_titularidade: dadosUC.documentacao_troca_titularidade || ''
         });
 
         console.log('✅ Estado configurado:', {
@@ -1371,11 +1378,11 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     if (item?.controleId) {
       carregarDadosUC();
     }
-  }, [item, showNotification]);
+  }, [item?.controleId]); // Só recarregar se o controleId mudar
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validações existentes...
     if (!dados.consumo_medio || parseFloat(dados.consumo_medio) < 0) {
       alert('Consumo médio deve ser um valor positivo');
@@ -1401,22 +1408,51 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
       }
     }
 
-    // ✅ PAYLOAD CORRIGIDO
-    const payload = {
-      controleId: dados.controleId || item.controleId,
-      consumo_medio: parseFloat(dados.consumo_medio),
-      usa_calibragem_global: dados.usa_calibragem_global,
-      calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
-      observacoes: dados.observacoes,
-      
-      // ✅ DESCONTOS CORRIGIDOS
-      usa_desconto_proposta: dados.usa_desconto_proposta,
-      desconto_tarifa: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_tarifa),
-      desconto_bandeira: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_bandeira)
-    };
+    try {
+      const controleId = dados.controleId || item.controleId;
 
-    console.log('🔍 Payload correto sendo enviado:', payload);
-    onSave(payload);
+      // Se há um documento local para fazer upload, fazê-lo primeiro
+      if (dados.documentacao_is_local && dados.documentacao_arquivo_local) {
+        showNotification('Salvando documento...', 'info');
+        const nomeArquivoSalvo = await uploadDocumentoReal(controleId);
+
+        if (nomeArquivoSalvo) {
+          // Atualizar estado para refletir que o documento agora está salvo
+          setDados(prev => ({
+            ...prev,
+            documentacao_troca_titularidade: nomeArquivoSalvo,
+            documentacao_arquivo_local: null,
+            documentacao_is_local: false
+          }));
+
+          // Limpar blob URL local
+          if (dados.documentacao_blob_url) {
+            URL.revokeObjectURL(dados.documentacao_blob_url);
+          }
+        }
+      }
+
+      // ✅ PAYLOAD CORRIGIDO
+      const payload = {
+        controleId: controleId,
+        consumo_medio: parseFloat(dados.consumo_medio),
+        usa_calibragem_global: dados.usa_calibragem_global,
+        calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
+        observacoes: dados.observacoes,
+
+        // ✅ DESCONTOS CORRIGIDOS
+        usa_desconto_proposta: dados.usa_desconto_proposta,
+        desconto_tarifa: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_tarifa),
+        desconto_bandeira: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_bandeira)
+      };
+
+      console.log('🔍 Payload correto sendo enviado:', payload);
+      onSave(payload);
+
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      showNotification('Erro ao salvar documento: ' + error.message, 'error');
+    }
   };
 
   const handleCalibragemGlobalChange = (checked) => {
@@ -1446,13 +1482,214 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
   const toggleDescontoProposta = (checked) => {
     console.log('🎯 Toggle desconto proposta:', checked);
-    
+
     setDados(prev => ({
       ...prev,
       usa_desconto_proposta: checked
       // ✅ NÃO alterar os valores dos inputs aqui!
       // Os inputs mantêm os valores atuais da controle_clube
     }));
+  };
+
+  // Funções para lidar com documentação
+  const handleDocumentUpload = async (file) => {
+    if (!file) return;
+
+    // Validar arquivo
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      showNotification('Arquivo muito grande. Tamanho máximo: 10MB', 'error');
+      return;
+    }
+
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      showNotification('Tipo de arquivo não permitido. Use PDF ou imagens.', 'error');
+      return;
+    }
+
+    try {
+      // Criar blob URL para visualização local
+      const blobUrl = URL.createObjectURL(file);
+
+      // Armazenar arquivo e blob URL no estado local (não enviar para backend ainda)
+      setDados(prev => ({
+        ...prev,
+        documentacao_troca_titularidade: file.name,
+        documentacao_arquivo_local: file, // Arquivo para upload posterior
+        documentacao_blob_url: blobUrl, // URL para visualização imediata
+        documentacao_is_local: true // Flag indicando que é local
+      }));
+
+      showNotification('Documento adicionado. Clique em "Salvar Alterações" para confirmar.', 'info');
+
+    } catch (error) {
+      console.error('Erro ao processar arquivo:', error);
+      showNotification('Erro ao processar arquivo: ' + error.message, 'error');
+    }
+  };
+
+  const visualizarDocumento = async (nomeArquivo) => {
+    if (!nomeArquivo) {
+      console.log('Nenhum arquivo para visualizar');
+      return;
+    }
+
+    try {
+      console.log('Visualizando documento:', nomeArquivo);
+      console.log('Estado atual dos dados:', {
+        documentacao_is_local: dados.documentacao_is_local,
+        documentacao_blob_url: dados.documentacao_blob_url,
+        documentacao_arquivo_local: dados.documentacao_arquivo_local
+      });
+
+      // Verificar se é um documento local (não salvo ainda)
+      if (dados.documentacao_is_local && dados.documentacao_blob_url) {
+        console.log('Abrindo documento local:', nomeArquivo);
+        window.open(dados.documentacao_blob_url, '_blank');
+        return;
+      }
+
+      // Se não é local, buscar do servidor
+      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/controle/documento/${nomeArquivo}`;
+      const token = localStorage.getItem('aupus_token');
+
+      console.log('Buscando documento do servidor:', url);
+
+      // Fazer requisição autenticada e obter blob
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      }
+
+      // Criar blob e URL para download
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Abrir em nova aba
+      window.open(blobUrl, '_blank');
+
+      // Limpar URL do blob após um tempo
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 10000);
+
+    } catch (error) {
+      console.error('Erro ao visualizar documento:', error);
+      showNotification('Erro ao abrir documento: ' + error.message, 'error');
+    }
+  };
+
+  // Função para fazer upload real do documento para o backend
+  const uploadDocumentoReal = async (controleId) => {
+    if (!dados.documentacao_arquivo_local) {
+      return null; // Nenhum arquivo para enviar
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('documento', dados.documentacao_arquivo_local);
+      formData.append('controle_id', controleId);
+      formData.append('tipo', 'declaracao_troca_titularidade');
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/controle/upload-documento`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao fazer upload do documento');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        return result.nome_arquivo;
+      } else {
+        throw new Error(result.message || 'Erro no upload do documento');
+      }
+
+    } catch (error) {
+      console.error('Erro no upload real:', error);
+      throw error;
+    }
+  };
+
+  const removerDocumento = async () => {
+    try {
+      console.log('Removendo documento...', dados.documentacao_troca_titularidade);
+
+      // Se é um arquivo local (não salvo), apenas limpar estado
+      if (dados.documentacao_is_local) {
+        console.log('Removendo arquivo local');
+
+        // Limpar blob URL se existir
+        if (dados.documentacao_blob_url) {
+          URL.revokeObjectURL(dados.documentacao_blob_url);
+        }
+
+        setDados(prev => ({
+          ...prev,
+          documentacao_troca_titularidade: '',
+          documentacao_arquivo_local: null,
+          documentacao_blob_url: null,
+          documentacao_is_local: false
+        }));
+
+        showNotification('Documento removido.', 'success');
+        console.log('Documento local removido com sucesso');
+        return;
+      }
+
+      // Se é um arquivo salvo, chamar API para deletar do backend
+      if (dados.documentacao_troca_titularidade && !dados.documentacao_is_local) {
+        console.log('Removendo arquivo salvo do backend');
+
+        const controleId = dados.controleId || item.controleId;
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/controle/${controleId}/documento`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Erro ao remover documento');
+        }
+
+        // Atualizar estado local
+        setDados(prev => ({
+          ...prev,
+          documentacao_troca_titularidade: '',
+          documentacao_arquivo_local: null,
+          documentacao_blob_url: null,
+          documentacao_is_local: false
+        }));
+
+        showNotification('Documento removido com sucesso!', 'success');
+        console.log('Documento removido do backend com sucesso');
+      }
+
+    } catch (error) {
+      console.error('Erro ao remover documento:', error);
+      showNotification('Erro ao remover documento: ' + error.message, 'error');
+    }
   };
 
 
@@ -1663,6 +1900,58 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
               />
             </div>
           )}
+        </div>
+
+        {/* ✅ SEÇÃO DE DOCUMENTAÇÃO */}
+        <div className="form-group">
+          <label className="label-with-icon">
+            <FileText size={16} />
+            <strong>Documentação:</strong>
+          </label>
+
+          <div className="form-group file-group">
+            <label>Declaração de Troca de Titularidade</label>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => handleDocumentUpload(e.target.files[0])}
+            />
+            {dados.documentacao_troca_titularidade && (
+              <div className="arquivo-existente">
+                <span className="arquivo-info" title={dados.documentacao_troca_titularidade}>
+                  📎 {dados.documentacao_troca_titularidade.length > 30 ?
+                    dados.documentacao_troca_titularidade.substring(0, 30) + '...' :
+                    dados.documentacao_troca_titularidade}
+                </span>
+                <div className="arquivo-acoes">
+                  <button
+                    type="button"
+                    className="btn-visualizar-doc"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      visualizarDocumento(dados.documentacao_troca_titularidade);
+                    }}
+                    title="Visualizar declaração"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-remover-doc"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removerDocumento();
+                    }}
+                    title="Remover documento"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ✅ NOVO CAMPO: Observações */}
