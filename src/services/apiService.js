@@ -393,6 +393,21 @@ class ApiService {
             return { expired: true, minutesLeft: 0 };
         }
     }
+
+    // ========================================
+    // MÉTODO ESPECÍFICO PARA CRIAR ANALISTA
+    // ========================================
+
+    async criarAnalista(dadosAnalista) {
+        try {
+            console.log('📊 Criando analista via endpoint específico...');
+            const response = await this.post('/usuarios/criar-analista', dadosAnalista);
+            return response;
+        } catch (error) {
+            console.error('Erro ao criar analista:', error);
+            throw error;
+        }
+    }
 }
 
 const apiService = new ApiService();

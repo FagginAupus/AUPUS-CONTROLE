@@ -187,10 +187,39 @@ const Dashboard = () => {
     }
   };
 
+  const handleCriarAnalista = async (dadosAnalista) => {
+    try {
+      const result = await apiService.criarAnalista(dadosAnalista);
+
+      if (result.success) {
+        showNotification('Analista criado com sucesso!', 'success');
+        fecharModalCadastro();
+
+        // Recarregar dados após criação
+        if (user?.role === 'admin') {
+          carregarConsultores();
+        } else {
+          carregarEquipe();
+        }
+
+        if (afterCreateUser) {
+          afterCreateUser(result.data);
+        }
+      } else {
+        showNotification(result.message || 'Erro ao criar analista', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao criar analista:', error);
+      const errorMessage = error.response?.data?.message || 'Erro interno ao criar analista';
+      showNotification(errorMessage, 'error');
+    }
+  };
+
   const getTipoLabel = (type) => {
     const labels = {
+      analista: 'Analista',
       consultor: 'Consultor',
-      gerente: 'Gerente', 
+      gerente: 'Gerente',
       vendedor: 'Vendedor'
     };
     return labels[type] || type;
@@ -199,6 +228,7 @@ const Dashboard = () => {
   const getRoleIcon = (role) => {
     const icons = {
       admin: Crown,
+      analista: Database, // Use Database icon for analysts
       consultor: Briefcase,
       gerente: Users,
       vendedor: User
@@ -233,6 +263,13 @@ const Dashboard = () => {
     
     switch (user?.role) {
       case 'admin':
+        if (canCreateUser('analista')) {
+          botoes.push({
+            tipo: 'analista',
+            icon: Database,
+            label: 'Cadastrar Analista'
+          });
+        }
         if (canCreateUser('consultor')) {
           botoes.push({
             tipo: 'consultor',
@@ -444,8 +481,14 @@ const Dashboard = () => {
         )}
 
         {/* Modal de Cadastro */}
-        {modalCadastro.show && (
-          <ModalCadastroUsuario 
+        {modalCadastro.show && modalCadastro.type === 'analista' && (
+          <ModalCadastroAnalista
+            onClose={fecharModalCadastro}
+            onSubmit={handleCriarAnalista}
+          />
+        )}
+        {modalCadastro.show && modalCadastro.type !== 'analista' && (
+          <ModalCadastroUsuario
             tipo={modalCadastro.type}
             onClose={fecharModalCadastro}
             onSubmit={handleCriarUsuario}
@@ -520,8 +563,9 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
 
   const getTipoLabel = (type) => {
     const labels = {
+      analista: 'Analista',
       consultor: 'Consultor',
-      gerente: 'Gerente', 
+      gerente: 'Gerente',
       vendedor: 'Vendedor'
     };
     return labels[type] || type;
@@ -683,6 +727,172 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
             </button>
             <button type="submit" className="btn-primary-light" disabled={loading}>
               {loading ? 'Salvando...' : `Criar ${getTipoLabel(tipo)}`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Modal específico para cadastro de analistas
+const ModalCadastroAnalista = ({ onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+
+  const [dados, setDados] = useState({
+    nome: '',
+    email_prefix: '',
+    cpf_cnpj: '',
+    endereco: '',
+    cidade: '',
+    estado: '',
+    cep: ''
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!dados.nome.trim() || !dados.email_prefix.trim() || !dados.cpf_cnpj.trim() ||
+        !dados.endereco.trim() || !dados.cidade.trim() || !dados.estado.trim() ||
+        !dados.cep.trim()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSubmit(dados);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro no modal:', error);
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="modal-overlay-light">
+        <div className="modal-light loading-modal">
+          <p>Criando analista...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay-light" onClick={onClose}>
+      <div className="modal-light" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header-light">
+          <h3>
+            <Database size={20} />
+            Cadastrar Analista
+          </h3>
+          <button onClick={onClose} className="btn-close-light">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-body-light">
+          <div className="form-group-light">
+            <label>Nome Completo <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.nome}
+              onChange={(e) => setDados({...dados, nome: e.target.value})}
+              placeholder="Nome completo do analista"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Email <span style={{color: 'red'}}>*</span>:</label>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={dados.email_prefix}
+                onChange={(e) => setDados({...dados, email_prefix: e.target.value})}
+                placeholder="usuario"
+                required
+                style={{ flex: 1 }}
+              />
+              <span style={{ margin: '0 8px', fontWeight: 'bold' }}>@aupusenergia.com.br</span>
+            </div>
+            <small style={{ color: '#666', fontSize: '12px' }}>
+              Digite apenas a parte antes do @. O domínio será adicionado automaticamente.
+            </small>
+          </div>
+
+          <div className="form-group-light">
+            <label>CPF <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.cpf_cnpj}
+              onChange={(e) => setDados({...dados, cpf_cnpj: e.target.value})}
+              placeholder="000.000.000-00"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Endereço <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.endereco}
+              onChange={(e) => setDados({...dados, endereco: e.target.value})}
+              placeholder="Rua, número, complemento"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Cidade <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.cidade}
+              onChange={(e) => setDados({...dados, cidade: e.target.value})}
+              placeholder="Nome da cidade"
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>Estado <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.estado}
+              onChange={(e) => setDados({...dados, estado: e.target.value.toUpperCase()})}
+              placeholder="SP"
+              maxLength={2}
+              required
+            />
+          </div>
+
+          <div className="form-group-light">
+            <label>CEP <span style={{color: 'red'}}>*</span>:</label>
+            <input
+              type="text"
+              value={dados.cep}
+              onChange={(e) => setDados({...dados, cep: e.target.value})}
+              placeholder="00000-000"
+              required
+            />
+          </div>
+
+          <div style={{ backgroundColor: '#f8f9fa', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold' }}>Configurações Padrão:</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#666' }}>
+              <li>Senha inicial: <strong>00000000</strong></li>
+              <li>Status: <strong>Ativo</strong></li>
+              <li>Role: <strong>Analista</strong></li>
+              <li>Permissões: <strong>Mesmas que Admin</strong></li>
+            </ul>
+          </div>
+
+          <div className="modal-footer-light">
+            <button type="button" onClick={onClose} className="btn-secondary-light">
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary-light" disabled={loading}>
+              {loading ? 'Salvando...' : 'Criar Analista'}
             </button>
           </div>
         </form>

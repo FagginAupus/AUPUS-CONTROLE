@@ -281,10 +281,10 @@ export const AuthProvider = ({ children }) => {
     
     const permissions = {
       'dashboard': true,
-      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
-      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
-      'ugs': ['admin'].includes(user.role),
-      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
+      'prospec': ['admin', 'analista', 'consultor', 'gerente', 'vendedor'].includes(user.role),
+      'controle': ['admin', 'analista', 'consultor', 'gerente'].includes(user.role),
+      'ugs': ['admin', 'analista'].includes(user.role),
+      'relatorios': ['admin', 'analista', 'consultor', 'gerente'].includes(user.role)
     };
     
     return permissions[pageName] || false;
@@ -295,6 +295,8 @@ export const AuthProvider = ({ children }) => {
     
     switch (user.role) {
       case 'admin':
+        return ['analista', 'consultor', 'gerente', 'vendedor'].includes(role);
+      case 'analista':
         return ['consultor', 'gerente', 'vendedor'].includes(role);
       case 'consultor':
         return ['gerente', 'vendedor'].includes(role);

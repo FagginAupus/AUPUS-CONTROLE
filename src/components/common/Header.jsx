@@ -1,6 +1,7 @@
-// src/components/common/Header.jsx - Atualizada com logo
+// src/components/common/Header.jsx - Atualizada com logo e notificações
 import React from 'react';
 import { Zap } from 'lucide-react';
+import NotificationIcon from './NotificationIcon';
 import './Header.css';
 
 const Header = ({ title, subtitle, icon: IconComponent }) => {
@@ -8,9 +9,9 @@ const Header = ({ title, subtitle, icon: IconComponent }) => {
     <header className="header">
       <div className="header-content">
         <div className="header-with-logo">
-          <img 
-            src="/Logo.png" 
-            alt="Logo" 
+          <img
+            src="/Logo.png"
+            alt="Logo"
             className="header-logo"
           />
           <h1>
@@ -18,6 +19,9 @@ const Header = ({ title, subtitle, icon: IconComponent }) => {
           </h1>
         </div>
         {subtitle && <p>{subtitle}</p>}
+      </div>
+      <div className="header-actions">
+        <NotificationIcon />
       </div>
     </header>
   );
