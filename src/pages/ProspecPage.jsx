@@ -239,8 +239,12 @@ const ProspecPage = () => {
   // Substituir a função salvarEdicao existente por esta versão corrigida:
 
   const salvarEdicao = async (dadosAtualizados) => {
+    console.log('🟢 INÍCIO salvarEdicao - função chamada');
+    console.log('📊 Dados recebidos em salvarEdicao:', dadosAtualizados);
+
     setLoading(true);
-    
+    console.log('🔄 Loading definido como true em salvarEdicao');
+
     try {
       const { item } = modalEdicao;
       const propostaId = item.propostaId || item.id?.split('-')[0];
@@ -352,11 +356,14 @@ const ProspecPage = () => {
 
       setModalEdicao({ show: false, item: null, index: -1 });
       showNotification('Proposta atualizada com sucesso!', 'success');
-      
+      console.log('✅ salvarEdicao concluída com sucesso');
+
     } catch (error) {
       console.error('❌ Erro ao salvar edição:', error);
+      console.error('❌ Stack trace:', error.stack);
       showNotification('Erro ao salvar: ' + error.message, 'error');
     } finally {
+      console.log('🟢 FIM salvarEdicao - setLoading(false)');
       setLoading(false);
     }
   };
@@ -1335,7 +1342,15 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
+    console.log('🔵 INÍCIO handleSubmit - Botão clicado');
+    console.log('🔍 Estado loading atual:', loading);
+
+    if (loading) {
+      console.log('⚠️ Já está carregando, ignorando submit');
+      return;
+    }
+
     if (dados.consultor_id === null || dados.consultor_id === '') {
       dados.recorrencia = 0;
       dados.consultor_id = null;
@@ -1367,8 +1382,10 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
         return;
       }
     }
-    
+
+    console.log('🔄 Definindo loading = true');
     setLoading(true);
+    console.log('🔍 Loading definido, continuando...');
     
     try {
       // ✅ FAZER UPLOAD DA FATURA PRIMEIRO (DENTRO DO MODAL) - CORRIGIDO
@@ -1469,12 +1486,27 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
         }
       }
 
-      // ... resto do método continua igual ...
-      
+      // ✅ SALVAR OS DADOS DA PROPOSTA
+      console.log('💾 Iniciando salvamento dos dados da proposta...');
+      console.log('📊 Dados que serão enviados:', dados);
+      console.log('🔗 Função onSave:', typeof onSave);
+
+      if (typeof onSave !== 'function') {
+        throw new Error('onSave não é uma função válida');
+      }
+
+      await onSave(dados);
+      console.log('✅ onSave executada com sucesso');
+
     } catch (error) {
-      console.error('❌ Erro ao salvar proposta:', error);
+      console.error('❌ Erro detalhado ao salvar proposta:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
+      });
       showNotification(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`, 'error');
     } finally {
+      console.log('🔵 FIM handleSubmit - setLoading(false)');
       setLoading(false);
     }
   };
@@ -2189,10 +2221,15 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
           </div>
 
           <div className="modal-footer">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`btn btn-primary ${loading ? 'btn-loading' : ''}`}
               disabled={loading}
+              onClick={(e) => {
+                console.log('🔴 BOTÃO CLICADO - Salvar Alterações');
+                console.log('🔍 Evento:', e);
+                console.log('🔍 Loading atual no clique:', loading);
+              }}
             >
               {loading ? (
                 <>
