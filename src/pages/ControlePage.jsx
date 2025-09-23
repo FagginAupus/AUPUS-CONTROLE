@@ -63,6 +63,7 @@ const ControlePage = () => {
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
   const [modalStatusTroca, setModalStatusTroca] = useState({ show: false, item: null, index: -1 });
   const [modalUCDetalhes, setModalUCDetalhes] = useState({ show: false, item: null, index: -1 });
+  const [modalExclusao, setModalExclusao] = useState({ show: false, item: null, index: -1 });
   const [filtros, setFiltros] = useState({
     consultor: '',
     ug: '',
@@ -471,6 +472,65 @@ const ControlePage = () => {
       showNotification('Erro ao atualizar status: ' + error.message, 'error');
     }
   }, [modalStatusTroca, loadControle, controle.filters, loadUgs, showNotification]);
+
+  // Função para confirmar exclusão de UC do controle
+  const confirmarExclusao = useCallback((item, index) => {
+    if (!isAdmin) return;
+
+    console.log('🗑️ Confirmando exclusão da UC:', item);
+    setModalExclusao({ show: true, item, index });
+  }, [isAdmin]);
+
+  // Função para executar soft delete
+  const executarExclusao = useCallback(async () => {
+    console.log('🔴 INÍCIO executarExclusao - função chamada');
+    console.log('🔍 modalExclusao estado:', modalExclusao);
+
+    try {
+      const { item } = modalExclusao;
+
+      if (!item) {
+        console.error('❌ Item não encontrado no modalExclusao');
+        showNotification('Item não encontrado para exclusão', 'error');
+        return;
+      }
+
+      console.log('🗑️ Executando soft delete da UC:', item);
+      console.log('🔍 ID do item:', item.id);
+
+      // Realizar soft delete do controle
+      console.log('📡 Fazendo chamada para API...');
+      console.log('🔗 URL:', `/controle/${item.id}`);
+
+      const response = await apiService.delete(`/controle/${item.id}`);
+
+      console.log('📥 Resposta da API:', response);
+      console.log('✅ Success?', response?.success);
+
+      if (response?.success) {
+        console.log('✅ Exclusão bem-sucedida, iniciando refresh...');
+
+        // ✅ Refresh automático após exclusão
+        console.log('🔄 Atualizando dados automaticamente após exclusão...');
+
+        // Atualizar controle (força reload)
+        await loadControle(1, controle.filters, true);
+        console.log('🔄 loadControle executado');
+
+        setModalExclusao({ show: false, item: null, index: -1 });
+        console.log('🔄 Modal fechado');
+
+        showNotification(response.message || 'UC removida do controle com sucesso!', 'success');
+        console.log('✅ Notificação exibida');
+      } else {
+        console.error('❌ Resposta de erro da API:', response);
+        showNotification(response?.message || 'Erro ao remover UC do controle', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao executar exclusão:', error);
+      showNotification('Erro ao remover UC: ' + error.message, 'error');
+    }
+  }, [modalExclusao, loadControle, controle.filters, showNotification]);
 
   const refreshDados = useCallback(() => {
     console.log('🔄 Refresh manual dos dados');
@@ -986,14 +1046,29 @@ const ControlePage = () => {
                               onClick={item.statusTroca === 'Associado' ? () => editarUG(index) : undefined}
                               className="btn-ug"
                               title={
-                                item.statusTroca === 'Associado' 
-                                  ? "Atribuir UG" 
+                                item.statusTroca === 'Associado'
+                                  ? "Atribuir UG"
                                   : `Status deve ser "Associado" para atribuir UG (atual: ${item.statusTroca})`
                               }
                               disabled={item.statusTroca !== 'Associado'}
                             >
                               <Home size={12} />
                               UG
+                            </button>
+
+                            {/* Botão Excluir - só habilitado se não tiver UG atribuída */}
+                            <button
+                              onClick={!item.ugId ? () => confirmarExclusao(item, index) : undefined}
+                              className="btn-excluir"
+                              title={
+                                !item.ugId
+                                  ? "Excluir UC do controle"
+                                  : "Não é possível excluir - UG já atribuída"
+                              }
+                              disabled={!!item.ugId}
+                            >
+                              <Trash2 size={12} />
+                              Excluir
                             </button>
                           </div>
                         </td>
@@ -1028,6 +1103,15 @@ const ControlePage = () => {
             item={modalStatusTroca.item}
             onSave={salvarStatusTroca}
             onClose={() => setModalStatusTroca({ show: false, item: null, index: -1 })}
+          />
+        )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        {modalExclusao.show && (
+          <ModalConfirmarExclusao
+            item={modalExclusao.item}
+            onConfirmar={executarExclusao}
+            onClose={() => setModalExclusao({ show: false, item: null, index: -1 })}
           />
         )}
 
@@ -1983,6 +2067,63 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           </button>
         </div>
       </form>
+      </div>
+    </div>
+  );
+};
+
+// Modal de Confirmação de Exclusão
+const ModalConfirmarExclusao = ({ item, onConfirmar, onClose }) => {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-controle" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header modal-header-controle">
+          <h3 className="modal-title-controle">🗑️ Confirmar Exclusão</h3>
+          <button onClick={onClose} className="btn btn-close">✕</button>
+        </div>
+
+        <div className="modal-body modal-body-controle">
+          <div className="aviso-exclusao">
+            <div className="icone-aviso">⚠️</div>
+            <h4>Tem certeza que deseja excluir esta UC do controle?</h4>
+          </div>
+
+          <div className="proposta-info">
+            <p><strong>Cliente:</strong> {item.nomeCliente}</p>
+            <p><strong>UC:</strong> {item.numeroUC}</p>
+            <p><strong>Apelido:</strong> {item.apelido}</p>
+            <p><strong>Média:</strong> {item.media} kWh</p>
+          </div>
+
+          <div className="consequencias-exclusao">
+            <h5>⚠️ Consequências desta ação:</h5>
+            <ul>
+              <li>A UC será removida do controle (soft delete)</li>
+              <li>O status da proposta voltará para "Pendente"</li>
+              <li>Esta ação pode ser revertida pelo sistema</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="modal-footer modal-footer-controle">
+          <button type="button" onClick={onClose} className="btn btn-secondary">
+            <X size={16} />
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              console.log('🔴 BOTÃO CONFIRMAR CLICADO');
+              console.log('🔍 Evento:', e);
+              console.log('🔍 onConfirmar função:', typeof onConfirmar);
+              onConfirmar();
+            }}
+            className="btn btn-danger"
+          >
+            <Trash2 size={16} />
+            Confirmar Exclusão
+          </button>
+        </div>
       </div>
     </div>
   );
