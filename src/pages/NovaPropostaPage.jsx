@@ -191,16 +191,16 @@ const NovaPropostaPage = () => {
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor_id: '',
+      consultor_id: user?.role === 'admin' ? null : '', // ✅ Admin: null, Outros: '' (será definido depois)
       recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '',
       economia: 20,
       bandeira: 20,
       inflacao: 2,
       tarifaTributos: 0.98,
-      
+
       // ✅ MODIFICAR ESTA LINHA PARA PRÉ-SELECIONAR EQUATORIAL GO
       ucs: [{ distribuidora: 'EQUATORIAL GO', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
-      
+
       // Benefícios padrão
       beneficio1: true,
       beneficio2: true,
@@ -232,26 +232,33 @@ const NovaPropostaPage = () => {
           ...consultores.map(member => ({ id: member.id, name: member.name })),
           { id: null, name: 'Sem consultor (AUPUS direto)' } // ← MUDANÇA AQUI
         ]);
+        // ✅ ADMIN: Definir "Sem Consultor" como padrão
+        setValue('consultor_id', null);
       } else if (user?.role === 'consultor') {
-        const funcionarios = team.filter(member => 
+        const funcionarios = team.filter(member =>
           member.role === 'gerente' || member.role === 'vendedor'
         );
         setConsultoresDisponiveis([
           { id: user.id, name: user.name },
           ...funcionarios.map(member => ({ id: member.id, name: member.name }))
         ]);
+        // ✅ CONSULTOR: Definir ele mesmo como padrão
+        setValue('consultor_id', user.id);
       } else if (user?.role === 'gerente') {
-        const vendedores = team.filter(member => 
+        const vendedores = team.filter(member =>
           member.role === 'vendedor'
         );
         setConsultoresDisponiveis([
           { id: user.id, name: user.name },
           ...vendedores.map(member => ({ id: member.id, name: member.name }))
         ]);
+        // ✅ GERENTE: Definir ele mesmo como padrão
+        setValue('consultor_id', user.id);
       } else if (user?.role === 'vendedor') {
-      setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
-      setValue('consultor_id', user.id); // ← MUDAR DE 'consultor' PARA 'consultor_id'
-    }
+        setConsultoresDisponiveis([{ id: user.id, name: user.name }]);
+        // ✅ VENDEDOR: Definir ele mesmo como padrão
+        setValue('consultor_id', user.id);
+      }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
       setConsultoresDisponiveis([{ id: user?.id, name: user?.name || 'Erro' }]);
@@ -324,7 +331,7 @@ const NovaPropostaPage = () => {
   const limparFormulario = () => {
     reset({
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor_id: '',
+      consultor_id: user?.role === 'admin' ? null : '', // ✅ Admin: null, Outros: '' (será definido depois)
       recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
       economia: 20,
       bandeira: 20,
@@ -344,6 +351,8 @@ const NovaPropostaPage = () => {
     setBeneficiosAdicionais([]);
     setArquivosFatura({});
     gerarNumeroProposta();
+    // ✅ Recarregar consultores para definir padrão novamente
+    carregarConsultores();
     showNotification('Formulário limpo com sucesso!', 'info');
   };
 

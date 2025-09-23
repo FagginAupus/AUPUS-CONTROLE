@@ -50,6 +50,23 @@
   transform: translateY(-1px);
 }
 
+.gerar-termo-container .btn-secondary {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  color: white;
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.gerar-termo-container .btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a6268, #495057);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
+  transform: translateY(-1px);
+}
+
+.gerar-termo-container .btn-regerar-pdf {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
 .gerar-termo-container .btn-success {
   background: linear-gradient(135deg, #28a745, #1e7e34);
   color: white;

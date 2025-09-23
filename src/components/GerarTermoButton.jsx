@@ -224,6 +224,14 @@ const GerarTermoButton = ({
 
     try {
       console.log('📄 Gerando PDF para UC específica:', numeroUC);
+      console.log('🔍 Dados recebidos no GerarTermoButton:', {
+        desconto_tarifa: dados.desconto_tarifa,
+        descontoTarifa: dados.descontoTarifa,
+        economia: dados.economia,
+        desconto_bandeira: dados.desconto_bandeira,
+        descontoBandeira: dados.descontoBandeira,
+        bandeira: dados.bandeira
+      });
 
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf-apenas`, // ✅ URL CORRIGIDA
@@ -236,6 +244,12 @@ const GerarTermoButton = ({
           body: JSON.stringify({
             ...dados,
             numeroUC: numeroUC,
+            // ✅ GARANTIR QUE DESCONTOS ESTÃO CORRETOS
+            descontoTarifa: dados.desconto_tarifa || dados.descontoTarifa || 20,
+            descontoBandeira: dados.desconto_bandeira || dados.descontoBandeira || 20,
+            // ✅ OUTROS CAMPOS IMPORTANTES
+            economia: dados.economia || dados.descontoTarifa || 20,
+            bandeira: dados.bandeira || dados.descontoBandeira || 20,
           })
         }
       );
@@ -293,7 +307,13 @@ const GerarTermoButton = ({
         nome_arquivo_temp: pdfGerado?.nome,
         enviar_whatsapp: envioWhatsApp,
         enviar_email: envioEmail,
-        nomeCliente: dados.nomeCliente || dados.nome_cliente
+        nomeCliente: dados.nomeCliente || dados.nome_cliente,
+        // ✅ GARANTIR QUE DESCONTOS ESTÃO CORRETOS
+        descontoTarifa: dados.desconto_tarifa || dados.descontoTarifa || 20,
+        descontoBandeira: dados.desconto_bandeira || dados.descontoBandeira || 20,
+        // ✅ OUTROS CAMPOS IMPORTANTES
+        economia: dados.economia || dados.descontoTarifa || 20,
+        bandeira: dados.bandeira || dados.descontoBandeira || 20,
       };
 
       console.log('📋 Dados de envio:', dadosEnvio);
@@ -950,6 +970,26 @@ const GerarTermoButton = ({
             >
               <Eye size={16} />
               Visualizar PDF
+            </button>
+
+            {/* ✅ NOVO: Botão Regerar PDF */}
+            <button
+              onClick={gerarPdfApenas}
+              className="btn btn-secondary btn-regerar-pdf"
+              disabled={loading}
+              title="Gerar o PDF novamente caso haja erro ou queira atualizar dados"
+            >
+              {loading ? (
+                <>
+                  <Loader className="animate-spin" size={16} />
+                  Regenerando...
+                </>
+              ) : (
+                <>
+                  <FileText size={16} />
+                  Gerar PDF novamente
+                </>
+              )}
             </button>
 
             {/* ✅ NOVA SEÇÃO: Duas opções principais */}
