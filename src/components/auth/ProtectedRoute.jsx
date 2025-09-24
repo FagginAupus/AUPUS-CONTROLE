@@ -43,6 +43,7 @@ const ProtectedRoute = ({ children, requirePage = null }) => {
     const permissions = {
       'admin': ['dashboard', 'prospec', 'controle', 'ugs', 'relatorios'],
       'consultor': ['dashboard', 'prospec', 'controle', 'relatorios'],
+      'analista': ['dashboard', 'prospec', 'controle', 'ugs', 'relatorios'],
       'gerente': ['dashboard', 'prospec', 'controle'],
       'vendedor': ['dashboard', 'prospec']
     };

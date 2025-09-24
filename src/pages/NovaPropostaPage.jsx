@@ -191,8 +191,8 @@ const NovaPropostaPage = () => {
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor_id: user?.role === 'admin' ? null : '', // ✅ Admin: null, Outros: '' (será definido depois)
-      recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '',
+      consultor_id: ['admin', 'analista'].includes(user?.role) ? null : '',
+      recorrencia: (user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') ? '3%' : '',
       economia: 20,
       bandeira: 20,
       inflacao: 2,
@@ -225,7 +225,7 @@ const NovaPropostaPage = () => {
     try {
       const team = getMyTeam();
       
-      if (user?.role === 'admin') {
+      if (user?.role === 'admin' || user?.role === 'analista') {
         const consultores = team.filter(member => member.role === 'consultor');
         // ✅ CORREÇÃO: Usar null em vez de string vazia
         setConsultoresDisponiveis([
@@ -315,7 +315,7 @@ const NovaPropostaPage = () => {
   // Handle consultor change
   useEffect(() => {
     // Só ajustar recorrência se o usuário pode vê-la
-    if (user?.role === 'admin' || user?.role === 'consultor') {
+    if (user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') {
       // ✅ CORREÇÃO: Comparar com null em vez de string
       if (watchConsultor === null || watchConsultor === '') {
         setValue('recorrencia', '0%');
@@ -331,8 +331,8 @@ const NovaPropostaPage = () => {
   const limparFormulario = () => {
     reset({
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor_id: user?.role === 'admin' ? null : '', // ✅ Admin: null, Outros: '' (será definido depois)
-      recorrencia: (user?.role === 'admin' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
+      consultor_id: ['admin', 'analista'].includes(user?.role) ? null : '',
+      recorrencia: (user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
       economia: 20,
       bandeira: 20,
       inflacao: 2,
@@ -822,12 +822,12 @@ const NovaPropostaPage = () => {
               </div>
 
               {/* ✅ ADICIONAR ESTA CONDIÇÃO - Só mostrar para admin e consultor */}
-              {(user?.role === 'admin' || user?.role === 'consultor') && (
+              {(user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') && (
                 <div className="form-group">
                   <label>Recorrência *</label>
                   <input 
                     {...register('recorrencia', { 
-                      required: (user?.role === 'admin' || user?.role === 'consultor') ? 'Recorrência é obrigatória' : false
+                      required: (user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') ? 'Recorrência é obrigatória' : false
                     })} 
                     type="text" 
                     style={{ backgroundColor: watchConsultor === 'Sem consultor (AUPUS direto)' ? '#f0f0f0' : 'white' }}

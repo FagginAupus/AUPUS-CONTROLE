@@ -82,7 +82,7 @@ const Dashboard = () => {
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const carregarConsultores = useCallback(() => {
-    if (!user?.id || user?.role !== 'admin') return;
+    if (!user?.id || (user?.role !== 'admin' && user?.role !== 'analista')) return;
     
     try {
       const team = getMyTeam();
@@ -112,7 +112,7 @@ const Dashboard = () => {
 
   // Carregar dados baseado no role
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'analista') {
       carregarConsultores();
     } else if (user?.id) {
       carregarEquipe();
@@ -169,7 +169,7 @@ const Dashboard = () => {
         fecharModalCadastro();
         
         // Recarregar dados após criação
-        if (user?.role === 'admin') {
+        if (user?.role === 'admin' || user?.role === 'analista') {
           carregarConsultores();
         } else {
           carregarEquipe();
@@ -196,7 +196,7 @@ const Dashboard = () => {
         fecharModalCadastro();
 
         // Recarregar dados após criação
-        if (user?.role === 'admin') {
+        if (user?.role === 'admin' || user?.role === 'analista') {
           carregarConsultores();
         } else {
           carregarEquipe();
@@ -249,6 +249,8 @@ const Dashboard = () => {
     switch (user?.role) {
       case 'admin':
         return 'Consultores Cadastrados';
+      case 'analista':
+        return 'Consultores Cadastrados';
       case 'consultor':
         return 'Minha Equipe';
       case 'gerente':
@@ -270,6 +272,16 @@ const Dashboard = () => {
             label: 'Cadastrar Analista'
           });
         }
+        if (canCreateUser('consultor')) {
+          botoes.push({
+            tipo: 'consultor',
+            icon: Briefcase,
+            label: 'Cadastrar Consultor'
+          });
+        }
+        break;
+      
+      case 'analista':
         if (canCreateUser('consultor')) {
           botoes.push({
             tipo: 'consultor',
@@ -364,7 +376,7 @@ const Dashboard = () => {
             label="Fechadas" 
             value={estadisticas.fechadas}
           />
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'analista') && (
             <StatCard 
               icon={Zap} 
               label="UGs Cadastradas" 
@@ -402,7 +414,7 @@ const Dashboard = () => {
         )}
 
         {/* Consultores para Admin */}
-        {user?.role === 'admin' && consultores.length > 0 && (
+        {((user?.role === 'admin' || user?.role === 'analista') && consultores.length > 0) && (
           <section className="user-management">
             <div className="team-list">
               <h3>
@@ -434,7 +446,7 @@ const Dashboard = () => {
         )}
 
         {/* Equipe para outros roles */}
-        {user?.role !== 'admin' && equipe.length > 0 && (
+        {(user?.role !== 'admin' && user?.role !== 'analista' && equipe.length > 0) && (
           <section className="user-management">
             <div className="team-list">
               <h3>

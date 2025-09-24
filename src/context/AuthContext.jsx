@@ -186,12 +186,12 @@ export const AuthProvider = ({ children }) => {
     if (teamCache.length === 0 && user) {
       console.log('⚠️ getMyTeam: Cache vazio, retornando fallback baseado no role');
       
-      // Para admin, tentar buscar do localStorage como fallback
-      if (user.role === 'admin') {
+      // Para admin e analista, tentar buscar do localStorage como fallback
+      if (user.role === 'admin' || user.role === 'analista') {
         try {
           const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
           if (usuarios.length > 0) {
-            console.log(`👥 getMyTeam (admin fallback): ${usuarios.length} usuários do localStorage`);
+            console.log(`👥 getMyTeam (admin/analista fallback): ${usuarios.length} usuários do localStorage`);
             return usuarios;
           }
         } catch (e) {

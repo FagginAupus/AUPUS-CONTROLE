@@ -297,7 +297,7 @@ export const DataProvider = ({ children }) => {
 
   // Adicione esta função de carregamento
   const loadCalibragem = useCallback(async (forceReload = false) => {
-    if (!user?.id || user.role !== 'admin') return;
+    if (!user?.id || (user.role !== 'admin' && user.role !== 'analista')) return;
 
     const cacheTimeout = 300000; // 5 minutos
     const now = Date.now();
@@ -367,8 +367,8 @@ export const DataProvider = ({ children }) => {
 
     lastLoadTimestamp.current['ugs'] = now;
     
-    if (!user?.id || user.role !== 'admin') {
-      console.log('⚠️ UGs disponíveis apenas para admin');
+    if (!user?.id || (user.role !== 'admin' && user.role !== 'analista')) {
+      console.log('⚠️ UGs disponíveis apenas para admin e analista');
       return;
     }
 
@@ -537,8 +537,8 @@ export const DataProvider = ({ children }) => {
             }
           }
           
-          // Carregar UGs se admin
-          if (user.role === 'admin') {
+          // Carregar UGs se admin ou analista
+          if (user.role === 'admin' || user.role === 'analista') {
             const ugsResponse = await apiService.getUGs({});
             
             if (ugsResponse?.success && ugsResponse?.data) {

@@ -189,7 +189,7 @@ const UGsPage = () => {
     loadUgs(ugs.filters, true);
   }, [loadUgs, ugs.filters]);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
 
 
   return (
@@ -261,7 +261,7 @@ const UGsPage = () => {
               <button onClick={exportarCSV} className="btn btn-secondary">
                 📊 Exportar CSV
               </button>
-              {isAdmin && (
+              {isAdminOrAnalista && (
                 <button 
                   onClick={() => setModalNovaUG({ show: true })} 
                   className="btn btn-primary"
@@ -307,7 +307,7 @@ const UGsPage = () => {
                     <th>Capacidade (KWh)</th>
                     <th>UCs Atribuídas</th>
                     <th>Média Total (kWh)</th>
-                    {isAdmin && <th>Ações</th>}
+                    {isAdminOrAnalista && <th>Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -340,7 +340,7 @@ const UGsPage = () => {
                           {(item.mediaConsumoAtribuido || 0).toLocaleString('pt-BR')}
                         </span>
                       </td>
-                      {isAdmin && (
+                      {isAdminOrAnalista && (
                         <td>
                           <div className="action-buttons">
                             <button
@@ -374,14 +374,14 @@ const UGsPage = () => {
         </section>
 
         {/* Modais */}
-        {modalNovaUG.show && isAdmin && (
+        {modalNovaUG.show && isAdminOrAnalista && (
           <ModalNovaUG 
             onSave={criarNovaUG}
             onClose={() => setModalNovaUG({ show: false })}
           />
         )}
 
-        {modalEdicao.show && isAdmin && (
+        {modalEdicao.show && isAdminOrAnalista && (
           <ModalEdicaoUG 
             item={modalEdicao.item}
             onSave={salvarEdicaoUG}

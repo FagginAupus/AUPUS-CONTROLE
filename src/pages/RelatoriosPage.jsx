@@ -30,7 +30,7 @@ const RelatoriosPage = () => {
       let dadosControle = [];
       let dadosUGs = [];
 
-      if (user?.role === 'admin') {
+      if (user?.role === 'admin' || user?.role === 'analista') {
         // Admin vê todos os dados
         dadosProspec = await storageService.getProspec();
         dadosControle = await storageService.getControle();
@@ -159,7 +159,8 @@ const RelatoriosPage = () => {
   };
 
   const exportarUGs = async () => {
-    if (user?.role !== 'admin') {
+    if (!['admin', 'analista'].includes(user?.role)) {
+      
       showNotification('Apenas administradores podem exportar UGs', 'warning');
       return;
     }
@@ -193,7 +194,7 @@ const RelatoriosPage = () => {
   };
 
   const limparTodosDados = async () => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' || user?.role !== 'analista') {
       showNotification('Apenas administradores podem limpar dados', 'warning');
       return;
     }
@@ -238,7 +239,7 @@ const RelatoriosPage = () => {
     }
   };
 
-  const isAdmin = user?.role === 'admin';
+  const isAdminOrAnalista = ['admin', 'analista'].includes(user?.role);
 
   return (
     <div className="page-container">
@@ -266,7 +267,7 @@ const RelatoriosPage = () => {
             </div>
           </div>
 
-          {isAdmin && (
+          {isAdminOrAnalista && (
             <div className="stat-card">
               <div className="stat-icon">🏭</div>
               <div className="stat-content">
@@ -304,7 +305,7 @@ const RelatoriosPage = () => {
                   <div className="export-card">
                     <h3>Relatório de Prospecção</h3>
                     <p>
-                      {isAdmin 
+                      {isAdminOrAnalista 
                         ? 'Lista completa de propostas com status, consultores e dados técnicos'
                         : 'Propostas da sua equipe com status e dados técnicos'
                       }
@@ -321,7 +322,7 @@ const RelatoriosPage = () => {
                   <div className="export-card">
                     <h3>Relatório de Controle</h3>
                     <p>
-                      {isAdmin 
+                      {isAdminOrAnalista 
                         ? 'Propostas fechadas com UGs definidas e status de calibragem'
                         : 'Propostas fechadas da sua equipe com UGs definidas'
                       }
@@ -335,7 +336,7 @@ const RelatoriosPage = () => {
                     </button>
                   </div>
                   
-                  {isAdmin && (
+                  {isAdminOrAnalista && (
                     <div className="export-card">
                       <h3>Relatório de UGs</h3>
                       <p>Dados técnicos das Unidades Geradoras e capacidades</p>
@@ -353,7 +354,7 @@ const RelatoriosPage = () => {
             </section>
 
             {/* Ações do Sistema - apenas para admin */}
-            {isAdmin && (
+            {isAdminOrAnalista && (
               <section className="filters-section">
                 <div className="filters-container">
                   <h2>🔧 Ações do Sistema</h2>
@@ -388,7 +389,7 @@ const RelatoriosPage = () => {
             )}
 
             {/* Informações da Equipe para não-admins */}
-            {!isAdmin && (
+            {!isAdminOrAnalista && (
               <section className="filters-section">
                 <div className="filters-container">
                   <h2>👥 Informações da Equipe</h2>

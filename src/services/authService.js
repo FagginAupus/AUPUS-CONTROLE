@@ -152,8 +152,8 @@ export const AuthProvider = ({ children }) => {
         return [];
       }
 
-      // Para admin, retornar todos os usuários
-      if (user.role === 'admin') {
+      // Para admin e analista, retornar todos os usuários
+      if (user.role === 'admin' || user.role === 'analista') {
         const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
         console.log(`👥 getMyTeam (admin): ${usuarios.length} usuários`);
         return usuarios;

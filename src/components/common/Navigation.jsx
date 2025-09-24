@@ -105,6 +105,7 @@ const Navigation = () => {
     const icons = {
       admin: Crown,
       consultor: Briefcase,
+      analista: FileBarChart,
       gerente: Users,
       vendedor: User
     };
@@ -115,6 +116,7 @@ const Navigation = () => {
     const labels = {
       admin: 'Administrador',
       consultor: 'Consultor',
+      analista: 'Analista',
       gerente: 'Gerente',
       vendedor: 'Vendedor'
     };

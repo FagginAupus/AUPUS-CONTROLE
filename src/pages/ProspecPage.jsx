@@ -105,7 +105,7 @@ const ProspecPage = () => {
     try {
       const team = getMyTeam();
       
-      if (user?.role === 'admin') {
+      if (user?.role === 'admin' || user?.role === 'analista') {
         const consultores = team.filter(member => member.role === 'consultor');
         
         const listaFinal = [
@@ -651,7 +651,7 @@ const ProspecPage = () => {
 
       // Buscar todos os dados conforme permissão do usuário
       let todosOsDados;
-      if (user?.role === 'admin') {
+      if (user?.role === 'admin' || user?.role === 'analista') {
         todosOsDados = await storageService.getProspec();
       } else {
         const dadosCompletos = await storageService.getProspec();
@@ -695,7 +695,7 @@ const ProspecPage = () => {
   
 
   // Verificar se é admin para mostrar ações de admin
-  const isAdmin = user?.role === 'admin';
+  const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
   
   return (
     <div className="page-container">
@@ -1096,7 +1096,7 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
   const beneficiosReais = obterBeneficiosReais();
 
   // ✅ CORREÇÃO: Verificar se deve mostrar recorrência (apenas admin e consultor)
-  const mostrarRecorrencia = user?.role === 'admin' || user?.role === 'consultor';
+  const mostrarRecorrencia = user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -1832,7 +1832,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   >
                     <option value="">Selecione um consultor...</option>
                     {/* ✅ APENAS ADMIN vê esta opção */}
-                    {user?.role === 'admin' && (
+                    {(user?.role === 'admin' || user?.role === 'analista') && (
                       <option value="null">Sem consultor (AUPUS direto)</option>
                     )}
                     {consultoresDisponiveis

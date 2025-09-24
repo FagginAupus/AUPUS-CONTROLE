@@ -47,17 +47,17 @@ const ControlePage = () => {
   } = useData();
 
   const calibragemGlobal = calibragem.valor;
-  const isAdmin = user?.role === 'admin'; 
+  const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
   const loadingUgsRef = useRef(false); 
 
   const [calibragemTemp, setCalibragemTemp] = useState(calibragemGlobal);
 
   // ✅ ADICIONAR useEffect para carregar calibragem quando necessário
   useEffect(() => {
-    if (isAdmin && calibragem.valor === 0 && !calibragem.loading) {
+    if (isAdminOrAnalista && calibragem.valor === 0 && !calibragem.loading) {
       loadCalibragem();
     }
-  }, [isAdmin, calibragem.valor, calibragem.loading, loadCalibragem]);
+  }, [isAdminOrAnalista, calibragem.valor, calibragem.loading, loadCalibragem]);
 
   const [ugsDisponiveis, setUgsDisponiveis] = useState([]);
   const [modalUG, setModalUG] = useState({ show: false, item: null, index: -1 });
@@ -85,7 +85,7 @@ const ControlePage = () => {
 
       // Buscar todos os dados conforme permissão do usuário
       let todosOsDados;
-      if (user?.role === 'admin') {
+      if (user?.role === 'admin' || user?.role === 'analista') {
         todosOsDados = await storageService.getControle();
       } else {
         const dadosCompletos = await storageService.getControle();
@@ -125,7 +125,7 @@ const ControlePage = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAdmin && 
+    if (isAdminOrAnalista && 
         (!ugs.data || ugs.data.length === 0) && 
         !ugs.loading && 
         !loadingUgsRef.current) {
@@ -136,13 +136,13 @@ const ControlePage = () => {
         loadingUgsRef.current = false;
       });
     }
-  }, [isAdmin]);
+  }, [isAdminOrAnalista]);
   
   const carregarUGs = useCallback(async () => {
     if (controle.loading) return;
     
     try {
-      if (!isAdmin) return;
+      if (!isAdminOrAnalista) return;
       
       const ugs = await storageService.getUGs();
       setUgsDisponiveis(ugs);
@@ -150,7 +150,7 @@ const ControlePage = () => {
       console.error('❌ Erro ao carregar UGs:', error);
       showNotification('Erro ao carregar UGs', 'error');
     }
-  }, [controle.loading, isAdmin, showNotification]);
+  }, [controle.loading, isAdminOrAnalista, showNotification]);
 
   const dadosFiltrados = useMemo(() => {
     console.log('🔄 Recalculando dadosFiltrados:', filtros);
@@ -313,7 +313,7 @@ const ControlePage = () => {
   }, [dadosFiltrados]);
 
   const editarUG = useCallback(async (index) => {
-    if (!isAdmin) return;
+    if (!isAdminOrAnalista) return;
     
     const item = dadosFiltrados[index];
     if (!item) return;
@@ -392,7 +392,7 @@ const ControlePage = () => {
       console.error('Erro ao processar UGs:', error);
       showNotification('Erro ao carregar UGs disponíveis', 'error');
     }
-  }, [isAdmin, dadosFiltrados, ugs.data, calibragemGlobal, showNotification]);
+  }, [isAdminOrAnalista, dadosFiltrados, ugs.data, calibragemGlobal, showNotification]);
 
   const salvarUG = useCallback(async (ugSelecionada) => {
     try {
@@ -475,11 +475,11 @@ const ControlePage = () => {
 
   // Função para confirmar exclusão de UC do controle
   const confirmarExclusao = useCallback((item, index) => {
-    if (!isAdmin) return;
+    if (!isAdminOrAnalista) return;
 
     console.log('🗑️ Confirmando exclusão da UC:', item);
     setModalExclusao({ show: true, item, index });
-  }, [isAdmin]);
+  }, [isAdminOrAnalista]);
 
   // Função para executar soft delete
   const executarExclusao = useCallback(async () => {
@@ -539,7 +539,7 @@ const ControlePage = () => {
 
   const aplicarCalibragem = useCallback(async () => {
     
-    if (!isAdmin) {
+    if (!isAdminOrAnalista) {
       console.log('❌ Usuário não é admin');
       return;
     }
@@ -582,10 +582,10 @@ const ControlePage = () => {
       console.error('❌ Erro ao aplicar calibragem:', error);
       showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
     }
-  }, [isAdmin, calibragemGlobal, loadCalibragem, showNotification]);
+  }, [isAdminOrAnalista, calibragemGlobal, loadCalibragem, showNotification]);
 
   const aplicarCalibragemComValor = useCallback(async (novoValor) => {
-    if (!isAdmin) return;
+    if (!isAdminOrAnalista) return;
     
     if (novoValor < 0 || novoValor > 100) {
       showNotification('Calibragem deve estar entre 0 e 100%', 'warning');
@@ -626,7 +626,7 @@ const ControlePage = () => {
       console.error('❌ Erro ao aplicar calibragem:', error);
       showNotification('Erro ao aplicar calibragem: ' + error.message, 'error');
     }
-  }, [isAdmin, loadCalibragem, loadControle, loadUgs, controle.filters, showNotification]);
+  }, [isAdminOrAnalista, loadCalibragem, loadControle, loadUgs, controle.filters, showNotification]);
   
   const exportarDados = useCallback(async () => {
     try {
@@ -851,7 +851,7 @@ const ControlePage = () => {
             {/* ========================================== */}
             {/* CALIBRAGEM RESTAURADA NO ESTILO ORIGINAL  */}
             {/* ========================================== */}
-            {isAdmin && (
+            {isAdminOrAnalista && (
               <div className="calibragem-controls">
                 <div className="calibragem-group">
                   <label htmlFor="calibragem-input">Calibragem Global:</label>
@@ -948,9 +948,9 @@ const ControlePage = () => {
                     <th>UG</th>
                     <th>Média (kWh)</th>
                     {/* Coluna Calibrada - só aparece para admin */}
-                    {isAdmin && <th>Calibrada (kWh)</th>}
+                    {isAdminOrAnalista && <th>Calibrada (kWh)</th>}
                     <th>Status Troca</th>
-                    {isAdmin && <th>Ações</th>}
+                    {isAdminOrAnalista && <th>Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -989,7 +989,7 @@ const ControlePage = () => {
                         </span>
                       </td>
                       {/* Valor calibrado - só para admin */}
-                      {isAdmin && (
+                      {isAdminOrAnalista && (
                         <td>
                           {(() => {
                             // Usar calibragem individual se existir, senão usar global
@@ -1028,7 +1028,7 @@ const ControlePage = () => {
                       </td>
                       
                       {/* CÉLULA DE AÇÕES - CORRIGIDA */}
-                      {isAdmin && (
+                      {isAdminOrAnalista && (
                         <td>
                           <div className="action-buttons-controle">
                             {/* Botão UC - sempre visível */}
@@ -1089,7 +1089,7 @@ const ControlePage = () => {
         )}
         
         {/* Modal UG - Apenas para admin */}
-        {modalUG.show && isAdmin && (
+        {modalUG.show && isAdminOrAnalista && (
           <ModalUG 
             item={modalUG.item}
             ugsAnalise={ugsDisponiveis || []}
