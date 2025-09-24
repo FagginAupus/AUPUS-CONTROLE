@@ -47,14 +47,25 @@ const Sidebar = () => {
         path: '/ugs',
         requiredPage: 'ugs'
     },
-    { 
-        id: 'relatorios', 
-        label: 'Relatórios', 
+    {
+        id: 'relatorios',
+        label: 'Relatórios',
         icon: '', // ← Removido emoji
         path: '/relatorios',
         requiredPage: 'relatorios'
     }
     ];
+
+  // Adicionar item de Logs apenas para administradores
+  if (user && user.role === 'admin') {
+    menuItems.push({
+        id: 'logs',
+        label: 'Logs',
+        icon: '',
+        path: '/logs',
+        requiredPage: null // Não requer página específica, apenas role admin
+    });
+  }
 
   const visibleMenuItems = menuItems.filter(item => {
     if (!item.requiredPage) return true;

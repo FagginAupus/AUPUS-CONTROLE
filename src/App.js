@@ -17,6 +17,7 @@ import NovaPropostaPage from './pages/NovaPropostaPage';
 import ControlePage from './pages/ControlePage';
 import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
+import LogsPage from './pages/LogsPage';
 
 // Estilos
 import './dark-theme.css';
@@ -156,7 +157,15 @@ const AppContent = () => {
               </SessionManager>
             </ProtectedRoute>
           } />
-          
+
+          <Route path="/logs" element={
+            <ProtectedRoute>
+              <SessionManager>
+                <LogsPage />
+              </SessionManager>
+            </ProtectedRoute>
+          } />
+
           {/* Rota 404 */}
           <Route path="*" element={
             <div className="min-h-screen flex items-center justify-center">
