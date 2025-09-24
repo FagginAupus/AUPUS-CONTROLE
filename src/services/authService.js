@@ -183,10 +183,10 @@ export const AuthProvider = ({ children }) => {
     // ✅ LÓGICA SIMPLIFICADA - baseada no role
     const pagePermissions = {
       'dashboard': true, // Todos podem acessar dashboard
-      'prospec': ['admin', 'consultor', 'gerente', 'vendedor'].includes(user.role),
-      'controle': ['admin', 'consultor', 'gerente'].includes(user.role),
-      'ugs': ['admin'].includes(user.role), // Apenas admin
-      'relatorios': ['admin', 'consultor', 'gerente'].includes(user.role)
+      'prospec': ['admin', 'analista', 'consultor', 'gerente', 'vendedor'].includes(user.role),
+      'controle': ['admin', 'analista', 'consultor', 'gerente'].includes(user.role),
+      'ugs': ['admin', 'analista'].includes(user.role),
+      'relatorios': ['admin', 'analista', 'consultor', 'gerente'].includes(user.role)
     };
 
     return pagePermissions[pageName] || false;

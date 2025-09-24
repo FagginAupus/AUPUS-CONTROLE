@@ -191,7 +191,7 @@ const NovaPropostaPage = () => {
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor_id: ['admin', 'analista'].includes(user?.role) ? null : '',
+      consultor_id: ['admin', 'analista'].includes(user?.role) ? null : (user?.id || ''),
       recorrencia: (user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') ? '3%' : '',
       economia: 20,
       bandeira: 20,
@@ -331,7 +331,7 @@ const NovaPropostaPage = () => {
   const limparFormulario = () => {
     reset({
       dataProposta: new Date().toISOString().split('T')[0],
-      consultor_id: ['admin', 'analista'].includes(user?.role) ? null : '',
+      consultor_id: ['admin', 'analista'].includes(user?.role) ? null : (user?.id || ''),
       recorrencia: (user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor') ? '3%' : '', // ✅ Condicional
       economia: 20,
       bandeira: 20,
@@ -1039,7 +1039,7 @@ const NovaPropostaPage = () => {
 
             <button
               type="button"
-              onClick={() => append({ distribuidora: '', numeroUC: '', apelido: '', ligacao: '', consumo: '' })}
+              onClick={() => append({ distribuidora: 'EQUATORIAL GO', numeroUC: '', apelido: '', ligacao: '', consumo: '' })}
               className="btn btn-secondary"
             >
               + Adicionar Unidade Consumidora

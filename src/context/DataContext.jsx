@@ -519,7 +519,7 @@ export const DataProvider = ({ children }) => {
           }
           
           // Carregar controle se permitido
-          if (['admin', 'consultor', 'gerente'].includes(user.role)) {
+          if (['admin', 'analista', 'consultor', 'gerente'].includes(user.role)) {
             const controleResponse = await apiService.getControle({
               page: 1,
               per_page: controle.perPage
