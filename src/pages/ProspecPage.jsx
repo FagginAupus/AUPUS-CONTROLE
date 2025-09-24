@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 const getApiBaseUrl = () => {
-  return process.env.REACT_APP_API_URL?.replace('/api', '');
+  return process.env.REACT_APP_API_URL?.replace(/\/api$/, '');
 };
 
 const getApiUrl = () => {
@@ -1903,7 +1903,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                         <button
                           type="button"
                           className="btn-visualizar-doc"
-                          onClick={() => window.open(`${process.env.REACT_APP_API_URL.replace('/api', '') }/storage/propostas/faturas/${faturaExistente}`, '_blank')}
+                          onClick={() => window.open(`${process.env.REACT_APP_API_URL.replace(/\/api$/, '') }/storage/propostas/faturas/${faturaExistente}`, '_blank')}
                           title="Visualizar fatura"
                         >
                           <Eye size={14} />

@@ -16,7 +16,7 @@ const getApiUrl = () => {
 };
 
 const getApiBaseUrl = () => {
-  return getApiUrl().replace('/api', '');
+  return getApiUrl().replace(/\/api$/, '');
 };
 
 export { getApiUrl, getApiBaseUrl };
