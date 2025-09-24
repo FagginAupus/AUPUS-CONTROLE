@@ -300,7 +300,30 @@ const GerarTermoButton = ({
     
     try {
       console.log('📤 Enviando PDF para Autentique - UC:', numeroUC);
-      
+
+      // ✅ VALIDAÇÃO DOS CAMPOS OBRIGATÓRIOS
+      const camposObrigatorios = {
+        propostaId: dados.propostaId,
+        numeroUC: numeroUC,
+        nomeCliente: dados.nomeCliente || dados.nome_cliente,
+        numeroProposta: dados.numeroProposta || dados.numero_proposta
+      };
+
+      const camposFaltando = [];
+      Object.entries(camposObrigatorios).forEach(([campo, valor]) => {
+        if (!valor || valor === '') {
+          camposFaltando.push(campo);
+        }
+      });
+
+      if (camposFaltando.length > 0) {
+        const mensagemErro = `❌ Campos obrigatórios faltando: ${camposFaltando.join(', ')}`;
+        console.error(mensagemErro, { dados, numeroUC });
+        alert(mensagemErro);
+        setLoading(false);
+        return;
+      }
+
       const dadosEnvio = {
         ...dados,
         numeroUC: numeroUC, // ✅ GARANTIR QUE SEMPRE ENVIA numeroUC
@@ -308,15 +331,23 @@ const GerarTermoButton = ({
         enviar_whatsapp: envioWhatsApp,
         enviar_email: envioEmail,
         nomeCliente: dados.nomeCliente || dados.nome_cliente,
+        numeroProposta: dados.numeroProposta || dados.numero_proposta,
         // ✅ GARANTIR QUE DESCONTOS ESTÃO CORRETOS
-        descontoTarifa: dados.desconto_tarifa || dados.descontoTarifa || 20,
-        descontoBandeira: dados.desconto_bandeira || dados.descontoBandeira || 20,
+        descontoTarifa: Number(dados.desconto_tarifa || dados.descontoTarifa || 20),
+        descontoBandeira: Number(dados.desconto_bandeira || dados.descontoBandeira || 20),
         // ✅ OUTROS CAMPOS IMPORTANTES
-        economia: dados.economia || dados.descontoTarifa || 20,
-        bandeira: dados.bandeira || dados.descontoBandeira || 20,
+        economia: Number(dados.economia || dados.descontoTarifa || 20),
+        bandeira: Number(dados.bandeira || dados.descontoBandeira || 20),
       };
 
-      console.log('📋 Dados de envio:', dadosEnvio);
+      // ✅ REMOVER CAMPOS NULOS/UNDEFINED
+      Object.keys(dadosEnvio).forEach(key => {
+        if (dadosEnvio[key] === null || dadosEnvio[key] === undefined) {
+          delete dadosEnvio[key];
+        }
+      });
+
+      console.log('📋 Dados de envio validados:', dadosEnvio);
 
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/enviar-para-autentique`,
@@ -366,12 +397,34 @@ const GerarTermoButton = ({
         
       } else {
         console.error('❌ Erro ao enviar para UC:', numeroUC, result);
-        alert(`❌ Erro: ${result.message || 'Erro desconhecido'}`);
+
+        // ✅ TRATAMENTO ESPECÍFICO DO ERRO 500 COM VALIDATION
+        let mensagemErro = result.message || 'Erro desconhecido';
+
+        if (response.status === 500 && mensagemErro.includes('validation')) {
+          mensagemErro = '❌ Erro de validação: Verifique se todos os dados da proposta estão preenchidos corretamente.';
+          console.error('🔍 Dados enviados que causaram erro de validação:', dadosEnvio);
+        } else if (response.status === 500) {
+          mensagemErro = '❌ Erro interno do servidor. Tente novamente ou contate o suporte.';
+        } else if (response.status === 401) {
+          mensagemErro = '❌ Não autorizado. Faça login novamente.';
+        } else if (response.status === 403) {
+          mensagemErro = '❌ Permissão negada para esta operação.';
+        } else if (response.status >= 400 && response.status < 500) {
+          mensagemErro = `❌ Erro na requisição: ${mensagemErro}`;
+        }
+
+        alert(mensagemErro);
       }
 
     } catch (error) {
       console.error('❌ Erro interno ao enviar para UC:', numeroUC, error);
-      alert('❌ Erro interno. Tente novamente.');
+
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('❌ Erro de conexão. Verifique sua internet e tente novamente.');
+      } else {
+        alert('❌ Erro interno. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
