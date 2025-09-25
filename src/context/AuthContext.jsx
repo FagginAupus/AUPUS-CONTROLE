@@ -278,13 +278,13 @@ export const AuthProvider = ({ children }) => {
 
   const canAccessPage = (pageName) => {
     if (!user) return false;
-    
+
     const permissions = {
       'dashboard': true,
       'prospec': ['admin', 'analista', 'consultor', 'gerente', 'vendedor'].includes(user.role),
       'controle': ['admin', 'analista', 'consultor', 'gerente'].includes(user.role),
       'ugs': ['admin', 'analista'].includes(user.role),
-      'relatorios': ['admin', 'analista', 'consultor', 'gerente'].includes(user.role)
+      'relatorios': ['admin', 'analista'].includes(user.role)  // Apenas admin e analista
     };
     
     return permissions[pageName] || false;

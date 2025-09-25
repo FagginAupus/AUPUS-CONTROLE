@@ -20,6 +20,7 @@
     "react-hook-form": "^7.61.1",
     "react-router-dom": "^7.7.0",
     "react-scripts": "5.0.1",
+    "recharts": "^3.2.1",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5",
     "yup": "^1.6.1"
