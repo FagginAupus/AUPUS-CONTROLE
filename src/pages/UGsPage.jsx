@@ -263,7 +263,7 @@ const UGsPage = () => {
       ['CNPJ/CPF:', '', '61.028.500/0001-26'], // Valor padrão
       ['Lista de unidades consumidoras participantes do sistema de compensação', '', ''],
       ['UC Beneficiaria', '', 'Porcentagem de rateio'],
-      ...ucsComRateio.map(uc => [uc.numero_uc, '', uc.porcentagem])
+      ...ucsComRateio.map(uc => [uc.numero_uc, '', `${uc.porcentagem}%`])
     ];
 
     // Gerar e baixar Excel usando SheetJS
