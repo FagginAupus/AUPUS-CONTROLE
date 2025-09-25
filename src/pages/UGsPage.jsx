@@ -7,14 +7,16 @@ import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import { useData } from '../context/DataContext';
 import './UGsPage.css';
-import { 
-  Factory, 
-  Zap, 
-  Users, 
+import {
+  Factory,
+  Zap,
+  Users,
   TrendingUp,
   Edit,
-  Trash2
+  Trash2,
+  FileSpreadsheet
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 const UGsPage = () => {
   const { user } = useAuth();
   const { 
@@ -188,6 +190,95 @@ const UGsPage = () => {
     console.log('🔄 Refresh manual dos dados');
     loadUgs(ugs.filters, true);
   }, [loadUgs, ugs.filters]);
+
+  const baixarRateioUG = async (ug, index) => {
+    try {
+      console.log('📊 Iniciando download do rateio da UG:', ug.nomeUsina);
+
+      // Validar se UG tem UCs atribuídas
+      const ucsAtribuidas = parseInt(ug.ucsAtribuidas || 0);
+      if (ucsAtribuidas === 0) {
+        showNotification('Esta UG não possui UCs atribuídas para gerar rateio', 'warning');
+        return;
+      }
+
+      showNotification('Gerando planilha de rateio...', 'info');
+
+      // Buscar detalhes das UCs atribuídas à UG
+      const response = await storageService.obterRateioDetalhes(ug.id);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao buscar dados do rateio');
+      }
+
+      const { ugInfo, ucsDetalhes } = response.data;
+
+      // Gerar arquivo Excel
+      await gerarRateioExcel(ugInfo, ucsDetalhes);
+
+      showNotification('Planilha de rateio baixada com sucesso!', 'success');
+
+    } catch (error) {
+      console.error('❌ Erro ao baixar rateio:', error);
+      showNotification(`Erro ao gerar rateio: ${error.message}`, 'error');
+    }
+  };
+
+  const gerarRateioExcel = async (ugInfo, ucsDetalhes) => {
+    // Calcular porcentagens de rateio
+    const capacidadeTotal = parseFloat(ugInfo.capacidade || 0);
+
+    if (capacidadeTotal <= 0) {
+      throw new Error('UG com capacidade inválida');
+    }
+
+    // UCs com consumo calibrado e porcentagem
+    let ucsComRateio = ucsDetalhes.map(uc => {
+      const consumoCalibrado = parseFloat(uc.consumo_calibrado || 0);
+      const porcentagem = (consumoCalibrado / capacidadeTotal) * 100;
+
+      return {
+        numero_uc: uc.numero_unidade,
+        consumo_calibrado: consumoCalibrado,
+        porcentagem: Math.round(porcentagem * 100) / 100 // 2 casas decimais
+      };
+    });
+
+    // Ajustar para somar exatamente 100%
+    const somaAtual = ucsComRateio.reduce((acc, uc) => acc + uc.porcentagem, 0);
+    const diferenca = 100.00 - somaAtual;
+
+    if (Math.abs(diferenca) > 0.01) {
+      // Ajustar a maior UC para fechar em 100%
+      const maiorUC = ucsComRateio.reduce((prev, current) =>
+        current.porcentagem > prev.porcentagem ? current : prev
+      );
+      maiorUC.porcentagem = Math.round((maiorUC.porcentagem + diferenca) * 100) / 100;
+    }
+
+    // Criar estrutura do Excel
+    const dadosExcel = [
+      ['Código da UC Geradora:', '', ugInfo.numero_unidade],
+      ['Titular da UC:', '', ''], // Em branco
+      ['CNPJ/CPF:', '', ''], // Em branco
+      ['Lista de unidades consumidoras participantes do sistema de compensação', '', ''],
+      ['UC Beneficiaria', '', 'Porcentagem de rateio'],
+      ...ucsComRateio.map(uc => [uc.numero_uc, '', uc.porcentagem])
+    ];
+
+    // Gerar e baixar Excel usando SheetJS
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
+
+    // Formatação das células
+    ws['C1'] = { t: 'n', v: parseFloat(ugInfo.numero_unidade) };
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Rateio');
+
+    // Download
+    const nomeArquivo = `Rateio UG_${ugInfo.numero_unidade}.xlsx`;
+    XLSX.writeFile(wb, nomeArquivo);
+  };
 
   const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
 
@@ -421,6 +512,13 @@ DETALHES DA UG: ${item.nomeUsina}
                               title="Editar UG"
                             >
                               <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => baixarRateioUG(item, index)}
+                              className="action-btn success"
+                              title="Baixar Rateio da UG"
+                            >
+                              <FileSpreadsheet size={16} />
                             </button>
                             <button
                               onClick={() => excluirUG(index)}

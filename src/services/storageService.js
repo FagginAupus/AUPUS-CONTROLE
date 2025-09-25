@@ -1175,6 +1175,22 @@ class StorageService {
             return [];
         }
     }
+
+    // ========================================
+    // RATEIO DE UG
+    // ========================================
+
+    async obterRateioDetalhes(ugId) {
+        try {
+            console.log('📊 Buscando detalhes do rateio para UG:', ugId);
+            const response = await apiService.get(`/ugs/${ugId}/rateio-detalhes`);
+            console.log('📊 Resposta do rateio:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao buscar detalhes do rateio:', error);
+            throw error;
+        }
+    }
 }
 
 const storageService = new StorageService();

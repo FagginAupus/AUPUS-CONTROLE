@@ -250,6 +250,16 @@
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
+.action-btn.success {
+  background: #28a745;
+  color: white;
+}
+
+.action-btn.success:hover {
+  background: #1e7e34;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
 .action-btn.delete {
   background: #dc3545;
   color: white;
