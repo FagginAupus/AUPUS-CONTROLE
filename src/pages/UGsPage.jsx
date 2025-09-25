@@ -259,8 +259,8 @@ const UGsPage = () => {
     // Criar estrutura do Excel
     const dadosExcel = [
       ['Código da UC Geradora:', '', ugInfo.numero_unidade],
-      ['Titular da UC:', '', ''], // Em branco
-      ['CNPJ/CPF:', '', ''], // Em branco
+      ['Titular da UC:', '', 'CONSORCIO CLUBE AUPUS ENERGIA GO'], // Valor padrão
+      ['CNPJ/CPF:', '', '61.028.500/0001-26'], // Valor padrão
       ['Lista de unidades consumidoras participantes do sistema de compensação', '', ''],
       ['UC Beneficiaria', '', 'Porcentagem de rateio'],
       ...ucsComRateio.map(uc => [uc.numero_uc, '', uc.porcentagem])
