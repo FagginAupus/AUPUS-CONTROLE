@@ -307,6 +307,13 @@ const UGsPage = () => {
                     <th>Capacidade (KWh)</th>
                     <th>UCs Atribuídas</th>
                     <th>Média Total (kWh)</th>
+                    <th className="text-center" style={{ width: '160px' }}>
+                      <div>Lotação da UG</div>
+                      <small className="d-block text-muted" style={{ fontSize: '0.7rem', lineHeight: '1.1' }}>
+                        Capacidade ocupada<br/>
+                        (média + calibragem)
+                      </small>
+                    </th>
                     {isAdminOrAnalista && <th>Ações</th>}
                   </tr>
                 </thead>
@@ -339,6 +346,71 @@ const UGsPage = () => {
                         <span className="media-total">
                           {(item.mediaConsumoAtribuido || 0).toLocaleString('pt-BR')}
                         </span>
+                      </td>
+                      <td className="text-center">
+                        {(() => {
+                          // 1. OBTER VALORES BASE
+                          const capacidadeTotal = parseFloat(item.capacidade || 0);
+                          const consumoAtribuido = parseFloat(item.mediaConsumoAtribuido || 0);
+
+                          // 2. CALCULAR PERCENTUAL DE LOTAÇÃO
+                          const percentualLotacao = capacidadeTotal > 0 ?
+                            Math.round((consumoAtribuido / capacidadeTotal) * 100) : 0;
+
+                          // 3. DETERMINAR STATUS DA UG BASEADO NO PERCENTUAL
+                          let status, corBarra;
+                          if (percentualLotacao >= 95) {
+                            status = 'CHEIA';
+                            corBarra = '#dc3545'; // Vermelho
+                          } else if (percentualLotacao >= 80) {
+                            status = 'QUASE CHEIA';
+                            corBarra = '#ffc107'; // Amarelo
+                          } else {
+                            status = 'DISPONÍVEL';
+                            corBarra = '#28a745'; // Verde
+                          }
+
+                          // 4. CALCULAR ESPAÇO DISPONÍVEL
+                          const espacoDisponivel = Math.max(0, capacidadeTotal - consumoAtribuido);
+
+                          return (
+                            <div className="lotacao-container"
+                                 data-status={status.toLowerCase().replace(' ', '-')}
+                                 title={`
+DETALHES DA UG: ${item.nomeUsina}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 CAPACIDADE TOTAL: ${capacidadeTotal.toLocaleString('pt-BR')} kWh/mês
+🔥 CONSUMO ATRIBUÍDO: ${consumoAtribuido.toLocaleString('pt-BR')} kWh/mês
+📈 PERCENTUAL USADO: ${percentualLotacao}%
+✅ ESPAÇO DISPONÍVEL: ${espacoDisponivel.toLocaleString('pt-BR')} kWh/mês
+🏷️ STATUS: ${status}
+
+ℹ️ NOTA: O consumo atribuído já inclui as calibragens aplicadas:
+• UCs com calibragem individual usam sua própria calibragem
+• UCs sem calibragem individual usam a calibragem global
+• Fórmula: consumo_medio × (1 + calibragem/100)
+                                 `}>
+
+                              {/* BARRA DE PROGRESSO VISUAL */}
+                              <div className="lotacao-barra-fundo">
+                                <div
+                                  className="lotacao-barra-preenchida"
+                                  style={{
+                                    width: `${Math.min(100, percentualLotacao)}%`,
+                                    backgroundColor: corBarra
+                                  }}
+                                />
+                              </div>
+
+                              {/* PERCENTUAL NUMÉRICO */}
+                              <div className="lotacao-info-texto">
+                                <strong className="lotacao-percentual">{percentualLotacao}%</strong>
+                                <small className="lotacao-status">{status}</small>
+                              </div>
+
+                            </div>
+                          );
+                        })()}
                       </td>
                       {isAdminOrAnalista && (
                         <td>
