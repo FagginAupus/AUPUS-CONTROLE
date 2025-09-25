@@ -4,7 +4,12 @@ class ApiService {
     constructor() {
         this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
         this.token = localStorage.getItem('aupus_token');
-        
+
+        // Rate limiting prevention
+        this.requestQueue = new Map();
+        this.lastRequestTime = 0;
+        this.minRequestInterval = 100; // 100ms between requests
+
         console.log('🔗 ApiService inicializado');
         console.log('🌐 Base URL:', this.baseURL);
     }
@@ -30,13 +35,63 @@ class ApiService {
     }
 
     // ========================================
+    // RATE LIMITING PREVENTION
+    // ========================================
+
+    async waitForRateLimit() {
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.lastRequestTime;
+
+        if (timeSinceLastRequest < this.minRequestInterval) {
+            const waitTime = this.minRequestInterval - timeSinceLastRequest;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+
+        this.lastRequestTime = Date.now();
+    }
+
+    checkForDuplicateRequest(endpoint, method, body) {
+        const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}`;
+        const now = Date.now();
+        const lastRequest = this.requestQueue.get(requestKey);
+
+        // Prevent duplicate requests within 1 second
+        if (lastRequest && (now - lastRequest) < 1000) {
+            console.warn('🚫 Requisição duplicada bloqueada:', requestKey);
+            return true;
+        }
+
+        this.requestQueue.set(requestKey, now);
+
+        // Clean old entries
+        if (this.requestQueue.size > 100) {
+            const cutoffTime = now - 5000; // 5 seconds
+            for (const [key, time] of this.requestQueue.entries()) {
+                if (time < cutoffTime) {
+                    this.requestQueue.delete(key);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // ========================================
     // MÉTODO BASE PARA REQUISIÇÕES - CORRIGIDO
     // ========================================
 
     async request(endpoint, options = {}) {
+        // Check for duplicate requests
+        if (this.checkForDuplicateRequest(endpoint, options.method || 'GET', options.body)) {
+            throw new Error('Requisição duplicada bloqueada para evitar rate limiting');
+        }
+
+        // Apply rate limiting
+        await this.waitForRateLimit();
+
         const url = `${this.baseURL}${endpoint}`;
         const token = this.getToken();
-        
+
         const config = {
             method: options.method || 'GET',
             headers: {
@@ -76,14 +131,35 @@ class ApiService {
 
             if (!response.ok) {
                 console.error(`❌ Erro ${response.status}:`, responseData);
-                
+
+                // ✅ TRATAMENTO ESPECÍFICO PARA 429 - RATE LIMITING
+                if (response.status === 429) {
+                    console.warn('🚫 Rate limiting detectado - aplicando delay');
+
+                    // Clear request queue to prevent further issues
+                    this.requestQueue.clear();
+
+                    // Increase minimum interval temporarily
+                    const originalInterval = this.minRequestInterval;
+                    this.minRequestInterval = Math.min(originalInterval * 2, 2000); // Max 2 seconds
+
+                    // Reset after 30 seconds
+                    setTimeout(() => {
+                        this.minRequestInterval = originalInterval;
+                        console.log('⏰ Rate limiting interval resetado');
+                    }, 30000);
+
+                    const errorMessage = responseData.message || 'Muitas tentativas de login. Tente novamente em alguns minutos.';
+                    throw new Error(errorMessage);
+                }
+
                 // Log de erros de validação
                 if (response.status === 422 && responseData.errors) {
-                    
+
                 } else {
                     console.error(`❌ Erro ${response.status}:`, responseData);
                 }
-                
+
                 // ✅ TRATAMENTO ESPECÍFICO PARA 401 - SEM REMOÇÃO AUTOMÁTICA DE TOKEN
                 if (response.status === 401) {
                     console.log('🔍 Análise detalhada do erro 401:', {

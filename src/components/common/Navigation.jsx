@@ -2,18 +2,19 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  Home, 
-  Plus, 
-  FileSearch, 
-  Settings, 
-  Zap, 
-  FileBarChart, 
+import {
+  Home,
+  Plus,
+  FileSearch,
+  Settings,
+  Zap,
+  FileBarChart,
   LogOut,
   Crown,
   Briefcase,
   User,
-  Users
+  Users,
+  ScrollText
 } from 'lucide-react';
 import './Navigation.css';
 
@@ -52,17 +53,24 @@ const Navigation = () => {
       path: '/controle',
       requiredPage: 'controle'
     },
-    { 
-      id: 'ugs', 
-      label: 'UGs', 
+    {
+      id: 'ugs',
+      label: 'UGs',
       icon: Zap,
       path: '/ugs',
       requiredPage: 'ugs'
     },
+    {
+      id: 'logs',
+      label: 'LOGS',
+      icon: ScrollText,
+      path: '/logs',
+      adminOnly: true
+    },
   // TEMPORARIAMENTE COMENTADO
-  // { 
-  //   id: 'relatorios', 
-  //   label: 'RELATÓRIOS', 
+  // {
+  //   id: 'relatorios',
+  //   label: 'RELATÓRIOS',
   //   icon: FileBarChart,
   //   path: '/relatorios',
   //   requiredPage: 'relatorios'
@@ -71,8 +79,18 @@ const Navigation = () => {
 
   // Filtrar itens baseado nas permissões do usuário
   const visibleMenuItems = menuItems.filter(item => {
-    if (!item.requiredPage) return true;
-    return canAccessPage(item.requiredPage);
+    // Se é admin only, verificar se o usuário é admin
+    if (item.adminOnly) {
+      return user?.role === 'admin';
+    }
+
+    // Se tem página requerida, verificar permissão
+    if (item.requiredPage) {
+      return canAccessPage(item.requiredPage);
+    }
+
+    // Caso contrário, mostrar o item
+    return true;
   });
 
   const isActive = (item) => {

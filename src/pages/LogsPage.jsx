@@ -13,7 +13,23 @@ import {
     RefreshCw,
     ChevronLeft,
     ChevronRight,
-    Info
+    Info,
+    ScrollText,
+    Eye,
+    Shield,
+    FileText,
+    Edit,
+    Trash2,
+    Zap,
+    Settings,
+    Users,
+    BarChart,
+    UserCheck,
+    LogOut,
+    CheckCircle,
+    XCircle,
+    Link,
+    Unlink
 } from 'lucide-react';
 import './LogsPage.css';
 
@@ -180,7 +196,7 @@ const LogsPage = () => {
                 <Navigation />
                 <div className="logs-header">
                     <div className="logs-title">
-                        <h1>📋 Logs do Sistema</h1>
+                        <h1><ScrollText className="logs-icon" /> Logs do Sistema</h1>
                         <p>Visualize e monitore todas as ações realizadas no sistema</p>
                     </div>
 
@@ -207,7 +223,7 @@ const LogsPage = () => {
                 {/* Eventos Críticos em Destaque */}
                 {eventosCriticos.length > 0 && (
                     <div className="eventos-criticos">
-                        <h3>⚠️ Eventos Críticos Recentes</h3>
+                        <h3><AlertTriangle className="eventos-criticos-icon" /> Eventos Críticos Recentes</h3>
                         <div className="eventos-criticos-lista">
                             {eventosCriticos.slice(0, 3).map((evento) => (
                                 <div key={evento.id} className="evento-critico-item">
@@ -237,12 +253,12 @@ const LogsPage = () => {
                                     onChange={(e) => atualizarFiltro('modulo', e.target.value)}
                                 >
                                     <option value="">Todos os módulos</option>
-                                    <option value="auth">🔐 Autenticação</option>
-                                    <option value="propostas">📄 Propostas</option>
-                                    <option value="controle">⚙️ Controle</option>
-                                    <option value="ugs">⚡ UGs</option>
-                                    <option value="dashboard">📊 Dashboard</option>
-                                    <option value="usuarios">👥 Usuários</option>
+                                    <option value="auth">Autenticação</option>
+                                    <option value="propostas">Propostas</option>
+                                    <option value="controle">Controle</option>
+                                    <option value="ugs">UGs</option>
+                                    <option value="dashboard">Dashboard</option>
+                                    <option value="usuarios">Usuários</option>
                                 </select>
                             </div>
 
@@ -253,12 +269,26 @@ const LogsPage = () => {
                                     onChange={(e) => atualizarFiltro('evento_tipo', e.target.value)}
                                 >
                                     <option value="">Todos os tipos</option>
-                                    <option value="USUARIO_LOGIN">🔐 Login</option>
-                                    <option value="USUARIO_LOGOUT">🚪 Logout</option>
-                                    <option value="PROPOSTA_CRIADA">📄 Proposta Criada</option>
-                                    <option value="PROPOSTA_EDITADA">✏️ Proposta Editada</option>
-                                    <option value="PROPOSTA_EXCLUIDA">🗑️ Proposta Excluída</option>
-                                    <option value="UG_CRIADA">⚡ UG Criada</option>
+                                    <option value="USUARIO_LOGIN">Login</option>
+                                    <option value="USUARIO_LOGOUT">Logout</option>
+                                    <option value="PROPOSTA_CRIADA">Proposta Criada</option>
+                                    <option value="PROPOSTA_EDITADA">Proposta Editada</option>
+                                    <option value="PROPOSTA_EXCLUIDA">Proposta Excluída</option>
+                                    <option value="UG_CRIADA">UG Criada</option>
+                                    <option value="UG_EDITADA">UG Editada</option>
+                                    <option value="UG_EXCLUIDA">UG Excluída</option>
+                                    <option value="CONTROLE_CRIADO">Controle Criado</option>
+                                    <option value="CONTROLE_EDITADO">Controle Editado</option>
+                                    <option value="CONTROLE_EXCLUIDO">Controle Excluído</option>
+                                    <option value="UG_ATRIBUIDA">UG Atribuída</option>
+                                    <option value="UG_REMOVIDA">UG Removida</option>
+                                    <option value="STATUS_ALTERADO">Status Alterado</option>
+                                    <option value="TERMO_GERADO">Termo Gerado</option>
+                                    <option value="TERMO_ENVIADO_AUTENTIQUE">Termo Enviado</option>
+                                    <option value="TERMO_ASSINADO">Termo Assinado</option>
+                                    <option value="TERMO_REJEITADO">Termo Rejeitado</option>
+                                    <option value="TERMO_REGENERADO">Termo Regenerado</option>
+                                    <option value="TERMO_CANCELADO">Termo Cancelado</option>
                                 </select>
                             </div>
 
@@ -287,8 +317,8 @@ const LogsPage = () => {
                                     onChange={(e) => atualizarFiltro('evento_critico', e.target.value)}
                                 >
                                     <option value="">Todos</option>
-                                    <option value="true">🔴 Apenas críticos</option>
-                                    <option value="false">🟢 Apenas normais</option>
+                                    <option value="true">Apenas críticos</option>
+                                    <option value="false">Apenas normais</option>
                                 </select>
                             </div>
                         </div>

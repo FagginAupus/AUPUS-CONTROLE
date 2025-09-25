@@ -96,15 +96,28 @@ const auditoriaService = {
          */
         formatarTipoEvento: (eventoTipo) => {
             const tipos = {
-                'USUARIO_LOGIN': '🔐 Login do Usuário',
-                'USUARIO_LOGOUT': '🚪 Logout do Usuário',
-                'PROPOSTA_CRIADA': '📄 Proposta Criada',
-                'PROPOSTA_EDITADA': '✏️ Proposta Editada',
-                'PROPOSTA_EXCLUIDA': '🗑️ Proposta Excluída',
-                'UG_CRIADA': '⚡ UG Criada',
-                'TERMO_ADESAO_ENVIADO': '📧 Termo Enviado',
-                'NOTIFICACAO_LIDA': '👁️ Notificação Lida',
-                'STATUS_ALTERADO': '🔄 Status Alterado'
+                'USUARIO_LOGIN': 'Login do Usuário',
+                'USUARIO_LOGOUT': 'Logout do Usuário',
+                'PROPOSTA_CRIADA': 'Proposta Criada',
+                'PROPOSTA_EDITADA': 'Proposta Editada',
+                'PROPOSTA_EXCLUIDA': 'Proposta Excluída',
+                'UG_CRIADA': 'UG Criada',
+                'UG_EDITADA': 'UG Editada',
+                'UG_EXCLUIDA': 'UG Excluída',
+                'TERMO_ADESAO_ENVIADO': 'Termo Enviado',
+                'TERMO_GERADO': 'Termo Gerado',
+                'TERMO_ENVIADO_AUTENTIQUE': 'Termo Enviado para Autentique',
+                'TERMO_ASSINADO': 'Termo Assinado',
+                'TERMO_REJEITADO': 'Termo Rejeitado',
+                'TERMO_REGENERADO': 'Termo Regenerado',
+                'TERMO_CANCELADO': 'Termo Cancelado',
+                'NOTIFICACAO_LIDA': 'Notificação Lida',
+                'STATUS_ALTERADO': 'Status Alterado',
+                'CONTROLE_CRIADO': 'Controle Criado',
+                'CONTROLE_EDITADO': 'Controle Editado',
+                'CONTROLE_EXCLUIDO': 'Controle Excluído',
+                'UG_ATRIBUIDA': 'UG Atribuída',
+                'UG_REMOVIDA': 'UG Removida'
             };
             return tipos[eventoTipo] || eventoTipo;
         },
@@ -114,12 +127,12 @@ const auditoriaService = {
          */
         formatarModulo: (modulo) => {
             const modulos = {
-                'auth': '🔐 Autenticação',
-                'propostas': '📄 Propostas',
-                'controle': '⚙️ Controle',
-                'ugs': '⚡ UGs',
-                'dashboard': '📊 Dashboard',
-                'usuarios': '👥 Usuários'
+                'auth': 'Autenticação',
+                'propostas': 'Propostas',
+                'controle': 'Controle',
+                'ugs': 'UGs',
+                'dashboard': 'Dashboard',
+                'usuarios': 'Usuários'
             };
             return modulos[modulo] || modulo;
         },
@@ -129,13 +142,13 @@ const auditoriaService = {
          */
         formatarAcao: (acao) => {
             const acoes = {
-                'CRIADO': '➕ Criado',
-                'ALTERADO': '✏️ Alterado',
-                'EXCLUIDO': '🗑️ Excluído',
-                'LOGIN': '🔐 Login',
-                'LOGOUT': '🚪 Logout',
-                'LIDA': '👁️ Lida',
-                'TERMO_ENVIADO': '📧 Enviado'
+                'CRIADO': 'Criado',
+                'ALTERADO': 'Alterado',
+                'EXCLUIDO': 'Excluído',
+                'LOGIN': 'Login',
+                'LOGOUT': 'Logout',
+                'LIDA': 'Lida',
+                'TERMO_ENVIADO': 'Enviado'
             };
             return acoes[acao] || acao;
         },
@@ -172,7 +185,7 @@ const auditoriaService = {
          * Obter prioridade visual baseado se é evento crítico
          */
         obterPrioridadeVisual: (eventoCritico) => {
-            return eventoCritico ? '🔴 Crítico' : '🟢 Normal';
+            return eventoCritico ? 'Crítico' : 'Normal';
         },
 
         /**
