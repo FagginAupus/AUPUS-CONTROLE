@@ -6,23 +6,45 @@
     background-attachment: fixed !important;
 }
 
+/* =======================================================
+   RESPONSIVIDADE GERAL E NOTEBOOKS
+   ======================================================= */
+
 .container {
+    width: 90%;         /* Desktop padrão */
     margin: 0 auto;
     padding: 20px;
 }
 
+/* Responsividade específica para notebooks (1024px - 1366px) */
+@media (min-width: 1024px) and (max-width: 1366px) {
+    .container {
+        width: 95% !important;  /* Expandir para notebooks */
+        padding: 15px 20px;     /* Ajustar padding */
+    }
+
+    .table th,
+    .table td {
+        padding: 10px 12px;     /* Otimizar espaçamento */
+        font-size: 0.9rem;      /* Ajustar fonte */
+    }
+
+    .table {
+        min-width: 1200px;      /* Garantir espaço para todas colunas de logs */
+    }
+}
+
 /* =======================================================
-   CABEÇALHO DA PÁGINA
+   CABEÇALHO DA PÁGINA - TEMA ESCURO
    ======================================================= */
 
 .logs-header {
-    background: rgba(255, 255, 255, 0.95);
+    background: #2d2d2d !important;         /* Fundo escuro */
     border-radius: 15px;
     padding: 25px;
     margin-bottom: 25px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;                  /* Borda escura */
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -31,7 +53,7 @@
 .logs-title h1 {
     font-size: 1.8rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: #f0f0f0 !important;              /* Texto claro */
     margin: 0 0 8px 0;
     display: flex;
     align-items: center;
@@ -213,7 +235,9 @@
     border: 2px solid #e9ecef;
     border-radius: 10px;
     font-size: 0.95rem;
-    background: white;
+    background: #2d2d2d !important;          /* Fundo escuro */
+    color: #f0f0f0 !important;               /* Texto claro */
+    border: 1px solid #444;                  /* Borda escura */
     transition: all 0.3s ease;
 }
 
@@ -268,11 +292,11 @@
    ======================================================= */
 
 .logs-table-container {
-    background: rgba(255, 255, 255, 0.95);
+    background: #2d2d2d !important;              /* Fundo escuro da tabela */
     border-radius: 15px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid #444;                      /* Borda escura */
     overflow: hidden;
 }
 
@@ -320,14 +344,14 @@
 }
 
 .logs-table thead {
-    background: #f8f9fa;
-    border-bottom: 2px solid #e1e1e1;
+    background: #1a1a1a !important;             /* Fundo escuro do cabeçalho */
+    border-bottom: 2px solid #444;              /* Borda escura */
 }
 
 .logs-table th {
-    background: #f8f9fa;
-    border-bottom: 2px solid #e1e1e1;
-    color: #333;
+    background: #1a1a1a !important;             /* Fundo escuro do cabeçalho */
+    border-bottom: 2px solid #444;              /* Borda escura */
+    color: #f0f0f0 !important;                  /* Texto claro */
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.5px;
@@ -340,20 +364,21 @@
 }
 
 .logs-table tbody tr {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #444;              /* Borda escura */
     transition: all 0.3s ease;
+    background: #2d2d2d !important;             /* Fundo escuro das linhas */
 }
 
 .logs-table tbody tr:nth-child(even) {
-    background-color: #fdfdfd;
+    background-color: #333 !important;          /* Fundo escuro alternado */
 }
 
 .logs-table tbody tr:nth-child(even):hover {
-    background-color: #f8f9fa;
+    background-color: #3d3d3d !important;      /* Hover escuro alternado */
 }
 
 .logs-table tbody tr:hover {
-    background: #f8f9fa;
+    background: #3d3d3d !important;             /* Hover escuro */
 }
 
 .logs-table tbody tr.log-critico {
@@ -366,10 +391,11 @@
 }
 
 .logs-table td {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #444;              /* Borda escura */
     padding: 12px;
     font-size: 0.9rem;
     vertical-align: middle;
+    color: #f0f0f0 !important;                  /* Texto claro */
 }
 
 /* =======================================================
@@ -404,7 +430,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #2c3e50;
+    color: #f0f0f0 !important;               /* Texto claro para tema escuro */
 }
 
 .log-ip {
@@ -516,8 +542,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 25px;
-    border-top: 2px solid #e9ecef;
-    background: #f8f9fa;
+    border-top: 2px solid #444;                 /* Borda escura */
+    background: #1a1a1a !important;             /* Fundo escuro da paginação */
 }
 
 .pagination-info {
@@ -566,8 +592,9 @@
 
 .btn-page {
     padding: 10px 15px;
-    border: none;
-    background: white;
+    border: 1px solid #444;
+    background: #2d2d2d !important;          /* Fundo escuro */
+    color: #f0f0f0 !important;               /* Texto claro */
     border-radius: 8px;
     cursor: pointer;
     font-size: 0.9rem;
@@ -579,7 +606,7 @@
 }
 
 .btn-page:hover {
-    background: #f8f9fa;
+    background: #444 !important;                /* Hover escuro */
     border-color: #4CAF50;
     transform: translateY(-1px);
 }

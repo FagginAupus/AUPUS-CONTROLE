@@ -6,10 +6,32 @@
   background-attachment: fixed !important;
 }
 
+/* =======================================================
+   RESPONSIVIDADE GERAL E NOTEBOOKS
+   ======================================================= */
+
 .container {
-  width: 90%;         /* ← CORRIGIDO: largura controlada */
+  width: 90%;         /* Desktop padrão */
   margin: 0 auto;
   padding: 20px;
+}
+
+/* Responsividade específica para notebooks (1024px - 1366px) */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container {
+    width: 95% !important;  /* Expandir para notebooks */
+    padding: 15px 20px;     /* Ajustar padding */
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;     /* Otimizar espaçamento */
+    font-size: 0.9rem;      /* Ajustar fonte */
+  }
+
+  .table {
+    min-width: 1200px;      /* Garantir espaço para todas colunas */
+  }
 }
 
 /* =======================================================
@@ -129,10 +151,41 @@
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
 }
 
+/* =======================================================
+   CONTAINER COM SCROLL HORIZONTAL PARA TABELA DE UGS
+   ======================================================= */
+
+.table-wrapper {
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 .table-header {
   padding: 20px 25px;
   background: #2d2d2d;
   border-bottom: 1px solid #e1e1e1;
+  border-radius: 12px 12px 0 0;
 }
 
 .table-header h2 {
@@ -617,17 +670,37 @@
   }
   
   .table-wrapper {
-    max-height: 50vh;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;     /* Scroll suave no iOS */
+    border-radius: 0 0 12px 12px;
   }
-  
+
   .table {
-    min-width: 800px;
+    min-width: 1000px !important;          /* Garantir espaço para TODAS as colunas */
+    font-size: 0.8rem;
   }
-  
+
   .table th,
   .table td {
-    padding: 8px 6px;
-    font-size: 0.8rem;
+    padding: 8px 10px !important;          /* Padding otimizado */
+    font-size: 0.75rem !important;         /* Fonte menor mas legível */
+    min-width: 80px;                       /* Largura mínima para cada coluna */
+  }
+
+  /* Colunas específicas com larguras otimizadas */
+  .table th:nth-child(1), /* Nome da Usina */
+  .table td:nth-child(1) {
+    min-width: 150px !important;           /* Mais espaço para o nome */
+    max-width: 200px;
+  }
+
+  .table th:nth-child(9), /* Ações */
+  .table td:nth-child(9) {
+    min-width: 120px !important;           /* Espaço para 3 botões */
+    position: sticky;                      /* Manter ações visíveis */
+    right: 0;
+    background: white;
+    z-index: 1;
   }
   
   .modal-ug {
@@ -813,16 +886,21 @@
     font-size: 0.6rem !important;
   }
 
-  /* Ocultar a nova coluna de lotação em mobile */
-  .table th:nth-child(8), /* Coluna de Lotação */
-  .table td:nth-child(8) {
-    display: none !important;
+  /* Manter todas as colunas visíveis - usar scroll horizontal */
+  .lotacao-container {
+    min-width: 90px !important;
   }
 
-  /* Reajustar seletores das colunas existentes */
-  .table th:nth-child(9), /* Ações (nova posição) */
-  .table td:nth-child(9) {
-    width: 10% !important;
+  .lotacao-barra-fundo {
+    height: 10px !important;
+  }
+
+  .lotacao-percentual {
+    font-size: 0.7rem !important;
+  }
+
+  .lotacao-status {
+    font-size: 0.6rem !important;
   }
 }
 

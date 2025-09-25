@@ -6,9 +6,32 @@
   background-attachment: fixed !important;
 }
 
+/* =======================================================
+   RESPONSIVIDADE GERAL E NOTEBOOKS
+   ======================================================= */
+
 .container {
+  width: 90%;         /* Desktop padrão */
   margin: 0 auto;
   padding: 20px;
+}
+
+/* Responsividade específica para notebooks (1024px - 1366px) */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container {
+    width: 95% !important;  /* Expandir para notebooks */
+    padding: 15px 20px;     /* Ajustar padding */
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;     /* Otimizar espaçamento */
+    font-size: 0.9rem;      /* Ajustar fonte */
+  }
+
+  .table {
+    min-width: 1300px;      /* Garantir espaço para todas colunas da prospec */
+  }
 }
 
 /* =======================================================
