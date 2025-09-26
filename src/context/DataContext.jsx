@@ -164,7 +164,7 @@ export const DataProvider = ({ children }) => {
   const loadPropostas = useCallback(async (page = 1, filters = {}, forceReload = false) => {
     if (!user?.id) return;
 
-    const cacheTimeout = 60000; // 1 minuto
+    const cacheTimeout = 1000; // 1 segundo - forçar recarregamento após correção
     const now = Date.now();
     const isExpired = (now - cacheTimestamps.propostas) > cacheTimeout;
 
@@ -443,13 +443,16 @@ export const DataProvider = ({ children }) => {
   }, []);
 
   const invalidateAll = useCallback(() => {
-    console.log('🗑️ Invalidando todos os caches');
+    console.log('🗑️ Invalidando todos os caches - CORREÇÃO DE SEGURANÇA APLICADA');
     setCacheTimestamps({
       propostas: 0,
       controle: 0,
       ugs: 0,
       dashboard: 0
     });
+
+    // 🔒 CORREÇÃO: Limpar dados antigos do estado também
+    setPropostas(prev => ({ ...prev, data: [] }));
   }, []);
 
   // ========================================
@@ -491,7 +494,10 @@ export const DataProvider = ({ children }) => {
   useEffect(() => {
     if (user?.id && !initializedRef.current && !loadingRef.current) {
       console.log(`🚀 DataContext inicializando para usuário: ${user.name} (${user.role})`);
-      
+
+      // 🔒 CORREÇÃO: Limpar todos os caches na inicialização
+      invalidateAll();
+
       initializedRef.current = true;
       loadingRef.current = true;
       

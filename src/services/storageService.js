@@ -698,13 +698,14 @@ class StorageService {
             unidades_consumidoras: unidadesProcessadas, // ✅ UCs PROCESSADAS
             unidadesConsumidoras: unidadesProcessadas, // Compatibilidade
             
-            // 🔍 DADOS DA PRIMEIRA UC PARA COMPATIBILIDADE - COM DEBUG
-            apelido: unidadesProcessadas[0]?.apelido || proposta.apelido || '',
-            numeroUC: unidadesProcessadas[0]?.numero_unidade || proposta.numeroUC || '',
-            numeroCliente: unidadesProcessadas[0]?.numero_cliente || proposta.numeroCliente || '',
-            ligacao: unidadesProcessadas[0]?.ligacao || proposta.ligacao || '',
-            media: unidadesProcessadas[0]?.consumo_medio || proposta.media || 0,
-            distribuidora: unidadesProcessadas[0]?.distribuidora || proposta.distribuidora || '',
+            // 🔒 CORREÇÃO DEFINITIVA: Não usar dados da primeira UC para compatibilidade
+            // Esses campos serão preenchidos na expansão de linhas com dados corretos
+            apelido: '',
+            numeroUC: '',
+            numeroCliente: '',
+            ligacao: '',
+            media: 0,
+            distribuidora: '',
             
             // Timestamps
             created_at: proposta.created_at,
