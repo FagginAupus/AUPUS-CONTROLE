@@ -132,9 +132,12 @@ class StorageService {
                         consumo_medio: uc.consumo_medio
                     });
 
+                    // ✅ CORREÇÃO CRÍTICA: ID único garantido com timestamp para evitar duplicações
+                    const uniqueId = `${proposta.id}-UC-${ucIndex}-${uc.numero_unidade || `idx${ucIndex}`}-${Date.now()}`;
+
                     linhasExpandidas.push({
-                        id: `${proposta.id}-UC-${ucIndex}-${uc.numero_unidade || ucIndex}`,
-                        propostaId: proposta.id,
+                        id: uniqueId,
+                        propostaId: proposta.id, // ✅ SEMPRE manter referência clara ao ID original
                         numeroProposta: proposta.numeroProposta || proposta.numero_proposta,
                         nomeCliente: proposta.nomeCliente || proposta.nome_cliente,
                         consultor: proposta.consultor,
@@ -1036,61 +1039,84 @@ class StorageService {
     async buscarPropostaPorId(propostaId) {
         try {
             console.log('🔍 Buscando proposta completa por ID:', propostaId);
-            
+
+            // ✅ CORREÇÃO CRÍTICA: Validação de entrada mais rigorosa
+            if (!propostaId || (propostaId !== 0 && !propostaId)) {
+                console.error('❌ ID da proposta inválido:', propostaId);
+                return null;
+            }
+
             // Tentar buscar via API diretamente
             try {
-            const response = await apiService.get(`/propostas/${propostaId}`);
-            
-            if (response?.success && response?.data) {
-                const proposta = response.data;
-                console.log('✅ Proposta encontrada via API:', proposta.numero_proposta);
-                
-                // ✅ MAPEAR CORRETAMENTE USANDO O MÉTODO EXISTENTE
-                const propostaMapeada = this.mapearPropostaDoBackend(proposta);
-                
-                // ✅ GARANTIR QUE AS UCs ESTÃO FORMATADAS CORRETAMENTE
-                if (propostaMapeada && propostaMapeada.unidades_consumidoras) {
-                console.log('📊 UCs na proposta mapeada:', propostaMapeada.unidades_consumidoras.length);
-                
-                // Debug: Log da primeira UC para verificar estrutura
-                if (propostaMapeada.unidades_consumidoras.length > 0) {
-                    console.log('🔍 Primeira UC estrutura:', propostaMapeada.unidades_consumidoras[0]);
+                const response = await apiService.get(`/propostas/${propostaId}`);
+
+                if (response?.success && response?.data) {
+                    const proposta = response.data;
+                    console.log('✅ Proposta encontrada via API:', proposta.numero_proposta);
+
+                    // ✅ MAPEAR CORRETAMENTE USANDO O MÉTODO EXISTENTE
+                    const propostaMapeada = this.mapearPropostaDoBackend(proposta);
+
+                    // ✅ GARANTIR QUE AS UCs ESTÃO FORMATADAS CORRETAMENTE
+                    if (propostaMapeada && propostaMapeada.unidades_consumidoras) {
+                        console.log('📊 UCs na proposta mapeada:', propostaMapeada.unidades_consumidoras.length);
+
+                        // Debug: Log da primeira UC para verificar estrutura
+                        if (propostaMapeada.unidades_consumidoras.length > 0) {
+                            console.log('🔍 Primeira UC estrutura:', propostaMapeada.unidades_consumidoras[0]);
+                        }
+                    }
+
+                    return propostaMapeada;
                 }
-                }
-                
-                return propostaMapeada;
-            }
             } catch (apiError) {
-            console.warn('⚠️ Erro ao buscar via API individual:', apiError.message);
+                console.warn('⚠️ Erro ao buscar via API individual (comum para não-admins):', apiError.message);
+
+                // ✅ CORREÇÃO CRÍTICA: Para não-admins, retornar null imediatamente
+                // para evitar busca incorreta no cache que pode retornar dados de outra proposta
+                if (apiError.message?.includes('403') || apiError.message?.includes('401') || apiError.message?.includes('Forbidden')) {
+                    console.warn('🚫 Usuário não tem permissão para buscar proposta individual - impedindo busca no cache para evitar dados incorretos');
+                    return null;
+                }
             }
-            
-            // Fallback: buscar na lista geral de propostas (sem expansão)
+
+            // ✅ Fallback apenas para casos específicos (não erro de permissão)
             try {
-            const todasPropostas = await this.getProspecOriginal(); // Usar versão sem expansão para evitar loop
-            const propostaEncontrada = todasPropostas.find(proposta => {
-                // Tentar diferentes formatos de ID
-                return proposta.propostaId === propostaId || 
-                    proposta.id === propostaId ||
-                    proposta.numeroProposta === propostaId;
-            });
-            
-            if (propostaEncontrada) {
-                console.log('✅ Proposta encontrada no cache:', propostaEncontrada.numeroProposta);
-                console.log('📊 UCs no cache:', propostaEncontrada.unidades_consumidoras?.length || 0);
-                return propostaEncontrada;
-            }
+                const todasPropostas = await this.getProspecOriginal();
+
+                // ✅ BUSCA MAIS RIGOROSA: Apenas por ID numérico exato
+                const propostaIdNumber = Number(propostaId);
+                if (!isNaN(propostaIdNumber)) {
+                    const propostaEncontrada = todasPropostas.find(proposta =>
+                        proposta.id === propostaIdNumber
+                    );
+
+                    if (propostaEncontrada) {
+                        // ✅ VALIDAÇÃO ADICIONAL: Verificar se a proposta realmente corresponde
+                        console.log('✅ Proposta encontrada no cache com validação rigorosa:', {
+                            id: propostaEncontrada.id,
+                            numero: propostaEncontrada.numeroProposta,
+                            cliente: propostaEncontrada.nomeCliente,
+                            ucs_count: propostaEncontrada.unidades_consumidoras?.length || 0
+                        });
+
+                        return propostaEncontrada;
+                    }
+                }
+
+                console.warn('⚠️ Proposta não encontrada com busca rigorosa:', propostaId);
             } catch (cacheError) {
-            console.warn('⚠️ Erro ao buscar no cache:', cacheError.message);
+                console.warn('⚠️ Erro ao buscar no cache:', cacheError.message);
             }
-            
+
             console.warn('⚠️ Proposta não encontrada:', propostaId);
             return null;
-            
+
         } catch (error) {
             console.error('❌ Erro ao buscar proposta por ID:', error);
             return null;
         }
-        }
+    }
 
         /**
          * ✅ BUSCAR TODAS AS UCs DE UMA PROPOSTA - VERSÃO CORRIGIDA

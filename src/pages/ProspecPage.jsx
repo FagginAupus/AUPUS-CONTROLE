@@ -445,10 +445,40 @@ const ProspecPage = () => {
     try {
       console.log('📄 Gerando PDF da proposta...', item);
 
-      // ✅ BUSCAR TODAS AS UCs DA MESMA PROPOSTA
-      const propostaId = item.propostaId || item.id?.split('-')[0];
+      // ✅ VERIFICAR SE É UMA UC ESPECÍFICA OU PROPOSTA COMPLETA
+      let ucEspecifica = null;
+      let propostaId = null;
+
+      // Primeira prioridade: propostaId direto
+      if (item.propostaId) {
+        propostaId = item.propostaId;
+      }
+      // Segunda prioridade: se tem ID composto, extrair proposta e UC específica
+      else if (item.id && typeof item.id === 'string' && item.id.includes('-UC-')) {
+        const parts = item.id.split('-UC-');
+        if (parts.length >= 2 && !isNaN(Number(parts[0]))) {
+          propostaId = Number(parts[0]);
+          // Identificar UC específica baseada no item clicado
+          ucEspecifica = {
+            apelido: item.apelido || item.numero_unidade || 'UC',
+            numeroUC: item.numeroUC || item.numero_unidade || '',
+            numero_unidade: item.numeroUC || item.numero_unidade || '',
+            ligacao: item.ligacao || item.tipo_ligacao || 'Monofásica',
+            consumo: parseInt(item.media) || 0,
+            consumo_medio: parseInt(item.media) || 0,
+            distribuidora: item.distribuidora || ''
+          };
+          console.log('🎯 UC específica identificada:', ucEspecifica);
+        }
+      }
+      // Terceira prioridade: ID direto se for numérico
+      else if (item.id && !isNaN(Number(item.id))) {
+        propostaId = Number(item.id);
+      }
+
       if (!propostaId) {
-        showNotification('ID da proposta não encontrado', 'error');
+        console.error('❌ ERRO CRÍTICO: ID da proposta não encontrado!', item);
+        showNotification('❌ ID da proposta não encontrado - impossível gerar PDF', 'error');
         return;
       }
 
@@ -457,58 +487,153 @@ const ProspecPage = () => {
       try {
         console.log('🔍 Buscando proposta completa por ID:', propostaId);
         propostaCompleta = await storageService.buscarPropostaPorId(propostaId);
-        
+
         if (!propostaCompleta) {
-          // Fallback: buscar nas propostas carregadas em memória
-          const todasPropostas = await storageService.getProspec();
-          propostaCompleta = todasPropostas.find(p => 
-            p.propostaId === propostaId || p.id === propostaId
-          );
+          // ✅ CORREÇÃO PARA NÃO-ADMINS: Buscar apenas no cache expandido (sem riscos de dados incorretos)
+          console.warn('⚠️ Proposta não encontrada via API (comum para não-admins), buscando em cache expandido...');
+
+          // ✅ BUSCA RIGOROSA: Filtrar do dadosFiltrados (dados já na tabela)
+          // que já foram validados e expandidos corretamente
+          const linhasDaMesmaProposta = dadosFiltrados.filter(linha => {
+            const linhaPropostaId = linha.propostaId || linha.id?.split('-')[0];
+            return Number(linhaPropostaId) === Number(propostaId);
+          });
+
+          if (linhasDaMesmaProposta.length > 0) {
+            // ✅ RECONSTRUIR proposta a partir das linhas da tabela (dados confiáveis)
+            const primeiraLinha = linhasDaMesmaProposta[0];
+
+            // Validação adicional: verificar se cliente confere
+            if (item.nomeCliente && primeiraLinha.nomeCliente !== item.nomeCliente) {
+              console.error('❌ ERRO CRÍTICO: Cliente não confere mesmo no cache!', {
+                esperado: item.nomeCliente,
+                encontrado: primeiraLinha.nomeCliente
+              });
+              showNotification('❌ Erro de validação: Dados da proposta não conferem', 'error');
+              return;
+            }
+
+            // ✅ CONSTRUIR dados da proposta a partir das linhas válidas
+            propostaCompleta = {
+              id: primeiraLinha.propostaId,
+              numeroProposta: primeiraLinha.numeroProposta,
+              nomeCliente: primeiraLinha.nomeCliente,
+              consultor: primeiraLinha.consultor,
+              data: primeiraLinha.data,
+              descontoTarifa: primeiraLinha.descontoTarifa,
+              descontoBandeira: primeiraLinha.descontoBandeira,
+              inflacao: primeiraLinha.inflacao,
+              tarifaTributos: primeiraLinha.tarifaTributos,
+              beneficios: primeiraLinha.beneficios || [],
+              // ✅ CONSTRUIR UCs a partir das linhas da tabela
+              unidades_consumidoras: linhasDaMesmaProposta.map(linha => ({
+                apelido: linha.apelido || linha.numero_unidade || 'UC',
+                numero_unidade: linha.numeroUC || linha.numero_unidade || '',
+                numeroUC: linha.numeroUC || linha.numero_unidade || '',
+                ligacao: linha.ligacao || linha.tipo_ligacao || 'Monofásica',
+                consumo_medio: parseInt(linha.media) || 0,
+                distribuidora: linha.distribuidora || ''
+              }))
+            };
+
+            console.log('✅ Proposta reconstruída a partir das linhas da tabela:', {
+              id: propostaCompleta.id,
+              numero: propostaCompleta.numeroProposta,
+              cliente: propostaCompleta.nomeCliente,
+              ucs_count: propostaCompleta.unidades_consumidoras.length
+            });
+          }
         }
       } catch (error) {
         console.warn('⚠️ Erro ao buscar proposta completa:', error);
         propostaCompleta = null;
       }
 
-      // ✅ EXTRAIR TODAS AS UCs DA PROPOSTA (FORMATADAS CORRETAMENTE)
-      let todasUCsDaProposta = [];
-      
-      if (propostaCompleta && propostaCompleta.unidades_consumidoras) {
-        // Se encontrou a proposta completa, usar as UCs dela
-        const ucsOriginais = Array.isArray(propostaCompleta.unidades_consumidoras) 
-          ? propostaCompleta.unidades_consumidoras 
-          : [];
-        
-        // ✅ FORMATAR UCs CORRETAMENTE PARA O PDF
-        todasUCsDaProposta = ucsOriginais.map(uc => ({
-          apelido: uc.apelido || uc.numero_unidade || 'UC',
-          numeroUC: uc.numero_unidade || uc.numeroUC || '',
-          numero_unidade: uc.numero_unidade || uc.numeroUC || '',
-          ligacao: uc.ligacao || uc.tipo_ligacao || 'Monofásica',
-          consumo: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
-          consumo_medio: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
-          distribuidora: uc.distribuidora || ''
-        }));
-        
-        console.log('✅ UCs encontradas na proposta completa:', todasUCsDaProposta.length);
-      } else {
-        // Fallback: agrupar todas as linhas da mesma proposta que estão na tabela atual
-        const linhasDaMesmaProposta = dadosFiltrados.filter(linha => {
-          const linhaPropostaId = linha.propostaId || linha.id?.split('-')[0];
-          return linhaPropostaId === propostaId;
-        });
+      // ✅ DECIDIR QUAIS UCs INCLUIR NO PDF
+      let ucsParaPDF = [];
 
-        todasUCsDaProposta = linhasDaMesmaProposta.map(linha => ({
-          apelido: linha.apelido || linha.numero_unidade || 'UC',
-          numeroUC: linha.numeroUC || linha.numero_unidade || '',
-          numero_unidade: linha.numeroUC || linha.numero_unidade || '',
-          ligacao: linha.ligacao || linha.tipo_ligacao || 'Monofásica',
-          consumo: parseInt(linha.media) || 0,
-          consumo_medio: parseInt(linha.media) || 0,
-          distribuidora: linha.distribuidora || ''
-        }));
-        
-        console.log('✅ UCs extraídas das linhas da tabela:', todasUCsDaProposta.length);
+      if (ucEspecifica) {
+        // Se foi clicado em uma UC específica, incluir apenas ela
+        ucsParaPDF = [ucEspecifica];
+        console.log('🎯 PDF será gerado apenas para a UC específica:', ucEspecifica.apelido);
+
+        // Confirmar com o usuário se deseja incluir apenas uma UC
+        const confirmar = window.confirm(`Você clicou em uma UC específica (${ucEspecifica.apelido}).
+Deseja gerar o PDF apenas para esta UC?
+• SIM = PDF só desta UC
+• NÃO = PDF com todas as UCs da proposta`);
+
+        if (!confirmar) {
+          // Usuário escolheu incluir todas as UCs
+          ucEspecifica = null;
+        }
+      }
+
+      if (!ucEspecifica) {
+        // Incluir todas as UCs da proposta
+        if (propostaCompleta && propostaCompleta.unidades_consumidoras) {
+          const ucsOriginais = Array.isArray(propostaCompleta.unidades_consumidoras)
+            ? propostaCompleta.unidades_consumidoras
+            : [];
+
+          ucsParaPDF = ucsOriginais.map(uc => ({
+            apelido: uc.apelido || uc.numero_unidade || 'UC',
+            numeroUC: uc.numero_unidade || uc.numeroUC || '',
+            numero_unidade: uc.numero_unidade || uc.numeroUC || '',
+            ligacao: uc.ligacao || uc.tipo_ligacao || 'Monofásica',
+            consumo: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
+            consumo_medio: parseInt(uc.consumo_medio || uc.consumo || uc.media || 0) || 0,
+            distribuidora: uc.distribuidora || ''
+          }));
+
+          console.log('✅ PDF incluirá todas as UCs da proposta (dados API):', ucsParaPDF.length);
+        } else {
+          // ✅ CORREÇÃO CRÍTICA: Para não-admins, usar apenas os dados do item clicado
+          // ao invés de buscar outras linhas que podem conter dados incorretos
+          console.warn('⚠️ Usando fallback para não-admin: dados apenas do item clicado');
+
+          // Se foi clicado em uma linha de UC específica, usar apenas ela
+          if (item.numeroUC || item.apelido || item.ligacao || item.media) {
+            ucsParaPDF = [{
+              apelido: item.apelido || item.numero_unidade || 'UC',
+              numeroUC: item.numeroUC || item.numero_unidade || '',
+              numero_unidade: item.numeroUC || item.numero_unidade || '',
+              ligacao: item.ligacao || item.tipo_ligacao || 'Monofásica',
+              consumo: parseInt(item.media) || 0,
+              consumo_medio: parseInt(item.media) || 0,
+              distribuidora: item.distribuidora || ''
+            }];
+            console.log('✅ PDF incluirá apenas a UC clicada:', ucsParaPDF[0]);
+          } else {
+            // Último recurso: buscar na tabela, mas com validação extra
+            const linhasDaMesmaProposta = dadosFiltrados.filter(linha => {
+              const linhaPropostaId = linha.propostaId || linha.id?.split('-')[0];
+              const clienteConfere = linha.nomeCliente === item.nomeCliente;
+              const numeroConfere = linha.numeroProposta === item.numeroProposta;
+
+              return Number(linhaPropostaId) === Number(propostaId) &&
+                     clienteConfere &&
+                     numeroConfere;
+            });
+
+            if (linhasDaMesmaProposta.length > 0) {
+              ucsParaPDF = linhasDaMesmaProposta.map(linha => ({
+                apelido: linha.apelido || linha.numero_unidade || 'UC',
+                numeroUC: linha.numeroUC || linha.numero_unidade || '',
+                numero_unidade: linha.numeroUC || linha.numero_unidade || '',
+                ligacao: linha.ligacao || linha.tipo_ligacao || 'Monofásica',
+                consumo: parseInt(linha.media) || 0,
+                consumo_medio: parseInt(linha.media) || 0,
+                distribuidora: linha.distribuidora || ''
+              }));
+              console.log('✅ UCs extraídas das linhas da tabela (com validação):', ucsParaPDF.length);
+            } else {
+              console.error('❌ ERRO CRÍTICO: Nenhuma UC válida encontrada');
+              showNotification('❌ Erro: Não foi possível encontrar dados válidos da UC para gerar o PDF', 'error');
+              return;
+            }
+          }
+        }
       }
 
       // ✅ PREPARAR DADOS COMPLETOS PARA O PDF COM DESCONTOS CORRETOS
@@ -524,7 +649,7 @@ const ProspecPage = () => {
         inflacao: (parseFloat(item.inflacao) || 2) / 100,  // Do banco: proposta.inflacao / 100
         tarifaTributos: parseFloat(item.tarifaTributos) || 0.98, // Do banco: proposta.tarifa_tributos
         observacoes: item.observacoes || '',
-        ucs: todasUCsDaProposta, // ← CORRIGIDO: usar todas as UCs formatadas
+        ucs: ucsParaPDF, // ← CORRIGIDO: usar UCs selecionadas (específica ou todas)
         beneficios: []
       };
 
@@ -575,9 +700,14 @@ const ProspecPage = () => {
       // Gerar PDF
       const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
       await PDFGenerator.baixarPDF(dadosPDF, true);
-      
+
+      // Mensagem de sucesso contextual
+      const tipoInclusao = ucEspecifica
+        ? `apenas para a UC: ${ucEspecifica.apelido}`
+        : `com ${dadosPDF.ucs.length} UC${dadosPDF.ucs.length !== 1 ? 's' : ''}`;
+
       showNotification(
-        `PDF da proposta ${item.numeroProposta} gerado com sucesso! (${dadosPDF.ucs.length} UCs incluídas)`, 
+        `PDF da proposta ${item.numeroProposta} gerado com sucesso! (${tipoInclusao})`,
         'success'
       );
       
