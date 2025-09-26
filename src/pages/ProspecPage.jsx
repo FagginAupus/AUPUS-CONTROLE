@@ -588,51 +588,20 @@ Deseja gerar o PDF apenas para esta UC?
 
           console.log('✅ PDF incluirá todas as UCs da proposta (dados API):', ucsParaPDF.length);
         } else {
-          // ✅ CORREÇÃO CRÍTICA: Para não-admins, usar apenas os dados do item clicado
-          // ao invés de buscar outras linhas que podem conter dados incorretos
-          console.warn('⚠️ Usando fallback para não-admin: dados apenas do item clicado');
+          // ✅ CORREÇÃO FINAL: Usar sempre os dados da API quando disponível
+          console.warn('⚠️ Dados da API não disponíveis, usando dados do item clicado');
 
-          // Se foi clicado em uma linha de UC específica, usar apenas ela
-          if (item.numeroUC || item.apelido || item.ligacao || item.media) {
-            ucsParaPDF = [{
-              apelido: item.apelido || item.numero_unidade || 'UC',
-              numeroUC: item.numeroUC || item.numero_unidade || '',
-              numero_unidade: item.numeroUC || item.numero_unidade || '',
-              ligacao: item.ligacao || item.tipo_ligacao || 'Monofásica',
-              consumo: parseInt(item.media) || 0,
-              consumo_medio: parseInt(item.media) || 0,
-              distribuidora: item.distribuidora || ''
-            }];
-            console.log('✅ PDF incluirá apenas a UC clicada:', ucsParaPDF[0]);
-          } else {
-            // Último recurso: buscar na tabela, mas com validação extra
-            const linhasDaMesmaProposta = dadosFiltrados.filter(linha => {
-              const linhaPropostaId = linha.propostaId || linha.id?.split('-')[0];
-              const clienteConfere = linha.nomeCliente === item.nomeCliente;
-              const numeroConfere = linha.numeroProposta === item.numeroProposta;
-
-              return Number(linhaPropostaId) === Number(propostaId) &&
-                     clienteConfere &&
-                     numeroConfere;
-            });
-
-            if (linhasDaMesmaProposta.length > 0) {
-              ucsParaPDF = linhasDaMesmaProposta.map(linha => ({
-                apelido: linha.apelido || linha.numero_unidade || 'UC',
-                numeroUC: linha.numeroUC || linha.numero_unidade || '',
-                numero_unidade: linha.numeroUC || linha.numero_unidade || '',
-                ligacao: linha.ligacao || linha.tipo_ligacao || 'Monofásica',
-                consumo: parseInt(linha.media) || 0,
-                consumo_medio: parseInt(linha.media) || 0,
-                distribuidora: linha.distribuidora || ''
-              }));
-              console.log('✅ UCs extraídas das linhas da tabela (com validação):', ucsParaPDF.length);
-            } else {
-              console.error('❌ ERRO CRÍTICO: Nenhuma UC válida encontrada');
-              showNotification('❌ Erro: Não foi possível encontrar dados válidos da UC para gerar o PDF', 'error');
-              return;
-            }
-          }
+          // SEMPRE usar apenas os dados do item que foi clicado
+          ucsParaPDF = [{
+            apelido: item.apelido || item.numero_unidade || 'UC',
+            numeroUC: item.numeroUC || item.numero_unidade || '',
+            numero_unidade: item.numeroUC || item.numero_unidade || '',
+            ligacao: item.ligacao || item.tipo_ligacao || 'Monofásica',
+            consumo: parseInt(item.media) || 0,
+            consumo_medio: parseInt(item.media) || 0,
+            distribuidora: item.distribuidora || ''
+          }];
+          console.log('✅ PDF incluirá apenas a UC clicada (dados limpos):', ucsParaPDF[0]);
         }
       }
 

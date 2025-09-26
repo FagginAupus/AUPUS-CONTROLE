@@ -1055,6 +1055,15 @@ class StorageService {
                     const proposta = response.data;
                     console.log('✅ Proposta encontrada via API:', proposta.numero_proposta);
 
+                    // 🔍 DEBUG CRÍTICO: Log da resposta RAW da API
+                    console.log('🔍 RESPOSTA RAW DA API:', {
+                        id: proposta.id,
+                        numero_proposta: proposta.numero_proposta,
+                        nome_cliente: proposta.nome_cliente,
+                        unidades_consumidoras: proposta.unidades_consumidoras,
+                        unidades_count: proposta.unidades_consumidoras?.length || 0
+                    });
+
                     // ✅ MAPEAR CORRETAMENTE USANDO O MÉTODO EXISTENTE
                     const propostaMapeada = this.mapearPropostaDoBackend(proposta);
 
