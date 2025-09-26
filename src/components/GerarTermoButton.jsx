@@ -62,7 +62,7 @@ const GerarTermoButton = ({
           const result = await statusResponse.json();
           if (result.success && result.documento) {
             // ✅ VERIFICAÇÃO RIGOROSA: só aceitar se for EXATAMENTE a UC correta
-            if (result.documento.numero_uc === numeroUC) {
+            if (String(result.documento.numero_uc) === String(numeroUC)) {
               console.log('✅ Documento específico encontrado para UC:', numeroUC, result.documento);
               setStatusDocumento(result.documento);
               
