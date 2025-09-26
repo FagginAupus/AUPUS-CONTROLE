@@ -1,11 +1,5 @@
 /* RelatoriosPage.css - Sistema Completo de Relatórios */
 
-.relatorios-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
 /* Ensure consistency with dark theme */
 .relatorios-container .global-filters,
 .relatorios-container .tabs-container {
