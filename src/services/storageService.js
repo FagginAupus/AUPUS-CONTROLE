@@ -59,43 +59,27 @@ class StorageService {
      * Cada UC vira uma linha na tabela, repetindo dados da proposta
      */
     expandirPropostasParaUCs(propostas) {
-        console.log('🔍 === EXPANDINDO PROPOSTAS PARA UCs ===');
-        console.log('Total de propostas para expandir:', propostas.length);
-        
         const linhasExpandidas = [];
-        
+
         propostas.forEach((proposta, propostaIndex) => {
-            console.log(`🔍 PROPOSTA ${propostaIndex + 1} - EXPANSÃO:`, {
-                id: proposta.id,
-                numeroProposta: proposta.numeroProposta,
-                tem_unidades_consumidoras: !!proposta.unidades_consumidoras,
-                total_ucs: proposta.unidades_consumidoras?.length || 0
-            });
             
             // Verificar se tem UCs no array
             let ucsArray = [];
             
             if (proposta.unidades_consumidoras && Array.isArray(proposta.unidades_consumidoras)) {
                 ucsArray = proposta.unidades_consumidoras;
-                console.log(`✅ Proposta ${propostaIndex + 1} tem ${ucsArray.length} UCs`);
             } else if (proposta.unidadesConsumidoras && Array.isArray(proposta.unidadesConsumidoras)) {
                 ucsArray = proposta.unidadesConsumidoras;
-                console.log(`✅ Proposta ${propostaIndex + 1} tem ${ucsArray.length} UCs (campo alternativo)`);
             } else if (typeof proposta.unidadesConsumidoras === 'string') {
                 try {
                     ucsArray = JSON.parse(proposta.unidadesConsumidoras);
-                    console.log(`✅ Proposta ${propostaIndex + 1} - UCs parseadas do JSON:`, ucsArray.length);
                 } catch (e) {
-                    console.warn(`❌ Proposta ${propostaIndex + 1} - Erro ao parsear UCs JSON:`, e);
                     ucsArray = [];
                 }
-            } else {
-                console.warn(`⚠️ Proposta ${propostaIndex + 1} - Nenhuma UC encontrada`);
             }
 
             // Se não tem UCs, criar uma linha padrão com dados vazios
             if (!ucsArray || ucsArray.length === 0) {
-                console.log(`⚠️ Proposta ${propostaIndex + 1} - Criando linha padrão SEM UCs`);
                 linhasExpandidas.push({
                     id: `${proposta.id}-UC-default-${Date.now()}`,
                     propostaId: proposta.id,
@@ -126,13 +110,6 @@ class StorageService {
             } else {
                 // Criar uma linha para cada UC real
                 ucsArray.forEach((uc, ucIndex) => {
-                    console.log(`✅ Proposta ${propostaIndex + 1} - UC ${ucIndex + 1}:`, {
-                        numero_unidade: uc.numero_unidade,
-                        apelido: uc.apelido,
-                        consumo_medio: uc.consumo_medio
-                    });
-
-                    // ✅ CORREÇÃO CRÍTICA: ID único garantido com timestamp para evitar duplicações
                     const uniqueId = `${proposta.id}-UC-${ucIndex}-${uc.numero_unidade || `idx${ucIndex}`}-${Date.now()}`;
 
                     linhasExpandidas.push({
@@ -165,17 +142,7 @@ class StorageService {
                 });
             }
         });
-        
-        console.log('✅ EXPANSÃO CONCLUÍDA:', {
-            propostas_originais: propostas.length,
-            linhas_expandidas: linhasExpandidas.length,
-            amostra_primeira_linha: {
-                numeroUC: linhasExpandidas[0]?.numeroUC,
-                apelido: linhasExpandidas[0]?.apelido,
-                media: linhasExpandidas[0]?.media
-            }
-        });
-        
+
         return linhasExpandidas;
     }
 
@@ -228,9 +195,8 @@ class StorageService {
 
     async getProspec() {
         try {
-            console.log('📥 Carregando propostas da API...');
             const response = await apiService.get('/propostas');
-            
+
             let propostas = [];
             if (response?.data?.data && Array.isArray(response.data.data)) {
                 propostas = response.data.data;
@@ -239,67 +205,32 @@ class StorageService {
             } else if (Array.isArray(response)) {
                 propostas = response;
             } else {
-                console.warn('⚠️ Estrutura de resposta inesperada:', response);
                 propostas = [];
             }
 
-            console.log(`📊 Total de dados recebidos: ${propostas.length}`);
-            
-            // 🔍 VERIFICAR SE OS DADOS JÁ VÊM EXPANDIDOS DO BACKEND
+            // Verificar se os dados já vêm expandidos do backend
             const primeiroItem = propostas[0];
             const jaVemExpandido = primeiroItem && (
-                primeiroItem.propostaId !== undefined || // Tem propostaId ao invés de id
-                primeiroItem.numeroUC !== undefined ||   // Tem campos de UC
+                primeiroItem.propostaId !== undefined ||
+                primeiroItem.numeroUC !== undefined ||
                 primeiroItem.apelido !== undefined
             );
 
-            console.log('🔍 Verificação de expansão:', {
-                jaVemExpandido,
-                primeiroItem: primeiroItem ? {
-                    tem_propostaId: !!primeiroItem.propostaId,
-                    tem_numeroUC: !!primeiroItem.numeroUC,
-                    tem_apelido: !!primeiroItem.apelido,
-                    campos: Object.keys(primeiroItem)
-                } : null
-            });
-
             if (jaVemExpandido) {
-                // ✅ DADOS JÁ VÊM EXPANDIDOS - APENAS MAPEAR
-                console.log('✅ Dados já vêm expandidos do backend, apenas mapeando...');
-                
-                const dadosMapeados = propostas.map(linha => {
-                    // Os dados já estão no formato correto, apenas ajustar campos
-                    return {
-                        ...linha,
-                        // Garantir compatibilidade com exportação
-                        consumoMedio: linha.media || linha.consumoMedio || linha.consumo_medio || 0,
-                        // Manter campos originais
-                        numeroUC: linha.numeroUC || linha.numero_uc || '-',
-                        apelido: linha.apelido || linha.apelido_uc || '-'
-                    };
-                });
-
-                console.log('✅ Dados mapeados:', {
-                    total: dadosMapeados.length,
-                    amostra: dadosMapeados[0] ? {
-                        numeroUC: dadosMapeados[0].numeroUC,
-                        apelido: dadosMapeados[0].apelido,
-                        consumoMedio: dadosMapeados[0].consumoMedio
-                    } : null
-                });
-
-                return dadosMapeados;
+                // Dados já vêm expandidos - apenas mapear
+                return propostas.map(linha => ({
+                    ...linha,
+                    consumoMedio: linha.media || linha.consumoMedio || linha.consumo_medio || 0,
+                    numeroUC: linha.numeroUC || linha.numero_uc || '-',
+                    apelido: linha.apelido || linha.apelido_uc || '-'
+                }));
             } else {
-                // ✅ DADOS SÃO PROPOSTAS NORMAIS - EXPANDIR COMO ANTES
-                console.log('📋 Dados são propostas normais, expandindo...');
-                
+                // Dados são propostas normais - expandir
                 const propostasMapeadas = propostas.map((proposta, index) => {
-                    const propostaMapeada = this.mapearPropostaDoBackend(proposta);
-                    return propostaMapeada;
+                    return this.mapearPropostaDoBackend(proposta);
                 }).filter(Boolean);
-                
-                const linhasExpandidas = this.expandirPropostasParaUCs(propostasMapeadas);
-                return linhasExpandidas;
+
+                return this.expandirPropostasParaUCs(propostasMapeadas);
             }
 
         } catch (error) {
@@ -599,21 +530,8 @@ class StorageService {
      */
     mapearPropostaDoBackend(proposta) {
         if (!proposta) {
-            console.warn('⚠️ Proposta vazia recebida para mapeamento');
             return null;
         }
-
-        // 🔍 DEBUG COMPLETO DA PROPOSTA DO BANCO
-        console.log('🔍 === PROPOSTA RAW DO BANCO ===', {
-            id: proposta.id,
-            numero_proposta: proposta.numero_proposta,
-            nome_cliente: proposta.nome_cliente,
-            unidades_consumidoras_raw: proposta.unidades_consumidoras,
-            unidades_consumidoras_type: typeof proposta.unidades_consumidoras,
-            unidades_consumidoras_string: JSON.stringify(proposta.unidades_consumidoras),
-            unidades_consumidoras_length: proposta.unidades_consumidoras?.length,
-            campos_disponiveis: Object.keys(proposta)
-        });
 
         // ✅ PROCESSAR DESCONTOS
         let descontoTarifa = 20;
@@ -640,40 +558,22 @@ class StorageService {
             if (typeof proposta.unidades_consumidoras === 'string') {
                 try {
                     ucsArray = JSON.parse(proposta.unidades_consumidoras);
-                    console.log('✅ UCs parseadas do JSON:', ucsArray);
                 } catch (e) {
-                    console.error('❌ Erro ao parsear JSON das UCs:', e);
-                    console.log('❌ JSON inválido:', proposta.unidades_consumidoras);
                     ucsArray = [];
                 }
             } else if (Array.isArray(proposta.unidades_consumidoras)) {
                 ucsArray = proposta.unidades_consumidoras;
-                console.log('✅ UCs já eram array:', ucsArray);
-            } else {
-                console.warn('⚠️ Formato desconhecido para unidades_consumidoras:', typeof proposta.unidades_consumidoras);
             }
-        } else {
-            console.warn('⚠️ Campo unidades_consumidoras não encontrado na proposta');
         }
 
         // Processar UCs encontradas
         if (ucsArray && ucsArray.length > 0) {
             unidadesProcessadas = ucsArray.map((uc, index) => {
-                console.log(`🔍 Processando UC ${index + 1}:`, {
-                    uc_original: uc,
-                    numero_unidade: uc.numero_unidade,
-                    apelido: uc.apelido,
-                    consumo_medio: uc.consumo_medio
-                });
-
                 return {
                     ...uc,
                     status: uc.status || 'Aguardando'
                 };
             });
-            console.log('✅ UCs processadas finais:', unidadesProcessadas);
-        } else {
-            console.warn('⚠️ Nenhuma UC encontrada na proposta');
         }
 
         // ✅ CRIAR PROPOSTA MAPEADA
@@ -712,17 +612,6 @@ class StorageService {
             updated_at: proposta.updated_at
         };
 
-        console.log('🔄 PROPOSTA MAPEADA FINAL:', {
-            id: propostaMapeada.id,
-            numeroProposta: propostaMapeada.numeroProposta,
-            total_ucs: propostaMapeada.unidades_consumidoras.length,
-            primeira_uc: propostaMapeada.unidades_consumidoras[0],
-            dados_compatibilidade: {
-                apelido: propostaMapeada.apelido,
-                numeroUC: propostaMapeada.numeroUC,
-                media: propostaMapeada.media
-            }
-        });
 
         return propostaMapeada;
     }
@@ -1039,11 +928,7 @@ class StorageService {
 
     async buscarPropostaPorId(propostaId) {
         try {
-            console.log('🔍 Buscando proposta completa por ID:', propostaId);
-
-            // ✅ CORREÇÃO CRÍTICA: Validação de entrada mais rigorosa
             if (!propostaId || (propostaId !== 0 && !propostaId)) {
-                console.error('❌ ID da proposta inválido:', propostaId);
                 return null;
             }
 
@@ -1053,39 +938,13 @@ class StorageService {
 
                 if (response?.success && response?.data) {
                     const proposta = response.data;
-                    console.log('✅ Proposta encontrada via API:', proposta.numero_proposta);
-
-                    // 🔍 DEBUG CRÍTICO: Log da resposta RAW da API
-                    console.log('🔍 RESPOSTA RAW DA API:', {
-                        id: proposta.id,
-                        numero_proposta: proposta.numero_proposta,
-                        nome_cliente: proposta.nome_cliente,
-                        unidades_consumidoras: proposta.unidades_consumidoras,
-                        unidades_count: proposta.unidades_consumidoras?.length || 0
-                    });
-
-                    // ✅ MAPEAR CORRETAMENTE USANDO O MÉTODO EXISTENTE
                     const propostaMapeada = this.mapearPropostaDoBackend(proposta);
-
-                    // ✅ GARANTIR QUE AS UCs ESTÃO FORMATADAS CORRETAMENTE
-                    if (propostaMapeada && propostaMapeada.unidades_consumidoras) {
-                        console.log('📊 UCs na proposta mapeada:', propostaMapeada.unidades_consumidoras.length);
-
-                        // Debug: Log da primeira UC para verificar estrutura
-                        if (propostaMapeada.unidades_consumidoras.length > 0) {
-                            console.log('🔍 Primeira UC estrutura:', propostaMapeada.unidades_consumidoras[0]);
-                        }
-                    }
 
                     return propostaMapeada;
                 }
             } catch (apiError) {
-                console.warn('⚠️ Erro ao buscar via API individual (comum para não-admins):', apiError.message);
-
-                // ✅ CORREÇÃO CRÍTICA: Para não-admins, retornar null imediatamente
-                // para evitar busca incorreta no cache que pode retornar dados de outra proposta
+                // Para não-admins, retornar null para evitar dados incorretos
                 if (apiError.message?.includes('403') || apiError.message?.includes('401') || apiError.message?.includes('Forbidden')) {
-                    console.warn('🚫 Usuário não tem permissão para buscar proposta individual - impedindo busca no cache para evitar dados incorretos');
                     return null;
                 }
             }
@@ -1102,28 +961,17 @@ class StorageService {
                     );
 
                     if (propostaEncontrada) {
-                        // ✅ VALIDAÇÃO ADICIONAL: Verificar se a proposta realmente corresponde
-                        console.log('✅ Proposta encontrada no cache com validação rigorosa:', {
-                            id: propostaEncontrada.id,
-                            numero: propostaEncontrada.numeroProposta,
-                            cliente: propostaEncontrada.nomeCliente,
-                            ucs_count: propostaEncontrada.unidades_consumidoras?.length || 0
-                        });
-
                         return propostaEncontrada;
                     }
                 }
 
-                console.warn('⚠️ Proposta não encontrada com busca rigorosa:', propostaId);
             } catch (cacheError) {
-                console.warn('⚠️ Erro ao buscar no cache:', cacheError.message);
+                // Erro silencioso no fallback
             }
 
-            console.warn('⚠️ Proposta não encontrada:', propostaId);
             return null;
 
         } catch (error) {
-            console.error('❌ Erro ao buscar proposta por ID:', error);
             return null;
         }
     }
