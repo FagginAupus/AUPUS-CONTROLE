@@ -836,9 +836,8 @@ const GerarTermoButton = ({
               
               // ✅ DEFINIR statusDocumento com dados do servidor
               setStatusDocumento(statusResult.documento);
-              setEtapa('assinado');
-              
-              console.log('✅ Estado atualizado para "assinado"');
+
+              console.log('✅ Status do documento atualizado:', statusResult.documento.status);
               
               // ✅ ABRIR DOCUMENTO SE DISPONÍVEL
               if (statusResult.documento.arquivo_url) {
@@ -866,7 +865,6 @@ const GerarTermoButton = ({
               };
               
               setStatusDocumento(fallbackStatus);
-              setEtapa('assinado');
               
               if (result.documento?.url) {
                 window.open(result.documento.url, '_blank');
@@ -889,7 +887,6 @@ const GerarTermoButton = ({
             };
             
             setStatusDocumento(fallbackStatus);
-            setEtapa('assinado');
             
             if (result.documento?.url) {
               window.open(result.documento.url, '_blank');
@@ -913,7 +910,6 @@ const GerarTermoButton = ({
           };
           
           setStatusDocumento(fallbackStatus);
-          setEtapa('assinado');
         }
 
         // ✅ NOTIFICAR COMPONENTE PAI
