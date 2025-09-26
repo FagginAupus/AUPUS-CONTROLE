@@ -133,9 +133,10 @@ const GerarTermoButton = ({
         // ✅ NOVA ETAPA: Documento foi rejeitado
         setEtapa('rejeitado');
       } else if (
-        statusDocumento.status === 'pending' || 
-        statusDocumento.status === 'PENDING' || 
+        statusDocumento.status === 'pending' ||
+        statusDocumento.status === 'PENDING' ||
         statusDocumento.status === 'Pendente' ||
+        statusDocumento.status === 'Aguardando' ||
         statusDocumento.status === 'Aguardando Assinatura'
       ) {
         setEtapa('pendente-assinatura');
