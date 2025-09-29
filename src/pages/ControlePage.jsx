@@ -100,8 +100,10 @@ const ControlePage = () => {
         numeroUC: item.numeroUC || item.numero_unidade || item.numero_uc,
         apelido: item.apelido || item.apelido_uc,
         consumoMedio: item.consumoMedio || item.consumo_medio,
-        economia: item.economia || item.valorCalibrado || item.valor_calibrado || item.economia_percentual,
-        bandeira: item.bandeira || item.descontoBandeira || item.desconto_bandeira,
+        // ✅ CORREÇÃO: Usar descontos corretos do controle ou proposta
+        // Prioridade: desconto do controle > desconto da proposta
+        economia: item.desconto_tarifa || item.proposta_desconto_tarifa || '20%',
+        bandeira: item.desconto_bandeira || item.proposta_desconto_bandeira || '20%',
         contribuicao: item.contribuicao || 'N/A',
         comissaoPercentual: item.comissaoPercentual || item.comissao_percentual || 5,
         dataEntradaControle: item.dataEntradaControle || item.data_entrada_controle,
