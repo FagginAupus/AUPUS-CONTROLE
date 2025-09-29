@@ -493,43 +493,106 @@ class ExportExcelService {
 
   /**
    * 📊 ENRIQUECER COM DADOS LOCAIS - FALLBACK
+   * ✅ CORREÇÃO: Priorizar campos com símbolo % e validar valores
    */
   enriquecerComDadosLocais(itemControle) {
+    // ✅ Função auxiliar para encontrar o primeiro valor válido com %
+    const encontrarDescontoValido = (...campos) => {
+      for (const campo of campos) {
+        if (!campo) continue;
+
+        // Se for string e tiver %, usar esse
+        if (typeof campo === 'string' && campo.includes('%')) {
+          return campo;
+        }
+
+        // Se for número entre 0 e 100, pode ser porcentagem válida
+        if (typeof campo === 'number' && campo > 0 && campo <= 100) {
+          return campo;
+        }
+      }
+
+      // Se não encontrou nada válido, tentar campos sem validação rigorosa
+      for (const campo of campos) {
+        if (campo && campo !== 0) {
+          // Deixa o extrairValorNumerico decidir
+          return campo;
+        }
+      }
+
+      return 0;
+    };
+
     return {
       ...itemControle,
       consumoMedioReal: itemControle.consumoMedio || itemControle.consumo_medio || 0,
       apelidoReal: itemControle.apelido || itemControle.apelido_uc || '',
+
+      // ✅ Priorizar desconto_tarifa (vem da proposta, tem %) sobre economia (pode ser R$)
       economiaReal: this.extrairValorNumerico(
-        itemControle.economia || 
-        itemControle.economiaPercentual || 
-        itemControle.descontoTarifa || 
-        itemControle.desconto_tarifa || 
-        0
+        encontrarDescontoValido(
+          itemControle.desconto_tarifa,
+          itemControle.descontoTarifa,
+          itemControle.economiaPercentual,
+          itemControle.economia
+        )
       ),
+
+      // ✅ Priorizar desconto_bandeira (vem da proposta, tem %) sobre bandeira (pode ser R$)
       bandeiraReal: this.extrairValorNumerico(
-        itemControle.bandeira || 
-        itemControle.bandeiraPercentual || 
-        itemControle.descontoBandeira || 
-        itemControle.desconto_bandeira || 
-        0
+        encontrarDescontoValido(
+          itemControle.desconto_bandeira,
+          itemControle.descontoBandeira,
+          itemControle.bandeiraPercentual,
+          itemControle.bandeira
+        )
       )
     };
   }
 
   /**
    * 📊 EXTRAIR VALOR NUMÉRICO DE DESCONTO
+   * ✅ CORREÇÃO: Validar se o valor é realmente uma porcentagem antes de extrair
    */
   extrairValorNumerico(valor) {
     if (!valor) return 0;
-    
-    if (typeof valor === 'number') return valor;
-    
+
+    // ✅ Se for número e estiver dentro do range razoável de porcentagem (0-100)
+    if (typeof valor === 'number') {
+      // Se o número for muito grande (ex: 4095, 2625), provavelmente não é porcentagem
+      if (valor > 100) {
+        console.warn(`⚠️ Valor numérico muito alto para ser porcentagem: ${valor}. Retornando 0.`);
+        return 0;
+      }
+      return valor;
+    }
+
     if (typeof valor === 'string') {
+      // ✅ VALIDAÇÃO: Só processar se tiver o símbolo de porcentagem
+      if (!valor.includes('%')) {
+        // Se não tem %, pode ser um valor em reais. Verificar se é um número válido pequeno
+        const num = parseFloat(valor);
+        if (!isNaN(num) && num > 0 && num <= 100) {
+          console.warn(`⚠️ Valor sem % detectado: "${valor}". Assumindo como porcentagem.`);
+          return num;
+        }
+        console.warn(`⚠️ Valor inválido para desconto: "${valor}". Retornando 0.`);
+        return 0;
+      }
+
       // Remove % e espaços, converte para número
       const numero = parseFloat(valor.replace(/[%\s]/g, ''));
-      return isNaN(numero) ? 0 : numero;
+
+      // ✅ Validar se o número extraído faz sentido como porcentagem
+      if (isNaN(numero)) return 0;
+      if (numero > 100) {
+        console.warn(`⚠️ Porcentagem muito alta: ${numero}%. Retornando 0.`);
+        return 0;
+      }
+
+      return numero;
     }
-    
+
     return 0;
   }
 
