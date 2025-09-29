@@ -14,13 +14,39 @@ const FiltrosPeriodo = ({ filters, onFilterChange, loading }) => {
   const loadConsultores = async () => {
     try {
       const response = await apiService.get('/usuarios');
+      console.log('✅ Resposta completa da API usuarios:', response);
+
+      let users = [];
+
       if (response.success) {
-        setConsultores(response.data.filter(user =>
+        // Tentar diferentes estruturas de resposta
+        if (Array.isArray(response.data)) {
+          users = response.data;
+        } else if (response.data && Array.isArray(response.data.data)) {
+          // Caso paginado
+          users = response.data.data;
+        } else if (response.data && Array.isArray(response.data.users)) {
+          // Caso wrapped em 'users'
+          users = response.data.users;
+        } else {
+          console.error('Estrutura de dados não reconhecida:', response.data);
+          setConsultores([]);
+          return;
+        }
+
+        const consultores = users.filter(user =>
           ['consultor', 'gerente', 'admin', 'analista'].includes(user.role)
-        ));
+        );
+
+        console.log('✅ Consultores filtrados:', consultores);
+        setConsultores(consultores);
+      } else {
+        console.error('API retornou success: false:', response);
+        setConsultores([]);
       }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
+      setConsultores([]);
     }
   };
 

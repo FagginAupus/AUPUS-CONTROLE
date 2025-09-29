@@ -349,8 +349,9 @@ class StorageService {
     async getControle() {
         try {
             console.log('📥 Carregando controle clube da API...');
-            const response = await apiService.get('/controle');
-            
+            // ✅ CORREÇÃO: Adicionar per_page=all para obter TODOS os registros
+            const response = await apiService.get('/controle?per_page=all');
+
             let controles = [];
             if (response?.data?.data && Array.isArray(response.data.data)) {
                 controles = response.data.data;
@@ -365,15 +366,15 @@ class StorageService {
 
             console.log(`✅ ${controles.length} controles carregados da API`);
             return controles;
-            
+
         } catch (error) {
             console.error('❌ Erro ao carregar controle:', error.message);
-            
+
             if (error.message.includes('404')) {
                 console.log('ℹ️ Nenhum controle encontrado - retornando array vazio');
                 return [];
             }
-            
+
             throw new Error(`Não foi possível carregar controle: ${error.message}`);
         }
     }

@@ -599,13 +599,19 @@ class ExportExcelService {
       // Filtro por data de entrada no controle
       if (filtros.dataInicio || filtros.dataFim) {
         const dataItem = new Date(item.dataEntradaControle || item.data_entrada_controle);
-        if (isNaN(dataItem.getTime())) return false;
-        
+
+        // ✅ CORREÇÃO: Se não houver data válida, INCLUIR o registro ao invés de excluir
+        // Isso garante que registros sem data_entrada_controle não sejam removidos
+        if (isNaN(dataItem.getTime())) {
+          // Incluir registros sem data quando há filtro de data
+          return true;
+        }
+
         if (filtros.dataInicio) {
           const dataInicio = new Date(filtros.dataInicio);
           if (dataItem < dataInicio) return false;
         }
-        
+
         if (filtros.dataFim) {
           const dataFim = new Date(filtros.dataFim);
           if (dataItem > dataFim) return false;
