@@ -596,8 +596,8 @@ class ExportExcelService {
     }
 
     return dados.filter(item => {
-      // Filtro por data de entrada no controle
-      if (filtros.dataInicio || filtros.dataFim) {
+      // ✅ Filtro por data de entrada no controle (apenas se dataInicio e dataFim não forem null)
+      if (filtros.dataInicio && filtros.dataFim) {
         const dataItem = new Date(item.dataEntradaControle || item.data_entrada_controle);
 
         // ✅ CORREÇÃO: Se não houver data válida, INCLUIR o registro ao invés de excluir
@@ -623,6 +623,12 @@ class ExportExcelService {
         const consultorItem = ((item.consultorNome || item.consultor) || '').toLowerCase();
         const consultorFiltro = filtros.consultor.toLowerCase();
         if (!consultorItem.includes(consultorFiltro)) return false;
+      }
+
+      // ✅ NOVO: Filtro por status de troca
+      if (filtros.statusTroca && filtros.statusTroca !== '') {
+        const statusItem = item.statusTroca || item.status_troca || 'Esteira';
+        if (statusItem !== filtros.statusTroca) return false;
       }
 
       return true;

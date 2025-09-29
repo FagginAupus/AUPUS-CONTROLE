@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Download, X, Filter } from 'lucide-react';
+import { Calendar, User, Download, X, Filter, Clock } from 'lucide-react';
 
 const ModalFiltrosExportacao = ({ isOpen, onClose, onExportar, tipo, consultores = [] }) => {
   const [filtros, setFiltros] = useState({
     dataInicio: '',
     dataFim: '',
-    consultor: ''
+    consultor: '',
+    statusTroca: '',
+    usarFiltroData: true
   });
 
   useEffect(() => {
@@ -13,27 +15,39 @@ const ModalFiltrosExportacao = ({ isOpen, onClose, onExportar, tipo, consultores
       // Resetar filtros ao abrir
       const hoje = new Date();
       const primeiroDiaAno = new Date(hoje.getFullYear(), 0, 1);
-      
+
       setFiltros({
         dataInicio: primeiroDiaAno.toISOString().split('T')[0],
         dataFim: hoje.toISOString().split('T')[0],
-        consultor: ''
+        consultor: '',
+        statusTroca: '',
+        usarFiltroData: true
       });
     }
   }, [isOpen]);
 
   const handleSubmit = () => {
-    if (!filtros.dataInicio || !filtros.dataFim) {
-      alert('Por favor, selecione o período para exportação');
-      return;
+    // ✅ CORREÇÃO: Validar datas apenas se o filtro de data estiver ativo
+    if (filtros.usarFiltroData) {
+      if (!filtros.dataInicio || !filtros.dataFim) {
+        alert('Por favor, selecione o período para exportação');
+        return;
+      }
+
+      if (new Date(filtros.dataInicio) > new Date(filtros.dataFim)) {
+        alert('A data inicial não pode ser maior que a data final');
+        return;
+      }
     }
 
-    if (new Date(filtros.dataInicio) > new Date(filtros.dataFim)) {
-      alert('A data inicial não pode ser maior que a data final');
-      return;
-    }
+    // ✅ Passar filtros sem datas se usarFiltroData for false
+    const filtrosParaExportar = {
+      ...filtros,
+      dataInicio: filtros.usarFiltroData ? filtros.dataInicio : null,
+      dataFim: filtros.usarFiltroData ? filtros.dataFim : null
+    };
 
-    onExportar(filtros);
+    onExportar(filtrosParaExportar);
     onClose();
   };
 
@@ -70,29 +84,53 @@ const ModalFiltrosExportacao = ({ isOpen, onClose, onExportar, tipo, consultores
               <Calendar size={16} />
               Período
             </h3>
-            <p className="form-description">{descricaoData}</p>
-            
-            <div className="date-range">
-              <div className="form-group">
-                <label>Data Inicial</label>
+
+            {/* ✅ NOVO: Checkbox para habilitar/desabilitar filtro de data */}
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="checkbox-label">
                 <input
-                  type="date"
-                  value={filtros.dataInicio}
-                  onChange={(e) => handleInputChange('dataInicio', e.target.value)}
-                  required
+                  type="checkbox"
+                  checked={filtros.usarFiltroData}
+                  onChange={(e) => handleInputChange('usarFiltroData', e.target.checked)}
+                  style={{ marginRight: '8px', width: 'auto', cursor: 'pointer' }}
                 />
-              </div>
-              
-              <div className="form-group">
-                <label>Data Final</label>
-                <input
-                  type="date"
-                  value={filtros.dataFim}
-                  onChange={(e) => handleInputChange('dataFim', e.target.value)}
-                  required
-                />
-              </div>
+                <span>Filtrar por período de data</span>
+              </label>
             </div>
+
+            {filtros.usarFiltroData && (
+              <>
+                <p className="form-description">{descricaoData}</p>
+
+                <div className="date-range">
+                  <div className="form-group">
+                    <label>Data Inicial</label>
+                    <input
+                      type="date"
+                      value={filtros.dataInicio}
+                      onChange={(e) => handleInputChange('dataInicio', e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Data Final</label>
+                    <input
+                      type="date"
+                      value={filtros.dataFim}
+                      onChange={(e) => handleInputChange('dataFim', e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {!filtros.usarFiltroData && (
+              <p className="form-description" style={{ color: '#ffa500', fontStyle: 'italic' }}>
+                ⚠️ Todos os registros serão exportados sem filtro de data
+              </p>
+            )}
           </div>
 
           <div className="form-section">
@@ -101,7 +139,7 @@ const ModalFiltrosExportacao = ({ isOpen, onClose, onExportar, tipo, consultores
               Consultor
             </h3>
             <p className="form-description">Deixe em branco para exportar todos</p>
-            
+
             <div className="form-group">
               <select
                 value={filtros.consultor}
@@ -116,6 +154,29 @@ const ModalFiltrosExportacao = ({ isOpen, onClose, onExportar, tipo, consultores
               </select>
             </div>
           </div>
+
+          {/* ✅ NOVO: Filtro por Status de Troca (apenas para Controle) */}
+          {tipo === 'controle' && (
+            <div className="form-section">
+              <h3>
+                <Clock size={16} />
+                Status de Troca
+              </h3>
+              <p className="form-description">Filtrar por status da troca de titularidade</p>
+
+              <div className="form-group">
+                <select
+                  value={filtros.statusTroca}
+                  onChange={(e) => handleInputChange('statusTroca', e.target.value)}
+                >
+                  <option value="">Todos os status</option>
+                  <option value="Esteira">Esteira</option>
+                  <option value="Em andamento">Em andamento</option>
+                  <option value="Associado">Associado</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="modal-actions">
             <button type="button" onClick={onClose} className="btn btn-secondary">
@@ -257,6 +318,24 @@ const ModalFiltrosExportacao = ({ isOpen, onClose, onExportar, tipo, consultores
 
         .form-group option {
           background: #2a2a2a;
+          color: #e0e0e0;
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          color: #e0e0e0;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+          accent-color: #4285f4;
+        }
+
+        .checkbox-label span {
           color: #e0e0e0;
         }
 
