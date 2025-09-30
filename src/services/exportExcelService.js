@@ -780,12 +780,12 @@ class ExportExcelService {
           'SIGLA': 'CLA',
           'CORRETOR': corretor,
           'Número UC': item.numero_unidade || '',
-          'Desconto Tarifa (%)': descontoTarifa,
-          'Desconto Bandeira (%)': descontoBandeira,
+          'Desconto Tarifa (%)': `${descontoTarifa}%`,
+          'Desconto Bandeira (%)': `${descontoBandeira}%`,
           'VENCIMENTO AUPUS': '',
           'MODO CALC': 0,
           'UG': item.ug_nome || '',
-          'CPF/CNPJ': item.cpf_cnpj || 'N/A',
+          'CPF/CNPJ': item.cpf_cnpj || '',
           'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0)
         };
       });
