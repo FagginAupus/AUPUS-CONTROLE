@@ -749,6 +749,109 @@ class ExportExcelService {
     return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
+  /**
+   * 📋 EXPORTAR RELATÓRIO SIMPLIFICADO DE ASSOCIADOS
+   * Apenas UCs com status_troca = "Associado"
+   */
+  async exportarAssociados(dados) {
+    try {
+      console.log('📋 === EXPORTAÇÃO RELATÓRIO ASSOCIADOS ===');
+      console.log('Total de dados recebidos:', dados.length);
+
+      await this.ensureXLSXLoaded();
+
+      if (typeof window.XLSX === 'undefined') {
+        throw new Error('Biblioteca XLSX não pôde ser carregada');
+      }
+
+      // Processar dados para formato simplificado
+      const registrosParaExcel = dados.map((item, index) => {
+        // Extrair apenas o número da porcentagem (remove o símbolo %)
+        const descontoTarifa = this.extrairValorNumerico(item.desconto_tarifa);
+        const descontoBandeira = this.extrairValorNumerico(item.desconto_bandeira);
+
+        // Determinar o corretor: se for "Sem Consultor" ou vazio, preencher com "AUPUS"
+        const consultor = item.consultor_nome || item.consultor || '';
+        const corretor = (!consultor || consultor === 'Sem Consultor' || consultor === 'Sem consultor') ? 'AUPUS' : consultor;
+
+        return {
+          'N°': index + 1,
+          'APELIDO': item.nome_cliente || '',
+          'SIGLA': 'CLA',
+          'CORRETOR': corretor,
+          'Número UC': item.numero_unidade || '',
+          'Desconto Tarifa (%)': descontoTarifa,
+          'Desconto Bandeira (%)': descontoBandeira,
+          'VENCIMENTO AUPUS': '',
+          'MODO CALC': 0,
+          'UG': item.ug_nome || '',
+          'CPF/CNPJ': item.cpf_cnpj || 'N/A',
+          'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0)
+        };
+      });
+
+      console.log('📋 AMOSTRA DO RELATÓRIO (primeiros 2 registros):', registrosParaExcel.slice(0, 2));
+
+      // Criar workbook
+      const workbook = window.XLSX.utils.book_new();
+
+      // Criar worksheet
+      const worksheet = window.XLSX.utils.json_to_sheet(registrosParaExcel);
+
+      // Configurar largura das colunas
+      worksheet['!cols'] = [
+        { width: 5 },   // N°
+        { width: 20 },  // APELIDO
+        { width: 8 },   // SIGLA
+        { width: 20 },  // CORRETOR
+        { width: 15 },  // Número UC
+        { width: 18 },  // Desconto Tarifa
+        { width: 18 },  // Desconto Bandeira
+        { width: 18 },  // VENCIMENTO AUPUS
+        { width: 10 },  // MODO CALC
+        { width: 20 },  // UG
+        { width: 20 },  // CPF/CNPJ
+        { width: 18 }   // Consumo Médio
+      ];
+
+      // Adicionar filtros
+      if (registrosParaExcel.length > 0) {
+        worksheet['!autofilter'] = { ref: worksheet['!ref'] };
+      }
+
+      // Adicionar worksheet ao workbook
+      window.XLSX.utils.book_append_sheet(workbook, worksheet, 'Associados');
+
+      // Criar aba de metadados
+      const metadados = [
+        ['Relatório', 'UCs Associadas - Simplificado'],
+        ['Gerado em', new Date().toLocaleString('pt-BR')],
+        ['Total de Registros', registrosParaExcel.length],
+        ['Filtro', 'Status Troca = Associado'],
+        ['Sistema', 'AUPUS Energia - Controle'],
+        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh)']
+      ];
+
+      const worksheetMeta = window.XLSX.utils.aoa_to_sheet(metadados);
+      worksheetMeta['!cols'] = [{ width: 20 }, { width: 50 }];
+      window.XLSX.utils.book_append_sheet(workbook, worksheetMeta, 'Metadados');
+
+      // Gerar e baixar arquivo
+      const nomeArquivo = `relatorio_associados_${this.getTimestamp()}.xlsx`;
+      window.XLSX.writeFile(workbook, nomeArquivo);
+
+      return {
+        success: true,
+        totalRegistros: registrosParaExcel.length,
+        arquivo: nomeArquivo
+      };
+
+    } catch (error) {
+      console.error('❌ Erro na exportação de associados:', error);
+      throw new Error(`Erro ao exportar associados: ${error.message}`);
+    }
+  }
+
   getTimestamp() {
     const now = new Date();
     const year = now.getFullYear();

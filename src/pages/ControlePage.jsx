@@ -126,6 +126,109 @@ const ControlePage = () => {
   const [modalExportacao, setModalExportacao] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ NOVO: Exportar relatório de associados
+  const exportarAssociados = async () => {
+    try {
+      setLoading(true);
+      showNotification('Preparando relatório de associados...', 'info');
+
+      // Buscar todos os dados
+      let todosOsDados;
+      if (user?.role === 'admin' || user?.role === 'analista') {
+        todosOsDados = await storageService.getControle();
+      } else {
+        const dadosCompletos = await storageService.getControle();
+        todosOsDados = dadosCompletos;
+      }
+
+      // ✅ FILTRAR apenas registros com status_troca = "Associado"
+      const dadosAssociados = todosOsDados.filter(item => {
+        const status = item.statusTroca || item.status_troca || '';
+        return status === 'Associado';
+      });
+
+      if (dadosAssociados.length === 0) {
+        showNotification('Nenhuma UC associada encontrada!', 'warning');
+        return;
+      }
+
+      // ✅ BUSCAR DADOS COMPLETOS DE CADA UC VIA API
+      const apiUrl = process.env.REACT_APP_API_URL || '';
+      const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
+
+      const dadosEnriquecidos = await Promise.all(
+        dadosAssociados.map(async (item) => {
+          try {
+            const controleId = item.id || item.controle_id;
+
+            // Buscar dados completos da UC via API
+            const response = await fetch(`${apiUrl}/controle/${controleId}/uc-detalhes`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+
+              if (data.success && data.data) {
+                return {
+                  numero_unidade: data.data.numero_unidade || item.numeroUC || '',
+                  nome_cliente: data.data.nome_cliente || '',
+                  apelido: data.data.apelido || '',
+                  consumo_medio: data.data.consumo_medio || 0,
+                  desconto_tarifa: data.data.desconto_tarifa || data.data.proposta_desconto_tarifa || '20%',
+                  desconto_bandeira: data.data.desconto_bandeira || data.data.proposta_desconto_bandeira || '20%',
+                  cpf_cnpj: data.data.cpf_cnpj || 'N/A',
+                  consultor_nome: data.data.consultor_nome || '',
+                  ug_nome: data.data.ug_nome || ''
+                };
+              }
+            }
+
+            // Fallback se a API falhar
+            return {
+              numero_unidade: item.numeroUC || item.numero_unidade || '',
+              nome_cliente: item.nome_cliente || item.nomeCliente || '',
+              apelido: item.apelido || '',
+              consumo_medio: item.consumoMedio || item.consumo_medio || 0,
+              desconto_tarifa: item.desconto_tarifa || item.proposta_desconto_tarifa || '20%',
+              desconto_bandeira: item.desconto_bandeira || item.proposta_desconto_bandeira || '20%',
+              cpf_cnpj: item.cpf_cnpj || item.documento || 'N/A',
+              consultor_nome: item.consultor || item.consultorNome || '',
+              ug_nome: item.ug_nome || ''
+            };
+
+          } catch (error) {
+            console.warn(`⚠️ Erro ao buscar dados da UC ${item.numeroUC}:`, error);
+            // Retornar dados básicos em caso de erro
+            return {
+              numero_unidade: item.numeroUC || item.numero_unidade || '',
+              nome_cliente: item.nome_cliente || item.nomeCliente || '',
+              apelido: item.apelido || '',
+              consumo_medio: item.consumoMedio || item.consumo_medio || 0,
+              desconto_tarifa: item.desconto_tarifa || '20%',
+              desconto_bandeira: item.desconto_bandeira || '20%',
+              cpf_cnpj: 'N/A',
+              consultor_nome: item.consultor || '',
+              ug_nome: ''
+            };
+          }
+        })
+      );
+
+      const resultado = await exportExcelService.exportarAssociados(dadosEnriquecidos);
+      showNotification(`Relatório de Associados concluído! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
+
+    } catch (error) {
+      console.error('❌ Erro ao exportar associados:', error);
+      showNotification(`Erro ao exportar associados: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdminOrAnalista && 
         (!ugs.data || ugs.data.length === 0) && 
@@ -906,13 +1009,22 @@ const ControlePage = () => {
               >
                 {controle.loading ? '🔄' : '⟳'} Atualizar
               </button>
-              <button 
-                onClick={abrirModalExportacao} 
+              <button
+                onClick={abrirModalExportacao}
                 className="btn btn-primary"
                 disabled={dadosFiltrados.length === 0}
               >
                 <Download size={16} />
                 Exportar Excel
+              </button>
+              <button
+                onClick={exportarAssociados}
+                className="btn btn-success"
+                disabled={loading}
+                title="Exportar relatório simplificado de UCs associadas"
+              >
+                <FileText size={16} />
+                Relatório Associados
               </button>
             </div>
           </div>
