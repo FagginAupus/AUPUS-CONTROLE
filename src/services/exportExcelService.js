@@ -785,7 +785,7 @@ class ExportExcelService {
           'VENCIMENTO AUPUS': '',
           'MODO CALC': 0,
           'UG': item.ug_nome || '',
-          'CPF/CNPJ': item.cpf_cnpj || '',
+          'CPF/CNPJ': this.formatarCpfCnpj(item.cpf_cnpj),
           'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0)
         };
       });
@@ -852,6 +852,32 @@ class ExportExcelService {
     }
   }
 
+  /**
+   * 📋 FORMATAR CPF/CNPJ
+   * Formata CPF (xxx.xxx.xxx-xx) ou CNPJ (xx.xxx.xxx/xxxx-xx)
+   */
+  formatarCpfCnpj(documento) {
+    if (!documento) return '';
+
+    // Remove tudo que não for número
+    const apenasNumeros = documento.replace(/\D/g, '');
+
+    if (!apenasNumeros) return '';
+
+    // CPF: 11 dígitos
+    if (apenasNumeros.length === 11) {
+      return apenasNumeros.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    // CNPJ: 14 dígitos
+    if (apenasNumeros.length === 14) {
+      return apenasNumeros.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+
+    // Se não tiver 11 nem 14 dígitos, retorna vazio
+    return '';
+  }
+
   getTimestamp() {
     const now = new Date();
     const year = now.getFullYear();
@@ -859,7 +885,7 @@ class ExportExcelService {
     const day = String(now.getDate()).padStart(2, '0');
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    
+
     return `${year}${month}${day}_${hours}${minutes}`;
   }
 }
