@@ -786,7 +786,8 @@ class ExportExcelService {
           'MODO CALC': 0,
           'UG': item.ug_nome || '',
           'CPF/CNPJ': this.formatarCpfCnpj(item.cpf_cnpj),
-          'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0)
+          'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0),
+          'LIGACAO': item.ligacao || ''
         };
       });
 
@@ -811,7 +812,8 @@ class ExportExcelService {
         { width: 10 },  // MODO CALC
         { width: 20 },  // UG
         { width: 20 },  // CPF/CNPJ
-        { width: 18 }   // Consumo Médio
+        { width: 18 },  // Consumo Médio
+        { width: 15 }   // LIGACAO
       ];
 
       // Adicionar filtros
@@ -829,7 +831,7 @@ class ExportExcelService {
         ['Total de Registros', registrosParaExcel.length],
         ['Filtro', 'Status Troca = Associado'],
         ['Sistema', 'AUPUS Energia - Controle'],
-        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh)']
+        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), LIGACAO']
       ];
 
       const worksheetMeta = window.XLSX.utils.aoa_to_sheet(metadados);

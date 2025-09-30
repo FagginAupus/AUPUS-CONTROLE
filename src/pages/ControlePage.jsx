@@ -182,7 +182,8 @@ const ControlePage = () => {
                   desconto_bandeira: data.data.desconto_bandeira || data.data.proposta_desconto_bandeira || '20%',
                   cpf_cnpj: data.data.cpf_cnpj || 'N/A',
                   consultor_nome: data.data.consultor_nome || '',
-                  ug_nome: data.data.ug_nome || ''
+                  ug_nome: data.data.ug_nome || '',
+                  ligacao: data.data.ligacao || ''
                 };
               }
             }
@@ -197,7 +198,8 @@ const ControlePage = () => {
               desconto_bandeira: item.desconto_bandeira || item.proposta_desconto_bandeira || '20%',
               cpf_cnpj: item.cpf_cnpj || item.documento || 'N/A',
               consultor_nome: item.consultor || item.consultorNome || '',
-              ug_nome: item.ug_nome || ''
+              ug_nome: item.ug_nome || '',
+              ligacao: item.ligacao || ''
             };
 
           } catch (error) {
@@ -212,7 +214,8 @@ const ControlePage = () => {
               desconto_bandeira: item.desconto_bandeira || '20%',
               cpf_cnpj: 'N/A',
               consultor_nome: item.consultor || '',
-              ug_nome: ''
+              ug_nome: '',
+              ligacao: item.ligacao || ''
             };
           }
         })
