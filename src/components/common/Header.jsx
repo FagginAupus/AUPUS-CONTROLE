@@ -1,15 +1,17 @@
 // src/components/common/Header.jsx - Atualizada com logo e notificações
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Zap, ScrollText } from 'lucide-react';
+import { Zap, ScrollText, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import NotificationIcon from './NotificationIcon';
+import SettingsModal from './SettingsModal';
 import './Header.css';
 
 const Header = ({ title, subtitle, icon: IconComponent }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
 
   return (
@@ -28,6 +30,13 @@ const Header = ({ title, subtitle, icon: IconComponent }) => {
         {subtitle && <p>{subtitle}</p>}
       </div>
       <div className="header-actions">
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="header-icon-btn"
+          title="Configurações"
+        >
+          <Settings size={20} />
+        </button>
         {user?.role === 'admin' && (
           <button
             onClick={() => navigate('/logs')}
@@ -39,6 +48,11 @@ const Header = ({ title, subtitle, icon: IconComponent }) => {
         )}
         <NotificationIcon />
       </div>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </header>
   );
 };

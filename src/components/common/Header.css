@@ -25,10 +25,10 @@
   padding-top: 8px;
 }
 
-/* Botão de logs */
-.logs-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Botões de ação do header (configurações e logs) */
+.header-icon-btn {
+  background: transparent;
+  border: none;
   border-radius: 8px;
   color: white;
   padding: 8px;
@@ -39,9 +39,8 @@
   justify-content: center;
 }
 
-.logs-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+.header-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
