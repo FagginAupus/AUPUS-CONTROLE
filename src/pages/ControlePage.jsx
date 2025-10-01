@@ -152,75 +152,104 @@ const ControlePage = () => {
         return;
       }
 
-      // ✅ BUSCAR DADOS COMPLETOS DE CADA UC VIA API
+      // ✅ BUSCAR DADOS COMPLETOS DE CADA UC VIA API - COM BATCH PROCESSING
       const apiUrl = process.env.REACT_APP_API_URL || '';
       const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
 
-      const dadosEnriquecidos = await Promise.all(
-        dadosAssociados.map(async (item) => {
-          try {
-            const controleId = item.id || item.controle_id;
+      // Processar em lotes para evitar rate limiting
+      const batchSize = 3; // 3 requisições simultâneas
+      const delay = 2000; // 2 segundos entre lotes
+      const dadosEnriquecidos = [];
 
-            // Buscar dados completos da UC via API
-            const response = await fetch(`${apiUrl}/controle/${controleId}/uc-detalhes`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+      console.log(`📊 Processando ${dadosAssociados.length} associados em lotes de ${batchSize}...`);
+
+      for (let i = 0; i < dadosAssociados.length; i += batchSize) {
+        const lote = dadosAssociados.slice(i, i + batchSize);
+        const loteNumero = Math.floor(i / batchSize) + 1;
+        const totalLotes = Math.ceil(dadosAssociados.length / batchSize);
+
+        console.log(`🔄 Lote ${loteNumero}/${totalLotes} (${i + 1} a ${Math.min(i + batchSize, dadosAssociados.length)})`);
+
+        const resultadosLote = await Promise.all(
+          lote.map(async (item) => {
+            try {
+              const controleId = item.id || item.controle_id;
+
+              // Buscar dados completos da UC via API
+              const response = await fetch(`${apiUrl}/controle/${controleId}/uc-detalhes`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                  return {
+                    numero_unidade: data.data.numero_unidade || item.numeroUC || '',
+                    nome_cliente: data.data.nome_cliente || '',
+                    apelido: data.data.apelido || '',
+                    consumo_medio: data.data.consumo_medio || 0,
+                    desconto_tarifa: data.data.desconto_tarifa || data.data.proposta_desconto_tarifa || '20%',
+                    desconto_bandeira: data.data.desconto_bandeira || data.data.proposta_desconto_bandeira || '20%',
+                    cpf_cnpj: data.data.cpf_cnpj || 'N/A',
+                    consultor_nome: data.data.consultor_nome || '',
+                    ug_nome: data.data.ug_nome || '',
+                    ligacao: data.data.ligacao || '',
+                    enderecoCompleto: data.data.endereco_completo || ''
+                  };
+                }
+              } else if (response.status === 429) {
+                console.warn(`⚠️ Rate limit atingido para controle ${controleId}`);
               }
-            });
 
-            if (response.ok) {
-              const data = await response.json();
+              // Fallback se a API falhar
+              return {
+                numero_unidade: item.numeroUC || item.numero_unidade || '',
+                nome_cliente: item.nome_cliente || item.nomeCliente || '',
+                apelido: item.apelido || '',
+                consumo_medio: item.consumoMedio || item.consumo_medio || 0,
+                desconto_tarifa: item.desconto_tarifa || item.proposta_desconto_tarifa || '20%',
+                desconto_bandeira: item.desconto_bandeira || item.proposta_desconto_bandeira || '20%',
+                cpf_cnpj: item.cpf_cnpj || item.documento || 'N/A',
+                consultor_nome: item.consultor || item.consultorNome || '',
+                ug_nome: item.ug_nome || '',
+                ligacao: item.ligacao || '',
+                enderecoCompleto: ''
+              };
 
-              if (data.success && data.data) {
-                return {
-                  numero_unidade: data.data.numero_unidade || item.numeroUC || '',
-                  nome_cliente: data.data.nome_cliente || '',
-                  apelido: data.data.apelido || '',
-                  consumo_medio: data.data.consumo_medio || 0,
-                  desconto_tarifa: data.data.desconto_tarifa || data.data.proposta_desconto_tarifa || '20%',
-                  desconto_bandeira: data.data.desconto_bandeira || data.data.proposta_desconto_bandeira || '20%',
-                  cpf_cnpj: data.data.cpf_cnpj || 'N/A',
-                  consultor_nome: data.data.consultor_nome || '',
-                  ug_nome: data.data.ug_nome || '',
-                  ligacao: data.data.ligacao || '',
-                  enderecoCompleto: data.data.endereco_completo || ''
-                };
-              }
+            } catch (error) {
+              console.warn(`⚠️ Erro ao buscar dados da UC ${item.numeroUC}:`, error);
+              // Retornar dados básicos em caso de erro
+              return {
+                numero_unidade: item.numeroUC || item.numero_unidade || '',
+                nome_cliente: item.nome_cliente || item.nomeCliente || '',
+                apelido: item.apelido || '',
+                consumo_medio: item.consumoMedio || item.consumo_medio || 0,
+                desconto_tarifa: item.desconto_tarifa || '20%',
+                desconto_bandeira: item.desconto_bandeira || '20%',
+                cpf_cnpj: 'N/A',
+                consultor_nome: item.consultor || '',
+                ug_nome: '',
+                ligacao: item.ligacao || '',
+                enderecoCompleto: ''
+              };
             }
+          })
+        );
 
-            // Fallback se a API falhar
-            return {
-              numero_unidade: item.numeroUC || item.numero_unidade || '',
-              nome_cliente: item.nome_cliente || item.nomeCliente || '',
-              apelido: item.apelido || '',
-              consumo_medio: item.consumoMedio || item.consumo_medio || 0,
-              desconto_tarifa: item.desconto_tarifa || item.proposta_desconto_tarifa || '20%',
-              desconto_bandeira: item.desconto_bandeira || item.proposta_desconto_bandeira || '20%',
-              cpf_cnpj: item.cpf_cnpj || item.documento || 'N/A',
-              consultor_nome: item.consultor || item.consultorNome || '',
-              ug_nome: item.ug_nome || '',
-              ligacao: item.ligacao || ''
-            };
+        dadosEnriquecidos.push(...resultadosLote);
 
-          } catch (error) {
-            console.warn(`⚠️ Erro ao buscar dados da UC ${item.numeroUC}:`, error);
-            // Retornar dados básicos em caso de erro
-            return {
-              numero_unidade: item.numeroUC || item.numero_unidade || '',
-              nome_cliente: item.nome_cliente || item.nomeCliente || '',
-              apelido: item.apelido || '',
-              consumo_medio: item.consumoMedio || item.consumo_medio || 0,
-              desconto_tarifa: item.desconto_tarifa || '20%',
-              desconto_bandeira: item.desconto_bandeira || '20%',
-              cpf_cnpj: 'N/A',
-              consultor_nome: item.consultor || '',
-              ug_nome: '',
-              ligacao: item.ligacao || ''
-            };
-          }
-        })
-      );
+        // Aguardar antes do próximo lote (exceto no último)
+        if (i + batchSize < dadosAssociados.length) {
+          console.log(`⏳ Aguardando ${delay}ms antes do próximo lote...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      console.log(`✅ Processamento concluído: ${dadosEnriquecidos.length} registros`);
 
       const resultado = await exportExcelService.exportarAssociados(dadosEnriquecidos);
       showNotification(`Relatório de Associados concluído! ${resultado.totalRegistros} registros exportados em ${resultado.arquivo}`, 'success');
