@@ -792,7 +792,7 @@ class ExportExcelService {
           'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0),
           'CORRIGIR COMPENSAÇÃO?': 0,
           'LIGACAO': item.ligacao || '',
-          'ENDERECO': item.logradouroUC || ''
+          'ENDERECO': item.enderecoCompleto || ''
         };
       });
 
@@ -862,8 +862,8 @@ class ExportExcelService {
   }
 
   /**
-   * 📍 BUSCAR ENDEREÇOS (logradouroUC) DO JSON DE DOCUMENTAÇÃO
-   * Busca o campo logradouroUC presente no JSON documentacao da proposta
+   * 📍 BUSCAR ENDEREÇOS DO JSON DE DOCUMENTAÇÃO
+   * Busca os campos logradouroUC ou enderecoUC presente no JSON documentacao da proposta
    */
   async buscarEnderecosAssociados(dados) {
     try {
@@ -881,7 +881,7 @@ class ExportExcelService {
             if (!numeroUC) {
               return {
                 ...item,
-                logradouroUC: ''
+                enderecoCompleto: ''
               };
             }
 
@@ -899,15 +899,16 @@ class ExportExcelService {
               if (data.success && data.data && data.data.documentacao) {
                 const documentacao = data.data.documentacao;
 
-                // Buscar logradouroUC no JSON de documentacao
+                // Buscar endereço no JSON de documentacao
+                // Priorizar: logradouroUC > enderecoUC
                 const ucDoc = documentacao[numeroUC];
-                const logradouroUC = ucDoc?.logradouroUC || '';
+                const enderecoCompleto = ucDoc?.logradouroUC || ucDoc?.enderecoUC || '';
 
-                console.log(`✅ Endereço encontrado para UC ${numeroUC}:`, logradouroUC);
+                console.log(`✅ Endereço encontrado para UC ${numeroUC}:`, enderecoCompleto);
 
                 return {
                   ...item,
-                  logradouroUC: logradouroUC
+                  enderecoCompleto: enderecoCompleto
                 };
               }
             }
@@ -915,20 +916,20 @@ class ExportExcelService {
             // Se não encontrou, retorna sem endereço
             return {
               ...item,
-              logradouroUC: ''
+              enderecoCompleto: ''
             };
 
           } catch (error) {
             console.warn(`⚠️ Erro ao buscar endereço para UC ${item.numero_unidade}:`, error);
             return {
               ...item,
-              logradouroUC: ''
+              enderecoCompleto: ''
             };
           }
         })
       );
 
-      const itensComEndereco = dadosComEndereco.filter(item => item.logradouroUC).length;
+      const itensComEndereco = dadosComEndereco.filter(item => item.enderecoCompleto).length;
       console.log(`📍 Endereços encontrados: ${itensComEndereco}/${dadosComEndereco.length}`);
 
       return dadosComEndereco;
@@ -938,7 +939,7 @@ class ExportExcelService {
       // Em caso de erro, retorna dados originais sem endereço
       return dados.map(item => ({
         ...item,
-        logradouroUC: ''
+        enderecoCompleto: ''
       }));
     }
   }
