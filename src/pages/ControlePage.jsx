@@ -183,7 +183,8 @@ const ControlePage = () => {
                   cpf_cnpj: data.data.cpf_cnpj || 'N/A',
                   consultor_nome: data.data.consultor_nome || '',
                   ug_nome: data.data.ug_nome || '',
-                  ligacao: data.data.ligacao || ''
+                  ligacao: data.data.ligacao || '',
+                  enderecoCompleto: data.data.endereco_completo || ''
                 };
               }
             }

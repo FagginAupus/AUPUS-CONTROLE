@@ -764,11 +764,8 @@ class ExportExcelService {
         throw new Error('Biblioteca XLSX não pôde ser carregada');
       }
 
-      // ✅ BUSCAR ENDEREÇOS (logradouroUC) DO JSON DE DOCUMENTAÇÃO
-      const dadosComEndereco = await this.buscarEnderecosAssociados(dados);
-
       // Processar dados para formato simplificado
-      const registrosParaExcel = dadosComEndereco.map((item, index) => {
+      const registrosParaExcel = dados.map((item, index) => {
         // Extrair apenas o número da porcentagem (remove o símbolo %)
         const descontoTarifa = this.extrairValorNumerico(item.desconto_tarifa);
         const descontoBandeira = this.extrairValorNumerico(item.desconto_bandeira);
@@ -796,6 +793,9 @@ class ExportExcelService {
         };
       });
 
+      // Verificar quantos endereços foram encontrados
+      const itensComEndereco = registrosParaExcel.filter(item => item.ENDERECO).length;
+      console.log(`📍 Endereços encontrados: ${itensComEndereco}/${registrosParaExcel.length}`);
       console.log('📋 AMOSTRA DO RELATÓRIO (primeiros 2 registros):', registrosParaExcel.slice(0, 2));
 
       // Criar workbook
@@ -858,110 +858,6 @@ class ExportExcelService {
     } catch (error) {
       console.error('❌ Erro na exportação de associados:', error);
       throw new Error(`Erro ao exportar associados: ${error.message}`);
-    }
-  }
-
-  /**
-   * 📍 BUSCAR ENDEREÇOS DO JSON DE DOCUMENTAÇÃO
-   * Busca os campos logradouroUC ou enderecoUC presente no JSON documentacao da proposta
-   */
-  async buscarEnderecosAssociados(dados) {
-    try {
-      console.log('📍 === BUSCANDO ENDEREÇOS DOS ASSOCIADOS ===');
-      console.log('Total de itens para buscar endereços:', dados.length);
-
-      const apiUrl = process.env.REACT_APP_API_URL || '';
-      const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
-
-      // ✅ PROCESSAR EM LOTES PARA EVITAR RATE LIMITING
-      const batchSize = 5; // Máximo 5 requisições simultâneas
-      const delay = 1000; // 1 segundo entre lotes
-      const dadosComEndereco = [];
-
-      for (let i = 0; i < dados.length; i += batchSize) {
-        const lote = dados.slice(i, i + batchSize);
-        console.log(`🔄 Processando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(dados.length/batchSize)} (UCs ${i+1} a ${Math.min(i+batchSize, dados.length)})`);
-
-        const resultadosLote = await Promise.all(lote.map(async (item) => {
-          try {
-            const numeroUC = item.numero_unidade || item.numeroUC || '';
-
-            if (!numeroUC) {
-              return {
-                ...item,
-                enderecoCompleto: ''
-              };
-            }
-
-            // Buscar documentação da proposta via UC
-            const response = await fetch(`${apiUrl}/controle/buscar-documentacao-por-uc/${encodeURIComponent(numeroUC)}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-
-              if (data.success && data.data && data.data.documentacao) {
-                const documentacao = data.data.documentacao;
-
-                // Buscar endereço no JSON de documentacao
-                // Priorizar: logradouroUC > enderecoUC
-                const ucDoc = documentacao[numeroUC];
-                const logradouro = ucDoc?.logradouroUC;
-                const endereco = ucDoc?.enderecoUC;
-                const enderecoCompleto = logradouro || endereco || '';
-
-                if (enderecoCompleto) {
-                  console.log(`✅ UC ${numeroUC}: ${enderecoCompleto.substring(0, 50)}...`);
-                }
-
-                return {
-                  ...item,
-                  enderecoCompleto: enderecoCompleto
-                };
-              }
-            } else if (response.status === 429) {
-              console.warn(`⚠️ UC ${numeroUC} - Rate limit atingido`);
-            }
-
-            return {
-              ...item,
-              enderecoCompleto: ''
-            };
-
-          } catch (error) {
-            console.warn(`⚠️ Erro ao buscar endereço para UC ${item.numero_unidade}:`, error.message);
-            return {
-              ...item,
-              enderecoCompleto: ''
-            };
-          }
-        }));
-
-        dadosComEndereco.push(...resultadosLote);
-
-        // Aguardar antes do próximo lote (exceto no último)
-        if (i + batchSize < dados.length) {
-          console.log(`⏳ Aguardando ${delay}ms antes do próximo lote...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-
-      const itensComEndereco = dadosComEndereco.filter(item => item.enderecoCompleto).length;
-      console.log(`📍 Endereços encontrados: ${itensComEndereco}/${dadosComEndereco.length}`);
-
-      return dadosComEndereco;
-
-    } catch (error) {
-      console.error('❌ Erro ao buscar endereços:', error);
-      // Em caso de erro, retorna dados originais sem endereço
-      return dados.map(item => ({
-        ...item,
-        enderecoCompleto: ''
-      }));
     }
   }
 
