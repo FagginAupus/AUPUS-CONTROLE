@@ -764,8 +764,11 @@ class ExportExcelService {
         throw new Error('Biblioteca XLSX não pôde ser carregada');
       }
 
+      // ✅ BUSCAR ENDEREÇOS (logradouroUC) DO JSON DE DOCUMENTAÇÃO
+      const dadosComEndereco = await this.buscarEnderecosAssociados(dados);
+
       // Processar dados para formato simplificado
-      const registrosParaExcel = dados.map((item, index) => {
+      const registrosParaExcel = dadosComEndereco.map((item, index) => {
         // Extrair apenas o número da porcentagem (remove o símbolo %)
         const descontoTarifa = this.extrairValorNumerico(item.desconto_tarifa);
         const descontoBandeira = this.extrairValorNumerico(item.desconto_bandeira);
@@ -787,7 +790,9 @@ class ExportExcelService {
           'UG': item.ug_nome || '',
           'CPF/CNPJ': this.formatarCpfCnpj(item.cpf_cnpj),
           'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0),
-          'LIGACAO': item.ligacao || ''
+          'CORRIGIR COMPENSAÇÃO?': 0,
+          'LIGACAO': item.ligacao || '',
+          'ENDERECO': item.logradouroUC || ''
         };
       });
 
@@ -813,7 +818,9 @@ class ExportExcelService {
         { width: 20 },  // UG
         { width: 20 },  // CPF/CNPJ
         { width: 18 },  // Consumo Médio
-        { width: 15 }   // LIGACAO
+        { width: 20 },  // CORRIGIR COMPENSAÇÃO?
+        { width: 15 },  // LIGACAO
+        { width: 40 }   // ENDERECO
       ];
 
       // Adicionar filtros
@@ -831,7 +838,7 @@ class ExportExcelService {
         ['Total de Registros', registrosParaExcel.length],
         ['Filtro', 'Status Troca = Associado'],
         ['Sistema', 'AUPUS Energia - Controle'],
-        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), LIGACAO']
+        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), CORRIGIR COMPENSAÇÃO?, LIGACAO, ENDERECO']
       ];
 
       const worksheetMeta = window.XLSX.utils.aoa_to_sheet(metadados);
@@ -851,6 +858,88 @@ class ExportExcelService {
     } catch (error) {
       console.error('❌ Erro na exportação de associados:', error);
       throw new Error(`Erro ao exportar associados: ${error.message}`);
+    }
+  }
+
+  /**
+   * 📍 BUSCAR ENDEREÇOS (logradouroUC) DO JSON DE DOCUMENTAÇÃO
+   * Busca o campo logradouroUC presente no JSON documentacao da proposta
+   */
+  async buscarEnderecosAssociados(dados) {
+    try {
+      console.log('📍 === BUSCANDO ENDEREÇOS DOS ASSOCIADOS ===');
+      console.log('Total de itens para buscar endereços:', dados.length);
+
+      const apiUrl = process.env.REACT_APP_API_URL || '';
+      const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
+
+      const dadosComEndereco = await Promise.all(
+        dados.map(async (item) => {
+          try {
+            const numeroUC = item.numero_unidade || item.numeroUC || '';
+
+            if (!numeroUC) {
+              return {
+                ...item,
+                logradouroUC: ''
+              };
+            }
+
+            // Buscar documentação da proposta via UC
+            const response = await fetch(`${apiUrl}/controle/buscar-documentacao-por-uc/${encodeURIComponent(numeroUC)}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+
+              if (data.success && data.data && data.data.documentacao) {
+                const documentacao = data.data.documentacao;
+
+                // Buscar logradouroUC no JSON de documentacao
+                const ucDoc = documentacao[numeroUC];
+                const logradouroUC = ucDoc?.logradouroUC || '';
+
+                console.log(`✅ Endereço encontrado para UC ${numeroUC}:`, logradouroUC);
+
+                return {
+                  ...item,
+                  logradouroUC: logradouroUC
+                };
+              }
+            }
+
+            // Se não encontrou, retorna sem endereço
+            return {
+              ...item,
+              logradouroUC: ''
+            };
+
+          } catch (error) {
+            console.warn(`⚠️ Erro ao buscar endereço para UC ${item.numero_unidade}:`, error);
+            return {
+              ...item,
+              logradouroUC: ''
+            };
+          }
+        })
+      );
+
+      const itensComEndereco = dadosComEndereco.filter(item => item.logradouroUC).length;
+      console.log(`📍 Endereços encontrados: ${itensComEndereco}/${dadosComEndereco.length}`);
+
+      return dadosComEndereco;
+
+    } catch (error) {
+      console.error('❌ Erro ao buscar endereços:', error);
+      // Em caso de erro, retorna dados originais sem endereço
+      return dados.map(item => ({
+        ...item,
+        logradouroUC: ''
+      }));
     }
   }
 
