@@ -873,8 +873,16 @@ class ExportExcelService {
       const apiUrl = process.env.REACT_APP_API_URL || '';
       const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
 
-      const dadosComEndereco = await Promise.all(
-        dados.map(async (item) => {
+      // ✅ PROCESSAR EM LOTES PARA EVITAR RATE LIMITING
+      const batchSize = 5; // Máximo 5 requisições simultâneas
+      const delay = 1000; // 1 segundo entre lotes
+      const dadosComEndereco = [];
+
+      for (let i = 0; i < dados.length; i += batchSize) {
+        const lote = dados.slice(i, i + batchSize);
+        console.log(`🔄 Processando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(dados.length/batchSize)} (UCs ${i+1} a ${Math.min(i+batchSize, dados.length)})`);
+
+        const resultadosLote = await Promise.all(lote.map(async (item) => {
           try {
             const numeroUC = item.numero_unidade || item.numeroUC || '';
 
@@ -902,32 +910,45 @@ class ExportExcelService {
                 // Buscar endereço no JSON de documentacao
                 // Priorizar: logradouroUC > enderecoUC
                 const ucDoc = documentacao[numeroUC];
-                const enderecoCompleto = ucDoc?.logradouroUC || ucDoc?.enderecoUC || '';
+                const logradouro = ucDoc?.logradouroUC;
+                const endereco = ucDoc?.enderecoUC;
+                const enderecoCompleto = logradouro || endereco || '';
 
-                console.log(`✅ Endereço encontrado para UC ${numeroUC}:`, enderecoCompleto);
+                if (enderecoCompleto) {
+                  console.log(`✅ UC ${numeroUC}: ${enderecoCompleto.substring(0, 50)}...`);
+                }
 
                 return {
                   ...item,
                   enderecoCompleto: enderecoCompleto
                 };
               }
+            } else if (response.status === 429) {
+              console.warn(`⚠️ UC ${numeroUC} - Rate limit atingido`);
             }
 
-            // Se não encontrou, retorna sem endereço
             return {
               ...item,
               enderecoCompleto: ''
             };
 
           } catch (error) {
-            console.warn(`⚠️ Erro ao buscar endereço para UC ${item.numero_unidade}:`, error);
+            console.warn(`⚠️ Erro ao buscar endereço para UC ${item.numero_unidade}:`, error.message);
             return {
               ...item,
               enderecoCompleto: ''
             };
           }
-        })
-      );
+        }));
+
+        dadosComEndereco.push(...resultadosLote);
+
+        // Aguardar antes do próximo lote (exceto no último)
+        if (i + batchSize < dados.length) {
+          console.log(`⏳ Aguardando ${delay}ms antes do próximo lote...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
 
       const itensComEndereco = dadosComEndereco.filter(item => item.enderecoCompleto).length;
       console.log(`📍 Endereços encontrados: ${itensComEndereco}/${dadosComEndereco.length}`);
