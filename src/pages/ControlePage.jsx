@@ -152,60 +152,56 @@ const ControlePage = () => {
         return;
       }
 
-      // ✅ BUSCAR DADOS COMPLETOS DE CADA UC VIA API - COM BATCH PROCESSING
+      // ✅ BUSCAR DADOS COMPLETOS DE TODAS AS UCs DE UMA VEZ (BULK)
       const apiUrl = process.env.REACT_APP_API_URL || '';
       const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
 
-      // Processar em lotes para evitar rate limiting
-      const batchSize = 3; // 3 requisições simultâneas
-      const delay = 2000; // 2 segundos entre lotes
-      const dadosEnriquecidos = [];
+      console.log(`📊 Buscando dados de ${dadosAssociados.length} associados em lote...`);
 
-      console.log(`📊 Processando ${dadosAssociados.length} associados em lotes de ${batchSize}...`);
+      // Extrair todos os IDs de controle
+      const controleIds = dadosAssociados.map(item => item.id || item.controle_id);
 
-      for (let i = 0; i < dadosAssociados.length; i += batchSize) {
-        const lote = dadosAssociados.slice(i, i + batchSize);
-        const loteNumero = Math.floor(i / batchSize) + 1;
-        const totalLotes = Math.ceil(dadosAssociados.length / batchSize);
+      let dadosEnriquecidos = [];
 
-        console.log(`🔄 Lote ${loteNumero}/${totalLotes} (${i + 1} a ${Math.min(i + batchSize, dadosAssociados.length)})`);
+      try {
+        // Buscar todos os dados de uma vez via endpoint bulk
+        const response = await fetch(`${apiUrl}/controle/bulk-uc-detalhes`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ controle_ids: controleIds })
+        });
 
-        const resultadosLote = await Promise.all(
-          lote.map(async (item) => {
-            try {
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.success && data.data) {
+            console.log(`✅ Dados de ${Object.keys(data.data).length} controles recebidos da API`);
+
+            // Mapear os dados recebidos com os dados originais
+            dadosEnriquecidos = dadosAssociados.map(item => {
               const controleId = item.id || item.controle_id;
+              const dadosAPI = data.data[controleId];
 
-              // Buscar dados completos da UC via API
-              const response = await fetch(`${apiUrl}/controle/${controleId}/uc-detalhes`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-
-              if (response.ok) {
-                const data = await response.json();
-
-                if (data.success && data.data) {
-                  return {
-                    numero_unidade: data.data.numero_unidade || item.numeroUC || '',
-                    nome_cliente: data.data.nome_cliente || '',
-                    apelido: data.data.apelido || '',
-                    consumo_medio: data.data.consumo_medio || 0,
-                    desconto_tarifa: data.data.desconto_tarifa || data.data.proposta_desconto_tarifa || '20%',
-                    desconto_bandeira: data.data.desconto_bandeira || data.data.proposta_desconto_bandeira || '20%',
-                    cpf_cnpj: data.data.cpf_cnpj || 'N/A',
-                    consultor_nome: data.data.consultor_nome || '',
-                    ug_nome: data.data.ug_nome || '',
-                    ligacao: data.data.ligacao || '',
-                    enderecoCompleto: data.data.endereco_completo || ''
-                  };
-                }
-              } else if (response.status === 429) {
-                console.warn(`⚠️ Rate limit atingido para controle ${controleId}`);
+              if (dadosAPI) {
+                return {
+                  numero_unidade: dadosAPI.numero_unidade || item.numeroUC || '',
+                  nome_cliente: dadosAPI.nome_cliente || '',
+                  apelido: dadosAPI.apelido || '',
+                  consumo_medio: dadosAPI.consumo_medio || 0,
+                  desconto_tarifa: dadosAPI.desconto_tarifa || '20%',
+                  desconto_bandeira: dadosAPI.desconto_bandeira || '20%',
+                  cpf_cnpj: dadosAPI.cpf_cnpj || 'N/A',
+                  consultor_nome: dadosAPI.consultor_nome || '',
+                  ug_nome: dadosAPI.ug_nome || '',
+                  ligacao: dadosAPI.ligacao || '',
+                  enderecoCompleto: dadosAPI.endereco_completo || ''
+                };
               }
 
-              // Fallback se a API falhar
+              // Fallback para dados originais se não houver dados da API
               return {
                 numero_unidade: item.numeroUC || item.numero_unidade || '',
                 nome_cliente: item.nome_cliente || item.nomeCliente || '',
@@ -219,34 +215,41 @@ const ControlePage = () => {
                 ligacao: item.ligacao || '',
                 enderecoCompleto: ''
               };
-
-            } catch (error) {
-              console.warn(`⚠️ Erro ao buscar dados da UC ${item.numeroUC}:`, error);
-              // Retornar dados básicos em caso de erro
-              return {
-                numero_unidade: item.numeroUC || item.numero_unidade || '',
-                nome_cliente: item.nome_cliente || item.nomeCliente || '',
-                apelido: item.apelido || '',
-                consumo_medio: item.consumoMedio || item.consumo_medio || 0,
-                desconto_tarifa: item.desconto_tarifa || '20%',
-                desconto_bandeira: item.desconto_bandeira || '20%',
-                cpf_cnpj: 'N/A',
-                consultor_nome: item.consultor || '',
-                ug_nome: '',
-                ligacao: item.ligacao || '',
-                enderecoCompleto: ''
-              };
-            }
-          })
-        );
-
-        dadosEnriquecidos.push(...resultadosLote);
-
-        // Aguardar antes do próximo lote (exceto no último)
-        if (i + batchSize < dadosAssociados.length) {
-          console.log(`⏳ Aguardando ${delay}ms antes do próximo lote...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+            });
+          }
+        } else {
+          console.warn('⚠️ Erro ao buscar dados em lote, usando dados básicos');
+          // Usar dados básicos em caso de erro
+          dadosEnriquecidos = dadosAssociados.map(item => ({
+            numero_unidade: item.numeroUC || item.numero_unidade || '',
+            nome_cliente: item.nome_cliente || item.nomeCliente || '',
+            apelido: item.apelido || '',
+            consumo_medio: item.consumoMedio || item.consumo_medio || 0,
+            desconto_tarifa: item.desconto_tarifa || '20%',
+            desconto_bandeira: item.desconto_bandeira || '20%',
+            cpf_cnpj: 'N/A',
+            consultor_nome: item.consultor || '',
+            ug_nome: '',
+            ligacao: item.ligacao || '',
+            enderecoCompleto: ''
+          }));
         }
+      } catch (error) {
+        console.error('❌ Erro ao buscar dados em lote:', error);
+        // Usar dados básicos em caso de erro
+        dadosEnriquecidos = dadosAssociados.map(item => ({
+          numero_unidade: item.numeroUC || item.numero_unidade || '',
+          nome_cliente: item.nome_cliente || item.nomeCliente || '',
+          apelido: item.apelido || '',
+          consumo_medio: item.consumoMedio || item.consumo_medio || 0,
+          desconto_tarifa: item.desconto_tarifa || '20%',
+          desconto_bandeira: item.desconto_bandeira || '20%',
+          cpf_cnpj: 'N/A',
+          consultor_nome: item.consultor || '',
+          ug_nome: '',
+          ligacao: item.ligacao || '',
+          enderecoCompleto: ''
+        }));
       }
 
       console.log(`✅ Processamento concluído: ${dadosEnriquecidos.length} registros`);
