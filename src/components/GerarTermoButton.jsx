@@ -768,7 +768,7 @@ const GerarTermoButton = ({
       `Esta ação irá:\n` +
       `• Cancelar o documento na Autentique\n` +
       `• Remover o controle desta UC\n` +
-      `• Reverter o status para Pendente\n\n` +
+      `• Reverter o status para Aguardando\n\n` +
       `Esta ação NÃO pode ser desfeita!`
     );
 
