@@ -1076,6 +1076,18 @@ class StorageService {
             throw error;
         }
     }
+
+    async gerarRelatorioUGs() {
+        try {
+            console.log('📄 Gerando relatório de UGs');
+            const response = await apiService.get('/ugs/relatorio');
+            console.log('📄 Resposta do relatório:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao gerar relatório de UGs:', error);
+            throw error;
+        }
+    }
 }
 
 const storageService = new StorageService();

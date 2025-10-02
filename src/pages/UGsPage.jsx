@@ -186,6 +186,89 @@ const UGsPage = () => {
     }
   };
 
+  const gerarRelatorioUGs = async () => {
+    try {
+      showNotification('Gerando relatório de UGs...', 'info');
+
+      const response = await storageService.gerarRelatorioUGs();
+
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao gerar relatório');
+      }
+
+      const dadosRelatorio = response.data;
+
+      // Criar estrutura do Excel (sem título, diretamente com cabeçalho e dados)
+      const dadosExcel = [
+        ['Número UC', 'Nome da Usina', 'Capacidade (kWh)'],
+        ...dadosRelatorio.map(ug => [
+          ug.numero_uc,
+          ug.nome_usina,
+          ug.capacidade.toLocaleString('pt-BR')
+        ])
+      ];
+
+      // Gerar Excel usando SheetJS
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
+
+      // Configurar largura das colunas
+      ws['!cols'] = [
+        { wch: 15 }, // Número UC
+        { wch: 40 }, // Nome da Usina
+        { wch: 20 }  // Capacidade
+      ];
+
+      // Aplicar formatação ao cabeçalho (linha 1)
+      const headerCells = ['A1', 'B1', 'C1'];
+      headerCells.forEach(cell => {
+        if (ws[cell]) {
+          ws[cell].s = {
+            fill: {
+              fgColor: { rgb: '0070C0' } // Fundo azul
+            },
+            font: {
+              color: { rgb: 'FFFFFF' }, // Letra branca
+              bold: true
+            },
+            alignment: {
+              horizontal: 'center', // Centralizado
+              vertical: 'center'
+            }
+          };
+        }
+      });
+
+      // Aplicar alinhamento à esquerda para os dados (a partir da linha 2)
+      dadosRelatorio.forEach((ug, index) => {
+        const rowNum = index + 2; // Linha 2 em diante
+        ['A', 'B', 'C'].forEach(col => {
+          const cell = `${col}${rowNum}`;
+          if (ws[cell]) {
+            ws[cell].s = {
+              alignment: {
+                horizontal: 'left', // Alinhado à esquerda
+                vertical: 'center'
+              }
+            };
+          }
+        });
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Relatório UGs');
+
+      // Download com nome fixo
+      const nomeArquivo = 'Controle_UGs_Geradoras.xlsx';
+      XLSX.writeFile(wb, nomeArquivo);
+
+      showNotification('Relatório gerado com sucesso!', 'success');
+
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório:', error);
+      showNotification(`Erro ao gerar relatório: ${error.message}`, 'error');
+    }
+  };
+
   const refreshDados = useCallback(() => {
     console.log('🔄 Refresh manual dos dados');
     loadUgs(ugs.filters, true);
@@ -351,6 +434,9 @@ const UGsPage = () => {
               </button>
               <button onClick={exportarCSV} className="btn btn-secondary">
                 📊 Exportar CSV
+              </button>
+              <button onClick={gerarRelatorioUGs} className="btn btn-secondary">
+                📄 Relatório UGs
               </button>
               {isAdminOrAnalista && (
                 <button 
