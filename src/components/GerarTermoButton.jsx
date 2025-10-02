@@ -754,6 +754,86 @@ const GerarTermoButton = ({
     setMostrarUploadManual(true);
   };
 
+  const cancelarTermoAssinado = async () => {
+    const numeroUC = dados.numeroUC || dados.numero_uc;
+
+    if (!numeroUC) {
+      alert('❌ Número da UC é obrigatório.');
+      return;
+    }
+
+    // Modal de confirmação
+    const confirmar = window.confirm(
+      `⚠️ ATENÇÃO!\n\nTem certeza que deseja cancelar o termo assinado para a UC ${numeroUC}?\n\n` +
+      `Esta ação irá:\n` +
+      `• Cancelar o documento na Autentique\n` +
+      `• Remover o controle desta UC\n` +
+      `• Reverter o status para Pendente\n\n` +
+      `Esta ação NÃO pode ser desfeita!`
+    );
+
+    if (!confirmar) {
+      console.log('❌ Cancelamento cancelado pelo usuário');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('🚫 Iniciando cancelamento de termo assinado...', {
+        proposta_id: dados.propostaId,
+        numero_uc: numeroUC
+      });
+
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/cancelar-termo-assinado`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ numero_uc: numeroUC })
+        }
+      );
+
+      let result;
+      const contentType = response.headers.get('content-type');
+
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const textResult = await response.text();
+        console.error('❌ Resposta não é JSON:', textResult.substring(0, 500));
+        throw new Error('Servidor retornou erro HTML ao invés de JSON');
+      }
+
+      if (response.ok && result.success) {
+        console.log('✅ Termo assinado cancelado com sucesso:', result);
+
+        alert(`✅ ${result.message}`);
+
+        // Resetar estados
+        setStatusDocumento(null);
+        setPdfGerado(null);
+        setEtapa('inicial');
+
+        // Recarregar a página para atualizar todos os estados
+        if (window.location.pathname.includes('/prospec')) {
+          window.location.reload();
+        }
+
+      } else {
+        throw new Error(result.message || 'Erro ao cancelar termo assinado');
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao cancelar termo assinado:', error);
+      alert(`❌ Erro ao cancelar termo: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const uploadTermoManual = async () => {
     if (!arquivoUploadManual) {
       alert('❌ Selecione um arquivo PDF primeiro.');
@@ -1443,6 +1523,25 @@ const GerarTermoButton = ({
                 <>
                   <Eye size={16} />
                   Ver Documento Assinado
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={cancelarTermoAssinado}
+              disabled={loading}
+              className={`btn btn-danger ${loading ? 'loading' : ''}`}
+              style={{ marginLeft: '10px' }}
+            >
+              {loading ? (
+                <>
+                  <Loader className="animate-spin" size={16} />
+                  Cancelando...
+                </>
+              ) : (
+                <>
+                  <X size={16} />
+                  Cancelar Termo
                 </>
               )}
             </button>
