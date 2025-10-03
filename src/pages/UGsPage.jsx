@@ -17,6 +17,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import * as XLSXStyle from 'xlsx-js-style';
 const UGsPage = () => {
   const { user } = useAuth();
   const { 
@@ -208,9 +209,9 @@ const UGsPage = () => {
         ])
       ];
 
-      // Gerar Excel usando SheetJS
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
+      // Gerar Excel usando xlsx-js-style
+      const wb = XLSXStyle.utils.book_new();
+      const ws = XLSXStyle.utils.aoa_to_sheet(dadosExcel);
 
       // Configurar largura das colunas
       ws['!cols'] = [
@@ -255,11 +256,11 @@ const UGsPage = () => {
         });
       });
 
-      XLSX.utils.book_append_sheet(wb, ws, 'Relatório UGs');
+      XLSXStyle.utils.book_append_sheet(wb, ws, 'Relatório UGs');
 
-      // Download com nome fixo
+      // Download com nome fixo usando xlsx-js-style
       const nomeArquivo = 'Controle_UGs_Geradoras.xlsx';
-      XLSX.writeFile(wb, nomeArquivo);
+      XLSXStyle.writeFile(wb, nomeArquivo);
 
       showNotification('Relatório gerado com sucesso!', 'success');
 
