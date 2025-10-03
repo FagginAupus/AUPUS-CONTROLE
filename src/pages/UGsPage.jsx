@@ -147,8 +147,8 @@ const UGsPage = () => {
   };
 
   const excluirUG = async (index) => {
-    if (user?.role !== 'admin') return;
-    
+    if (user?.role !== 'admin' && user?.role !== 'analista') return;
+
     const item = dadosFiltrados[index];
     if (!item) return;
 
