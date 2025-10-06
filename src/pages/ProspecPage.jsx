@@ -106,9 +106,9 @@ const ProspecPage = () => {
       const team = getMyTeam();
 
       if (user?.role === 'admin' || user?.role === 'analista') {
-        // ✅ CORREÇÃO: Incluir todos os perfis que podem ser consultores
+        // ✅ Apenas consultores, gerentes e vendedores (não incluir admin/analista)
         const consultores = team.filter(member =>
-          ['admin', 'analista', 'consultor', 'gerente', 'vendedor'].includes(member.role)
+          ['consultor', 'gerente', 'vendedor'].includes(member.role)
         );
 
         const listaFinal = [

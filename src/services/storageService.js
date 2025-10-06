@@ -643,10 +643,12 @@ class StorageService {
         if (isEdicaoModal) {
             // ✅ MODAL DE EDIÇÃO: Enviar apenas campos editáveis
             const dadosModal = {
+                consultor_id: consultorIdFinal,
                 consultor: proposta.consultor || '',
+                recorrencia: proposta.recorrencia,
                 status: proposta.status || 'Aguardando',
-                
-                // ✅ DESCONTOS - usar valores reais do formulário  
+
+                // ✅ DESCONTOS - usar valores reais do formulário
                 economia: proposta.economia ? `${proposta.economia}%` : undefined,
                 bandeira: proposta.bandeira ? `${proposta.bandeira}%` : undefined,
                 
