@@ -2376,70 +2376,93 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   </div>
 
                   {dados.documentosExtras && dados.documentosExtras.length > 0 && (
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
                       {dados.documentosExtras.map((docExtra, index) => (
                         <div key={index} style={{
                           display: 'flex',
-                          alignItems: 'center',
+                          flexDirection: 'column',
                           gap: '8px',
-                          padding: '8px',
+                          padding: '12px',
                           backgroundColor: '#f5f5f5',
-                          borderRadius: '4px'
+                          borderRadius: '6px',
+                          border: '1px solid #e0e0e0'
                         }}>
-                          <span style={{minWidth: '30px', fontSize: '12px', color: '#666'}}>
-                            #{index + 1}
-                          </span>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              const novosExtras = [...(dados.documentosExtras || [])];
-                              novosExtras[index] = file;
-                              setDados({...dados, documentosExtras: novosExtras});
-                            }}
-                            style={{flex: 1, fontSize: '13px'}}
-                          />
-                          {docExtra && (
-                            <div className="arquivo-existente" style={{
-                              margin: 0,
-                              padding: '4px 8px',
-                              backgroundColor: 'white',
-                              borderRadius: '3px',
-                              fontSize: '12px'
-                            }}>
-                              <span className="arquivo-info">
-                                📎 {typeof docExtra === 'string' ?
-                                  (docExtra.length > 20 ? docExtra.substring(0, 20) + '...' : docExtra) :
-                                  (docExtra.name.length > 20 ? docExtra.name.substring(0, 20) + '...' : docExtra.name)}
-                              </span>
-                              {typeof docExtra === 'string' && (
-                                <BotoesDocumento
-                                  nomeArquivo={docExtra}
-                                  tipoArquivo={`documento extra ${index + 1}`}
-                                />
-                              )}
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const novosExtras = dados.documentosExtras.filter((_, i) => i !== index);
-                              setDados({...dados, documentosExtras: novosExtras});
-                            }}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: '12px',
-                              backgroundColor: '#f44336',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '3px',
-                              cursor: 'pointer'
-                            }}
-                            title="Remover documento"
-                          >
-                            ✖
-                          </button>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '4px'
+                          }}>
+                            <span style={{fontSize: '13px', fontWeight: '600', color: '#555'}}>
+                              Documento Extra #{index + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const novosExtras = dados.documentosExtras.filter((_, i) => i !== index);
+                                setDados({...dados, documentosExtras: novosExtras});
+                              }}
+                              style={{
+                                padding: '5px 10px',
+                                fontSize: '12px',
+                                backgroundColor: '#f44336',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                              }}
+                              title="Remover documento"
+                            >
+                              🗑️ Remover
+                            </button>
+                          </div>
+
+                          <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                const novosExtras = [...(dados.documentosExtras || [])];
+                                novosExtras[index] = file;
+                                setDados({...dados, documentosExtras: novosExtras});
+                              }}
+                              style={{
+                                padding: '8px',
+                                fontSize: '14px',
+                                backgroundColor: 'white',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            />
+
+                            {docExtra && (
+                              <div className="arquivo-existente" style={{
+                                margin: 0,
+                                padding: '8px 12px',
+                                backgroundColor: '#e8f5e9',
+                                borderRadius: '4px',
+                                border: '1px solid #c8e6c9',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                              }}>
+                                <span className="arquivo-info" style={{fontSize: '13px', color: '#2e7d32'}}>
+                                  📎 {typeof docExtra === 'string' ?
+                                    (docExtra.length > 35 ? docExtra.substring(0, 35) + '...' : docExtra) :
+                                    (docExtra.name.length > 35 ? docExtra.name.substring(0, 35) + '...' : docExtra.name)}
+                                </span>
+                                {typeof docExtra === 'string' && (
+                                  <BotoesDocumento
+                                    nomeArquivo={docExtra}
+                                    tipoArquivo={`documento extra ${index + 1}`}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
