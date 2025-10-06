@@ -220,8 +220,9 @@ const ProspecPage = () => {
       enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
       logradouroUC: documentacaoUC.logradouroUC || documentacaoUC.logradouro_uc || '',
       termoAdesao: documentacaoUC.termoAdesao || null,
-      whatsappRepresentante: documentacaoUC.whatsappRepresentante || '', 
-      emailRepresentante: documentacaoUC.emailRepresentante || '' 
+      whatsappRepresentante: documentacaoUC.whatsappRepresentante || '',
+      emailRepresentante: documentacaoUC.emailRepresentante || '',
+      documentosExtras: documentacaoUC.documentosExtras || []
     };
     
     console.log('🔍 Item final com documentação:', itemComDocumentacao);
@@ -259,9 +260,9 @@ const ProspecPage = () => {
         'documentoPessoal', 'contratoSocial', 'documentoPessoalRepresentante',
         'contratoLocacao', 'termoAdesao'
       ];
-      
+
       const documentacaoFinal = { ...dadosAtualizados };
-      
+
       for (const campo of camposArquivo) {
         if (dadosAtualizados[campo] && dadosAtualizados[campo] instanceof File) {
           try {
@@ -290,6 +291,48 @@ const ProspecPage = () => {
             return;
           }
         }
+      }
+
+      // ✅ UPLOAD DE DOCUMENTOS EXTRAS
+      if (dadosAtualizados.documentosExtras && dadosAtualizados.documentosExtras.length > 0) {
+        const documentosExtrasFinais = [];
+
+        for (let i = 0; i < dadosAtualizados.documentosExtras.length; i++) {
+          const docExtra = dadosAtualizados.documentosExtras[i];
+
+          if (docExtra instanceof File) {
+            try {
+              const formData = new FormData();
+              formData.append('arquivo', docExtra);
+              formData.append('numeroUC', item.numeroUC || item.numero_unidade);
+              formData.append('tipoDocumento', `documentoExtra_${i}`);
+
+              const response = await fetch(`${process.env.REACT_APP_API_URL}/propostas/${propostaId}/upload-documento`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`
+                },
+                body: formData
+              });
+
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+
+              const result = await response.json();
+              documentosExtrasFinais[i] = result.nomeArquivo;
+              showNotification(`Documento extra ${i + 1} enviado com sucesso!`, 'success');
+            } catch (error) {
+              showNotification(`Erro ao enviar documento extra ${i + 1}: ${error.message}`, 'error');
+              return;
+            }
+          } else if (typeof docExtra === 'string') {
+            // Manter documento extra já existente
+            documentosExtrasFinais[i] = docExtra;
+          }
+        }
+
+        documentacaoFinal.documentosExtras = documentosExtrasFinais;
       }
 
       // ✅ DADOS LIMPOS - SEM DUPLICAÇÕES
@@ -340,7 +383,8 @@ const ProspecPage = () => {
           enderecoRepresentante: documentacaoFinal.enderecoRepresentante,
           termoAdesao: documentacaoFinal.termoAdesao,
           whatsappRepresentante: documentacaoFinal.whatsappRepresentante,
-          emailRepresentante: documentacaoFinal.emailRepresentante
+          emailRepresentante: documentacaoFinal.emailRepresentante,
+          documentosExtras: documentacaoFinal.documentosExtras || []
         },
         
         // Benefícios
@@ -1372,7 +1416,8 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     isArrendamento: item.isArrendamento || false,
     contratoLocacao: item.contratoLocacao || null,
     enderecoRepresentante: item.enderecoRepresentante || '',
-    termoAdesao: item.termoAdesao || null
+    termoAdesao: item.termoAdesao || null,
+    documentosExtras: item.documentosExtras || []
   });
 
   const buscarStatusDocumento = async () => {
@@ -2285,16 +2330,118 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   {dados.termoAdesao && (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={typeof dados.termoAdesao === 'string' ? dados.termoAdesao : dados.termoAdesao.name}>
-                        📎 {typeof dados.termoAdesao === 'string' ? 
-                          `Termo: ${dados.termoAdesao.length > 30 ? dados.termoAdesao.substring(0, 30) + '...' : dados.termoAdesao}` : 
+                        📎 {typeof dados.termoAdesao === 'string' ?
+                          `Termo: ${dados.termoAdesao.length > 30 ? dados.termoAdesao.substring(0, 30) + '...' : dados.termoAdesao}` :
                           `Arquivo: ${dados.termoAdesao.name.length > 30 ? dados.termoAdesao.name.substring(0, 30) + '...' : dados.termoAdesao.name}`}
                       </span>
                       {typeof dados.termoAdesao === 'string' && (
-                        <BotoesDocumento 
-                          nomeArquivo={dados.termoAdesao} 
+                        <BotoesDocumento
+                          nomeArquivo={dados.termoAdesao}
                           tipoArquivo="termo de adesão"
                         />
                       )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ✅ DOCUMENTOS EXTRAS - Campos Dinâmicos */}
+              <div className="form-row" style={{marginTop: '15px'}}>
+                <div className="form-group" style={{width: '100%'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px'}}>
+                    <label style={{margin: 0}}>Documentos Extras</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const novosExtras = [...(dados.documentosExtras || []), null];
+                        setDados({...dados, documentosExtras: novosExtras});
+                      }}
+                      className="btn-add-doc-extra"
+                      title="Adicionar novo documento extra"
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '14px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      ➕ Adicionar
+                    </button>
+                  </div>
+
+                  {dados.documentosExtras && dados.documentosExtras.length > 0 && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                      {dados.documentosExtras.map((docExtra, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px',
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: '4px'
+                        }}>
+                          <span style={{minWidth: '30px', fontSize: '12px', color: '#666'}}>
+                            #{index + 1}
+                          </span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              const novosExtras = [...(dados.documentosExtras || [])];
+                              novosExtras[index] = file;
+                              setDados({...dados, documentosExtras: novosExtras});
+                            }}
+                            style={{flex: 1, fontSize: '13px'}}
+                          />
+                          {docExtra && (
+                            <div className="arquivo-existente" style={{
+                              margin: 0,
+                              padding: '4px 8px',
+                              backgroundColor: 'white',
+                              borderRadius: '3px',
+                              fontSize: '12px'
+                            }}>
+                              <span className="arquivo-info">
+                                📎 {typeof docExtra === 'string' ?
+                                  (docExtra.length > 20 ? docExtra.substring(0, 20) + '...' : docExtra) :
+                                  (docExtra.name.length > 20 ? docExtra.name.substring(0, 20) + '...' : docExtra.name)}
+                              </span>
+                              {typeof docExtra === 'string' && (
+                                <BotoesDocumento
+                                  nomeArquivo={docExtra}
+                                  tipoArquivo={`documento extra ${index + 1}`}
+                                />
+                              )}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const novosExtras = dados.documentosExtras.filter((_, i) => i !== index);
+                              setDados({...dados, documentosExtras: novosExtras});
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '12px',
+                              backgroundColor: '#f44336',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                            title="Remover documento"
+                          >
+                            ✖
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
