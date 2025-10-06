@@ -104,15 +104,18 @@ const ProspecPage = () => {
   const carregarConsultores = useCallback(async () => {
     try {
       const team = getMyTeam();
-      
+
       if (user?.role === 'admin' || user?.role === 'analista') {
-        const consultores = team.filter(member => member.role === 'consultor');
-        
+        // ✅ CORREÇÃO: Incluir todos os perfis que podem ser consultores
+        const consultores = team.filter(member =>
+          ['admin', 'analista', 'consultor', 'gerente', 'vendedor'].includes(member.role)
+        );
+
         const listaFinal = [
           ...consultores.map(member => ({ id: member.id, name: member.name })),
           { id: null, name: 'Sem consultor (AUPUS direto)' }
         ];
-                        
+
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'consultor') {
         const funcionarios = team.filter(member => 
