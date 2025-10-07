@@ -710,10 +710,16 @@ const GerarTermoButton = ({
 
     setLoading(true);
     try {
-      console.log('📥 Buscando PDF assinado da proposta:', dados.propostaId);
-      
+      const numeroUC = dados.numeroUC || dados.numero_uc;
+      console.log('📥 Buscando PDF assinado da proposta:', dados.propostaId, 'UC:', numeroUC);
+
+      // ✅ ADICIONAR numero_uc na query string para buscar documento específico da UC
+      const url = numeroUC
+        ? `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-assinado?numero_uc=${numeroUC}`
+        : `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-assinado`;
+
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-assinado`,
+        url,
         {
           method: 'GET',
           headers: {
