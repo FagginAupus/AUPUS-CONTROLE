@@ -581,6 +581,26 @@ const GerarTermoButton = ({
         }
       } else {
         console.error('❌ Erro ao sincronizar:', result);
+
+        // Se o documento não foi encontrado na Autentique, oferecer opção de resetar
+        if (result.document_not_found) {
+          const resetar = window.confirm(
+            `⚠️ ${result.message}\n\n` +
+            `Este documento pode ter sido deletado na Autentique.\n\n` +
+            `Deseja limpar este documento e gerar um novo?\n\n` +
+            `Clique em OK para limpar, ou Cancelar para manter como está.`
+          );
+
+          if (resetar) {
+            // Limpar o estado do documento
+            setStatusDocumento(null);
+            setPdfGerado(null);
+            setEtapa('inicial');
+            alert('✅ Documento limpo. Você pode gerar um novo termo agora.');
+            return;
+          }
+        }
+
         alert(`❌ Erro: ${result.message || 'Erro ao sincronizar documento'}`);
       }
 
