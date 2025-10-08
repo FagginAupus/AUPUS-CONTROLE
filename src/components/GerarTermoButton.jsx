@@ -1,7 +1,7 @@
 // src/components/GerarTermoButton.jsx - NOVO FLUXO SEPARADO
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download, Check } from 'lucide-react';
+import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download, Check, RefreshCw } from 'lucide-react';
 import './GerarTermoButton.css';
 
 const GerarTermoButton = ({ 
@@ -529,6 +529,59 @@ const GerarTermoButton = ({
     }
   };
 
+  const sincronizarDocumento = async () => {
+    if (!statusDocumento?.id) return;
+
+    setLoading(true);
+    try {
+      console.log('🔄 Sincronizando documento com Autentique...', {
+        documento_id: statusDocumento.id
+      });
+
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/documentos/${statusDocumento.id}/sync-status`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('aupus_token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ Documento sincronizado:', result);
+
+        if (result.data?.status_changed) {
+          alert(`✅ Status atualizado!\n\nAnterior: ${result.data.status_anterior}\nAtual: ${result.data.status_atual}\n\nAssinaturas: ${result.data.signed_count}/${result.data.total_signers}`);
+
+          // Recarregar a página para atualizar todos os estados
+          window.location.reload();
+        } else {
+          alert(`ℹ️ ${result.message}\n\nAssinaturas: ${result.data.signed_count}/${result.data.total_signers}`);
+
+          // Atualizar status local mesmo se não mudou
+          setStatusDocumento(prev => ({
+            ...prev,
+            signed_count: result.data.signed_count,
+            total_signers: result.data.total_signers
+          }));
+        }
+      } else {
+        console.error('❌ Erro ao sincronizar:', result);
+        alert(`❌ Erro: ${result.message || 'Erro ao sincronizar documento'}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Erro interno ao sincronizar:', error);
+      alert('❌ Erro ao sincronizar. Verifique sua conexão e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const cancelarDocumento = async () => {
     if (!statusDocumento) return;
 
@@ -542,7 +595,7 @@ const GerarTermoButton = ({
         proposta_id: dados.propostaId,
         documento_id: statusDocumento.id
       });
-      
+
       // ✅ USAR A ROTA QUE JÁ EXISTE E FUNCIONA
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/cancelar-pendente`,
@@ -1405,11 +1458,31 @@ const GerarTermoButton = ({
               Ver Termo Enviado
             </button>
 
+            {/* Botão de Sincronização com Autentique */}
+            <button
+              onClick={sincronizarDocumento}
+              disabled={loading}
+              className={`btn btn-secondary ${loading ? 'loading' : ''}`}
+              title="Sincronizar status com Autentique - verifica se o documento foi assinado ou rejeitado"
+            >
+              {loading ? (
+                <>
+                  <Loader className="animate-spin" size={16} />
+                  Sincronizando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={16} />
+                  Atualizar
+                </>
+              )}
+            </button>
+
             {statusDocumento.link_assinatura && (
               <button
                 onClick={() => window.open(statusDocumento.link_assinatura, '_blank')}
                 className="btn btn-success"
-                title={statusDocumento.duplo_envio ? 
+                title={statusDocumento.duplo_envio ?
                   "Abrir um dos links de assinatura (cliente pode usar qualquer um)" :
                   "Abrir link de assinatura (mesmo link que o cliente recebeu)"
                 }
@@ -1423,7 +1496,7 @@ const GerarTermoButton = ({
               onClick={cancelarDocumento}
               disabled={loading}
               className={`btn btn-danger ${loading ? 'loading' : ''}`}
-              title={statusDocumento.duplo_envio ? 
+              title={statusDocumento.duplo_envio ?
                 "Cancelar todos os links de assinatura enviados ao cliente" :
                 "Cancelar link de assinatura enviado ao cliente"
               }
