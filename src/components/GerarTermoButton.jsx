@@ -549,6 +549,16 @@ const GerarTermoButton = ({
         }
       );
 
+      // Verificar se a resposta é JSON antes de tentar parsear
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('❌ Resposta não é JSON:', contentType);
+        const text = await response.text();
+        console.error('Resposta do servidor:', text.substring(0, 500));
+        alert('❌ Erro no servidor. Por favor, tente novamente ou contate o suporte.');
+        return;
+      }
+
       const result = await response.json();
 
       if (response.ok && result.success) {
@@ -576,7 +586,7 @@ const GerarTermoButton = ({
 
     } catch (error) {
       console.error('❌ Erro interno ao sincronizar:', error);
-      alert('❌ Erro ao sincronizar. Verifique sua conexão e tente novamente.');
+      alert(`❌ Erro ao sincronizar: ${error.message || 'Verifique sua conexão e tente novamente'}`);
     } finally {
       setLoading(false);
     }
