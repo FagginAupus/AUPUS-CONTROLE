@@ -2331,64 +2331,6 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     }}
                   />
 
-                  {/* ✅ BOTÃO PARA COPIAR LINK DE ASSINATURA - Quando status for pendente-assinatura/enviada */}
-                  {(() => {
-                    const statusDoc = getStatusDocumentoUC(dados.numeroUC || dados.numero_uc);
-                    const isPendente = statusDoc && (
-                      statusDoc.status === 'pending' ||
-                      statusDoc.status === 'PENDING' ||
-                      statusDoc.status === 'Pendente' ||
-                      statusDoc.status === 'Aguardando' ||
-                      statusDoc.status === 'Aguardando Assinatura'
-                    );
-
-                    if (isPendente && statusDoc.link_assinatura) {
-                      return (
-                        <div style={{ marginTop: '12px' }}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(statusDoc.link_assinatura).then(() => {
-                                showNotification('Link de assinatura copiado!', 'success');
-                              }).catch((err) => {
-                                console.error('Erro ao copiar link:', err);
-                                showNotification('Erro ao copiar link', 'error');
-                              });
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '6px 12px',
-                              fontSize: '13px',
-                              color: '#666',
-                              backgroundColor: '#f5f5f5',
-                              border: '1px solid #ddd',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = '#e8e8e8';
-                              e.target.style.color = '#333';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = '#f5f5f5';
-                              e.target.style.color = '#666';
-                            }}
-                            title="Copiar link de assinatura enviado ao cliente"
-                          >
-                            <Link size={14} />
-                            <span>Copiar link de assinatura</span>
-                          </button>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-
                   {dados.termoAdesao && (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={typeof dados.termoAdesao === 'string' ? dados.termoAdesao : dados.termoAdesao.name}>
