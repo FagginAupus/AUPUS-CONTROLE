@@ -1546,48 +1546,70 @@ const GerarTermoButton = ({
           </div>
 
           {/* ✅ BOTÃO DISCRETO PARA COPIAR LINK */}
-          {statusDocumento.link_assinatura && (
-            <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigator.clipboard.writeText(statusDocumento.link_assinatura).then(() => {
-                    alert('✅ Link de assinatura copiado para a área de transferência!');
-                  }).catch((err) => {
-                    console.error('Erro ao copiar link:', err);
-                    alert('❌ Erro ao copiar link');
-                  });
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  color: '#666',
-                  backgroundColor: '#f5f5f5',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e8e8e8';
-                  e.currentTarget.style.color = '#333';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f5f5f5';
-                  e.currentTarget.style.color = '#666';
-                }}
-                title="Copiar link de assinatura enviado ao cliente"
-              >
-                <Link size={14} />
-                <span>Copiar link</span>
-              </button>
-            </div>
-          )}
+          {(() => {
+            console.log('🔍 DEBUG Botão Copiar Link:', {
+              temStatusDocumento: !!statusDocumento,
+              link_assinatura: statusDocumento?.link_assinatura,
+              statusDocumentoCompleto: statusDocumento
+            });
+
+            return (
+              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (!statusDocumento?.link_assinatura) {
+                      alert('❌ Link de assinatura não disponível');
+                      return;
+                    }
+
+                    navigator.clipboard.writeText(statusDocumento.link_assinatura).then(() => {
+                      alert('✅ Link de assinatura copiado para a área de transferência!');
+                    }).catch((err) => {
+                      console.error('Erro ao copiar link:', err);
+                      alert('❌ Erro ao copiar link');
+                    });
+                  }}
+                  disabled={!statusDocumento?.link_assinatura}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    color: statusDocumento?.link_assinatura ? '#666' : '#999',
+                    backgroundColor: statusDocumento?.link_assinatura ? '#f5f5f5' : '#fafafa',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    cursor: statusDocumento?.link_assinatura ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.2s',
+                    opacity: statusDocumento?.link_assinatura ? 1 : 0.6
+                  }}
+                  onMouseEnter={(e) => {
+                    if (statusDocumento?.link_assinatura) {
+                      e.currentTarget.style.backgroundColor = '#e8e8e8';
+                      e.currentTarget.style.color = '#333';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (statusDocumento?.link_assinatura) {
+                      e.currentTarget.style.backgroundColor = '#f5f5f5';
+                      e.currentTarget.style.color = '#666';
+                    }
+                  }}
+                  title={statusDocumento?.link_assinatura
+                    ? "Copiar link de assinatura enviado ao cliente"
+                    : "Link de assinatura não disponível"}
+                >
+                  <Link size={14} />
+                  <span>Copiar link</span>
+                </button>
+              </div>
+            );
+          })()}
         </>
       )}
 
