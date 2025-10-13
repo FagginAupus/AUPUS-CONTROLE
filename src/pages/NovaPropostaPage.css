@@ -1017,3 +1017,25 @@ body.dark-mode .file-help-text {
   cursor: not-allowed !important;
   opacity: 0.5 !important;
 }
+
+/* =======================================================
+   BOTÕES DE AÇÃO DA PROPOSTA - ÍCONES GRANDES
+   ======================================================= */
+
+.btn-action-proposta {
+  /* Resetar qualquer estilo herdado */
+  all: unset;
+  /* Estilos próprios */
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+.btn-action-proposta svg {
+  /* Garantir que o SVG ocupe 100% do espaço */
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}

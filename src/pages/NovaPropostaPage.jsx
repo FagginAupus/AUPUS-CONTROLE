@@ -1177,7 +1177,7 @@ const NovaPropostaPage = () => {
               <button
                 type="button"
                 onClick={() => navigate('/prospec')}
-                className="btn-icon"
+                className="btn-action-proposta"
                 disabled={loading}
                 title="Voltar"
                 style={{
@@ -1214,7 +1214,7 @@ const NovaPropostaPage = () => {
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="btn-icon"
+                className="btn-action-proposta"
                 disabled={loading}
                 title="Limpar Formulário"
                 style={{
@@ -1250,7 +1250,7 @@ const NovaPropostaPage = () => {
               {/* Botão Salvar */}
               <button
                 type="submit"
-                className="btn-icon"
+                className="btn-action-proposta"
                 disabled={loading}
                 title={loading ? 'Salvando...' : 'Salvar Proposta'}
                 style={{
@@ -1298,7 +1298,7 @@ const NovaPropostaPage = () => {
               <button
                 type="button"
                 onClick={() => navigate('/prospec')}
-                className="btn-icon"
+                className="btn-action-proposta"
                 disabled={loading}
                 title="Cancelar"
                 style={{
