@@ -78,6 +78,115 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ========================================
+  // 🔔 LISTENER PARA SESSÃO EXPIRADA
+  // ========================================
+  useEffect(() => {
+    const handleSessionExpired = (event) => {
+      console.log('🚨 Evento de sessão expirada recebido:', event.detail);
+
+      // Limpar estado da autenticação
+      setUser(null);
+      setIsAuthenticated(false);
+      setTeamCache([]);
+
+      // Limpar localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('aupus_token');
+      apiService.clearToken();
+
+      // Mostrar modal de sessão expirada
+      const modal = document.createElement('div');
+      modal.className = 'session-expired-modal';
+      modal.innerHTML = `
+        <div class="session-expired-overlay">
+          <div class="session-expired-content">
+            <div class="session-expired-icon">⏱️</div>
+            <h2>Sessão Expirada</h2>
+            <p>Sua sessão expirou por inatividade. Você será redirecionado para a tela de login.</p>
+            <button onclick="window.location.href='/login'" class="session-expired-btn">
+              Ir para Login
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Adicionar estilos inline
+      const style = document.createElement('style');
+      style.textContent = `
+        .session-expired-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+        }
+        .session-expired-content {
+          background: white;
+          padding: 40px;
+          border-radius: 12px;
+          text-align: center;
+          max-width: 400px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+          animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .session-expired-icon {
+          font-size: 64px;
+          margin-bottom: 20px;
+        }
+        .session-expired-content h2 {
+          color: #333;
+          margin: 0 0 15px 0;
+          font-size: 24px;
+        }
+        .session-expired-content p {
+          color: #666;
+          margin: 0 0 25px 0;
+          line-height: 1.5;
+        }
+        .session-expired-btn {
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 12px 30px;
+          border-radius: 6px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .session-expired-btn:hover {
+          background: #0056b3;
+        }
+      `;
+
+      document.head.appendChild(style);
+      document.body.appendChild(modal);
+
+      // Redirecionar após 5 segundos automaticamente
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 5000);
+    };
+
+    // Adicionar listener para o evento customizado
+    window.addEventListener('sessionExpired', handleSessionExpired);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('sessionExpired', handleSessionExpired);
+    };
+  }, []);
+
+  // ========================================
   // 🔐 FUNÇÕES DE AUTENTICAÇÃO
   // ========================================
   const login = async (email, password) => { // ← ALTERAR PARÂMETROS
