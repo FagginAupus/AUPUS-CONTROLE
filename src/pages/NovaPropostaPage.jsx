@@ -575,18 +575,25 @@ const NovaPropostaPage = () => {
 
     } catch (error) {
       console.error('❌ Erro geral no salvamento:', error);
-      
+
+      // ✅ VERIFICAR SE É ERRO DE UC DUPLICADA
+      if (error.response?.data?.error_type === 'ucs_com_proposta_ativa') {
+        console.log('🎯 Erro de UC duplicada detectado, mostrando modal...');
+        mostrarModalUcsBloqueadas(error.response.data);
+        return; // Não mostrar notificação genérica
+      }
+
       // ✅ MELHOR TRATAMENTO DE ERROS
       let mensagemErro = 'Erro ao salvar proposta';
-      
-      if (error.message?.includes('UC duplicada') || error.message?.includes('duplicate')) {
+
+      if (error.message?.includes('UC duplicada') || error.message?.includes('duplicate') || error.message?.includes('propostas ativas')) {
         mensagemErro = 'Uma ou mais UCs já estão em outra proposta ativa';
       } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
         mensagemErro = 'Erro de conexão. Verifique sua internet';
       } else if (error.message) {
         mensagemErro = error.message;
       }
-      
+
       showNotification(mensagemErro, 'error');
       
     } finally {
