@@ -160,7 +160,7 @@ class ApiService {
                     console.error(`❌ Erro ${response.status}:`, responseData);
                 }
 
-                // ✅ TRATAMENTO ESPECÍFICO PARA 401 - SEM REMOÇÃO AUTOMÁTICA DE TOKEN
+                // ✅ TRATAMENTO ESPECÍFICO PARA 401 - MELHORADO
                 if (response.status === 401) {
                     console.log('🔍 Análise detalhada do erro 401:', {
                         endpoint: endpoint,
@@ -172,16 +172,42 @@ class ApiService {
                         requiresLogin: responseData.requires_login,
                         tokenPresent: !!this.getToken()
                     });
-                    
+
                     // Se for rota de login, não remover token (credenciais inválidas)
                     if (endpoint.includes('/auth/login')) {
                         console.log('❌ Falha no login - credenciais inválidas');
                         throw new Error(responseData.message || 'Email ou senha incorretos');
                     }
-                    
-                    if (endpoint.includes('/auth/session-status') || endpoint.includes('/auth/me')) {
-                        console.log('⚠️ Erro 401 em verificação de sessão - não disparando evento');
-                        throw new Error(responseData.message || 'Sessão inválida');
+
+                    // ✅ MELHORADO: Para session-status, se deu 401, significa que está deslogado
+                    if (endpoint.includes('/auth/session-status')) {
+                        console.log('🚪 Erro 401 em session-status - sessão expirada, disparando logout');
+                        this.clearToken();
+
+                        // Disparar evento de sessão expirada
+                        window.dispatchEvent(new CustomEvent('sessionExpired', {
+                            detail: {
+                                message: 'Sua sessão expirou por inatividade',
+                                errorType: 'session_expired'
+                            }
+                        }));
+
+                        throw new Error('Sessão expirada');
+                    }
+
+                    // Para /auth/me também considerar como sessão expirada
+                    if (endpoint.includes('/auth/me')) {
+                        console.log('🚪 Erro 401 em /auth/me - sessão expirada');
+                        this.clearToken();
+
+                        window.dispatchEvent(new CustomEvent('sessionExpired', {
+                            detail: {
+                                message: 'Sua sessão expirou',
+                                errorType: 'session_expired'
+                            }
+                        }));
+
+                        throw new Error('Sessão expirada');
                     }
 
                     // Se for refresh de token, não disparar eventos
@@ -189,27 +215,25 @@ class ApiService {
                         console.log('⚠️ Erro 401 no refresh - token não pode ser renovado');
                         throw new Error(responseData.message || 'Token não pode ser renovado');
                     }
-                    // Para outras rotas, analisar a resposta do servidor
-                    if (responseData.requires_login === true || 
-                        responseData.error_type === 'session_expired' ||
-                        responseData.error_type === 'token_expired') {
-                        
-                        console.log('🚪 Sessão realmente expirada detectada, removendo token');
+
+                    // ✅ MELHORADO: Para QUALQUER outra rota com 401, considerar sessão expirada
+                    // Se tem token mas está dando 401, significa que o token é inválido/expirado
+                    if (this.getToken()) {
+                        console.log('🚪 401 com token presente - considerando sessão expirada');
                         this.clearToken();
-                        
-                        // Disparar evento para o sistema de sessão
+
                         window.dispatchEvent(new CustomEvent('sessionExpired', {
-                            detail: { 
-                                message: responseData.message || 'Sessão expirada',
-                                errorType: responseData.error_type || 'session_expired'
+                            detail: {
+                                message: responseData.message || 'Sua sessão expirou por inatividade',
+                                errorType: 'session_expired'
                             }
                         }));
-                        
+
                         throw new Error(responseData.message || 'Sessão expirada - faça login novamente');
                     }
-                    
-                    // Se chegou aqui, é erro 401 mas não é necessariamente token expirado
-                    console.log('⚠️ Erro 401 sem indicação clara de expiração - mantendo token');
+
+                    // Se não tem token, é apenas erro de autenticação
+                    console.log('⚠️ Erro 401 sem token presente');
                     throw new Error(responseData.message || 'Erro de autenticação');
                 }
                 

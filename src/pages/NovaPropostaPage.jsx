@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { ArrowLeft, Save, Eraser, X } from 'lucide-react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
@@ -1165,74 +1166,170 @@ const NovaPropostaPage = () => {
 
           {/* BOTÕES DE AÇÃO */}
           <section className="form-actions">
-            <div className="actions-container">
+            <div className="actions-container-inline" style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '12px',
+              marginTop: '30px',
+              marginBottom: '20px'
+            }}>
+              {/* Botão Voltar */}
+              <button
+                type="button"
+                onClick={() => navigate('/prospec')}
+                className="btn-icon"
+                disabled={loading}
+                title="Voltar"
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#6c757d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.25)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }
+                }}
+              >
+                <ArrowLeft size={48} style={{ color: 'white' }} />
+              </button>
+
+              {/* Botão Limpar */}
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="btn btn-secondary"
+                className="btn-icon"
                 disabled={loading}
+                title="Limpar Formulário"
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#ffc107',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.25)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }
+                }}
               >
-                🧹 Limpar Formulário
+                <Eraser size={48} style={{ color: 'white' }} />
               </button>
 
-              <div className="primary-actions">
-                <button
-                  type="button"
-                  onClick={() => navigate('/prospec')}
-                  className="btn btn-outline"
-                  disabled={loading}
-                >
-                  ← Voltar
-                </button>
+              {/* Botão Salvar */}
+              <button
+                type="submit"
+                className="btn-icon"
+                disabled={loading}
+                title={loading ? 'Salvando...' : 'Salvar Proposta'}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#28a745',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.8 : 1,
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.25)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }
+                }}
+              >
+                {loading ? (
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    border: '3px solid #ffffff40',
+                    borderTop: '3px solid #ffffff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                ) : (
+                  <Save size={48} style={{ color: 'white' }} />
+                )}
+              </button>
 
-                <button 
-                  type="submit" 
-                  className="btn-primary"
-                  disabled={loading}
-                  style={{ 
-                    opacity: loading ? 0.7 : 1,
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    position: 'relative'
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <span style={{ visibility: 'hidden' }}>Salvar Proposta</span>
-                      <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}>
-                        <div className="spinner" style={{
-                          width: '16px',
-                          height: '16px',
-                          border: '2px solid #ffffff40',
-                          borderTop: '2px solid #ffffff',
-                          borderRadius: '50%',
-                          animation: 'spin 1s linear infinite'
-                        }} />
-                        Salvando...
-                      </div>
-                    </>
-                  ) : (
-                    'Salvar Proposta'
-                  )}
-                </button>
-                
-                <button 
-                  type="button" 
-                  className="btn-secondary" 
-                  onClick={() => navigate('/prospec')}
-                  disabled={loading}
-                  style={{ opacity: loading ? 0.5 : 1 }}
-                >
-                  Cancelar
-                </button>
-              </div>
+              {/* Botão Cancelar */}
+              <button
+                type="button"
+                onClick={() => navigate('/prospec')}
+                className="btn-icon"
+                disabled={loading}
+                title="Cancelar"
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#dc3545',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.25)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }
+                }}
+              >
+                <X size={48} style={{ color: 'white' }} />
+              </button>
             </div>
           </section>
         </form>
