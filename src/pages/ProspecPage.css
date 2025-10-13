@@ -423,77 +423,16 @@
 }
 
 /* =======================================================
-   AÇÕES DA TABELA
+   AÇÕES DA TABELA - MOVIDO PARA CommonModalsPagesDark.css
+   Estilos padronizados e unificados entre todas as páginas
    ======================================================= */
 
-.table-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  align-items: center;
-  min-width: 120px;
-}
+/* Os estilos dos botões de ação agora estão centralizados em:
+   CommonModalsPagesDark.css - linha 367+
 
-.action-btn, .btn-icon {
-  padding: 8px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  text-decoration: none;
-  min-width: 32px;
-  height: 32px;
-  justify-content: center;
-}
-
-.action-btn:hover, .btn-icon:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.action-btn.edit, .btn-icon.edit {
-  background: #007bff;
-  color: white;
-}
-
-.action-btn.edit:hover, .btn-icon.edit:hover {
-  background: #0056b3;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-}
-
-.action-btn.view, .btn-icon.view {
-  background: #17a2b8;
-  color: white;
-}
-
-.action-btn.view:hover, .btn-icon.view:hover {
-  background: #138496;
-  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
-}
-
-.action-btn.delete, .btn-icon.delete {
-  background: #dc3545;
-  color: white;
-}
-
-.action-btn.delete:hover, .btn-icon.delete:hover {
-  background: #c82333;
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-}
-
-.btn-icon.pdf {
-  background: #fd7e14 !important;
-  color: white !important;
-}
-
-.btn-icon.pdf:hover {
-  background: #e8590c !important;
-  box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3) !important;
-}
+   Isso garante padronização visual entre ProspecPage, ControlePage e UGsPage
+   com botões de fundo neutro e apenas os ícones coloridos.
+*/
 
 /* =======================================================
    LOADING E ESTADO VAZIO
@@ -604,7 +543,6 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 15px;
   margin-bottom: 15px;
 }
@@ -1344,11 +1282,8 @@
     padding: 4px 3px;
     font-size: 0.65rem;
   }
-  
-  .action-btn, .btn-icon {
-    padding: 4px 6px;
-    font-size: 0.7rem;
-  }
+
+  /* Estilos responsivos de .action-btn e .btn-icon movidos para CommonModalsPagesDark.css */
   
   .status-badge {
     padding: 3px 6px;

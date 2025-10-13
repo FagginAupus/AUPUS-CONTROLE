@@ -12,6 +12,8 @@ import storageService from '../services/storageService';
 import apiService from '../services/apiService';
 import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 import './NovaPropostaPage.css';
+import './CommonModalsPagesDark.css';
+import '../components/common/CommonModal.css';
 
 const NovaPropostaPage = () => {
   const navigate = useNavigate();

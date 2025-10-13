@@ -896,3 +896,138 @@
     font-size: 13px;
   }
 }
+/* ========================================
+   DARK MODE - MELHORAR CONTRASTE
+   ======================================== */
+
+/* Quando o componente estiver dentro de um modal dark */
+.common-modal .gerar-termo-container .status-badge.pendente,
+.common-modal .gerar-termo-container .status-badge.pending {
+  background: rgba(251, 191, 36, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+/* Melhorar visibilidade dos textos no status-info */
+.common-modal .gerar-termo-container .status-info {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .gerar-termo-container .status-details p {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal .gerar-termo-container .status-details strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.common-modal .gerar-termo-container .status-header strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Seção "Como prosseguir com o termo?" */
+.common-modal .gerar-termo-container .opcoes-pos-pdf {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .gerar-termo-container .opcoes-pos-pdf h5 {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.common-modal .gerar-termo-container .opcoes-help {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Seção "Como enviar?" */
+.common-modal .gerar-termo-container .opcoes-envio {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .gerar-termo-container .opcoes-envio h5 {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Checkboxes em dark mode */
+.common-modal .gerar-termo-container .checkbox-label-custom {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.common-modal .gerar-termo-container .checkbox-label-custom:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+.common-modal .gerar-termo-container .checkbox-label-custom.checked {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Visual do checkbox em dark mode */
+.common-modal .gerar-termo-container .checkbox-visual-custom {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.common-modal .gerar-termo-container .checkbox-label-custom.checked .checkbox-visual-custom {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.common-modal .gerar-termo-container .checkbox-icon-custom {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.common-modal .gerar-termo-container .checkbox-label-custom.checked .checkbox-icon-custom {
+  color: #3b82f6 !important;
+}
+
+.common-modal .gerar-termo-container .checkbox-text-custom {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Info box em dark mode */
+.common-modal .gerar-termo-container .opcoes-info {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: rgba(96, 165, 250, 1) !important;
+}
+
+/* Seção de upload manual */
+.common-modal .gerar-termo-container .upload-manual-container {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.common-modal .gerar-termo-container .upload-manual-container h5 {
+  color: rgba(96, 165, 250, 1) !important;
+}
+
+.common-modal .gerar-termo-container .upload-help {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.common-modal .gerar-termo-container .upload-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal .gerar-termo-container .upload-input:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+}
+
+.common-modal .gerar-termo-container .arquivo-selecionado {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.common-modal .gerar-termo-container .arquivo-info {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+

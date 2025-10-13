@@ -141,22 +141,16 @@ small {
   color: #1a1a1a !important;
 }
 
-/* Botões de ação na tabela */
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
+/* ==================================================
+   BOTÕES DE AÇÃO - MOVIDO PARA CommonModalsPagesDark.css
+   Estilos padronizados entre ProspecPage, ControlePage e UGsPage
+   ================================================== */
 
-.action-btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  color: #f0f0f0 !important;
-  transition: all 0.3s ease;
-}
+/* Os estilos dos botões de ação agora estão centralizados em:
+   CommonModalsPagesDark.css - linha 367+
+
+   Isso garante botões com fundo neutro e ícones coloridos.
+*/
 
 
 /* =======================================================
@@ -548,58 +542,63 @@ small {
   padding: 20px;
 }
 
-/* Modal de Controle com fundo sólido */
+/* Modal de Controle - Dark Mode */
 .modal-controle {
-  background: white !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
   max-width: 600px !important;
   width: 90% !important;
 }
 
-/* Header do modal de Controle */
+/* Header do modal de Controle - Dark Mode */
 .modal-header-controle {
-  background: #f8f9fa !important;
-  border-bottom: 2px solid #e9ecef !important;
-  padding: 20px 24px !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-
-.modal-header-controle h3 {
-  margin: 0 !important;
-  color: #2c3e50 !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-}
-
-/* Body do modal de Controle */
-.modal-body-controle {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   padding: 24px !important;
-  background: white !important;
+  border-radius: 16px 16px 0 0 !important;
 }
 
-.proposta-info {
+.modal-header-controle h3,
+.modal-header-controle .modal-title-with-icon,
+.modal-header-controle .modal-title-controle {
+  margin: 0 !important;
+  color: white !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+/* Body do modal de Controle - Dark Mode */
+.common-modal .modal-body-controle {
+  padding: 24px !important;
+  background: transparent !important;
+}
+
+.common-modal .proposta-info {
   margin-bottom: 20px !important;
   padding: 16px !important;
-  background: #f8f9fa !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   border-radius: 8px !important;
-  border-left: 4px solid #007bff !important;
+  border-left: 4px solid #3b82f6 !important;
 }
 
-.proposta-info h4 {
+.common-modal .proposta-info h4 {
   margin: 0 0 10px 0 !important;
-  color: #2c3e50 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
   font-size: 1.1rem !important;
 }
 
-.proposta-info p {
+.common-modal .proposta-info p {
   margin: 5px 0 !important;
   font-size: 0.9rem !important;
-  color: #495057 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
-.proposta-info p strong {
-  color: #2c3e50 !important;
+.common-modal .proposta-info p strong {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .modal-body-controle .form-group {
@@ -629,12 +628,12 @@ small {
   outline: none !important;
 }
 
-/* Footer do modal */
+/* Footer do modal - Dark Mode */
 .modal-footer-controle {
   padding: 20px 24px !important;
-  border-top: 1px solid #e9ecef !important;
-  background: #f8f9fa !important;
-  border-radius: 0 0 12px 12px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 0 0 16px 16px !important;
   display: flex !important;
   justify-content: flex-end !important;
   gap: 12px !important;
@@ -662,40 +661,62 @@ small {
   color: #333 !important;
 }
 
-/* Botões do modal */
-.modal-controle .btn {
-  padding: 10px 20px !important;
+/* Botões do modal - Dark Mode */
+.modal-controle .btn,
+.modal-footer-controle .btn {
+  padding: 14px 20px !important;
   border: none !important;
   border-radius: 8px !important;
-  font-size: 0.9rem !important;
+  font-size: 1rem !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
   display: flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 8px !important;
 }
 
-.modal-controle .btn-primary {
-  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+.modal-controle .btn-primary,
+.modal-footer-controle .btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
   color: white !important;
 }
 
-.modal-controle .btn-primary:hover {
-  background: linear-gradient(135deg, #0056b3, #004085) !important;
+.modal-controle .btn-primary:hover:not(:disabled),
+.modal-footer-controle .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px) !important;
-  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4) !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+}
+
+.modal-controle .btn-secondary,
+.modal-footer-controle .btn-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.modal-controle .btn-secondary:hover,
+.modal-footer-controle .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px) !important;
 }
 
 .modal-controle .btn-danger {
-  background: #dc3545 !important;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   color: white !important;
 }
 
 .modal-controle .btn-danger:hover {
-  background: #c82333 !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4) !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+.modal-controle .btn:disabled,
+.modal-footer-controle .btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
 /* Animação do modal */
@@ -1010,13 +1031,7 @@ small {
 .alert-warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
 .form-help { color: #6c757d; font-size: 0.8rem; margin-top: 4px; }
 
-/* Título dos modais sempre visível */
-.modal-title-controle {
-  color: #2c3e50 !important;
-  margin: 0 !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-}
+/* Título dos modais - regras movidas para dark mode (linhas 562-572) */
 
 .ug-option-remover {
   background-color: #fff3cd !important;
@@ -1024,75 +1039,76 @@ small {
   font-weight: bold !important;
 }
 
-/* ===== LISTA DE UGs CLICÁVEL ===== */
-.ugs-lista {
+/* ===== LISTA DE UGs CLICÁVEL - Dark Mode ===== */
+.common-modal .ugs-lista {
   display: flex;
   flex-direction: column;
   gap: 8px;
   max-height: 400px;
   overflow-y: auto;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
   padding: 8px;
+  background: rgba(255, 255, 255, 0.03) !important;
 }
 
-.ug-item {
+.common-modal .ug-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  border: 2px solid #e9ecef;
+  border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   transition: all 0.2s ease;
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.ug-item.clickable {
+.common-modal .ug-item.clickable {
   cursor: pointer;
 }
 
-.ug-item.clickable:hover {
-  border-color: #007bff;
-  background: #f8f9fa;
+.common-modal .ug-item.clickable:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.1);
 }
 
-.ug-item.selected {
-  border-color: #28a745 !important;
-  background: #d4edda !important;
+.common-modal .ug-item.selected {
+  border-color: rgba(40, 167, 69, 0.7) !important;
+  background: rgba(40, 167, 69, 0.15) !important;
 }
 
-.ug-item.disabled {
+.common-modal .ug-item.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.ug-info {
+.common-modal .ug-info {
   flex: 1;
 }
 
-.ug-nome {
+.common-modal .ug-nome {
   font-weight: 600;
-  color: #2c3e50;
+  color: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
 }
 
-.ug-detalhes {
-  color: #6c757d;
+.common-modal .ug-detalhes {
+  color: rgba(255, 255, 255, 0.6);
   font-size: 0.85rem;
   margin-top: 2px;
 }
 
-.ug-status {
+.common-modal .ug-status {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 500;
 }
 
-.ug-status.success { background: #d4edda; color: #155724; }
-.ug-status.warning { background: #fff3cd; color: #856404; }
-.ug-status.danger { background: #f8d7da; color: #721c24; }
+.common-modal .ug-status.success { background: rgba(40, 167, 69, 0.2); color: #51cf66; }
+.common-modal .ug-status.warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+.common-modal .ug-status.danger { background: rgba(220, 53, 69, 0.2); color: #ff6b6b; }
 
 /* REMOVE O EFEITO ZEBRA - todas as linhas ficam escuras uniformes */
 .table tbody tr,
@@ -1225,127 +1241,14 @@ small {
 }
 
 /* ===============================================
-   MODAL STATUS DE TROCA - CORREÇÃO COMPLETA
+   MODAL STATUS DE TROCA - REMOVIDO (agora usa dark mode padrão)
    =============================================== */
 
-/* Header do modal com fundo azul e texto branco */
-.modal-header-controle {
-  background: #007bff !important; /* ← FUNDO AZUL VISÍVEL */
-  color: white !important; /* ← TEXTO BRANCO */
-  border-bottom: none !important;
-  padding: 20px 24px !important;
-  border-radius: 12px 12px 0 0 !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-}
+/* Regras movidas para linhas 555-572 com dark mode correto */
 
-.modal-header-controle h3 {
-  margin: 0 !important;
-  color: white !important; /* ← FORÇA TEXTO BRANCO */
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-}
+/* Regras de inputs movidas para dark mode nas linhas 1273-1301 */
 
-/* Inputs do modal com contraste adequado */
-.modal-body-controle input[type="date"],
-.modal-body-controle input[type="text"],
-.modal-body-controle select {
-  background: white !important; /* ← FUNDO BRANCO */
-  color: #333 !important; /* ← TEXTO ESCURO */
-  border: 2px solid #e9ecef !important;
-  border-radius: 6px !important;
-  padding: 12px 15px !important;
-  font-size: 0.95rem !important;
-  transition: all 0.2s ease !important;
-}
-
-.modal-body-controle input[type="date"]:focus,
-.modal-body-controle input[type="text"]:focus,
-.modal-body-controle select:focus {
-  border-color: #007bff !important;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
-  outline: none !important;
-  background: white !important; /* ← MANTER FUNDO BRANCO */
-  color: #333 !important; /* ← MANTER TEXTO ESCURO */
-}
-
-/* Labels com texto escuro */
-.modal-body-controle label {
-  color: #333 !important; /* ← TEXTO ESCURO VISÍVEL */
-  font-weight: 600 !important;
-  margin-bottom: 8px !important;
-  display: block !important;
-}
-
-/* ===============================================
-   MODAL STATUS DE TROCA - CORREÇÃO COMPLETA
-   =============================================== */
-
-/* Modal com fundo sólido branco */
-.modal-content {
-  background: white !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
-  max-width: 600px !important;
-  width: 90% !important;
-}
-
-/* Header do modal com fundo azul e texto branco */
-.modal-header {
-  background: #007bff !important; /* ← FUNDO AZUL VISÍVEL */
-  color: white !important; /* ← TEXTO BRANCO */
-  border-bottom: none !important;
-  padding: 20px 24px !important;
-  border-radius: 12px 12px 0 0 !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-}
-
-.modal-header h3 {
-  margin: 0 !important;
-  color: white !important; /* ← FORÇA TEXTO BRANCO */
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
-/* Botão X do modal */
-.modal-header .btn-close {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
-  border: none !important;
-  font-size: 1.5rem !important;
-  cursor: pointer !important;
-  padding: 6px !important;
-  width: 32px !important;
-  height: 32px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 50% !important;
-  transition: all 0.2s ease !important;
-}
-
-.modal-header .btn-close:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: scale(1.1) !important;
-}
-
-/* Texto de ajuda mais visível */
-.form-help {
-  color: #495057 !important; /* ← TEXTO ESCURO VISÍVEL */
-  font-size: 0.8rem !important;
-  margin-top: 4px !important;
-  font-weight: 500 !important; /* ← TEXTO MAIS DESTACADO */
-  background: rgba(108, 117, 125, 0.1) !important; /* ← FUNDO SUTIL */
-  padding: 4px 8px !important;
-  border-radius: 4px !important;
-  display: block !important;
-}
+/* Regras de modal genéricas removidas (usando dark mode específico) */
 
 /* ===== MODAL UG COM SCROLL APRIMORADO ===== */
 .modal-ug-content {
@@ -1356,11 +1259,7 @@ small {
   flex-direction: column !important;
 }
 
-.modal-header-controle {
-  flex-shrink: 0; /* Não encolher o header */
-  padding: 16px 20px !important;
-  border-bottom: 2px solid #e9ecef !important;
-}
+/* Regra de flex movida para responsividade (não sobrescrever header) */
 
 .modal-body-controle {
   flex: 1 !important;
@@ -1626,13 +1525,13 @@ small {
 }
 
 /* ===============================================
-   MODAL UC DETALHES - ESTILOS ESPECÍFICOS
+   MODAL UC DETALHES - DARK MODE
    =============================================== */
 
 .modal-uc-detalhes {
-  background: white !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
   max-width: 700px !important;
   width: 90% !important;
 }
@@ -1646,42 +1545,43 @@ small {
 
 .modal-uc-detalhes .form-group label {
   font-weight: 600 !important;
-  color: #495057 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
   font-size: 0.95rem !important;
 }
 
-.modal-uc-detalhes .form-group input[type="number"] {
+.modal-uc-detalhes .form-group input[type="number"],
+.modal-uc-detalhes .form-group input[type="text"],
+.modal-uc-detalhes .form-control {
   padding: 12px 15px !important;
-  border: 2px solid #e9ecef !important;
-  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
   font-size: 0.95rem !important;
-  transition: all 0.2s ease !important;
-  background: #d7e0e9 !important;
-  color: #333 !important;
+  transition: all 0.3s ease !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
 }
 
-.modal-uc-detalhes .form-group input[type="number"]:focus {
-  border-color: #007bff !important;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+.modal-uc-detalhes .form-group input[type="number"]:focus,
+.modal-uc-detalhes .form-group input[type="text"]:focus,
+.modal-uc-detalhes .form-control:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
   outline: none !important;
-  background: white !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
-.modal-uc-detalhes .form-group input[type="number"]:focus {
-  border-color: #007bff !important;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
-  outline: none !important;
-}
-
-.modal-uc-detalhes .form-group input[type="number"]:disabled {
-  background: #f8f9fa !important;
-  color: #6c757d !important;
+.modal-uc-detalhes .form-group input[type="number"]:disabled,
+.modal-uc-detalhes .form-group input[type="text"]:disabled,
+.modal-uc-detalhes .form-control:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   cursor: not-allowed !important;
+  opacity: 0.6 !important;
 }
 
-/* Checkbox customizado */
+/* Checkbox customizado - Dark Mode */
 .modal-uc-detalhes input[type="checkbox"] {
-  accent-color: #007bff !important;
+  accent-color: #3b82f6 !important;
   cursor: pointer !important;
 }
 
@@ -1698,19 +1598,10 @@ small {
   color: #2c3e50 !important;
 }
 
-/* Botão UC na tabela */
-.btn-uc {
-  background: #28a745 !important;
-  color: white !important;
-  font-size: 0.8rem !important;
-  padding: 4px 8px !important;
-}
-
-.btn-uc:hover {
-  background: #218838 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
-}
+/* ===================================================
+   ESTILOS ANTIGOS DE BOTÕES - MOVIDOS PARA CommonModalsPagesDark.css
+   Os estilos padronizados estão em CommonModalsPagesDark.css linha 367+
+   =================================================== */
 
 /* Responsividade para modal UC */
 @media (max-width: 768px) {
@@ -1836,82 +1727,37 @@ small {
   
 }
 
-.action-buttons-controle {
-  display: flex !important;
-  gap: 6px !important;
-  justify-content: center !important;
-  align-items: center !important;
+/* ==================================================
+   BOTÕES DE AÇÃO - ESTILOS ESPECÍFICOS DE ESTADO
+   Os estilos base estão em CommonModalsPagesDark.css linha 367+
+   ================================================== */
+
+/* Estados específicos do botão UG (quando desabilitado por status) */
+.btn-ug.status-esteira:disabled,
+.btn-ug.status-em-andamento:disabled {
+  background: rgba(220, 53, 69, 0.15) !important;
+  border-color: rgba(220, 53, 69, 0.3) !important;
+  color: rgba(220, 53, 69, 0.8) !important;
+  opacity: 0.7 !important;
 }
 
-/* Botões UC, UG e Excluir com tamanho padrão */
-.btn-uc,
-.btn-ug,
-.btn-excluir {
-  width: 45px !important;         /* Largura fixa igual */
-  height: 32px !important;        /* Altura fixa igual */
-  padding: 4px 6px !important;    /* Padding consistente */
-  font-size: 0.75rem !important;  /* Fonte menor */
-  font-weight: 600 !important;
-  border: none !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 2px !important;            /* Gap menor entre ícone e texto */
-  text-align: center !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
+.btn-ug.status-associado {
+  background: rgba(40, 167, 69, 0.15) !important;
+  border-color: rgba(40, 167, 69, 0.3) !important;
 }
 
-/* Botão UC - Verde */
-.btn-uc {
-  background: #28a745 !important;
-  color: white !important;
-}
-
-.btn-uc:hover {
-  background: #218838 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3) !important;
-}
-
-/* Botão UG - Azul (só para admin) */
-.btn-ug {
-  background: #007bff !important;
-  color: white !important;
-}
-
-.btn-ug:hover {
-  background: #0056b3 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3) !important;
-}
-
-/* Botão Excluir - Vermelho (só para admin) */
-.btn-excluir {
-  background: #dc3545 !important;
-  color: white !important;
-}
-
-.btn-excluir:hover:not(:disabled) {
-  background: #c82333 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 3px 8px rgba(220, 53, 69, 0.3) !important;
-}
-
-.btn-excluir:disabled {
-  background: #6c757d !important;
-  color: #adb5bd !important;
+.btn-ug:disabled {
+  background: rgba(108, 117, 125, 0.15) !important;
+  border-color: rgba(108, 117, 125, 0.3) !important;
+  color: rgba(173, 181, 189, 0.7) !important;
   cursor: not-allowed !important;
   opacity: 0.6 !important;
   transform: none !important;
   box-shadow: none !important;
 }
 
-.btn-excluir:disabled:hover {
-  background: #6c757d !important;
+.btn-ug:disabled:hover {
+  background: rgba(108, 117, 125, 0.15) !important;
   transform: none !important;
   box-shadow: none !important;
 }
@@ -2038,8 +1884,7 @@ small {
 
 @media (max-width: 768px) {
   .btn-uc,
-  .btn-ug,
-  .btn-excluir {
+  .btn-ug {
     width: 40px !important;
     height: 30px !important;
     font-size: 0.7rem !important;
@@ -2075,10 +1920,9 @@ small {
   .action-buttons-controle {
     gap: 4px !important;
   }
-  
+
   .btn-uc,
-  .btn-ug,
-  .btn-excluir {
+  .btn-ug {
     width: 36px !important;
     height: 28px !important;
     font-size: 0.65rem !important;
@@ -2104,65 +1948,41 @@ small {
   display: inline-flex !important;
 }
 
-.btn-ug.status-esteira:disabled,
-.btn-ug.status-em-andamento:disabled {
-  background: #dc3545 !important;     /* Vermelho para indicar bloqueio */
-  color: white !important;
-  opacity: 0.7 !important;
-}
-
-.btn-ug.status-associado {
-  background: #28a745 !important;     /* Verde quando pode clicar */
-}
-
-.btn-ug:disabled {
-  background: #6c757d !important;     /* Cinza */
-  color: #adb5bd !important;          /* Texto cinza claro */
-  cursor: not-allowed !important;     /* Cursor proibido */
-  opacity: 0.6 !important;            /* Transparência */
-  transform: none !important;         /* Remove hover effects */
-  box-shadow: none !important;        /* Remove sombra */
-}
-
-.btn-ug:disabled:hover {
-  background: #6c757d !important;     /* Manter cinza no hover */
-  transform: none !important;         /* Não levantar no hover */
-  box-shadow: none !important;        /* Sem efeitos de hover */
-}
+/* Estilos de estado dos botões UG movidos para as linhas 1830-1859 acima */
 
 /* ===============================================
-   SEÇÃO DE DESCONTOS NO MODAL UC DETALHES
+   SEÇÃO DE DESCONTOS NO MODAL UC DETALHES - Dark Mode
    =============================================== */
 
-.desconto-section {
-  background: #fafafa !important;
-  border: 1px solid #e3e3e3 !important;
+.common-modal .desconto-section {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
   padding: 15px !important;
   margin-bottom: 25px !important;
   transition: all 0.3s ease !important;
 }
 
-.desconto-section:hover {
-  border-color: #007bff !important;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1) !important;
+.common-modal .desconto-section:hover {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
 }
 
-.proposta-descontos {
-  background: #e8f4fd !important;
-  border: 1px solid #b3d9ff !important;
+.common-modal .proposta-descontos {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
   border-radius: 6px !important;
   padding: 10px !important;
   margin-bottom: 15px !important;
   font-size: 0.9rem !important;
 }
 
-.proposta-descontos p {
+.common-modal .proposta-descontos p {
   margin: 0 0 5px 0 !important;
-  color: #666 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
-.proposta-descontos p:last-child {
+.common-modal .proposta-descontos p:last-child {
   margin-bottom: 0 !important;
 }
 
@@ -2281,40 +2101,121 @@ small {
   box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1) !important;
 }
 
-/* Textarea de observações no modal UC detalhes */
-.modal-uc-detalhes .form-group textarea {
+/* Textarea de observações no modal UC detalhes - Dark Mode */
+.modal-uc-detalhes .form-group textarea,
+.observacoes-group textarea {
   padding: 12px 15px !important;
-  border: 2px solid #e9ecef !important;
-  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
   font-size: 0.95rem !important;
-  transition: all 0.2s ease !important;
-  background: #d7e0e9 !important;  /* ← MESMO BACKGROUND DOS INPUTS */
-  color: #333 !important;
+  transition: all 0.3s ease !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
   width: 100% !important;
   min-height: 80px !important;
   resize: vertical !important;
   font-family: inherit !important;
 }
 
-/* Estado de foco da textarea */
-.modal-uc-detalhes .form-group textarea:focus {
-  border-color: #007bff !important;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+/* Estado de foco da textarea - Dark Mode */
+.modal-uc-detalhes .form-group textarea:focus,
+.observacoes-group textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
   outline: none !important;
-  background: #d7e0e9 !important;  /* ← MANTER MESMO BACKGROUND NO FOCO */
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Estado disabled da textarea (se necessário) */
-.modal-uc-detalhes .form-group textarea:disabled {
-  background: #f8f9fa !important;
-  color: #6c757d !important;
+/* Estado disabled da textarea - Dark Mode */
+.modal-uc-detalhes .form-group textarea:disabled,
+.observacoes-group textarea:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   cursor: not-allowed !important;
+  opacity: 0.6 !important;
 }
 
-/* Placeholder da textarea */
-.modal-uc-detalhes .form-group textarea::placeholder {
-  color: #6c757d !important;
+/* Placeholder da textarea - Dark Mode */
+.modal-uc-detalhes .form-group textarea::placeholder,
+.observacoes-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
   opacity: 0.7 !important;
+}
+
+/* Observações group */
+.observacoes-group {
+  margin-bottom: 25px !important;
+}
+
+/* Títulos das seções no modal UC Detalhes - Dark Mode */
+.common-modal .section-title-with-icon {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 15px !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+}
+
+/* Desconto toggle - Dark Mode */
+.desconto-toggle {
+  margin-bottom: 15px !important;
+}
+
+.checkbox-container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.checkbox-container input[type="checkbox"] {
+  accent-color: #3b82f6 !important;
+  width: 18px !important;
+  height: 18px !important;
+  cursor: pointer !important;
+}
+
+.checkbox-container span {
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Valores dos descontos da proposta - Dark Mode */
+.proposta-descontos-title {
+  margin: 0 0 5px 0 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.proposta-descontos-title strong {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.proposta-descontos-valores {
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.proposta-descontos-valores strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Warning text - Dark Mode */
+.warning-text {
+  margin-top: 10px !important;
+  font-size: 0.85rem !important;
+  color: #fbbf24 !important;
+  font-style: italic !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+/* Descontos individuais disabled */
+.descontos-individuais.disabled {
+  opacity: 0.5 !important;
 }
 
 /* Responsividade da tabela - Mobile */
@@ -2368,8 +2269,7 @@ small {
   }
 
   .btn-uc,
-  .btn-ug,
-  .btn-excluir {
+  .btn-ug {
     width: 35px !important;
     height: 25px !important;
     font-size: 0.65rem !important;

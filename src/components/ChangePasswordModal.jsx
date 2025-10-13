@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import apiService from '../services/apiService';
+import './common/CommonModal.css';
 
 const ChangePasswordModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -69,136 +70,99 @@ const ChangePasswordModal = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 9999 }}>
-      <div className="modal-content" style={{ maxWidth: '400px', background: 'white' }}>
-        <div className="modal-header" style={{ background: '#dc3545', color: 'white', padding: '20px' }}>
-          <h3 style={{ margin: 0, color: 'white' }}>
-            <Lock size={20} style={{ marginRight: '8px' }} />
+    <div className="common-modal-overlay">
+      <div className="common-modal small" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header">
+          <h2>
+            <Lock size={20} />
             Alterar Senha Obrigatório
-          </h3>
+          </h2>
         </div>
-        
-        <div className="modal-body" style={{ padding: '24px', background: 'white' }}>
-          <div style={{ marginBottom: '20px', padding: '15px', background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '6px' }}>
-            <p style={{ margin: 0, color: '#856404', fontSize: '14px' }}>
-              ⚠️ Você está usando a senha padrão. Por segurança, é obrigatório alterá-la antes de continuar.
-            </p>
+
+        <div className="common-modal-content">
+          <div className="common-message warning">
+            ⚠️ Você está usando a senha padrão. Por segurança, é obrigatório alterá-la antes de continuar.
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+            <div className="common-field">
+              <label>
+                <Lock size={18} />
                 Nova Senha *
               </label>
-              <div style={{ position: 'relative' }}>
+              <div className="common-input-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}
                   name="new_password"
                   value={formData.new_password}
                   onChange={handleChange}
                   placeholder="Digite a nova senha (mín. 6 caracteres)"
-                  style={{
-                    width: '100%',
-                    padding: '12px 40px 12px 15px',
-                    border: `2px solid ${errors.new_password ? '#dc3545' : '#e9ecef'}`,
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    background: 'white',
-                    color: '#333'
-                  }}
+                  className="common-input"
                   disabled={loading}
                   required
+                  style={errors.new_password ? { borderColor: '#ef4444' } : {}}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: '#666',
-                    cursor: 'pointer'
-                  }}
+                  className="common-input-icon"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.new_password && (
-                <span style={{ color: '#dc3545', fontSize: '12px' }}>{errors.new_password}</span>
+                <span style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                  {errors.new_password}
+                </span>
               )}
             </div>
 
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+            <div className="common-field">
+              <label>
+                <Lock size={18} />
                 Confirmar Nova Senha *
               </label>
-              <div style={{ position: 'relative' }}>
+              <div className="common-input-wrapper">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="new_password_confirmation"
                   value={formData.new_password_confirmation}
                   onChange={handleChange}
                   placeholder="Digite a nova senha novamente"
-                  style={{
-                    width: '100%',
-                    padding: '12px 40px 12px 15px',
-                    border: `2px solid ${errors.new_password_confirmation ? '#dc3545' : '#e9ecef'}`,
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    background: 'white',
-                    color: '#333'
-                  }}
+                  className="common-input"
                   disabled={loading}
                   required
+                  style={errors.new_password_confirmation ? { borderColor: '#ef4444' } : {}}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: '#666',
-                    cursor: 'pointer'
-                  }}
+                  className="common-input-icon"
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.new_password_confirmation && (
-                <span style={{ color: '#dc3545', fontSize: '12px' }}>{errors.new_password_confirmation}</span>
+                <span style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                  {errors.new_password_confirmation}
+                </span>
               )}
             </div>
 
             {errors.general && (
-              <div style={{ marginBottom: '20px', padding: '10px', background: '#f8d7da', color: '#721c24', borderRadius: '4px', fontSize: '14px' }}>
+              <div className="common-message error">
                 {errors.general}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  padding: '12px 24px',
-                  background: loading ? '#ccc' : '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: '600',
-                  cursor: loading ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {loading ? 'Salvando...' : 'Alterar Senha'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="common-btn common-btn-primary"
+              style={{ width: '100%', marginTop: '8px' }}
+            >
+              {loading ? 'Salvando...' : 'Alterar Senha'}
+            </button>
           </form>
         </div>
       </div>

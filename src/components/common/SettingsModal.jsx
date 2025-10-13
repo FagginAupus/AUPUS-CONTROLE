@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { X, User, Mail, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/apiService';
-import './SettingsModal.css';
+import './CommonModal.css';
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const { user } = useAuth();
@@ -72,25 +72,25 @@ const SettingsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="settings-modal-overlay" onClick={onClose}>
-      <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-modal-header">
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header">
           <h2>Configurações</h2>
-          <button className="settings-close-btn" onClick={onClose}>
+          <button className="common-close-btn" onClick={onClose}>
             <X size={24} />
           </button>
         </div>
 
-        <div className="settings-tabs">
+        <div className="common-modal-tabs">
           <button
-            className={`settings-tab ${activeTab === 'profile' ? 'active' : ''}`}
+            className={`common-modal-tab ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
             <User size={18} />
             Perfil
           </button>
           <button
-            className={`settings-tab ${activeTab === 'password' ? 'active' : ''}`}
+            className={`common-modal-tab ${activeTab === 'password' ? 'active' : ''}`}
             onClick={() => setActiveTab('password')}
           >
             <Lock size={18} />
@@ -98,12 +98,12 @@ const SettingsModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="settings-content">
+        <div className="common-modal-content">
           {activeTab === 'profile' && (
-            <div className="settings-section">
+            <div className="common-modal-section">
               <h3>Informações do Perfil</h3>
 
-              <div className="settings-field">
+              <div className="common-field">
                 <label>
                   <User size={18} />
                   Nome Completo
@@ -112,11 +112,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   type="text"
                   value={user?.name || user?.nome || ''}
                   disabled
-                  className="settings-input disabled"
+                  className="common-input"
                 />
               </div>
 
-              <div className="settings-field">
+              <div className="common-field">
                 <label>
                   <Mail size={18} />
                   Email
@@ -125,11 +125,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   type="email"
                   value={user?.email || ''}
                   disabled
-                  className="settings-input disabled"
+                  className="common-input"
                 />
               </div>
 
-              <div className="settings-field">
+              <div className="common-field">
                 <label>
                   <Shield size={18} />
                   Nível de Acesso
@@ -138,39 +138,39 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   type="text"
                   value={user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
                   disabled
-                  className="settings-input disabled"
+                  className="common-input"
                 />
               </div>
 
-              <p className="settings-info">
+              <div className="common-info-box">
                 Para alterar suas informações de perfil, entre em contato com o administrador do sistema.
-              </p>
+              </div>
             </div>
           )}
 
           {activeTab === 'password' && (
-            <div className="settings-section">
+            <div className="common-modal-section">
               <h3>Alterar Senha</h3>
 
               <form onSubmit={handleSubmitPassword}>
-                <div className="settings-field">
+                <div className="common-field">
                   <label>
                     <Lock size={18} />
                     Senha Atual
                   </label>
-                  <div className="password-input-wrapper">
+                  <div className="common-input-wrapper">
                     <input
                       type={showCurrentPassword ? 'text' : 'password'}
                       name="current_password"
                       value={passwordData.current_password}
                       onChange={handlePasswordChange}
-                      className="settings-input"
+                      className="common-input"
                       placeholder="Digite sua senha atual"
                       disabled={loading}
                     />
                     <button
                       type="button"
-                      className="password-toggle"
+                      className="common-input-icon"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     >
                       {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -178,24 +178,24 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                <div className="settings-field">
+                <div className="common-field">
                   <label>
                     <Lock size={18} />
                     Nova Senha
                   </label>
-                  <div className="password-input-wrapper">
+                  <div className="common-input-wrapper">
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       name="new_password"
                       value={passwordData.new_password}
                       onChange={handlePasswordChange}
-                      className="settings-input"
+                      className="common-input"
                       placeholder="Digite a nova senha (mínimo 6 caracteres)"
                       disabled={loading}
                     />
                     <button
                       type="button"
-                      className="password-toggle"
+                      className="common-input-icon"
                       onClick={() => setShowNewPassword(!showNewPassword)}
                     >
                       {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -203,24 +203,24 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                <div className="settings-field">
+                <div className="common-field">
                   <label>
                     <Lock size={18} />
                     Confirmar Nova Senha
                   </label>
-                  <div className="password-input-wrapper">
+                  <div className="common-input-wrapper">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       name="new_password_confirmation"
                       value={passwordData.new_password_confirmation}
                       onChange={handlePasswordChange}
-                      className="settings-input"
+                      className="common-input"
                       placeholder="Digite a nova senha novamente"
                       disabled={loading}
                     />
                     <button
                       type="button"
-                      className="password-toggle"
+                      className="common-input-icon"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -229,15 +229,16 @@ const SettingsModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {message.text && (
-                  <div className={`settings-message ${message.type}`}>
+                  <div className={`common-message ${message.type}`}>
                     {message.text}
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  className="settings-submit-btn"
+                  className="common-btn common-btn-primary"
                   disabled={loading}
+                  style={{ width: '100%', marginTop: '8px' }}
                 >
                   {loading ? 'Alterando...' : 'Alterar Senha'}
                 </button>

@@ -124,7 +124,7 @@ const Dashboard = () => {
     
     try {
       const team = getMyTeam();
-      console.log('🏠 Dashboard carregando equipe:', team?.length || 0, 'membros');
+      console.log('Dashboard carregando equipe:', team?.length || 0, 'membros');
       
       if (!Array.isArray(team)) {
         console.error('❌ getMyTeam não retornou um array:', team);
@@ -423,12 +423,11 @@ const Dashboard = () => {
               </h3>
               <div className="team-grid">
                 {consultores.map((consultor) => (
-                  <div 
-                    key={consultor.id} 
+                  <div
+                    key={consultor.id}
                     className="team-member clickable-consultor"
                     onClick={() => abrirModalConsultor(consultor)}
                     style={{ cursor: 'pointer' }}
-                    title="Clique para ver detalhes e equipe"
                   >
                     <div className="member-icon-svg">
                       <Briefcase size={28} />

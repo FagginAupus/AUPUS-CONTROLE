@@ -1,7 +1,7 @@
 // src/components/GerarTermoButton.jsx - NOVO FLUXO SEPARADO
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download, Check, RefreshCw, Link } from 'lucide-react';
+import { FileText, Send, Eye, X, Loader, Mail, MessageCircle, Download, Check, RefreshCw, Link, Clock, Calendar } from 'lucide-react';
 import './GerarTermoButton.css';
 
 const GerarTermoButton = ({ 
@@ -1342,12 +1342,15 @@ const GerarTermoButton = ({
             {/* ✅ NOVA SEÇÃO: Opções de Upload Manual */}
             {mostrarUploadManual && (
               <div className="upload-manual-container">
-                <h5>📎 Adicionar Termo Já Assinado</h5>
+                <h5 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={18} />
+                  Adicionar Termo Já Assinado
+                </h5>
                 <p className="upload-help">
-                  Se você já possui o termo assinado pelo cliente, pode fazer o upload direto aqui. 
+                  Se você já possui o termo assinado pelo cliente, pode fazer o upload direto aqui.
                   O sistema irá automaticamente alterar o status da UC para "Fechada" e adicionar ao controle.
                 </p>
-                
+
                 <div className="upload-area">
                   <input
                     type="file"
@@ -1356,11 +1359,12 @@ const GerarTermoButton = ({
                     onChange={(e) => setArquivoUploadManual(e.target.files[0])}
                     className="upload-input"
                   />
-                  
+
                   {arquivoUploadManual && (
                     <div className="arquivo-selecionado">
-                      <span className="arquivo-info">
-                        📄 {arquivoUploadManual.name} ({Math.round(arquivoUploadManual.size / 1024)} KB)
+                      <span className="arquivo-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileText size={14} />
+                        {arquivoUploadManual.name} ({Math.round(arquivoUploadManual.size / 1024)} KB)
                       </span>
                       <button
                         type="button"
@@ -1415,47 +1419,69 @@ const GerarTermoButton = ({
       {etapa === 'pendente-assinatura' && statusDocumento && (
         <>
           <div className="status-info">
-            <div className="status-header">
-              <strong>⏳ Aguardando Assinatura</strong>
-              <span className="status-badge pendente">
-                {statusDocumento.status_label || statusDocumento.status || 'Pendente'}
-              </span>
+            <div className="status-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={18} />
+              <strong>Aguardando Assinatura</strong>
             </div>
-            
+
             <div className="status-details">
               {/* ✅ VERIFICAR SE É DUPLO ENVIO */}
               {statusDocumento.duplo_envio || (statusDocumento.envio_email && statusDocumento.envio_whatsapp) ? (
                 // ✅ DUPLO ENVIO - Mostrar ambos os canais
                 <>
-                  <p><strong>📤 Enviado simultaneamente via:</strong> E-mail e WhatsApp</p>
-                  <p><strong>📧 E-mail:</strong> {statusDocumento.signer_email || statusDocumento.email_signatario}</p>
-                  <p><strong>📱 WhatsApp:</strong> {statusDocumento.whatsapp_formatado || dados?.whatsappRepresentante}</p>
-                  
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Send size={16} />
+                    <strong>Enviado simultaneamente via:</strong> E-mail e WhatsApp
+                  </p>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={16} />
+                    <strong>E-mail:</strong> {statusDocumento.signer_email || statusDocumento.email_signatario}
+                  </p>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MessageCircle size={16} />
+                    <strong>WhatsApp:</strong> {statusDocumento.whatsapp_formatado || dados?.whatsappRepresentante}
+                  </p>
+
                   {statusDocumento.total_signatarios > 1 && (
-                    <p><strong>🔗 Links criados:</strong> {statusDocumento.total_signatarios} (um para cada canal)</p>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Link size={16} />
+                      <strong>Links criados:</strong> {statusDocumento.total_signatarios} (um para cada canal)
+                    </p>
                   )}
-                  
+
                   <div className="duplo-envio-info">
-                    <small>ℹ️ O cliente pode assinar através de qualquer um dos dois canais. Ambos os links são válidos e independentes.</small>
+                    <small>O cliente pode assinar através de qualquer um dos dois canais. Ambos os links são válidos e independentes.</small>
                   </div>
                 </>
               ) : statusDocumento.envio_whatsapp && !statusDocumento.envio_email ? (
                 // ENVIADO APENAS POR WHATSAPP
                 <>
-                  <p><strong>📱 Enviado por WhatsApp para:</strong> {statusDocumento.whatsapp_formatado || statusDocumento.destinatario_exibicao}</p>
-                  <p><small>ℹ️ Cliente receberá o link de assinatura via WhatsApp</small></p>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MessageCircle size={16} />
+                    <strong>Enviado por WhatsApp para:</strong> {statusDocumento.whatsapp_formatado || statusDocumento.destinatario_exibicao}
+                  </p>
+                  <p><small>Cliente receberá o link de assinatura via WhatsApp</small></p>
                 </>
               ) : (
                 // ENVIADO APENAS POR EMAIL (padrão)
                 <>
-                  <p><strong>📧 Enviado por E-mail para:</strong> {statusDocumento.signer_email || statusDocumento.email_signatario}</p>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={16} />
+                    <strong>Enviado por E-mail para:</strong> {statusDocumento.signer_email || statusDocumento.email_signatario}
+                  </p>
                 </>
               )}
-              
-              <p><strong>📅 Enviado em:</strong> {statusDocumento.criado_em}</p>
-              
+
+              <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={16} />
+                <strong>Enviado em:</strong> {statusDocumento.criado_em}
+              </p>
+
               {statusDocumento.link_assinatura && (
-                <p><strong>🔗 Link(s) de assinatura</strong> disponível(eis) e ativo(s)</p>
+                <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link size={16} />
+                  <strong>Link(s) de assinatura disponível(eis) e ativo(s)</strong>
+                </p>
               )}
             </div>
           </div>
@@ -1626,7 +1652,7 @@ const GerarTermoButton = ({
             
             <div className="status-details">
               <p><strong>👤 Rejeitado por:</strong> {statusDocumento.email_signatario || 'Cliente'}</p>
-              <p><strong>📅 Rejeitado em:</strong> {statusDocumento.updated_at ? new Date(statusDocumento.updated_at).toLocaleString('pt-BR') : 'Data não disponível'}</p>
+              <p><strong><Calendar size={16} /> Rejeitado em:</strong> {statusDocumento.updated_at ? new Date(statusDocumento.updated_at).toLocaleString('pt-BR') : 'Data não disponível'}</p>
               
               {statusDocumento.rejection_reason && (
                 <div className="rejection-reason">
@@ -1679,7 +1705,7 @@ const GerarTermoButton = ({
             
             <div className="status-details">
               <p><strong>👤 Assinado por:</strong> {statusDocumento.email_signatario || 'Cliente'}</p>
-              <p><strong>📅 Assinado em:</strong> {statusDocumento.data_assinatura || statusDocumento.updated_at}</p>
+              <p><strong><Calendar size={16} /> Assinado em:</strong> {statusDocumento.data_assinatura || statusDocumento.updated_at}</p>
             </div>
           </div>
 

@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import storageService from '../services/storageService';
 import { useData } from '../context/DataContext';
 import './UGsPage.css';
+import './CommonModalsPagesDark.css';
+import '../components/common/CommonModal.css';
 import {
   Factory,
   Zap,
@@ -14,7 +16,13 @@ import {
   TrendingUp,
   Edit,
   Trash2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Search,
+  RefreshCw,
+  BarChart3,
+  FileText,
+  Plus,
+  X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as XLSXStyle from 'xlsx-js-style';
@@ -414,7 +422,7 @@ const UGsPage = () => {
                 <label>Buscar UG</label>
                 <input
                   type="text"
-                  placeholder="🔍 Nome da usina..."
+                  placeholder="Nome da usina..."
                   value={filtros.busca}
                   onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
@@ -425,26 +433,30 @@ const UGsPage = () => {
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
-              <button 
+              <button
                 onClick={refreshDados}
                 className="btn btn-secondary"
                 disabled={ugs.loading}
                 title="Atualizar dados"
               >
-                {ugs.loading ? '🔄' : '⟳'} Atualizar
+                <RefreshCw size={16} className={ugs.loading ? 'spinning' : ''} />
+                Atualizar
               </button>
               <button onClick={exportarCSV} className="btn btn-secondary">
-                📊 Exportar CSV
+                <BarChart3 size={16} />
+                Exportar CSV
               </button>
               <button onClick={gerarRelatorioUGs} className="btn btn-secondary">
-                📄 Relatório UGs
+                <FileText size={16} />
+                Relatório UGs
               </button>
               {isAdminOrAnalista && (
-                <button 
-                  onClick={() => setModalNovaUG({ show: true })} 
+                <button
+                  onClick={() => setModalNovaUG({ show: true })}
                   className="btn btn-primary"
                 >
-                  ➕ Nova UG
+                  <Plus size={16} />
+                  Nova UG
                 </button>
               )}
             </div>
@@ -465,8 +477,8 @@ const UGsPage = () => {
               </div>
             ) : dadosFiltrados.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">🏭</div>
-                <h3>Nenhuma UG encontrada</h3>
+                <Factory size={80} style={{ opacity: 0.3, marginBottom: '20px' }} />
+                <h2>Nenhuma UG encontrada</h2>
                 <p>
                   {ugs.data.length === 0
                     ? 'Não há UGs cadastradas ainda.'
@@ -712,14 +724,19 @@ const ModalNovaUG = ({ onSave, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-ug" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header modal-header-ug">
-          <h3>🏭 Nova UG</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal modal-ug" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-ug">
+          <h2>
+            <Factory size={20} />
+            Nova UG
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body modal-body-ug">
+        <form onSubmit={handleSubmit} className="common-modal-content modal-body-ug">
           <div className="form-grid">
             <div className="form-group">
               <label>Nome da Usina *</label>
@@ -863,14 +880,19 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-ug" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header modal-header-ug">
-          <h3>✏️ Editar UG</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal modal-ug" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-ug">
+          <h2>
+            <Edit size={20} />
+            Editar UG
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body modal-body-ug">
+        <form onSubmit={handleSubmit} className="common-modal-content modal-body-ug">
           <div className="form-grid">
             <div className="form-group">
               <label>Nome da Usina *</label>

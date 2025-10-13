@@ -1,6 +1,7 @@
 // src/components/SessionWarningModal.jsx
 import React, { useEffect, useState } from 'react';
 import { Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import './common/CommonModal.css';
 
 const SessionWarningModal = ({ 
   isOpen, 
@@ -43,104 +44,103 @@ const SessionWarningModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200">
+    <div className="common-modal-overlay">
+      <div className="common-modal small" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
-          <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              Sessão Expirando
-            </h3>
-            <p className="text-sm text-gray-600">
-              Sua sessão será encerrada em breve
-            </p>
-          </div>
+        <div className="common-modal-header">
+          <h2>
+            <AlertTriangle size={24} />
+            Sessão Expirando
+          </h2>
         </div>
 
         {/* Conteúdo */}
-        <div className="p-6 space-y-4">
-          {/* Status da Sessão */}
-          <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <Clock className="w-5 h-5 text-amber-600" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">
-                Tempo restante: {formatTime(countdown)}
-              </p>
-              {isInGracePeriod && (
-                <p className="text-xs text-amber-600 mt-1">
-                  ✏️ Edição em andamento - período de proteção ativo
-                </p>
-              )}
+        <div className="common-modal-content">
+          <div className="common-modal-section">
+            {/* Status da Sessão */}
+            <div className="common-message warning" style={{ marginBottom: '16px' }}>
+              <Clock size={20} />
+              <div>
+                <div style={{ fontWeight: 600 }}>
+                  Tempo restante: {formatTime(countdown)}
+                </div>
+                {isInGracePeriod && (
+                  <div style={{ fontSize: '0.85rem', marginTop: '4px', opacity: 0.9 }}>
+                    ✏️ Edição em andamento - período de proteção ativo
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Explicação */}
-          <div className="text-sm text-gray-600 space-y-2">
-            <p>
-              Sua sessão será encerrada automaticamente por segurança após 
+            {/* Explicação */}
+            <p style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: '12px' }}>
+              Sua sessão será encerrada automaticamente por segurança após
               período de inatividade.
             </p>
             {isInGracePeriod ? (
-              <p className="text-amber-700 font-medium">
-                Como você está editando, você tem alguns minutos extras 
+              <p style={{ color: '#fbbf24', fontWeight: 500 }}>
+                Como você está editando, você tem alguns minutos extras
                 para finalizar seu trabalho.
               </p>
             ) : (
-              <p>
-                Clique em "Continuar Trabalhando" para estender sua sessão 
+              <p style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                Clique em "Continuar Trabalhando" para estender sua sessão
                 por mais 2 horas.
               </p>
             )}
-          </div>
 
-          {/* Barra de Progresso */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Tempo da sessão</span>
-              <span>{Math.round((countdown / 30) * 100)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  countdown <= 5 
-                    ? 'bg-red-500' 
-                    : countdown <= 15 
-                    ? 'bg-amber-500' 
-                    : 'bg-green-500'
-                }`}
-                style={{ width: `${Math.max(5, (countdown / 30) * 100)}%` }}
-              />
+            {/* Barra de Progresso */}
+            <div style={{ marginTop: '20px' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '0.75rem',
+                color: 'rgba(255, 255, 255, 0.6)',
+                marginBottom: '8px'
+              }}>
+                <span>Tempo da sessão</span>
+                <span>{Math.round((countdown / 30) * 100)}%</span>
+              </div>
+              <div style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '999px',
+                height: '8px',
+                overflow: 'hidden'
+              }}>
+                <div
+                  style={{
+                    height: '100%',
+                    borderRadius: '999px',
+                    transition: 'all 0.3s ease',
+                    width: `${Math.max(5, (countdown / 30) * 100)}%`,
+                    background: countdown <= 5
+                      ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                      : countdown <= 15
+                      ? 'linear-gradient(90deg, #fbbf24, #f59e0b)'
+                      : 'linear-gradient(90deg, #10b981, #059669)'
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Ações */}
-        <div className="flex gap-3 p-6 border-t border-gray-200">
+        <div className="common-modal-footer">
           <button
             onClick={onLogout}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+            className="common-btn common-btn-secondary"
           >
             Fazer Logout
           </button>
           <button
             onClick={onExtendSession}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center gap-2"
+            className="common-btn common-btn-success"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw size={16} />
             Continuar Trabalhando
           </button>
-        </div>
-
-        {/* Footer com informações */}
-        <div className="px-6 pb-4">
-          <p className="text-xs text-gray-500 text-center">
-            Por motivos de segurança, sessões inativas são encerradas automaticamente
-          </p>
         </div>
       </div>
     </div>

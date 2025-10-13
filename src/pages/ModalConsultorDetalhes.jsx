@@ -22,6 +22,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import apiService from '../services/apiService';
+import '../components/common/CommonModal.css';
 import './ModalConsultorDetalhes.css';
 
 const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
@@ -125,7 +126,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
   const handleSalvarDados = async () => {
     setSalvandoDados(true);
     try {
-      console.log('💾 Salvando dados do consultor:', dadosEdicao);
+      console.log('Salvando dados do consultor:', dadosEdicao);
       const response = await apiService.put(`/usuarios/${consultor.id}`, dadosEdicao);
       if (response.success) {
         Object.assign(consultor, dadosEdicao);
@@ -205,37 +206,53 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
   const statusInfo = getStatusInfo(statusAtual);
 
   return (
-    <div className="modal-overlay-consultor">
-      <div className="modal-consultor-content">
+    <div className="common-modal-overlay">
+      <div className="common-modal large" onClick={(e) => e.stopPropagation()}>
         {/* Header do Modal */}
-        <div className="modal-consultor-header">
-          <div className="header-consultor-info">
-            <div className="consultor-avatar">
+        <div className="common-modal-header" style={{ background: 'linear-gradient(135deg, #3498db, #2980b9)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white'
+            }}>
               <Briefcase size={24} />
             </div>
-            <div className="consultor-header-details">
-              <h2>{getDisplayValue('nome') || getDisplayValue('name') || 'Nome não informado'}</h2>
-              <span className="consultor-role-badge">
+            <div>
+              <h2 style={{ margin: '0 0 4px 0' }}>{getDisplayValue('nome') || getDisplayValue('name') || 'Nome não informado'}</h2>
+              <span style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.85rem',
+                fontWeight: 600
+              }}>
                 {getTipoLabel(consultor.role)}
               </span>
             </div>
           </div>
-          <button className="btn-close-consultor" onClick={onClose}>
+          <button className="common-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
 
         {/* Navegação das Abas */}
-        <div className="modal-consultor-tabs">
-          <button 
-            className={`tab-btn ${abaAtiva === 'informacoes' ? 'active' : ''}`}
+        <div className="common-modal-tabs">
+          <button
+            className={`common-modal-tab ${abaAtiva === 'informacoes' ? 'active' : ''}`}
             onClick={() => setAbaAtiva('informacoes')}
           >
             <Info size={18} />
             Informações
           </button>
-          <button 
-            className={`tab-btn ${abaAtiva === 'equipe' ? 'active' : ''}`}
+          <button
+            className={`common-modal-tab ${abaAtiva === 'equipe' ? 'active' : ''}`}
             onClick={() => setAbaAtiva('equipe')}
           >
             <Users size={18} />
@@ -244,7 +261,7 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
         </div>
 
         {/* Conteúdo das Abas */}
-        <div className="modal-consultor-body">
+        <div className="common-modal-content">
           {abaAtiva === 'informacoes' && (
             <div className="tab-content-informacoes">
               {/* Aviso de Erro Backend */}
@@ -654,8 +671,8 @@ const ModalConsultorDetalhes = ({ consultor, isOpen, onClose }) => {
         </div>
 
         {/* Footer do Modal */}
-        <div className="modal-consultor-footer">
-          <button className="btn-fechar" onClick={onClose}>
+        <div className="common-modal-footer">
+          <button className="common-btn common-btn-secondary" onClick={onClose}>
             Fechar
           </button>
         </div>

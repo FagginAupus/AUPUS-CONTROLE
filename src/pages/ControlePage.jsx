@@ -33,6 +33,8 @@ import {
   Trash2
 } from 'lucide-react';
 import './ControlePage.css';
+import './CommonModalsPagesDark.css';
+import '../components/common/CommonModal.css';
 
 const ControlePage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
@@ -1209,7 +1211,7 @@ const ControlePage = () => {
                             {/* Botão Excluir - só habilitado se não tiver UG atribuída */}
                             <button
                               onClick={!item.ugId ? () => confirmarExclusao(item, index) : undefined}
-                              className="btn-excluir"
+                              className="btn-icon delete"
                               title={
                                 !item.ugId
                                   ? "Excluir UC do controle"
@@ -1217,8 +1219,7 @@ const ControlePage = () => {
                               }
                               disabled={!!item.ugId}
                             >
-                              <Trash2 size={12} />
-                              Excluir
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>
@@ -1292,14 +1293,19 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-controle modal-ug-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header modal-header-controle">
-          <h3 className="modal-title-controle">🏭 Atribuir UG</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header">
+          <h2>
+            <Building size={20} />
+            Atribuir UG
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
+
+        <form onSubmit={handleSubmit} className="common-modal-content">
           <div className="proposta-info">
             <p><strong>Cliente:</strong> {item.nomeCliente}</p>
             <p><strong>UC:</strong> {item.numeroUC} - {item.apelido}</p>
@@ -1411,15 +1417,20 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
   const dataMaxima = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3><Edit size={18} /> Gerenciar Status de Troca</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header">
+          <h2>
+            <Clock size={20} />
+            Gerenciar Status de Troca
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
         </div>
         
         {showConfirmacao ? (
-          <div className="modal-body modal-body-controle confirmacao-body">
+          <div className="common-modal-content modal-body-controle confirmacao-body">
             <div className="alert alert-warning">
               <h4>⚠️ Confirmação Necessária</h4>
               <p>
@@ -1438,7 +1449,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
+          <form onSubmit={handleSubmit} className="common-modal-content modal-body-controle">
             <div className="proposta-info">
               <p><strong>Cliente:</strong> {item.nomeCliente}</p>
               <p><strong>UC:</strong> {item.numeroUC} - {item.apelido}</p>
@@ -1929,13 +1940,18 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
   if (loading) {
     return (
-      <div className="modal-overlay">
-        <div className="modal-content modal-controle">
-          <div className="modal-header modal-header-controle">
-            <h3>🏠 Carregando dados da UC...</h3>
-            <button onClick={onClose} className="btn btn-close">✕</button>
+      <div className="common-modal-overlay">
+        <div className="common-modal modal-controle">
+          <div className="common-modal-header modal-header-controle">
+            <h3 className="modal-title-with-icon">
+              <Home size={20} />
+              Carregando dados da UC...
+            </h3>
+            <button onClick={onClose} className="common-close-btn">
+              <X size={18} />
+            </button>
           </div>
-          <div className="modal-body modal-body-controle" style={{ textAlign: 'center', padding: '40px' }}>
+          <div className="common-modal-content modal-body-controle" style={{ textAlign: 'center', padding: '40px' }}>
             <div>Carregando informações...</div>
           </div>
         </div>
@@ -1944,19 +1960,19 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-controle modal-uc-detalhes" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header modal-header-controle">
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal modal-controle modal-uc-detalhes" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-controle">
           <h3 className="modal-title-with-icon">
             <Home size={20} />
             Editar Detalhes da UC
           </h3>
-          <button onClick={onClose} className="btn btn-close">
+          <button onClick={onClose} className="common-close-btn">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-body modal-body-controle">
+        <form onSubmit={handleSubmit} className="common-modal-content modal-body-controle">
         {/* Informações da Proposta (Apenas Leitura) */}
         <div className="proposta-info">
           <h4 className="section-title-with-icon">
@@ -1987,48 +2003,41 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         </div>
 
         {/* ✅ NOVA SEÇÃO: Configuração de Descontos */}
-        <div className="desconto-section" style={{ marginBottom: '25px', padding: '15px', border: '1px solid #e3e3e3', borderRadius: '8px', background: '#fafafa' }}>
-          <h4 className="section-title-with-icon" style={{ marginBottom: '15px', color: '#2c3e50' }}>
+        <div className="desconto-section">
+          <h4 className="section-title-with-icon">
             <Percent size={16} />
             Configuração de Descontos
           </h4>
 
           {/* Toggle para usar desconto da proposta */}
-          <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+          <div className="form-group desconto-toggle">
+            <label className="checkbox-container">
               <input
                 type="checkbox"
                 checked={dados.usa_desconto_proposta}
                 onChange={(e) => toggleDescontoProposta(e.target.checked)}
-                style={{ accentColor: '#007bff' }}
               />
-              <span style={{ fontWeight: '500' }}>
+              <span>
                 Usar descontos da proposta original
               </span>
             </label>
           </div>
 
           {/* Mostrar descontos da proposta original */}
-          <div className="proposta-descontos" style={{ 
-            background: '#e8f4fd', 
-            padding: '10px', 
-            borderRadius: '6px', 
-            marginBottom: '15px',
-            fontSize: '0.9rem'
-          }}>
-            <p style={{ margin: '0 0 5px 0', color: '#666' }}>
+          <div className="proposta-descontos">
+            <p className="proposta-descontos-title">
               <strong>Descontos da Proposta:</strong>
             </p>
-            <p style={{ margin: '0' }}>
-              Tarifa: <strong>{dados.proposta_desconto_tarifa_original}</strong> | 
+            <p className="proposta-descontos-valores">
+              Tarifa: <strong>{dados.proposta_desconto_tarifa_original}</strong> |
               Bandeira: <strong>{dados.proposta_desconto_bandeira_original}</strong>
             </p>
           </div>
 
 
           {/* Campos de desconto individual */}
-          <div className="descontos-individuais" style={{ opacity: dados.usa_desconto_proposta ? 0.5 : 1 }}>
-            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+          <div className={`descontos-individuais ${dados.usa_desconto_proposta ? 'disabled' : ''}`}>
+            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="desconto_tarifa" className="label-with-icon">
                   <TrendingUp size={14} />
@@ -2044,10 +2053,6 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   onChange={(e) => setDados(prev => ({ ...prev, desconto_tarifa: e.target.value }))}
                   className="form-control"
                   disabled={dados.usa_desconto_proposta}
-                  style={{
-                    background: dados.usa_desconto_proposta ? '#f8f9fa' : 'white',
-                    cursor: dados.usa_desconto_proposta ? 'not-allowed' : 'text'
-                  }}
                 />
               </div>
 
@@ -2066,22 +2071,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   onChange={(e) => setDados(prev => ({ ...prev, desconto_bandeira: e.target.value }))}
                   className="form-control"
                   disabled={dados.usa_desconto_proposta}
-                  style={{
-                    background: dados.usa_desconto_proposta ? '#f8f9fa' : 'white',
-                    cursor: dados.usa_desconto_proposta ? 'not-allowed' : 'text'
-                  }}
                 />
               </div>
             </div>
 
             {!dados.usa_desconto_proposta && (
-              <p style={{ 
-                marginTop: '10px', 
-                fontSize: '0.85rem', 
-                color: '#dc3545',
-                fontStyle: 'italic' 
-              }}>
-                ⚠️ Descontos individuais substituem os valores da proposta original
+              <p className="warning-text">
+                <AlertTriangle size={14} />
+                Descontos individuais substituem os valores da proposta original
               </p>
             )}
           </div>
@@ -2153,7 +2150,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             {dados.documentacao_troca_titularidade && (
               <div className="arquivo-existente">
                 <span className="arquivo-info" title={dados.documentacao_troca_titularidade}>
-                  📎 {dados.documentacao_troca_titularidade.length > 30 ?
+                  <FileText size={14} /> {dados.documentacao_troca_titularidade.length > 30 ?
                     dados.documentacao_troca_titularidade.substring(0, 30) + '...' :
                     dados.documentacao_troca_titularidade}
                 </span>
@@ -2189,7 +2186,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         </div>
 
         {/* ✅ NOVO CAMPO: Observações */}
-        <div className="form-group" style={{ marginBottom: '25px' }}>
+        <div className="form-group observacoes-group">
           <label htmlFor="observacoes" className="label-with-icon">
             <FileText size={16} />
             <strong>Observações:</strong>
@@ -2201,7 +2198,6 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             onChange={(e) => setDados(prev => ({ ...prev, observacoes: e.target.value }))}
             className="form-control"
             placeholder="Observações sobre esta UC..."
-            style={{ resize: 'vertical' }}
           />
         </div>
 
@@ -2225,16 +2221,23 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 // Modal de Confirmação de Exclusão
 const ModalConfirmarExclusao = ({ item, onConfirmar, onClose }) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-controle" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header modal-header-controle">
-          <h3 className="modal-title-controle">🗑️ Confirmar Exclusão</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal modal-controle" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-controle">
+          <h3 className="modal-title-controle">
+            <Trash2 size={20} />
+            Confirmar Exclusão
+          </h3>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={18} />
+          </button>
         </div>
 
-        <div className="modal-body modal-body-controle">
+        <div className="common-modal-content modal-body-controle">
           <div className="aviso-exclusao">
-            <div className="icone-aviso">⚠️</div>
+            <div className="icone-aviso">
+              <AlertTriangle size={48} />
+            </div>
             <h4>Tem certeza que deseja excluir esta UC do controle?</h4>
           </div>
 
@@ -2246,7 +2249,10 @@ const ModalConfirmarExclusao = ({ item, onConfirmar, onClose }) => {
           </div>
 
           <div className="consequencias-exclusao">
-            <h5>⚠️ Consequências desta ação:</h5>
+            <h5>
+              <AlertTriangle size={16} />
+              Consequências desta ação:
+            </h5>
             <ul>
               <li>A UC será removida do controle (soft delete)</li>
               <li>O status da proposta voltará para "Pendente"</li>

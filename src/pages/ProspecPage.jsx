@@ -12,6 +12,8 @@ import GerarTermoButton from '../components/GerarTermoButton';
 import ModalFiltrosExportacao from '../components/ModalFiltrosExportacao';
 import exportExcelService from '../services/exportExcelService';
 import './ProspecPage.css';
+import '../components/common/CommonModal.css';
+import './ProspecModalDark.css';
 import {
   FileText,
   Clock,
@@ -24,7 +26,11 @@ import {
   Trash2,
   X,
   Download,
-  Link
+  Link,
+  BarChart3,
+  Plus,
+  DollarSign,
+  Search
 } from 'lucide-react';
 
 const getApiBaseUrl = () => {
@@ -932,7 +938,7 @@ Deseja gerar o PDF apenas para esta UC?
                 <label>Buscar</label>
                 <input
                   type="text"
-                  placeholder="🔍 Cliente, proposta, UC..."
+                  placeholder="Buscar cliente, proposta, UC..."
                   value={filtros.busca}
                   onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
@@ -979,7 +985,8 @@ Deseja gerar o PDF apenas para esta UC?
                 {propostas.loading ? '🔄' : '⟳'} Atualizar
               </button>
               <button onClick={criarNovaProposta} className="btn btn-success">
-                ➕ Nova Proposta
+                <Plus size={16} />
+                Nova Proposta
               </button>
               <button 
                 onClick={abrirModalExportacao}  // ← TROCAR DE exportarDados
@@ -1011,7 +1018,8 @@ Deseja gerar o PDF apenas para esta UC?
                 <h3>Nenhuma proposta encontrada</h3>
                 <p>Não há propostas que correspondam aos filtros aplicados.</p>
                 <button onClick={criarNovaProposta} className="btn btn-primary">
-                  ➕ Criar Nova Proposta
+                  <Plus size={16} />
+                  Criar Nova Proposta
                 </button>
               </div>
             ) : (
@@ -1246,18 +1254,26 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
   const mostrarRecorrencia = user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>👁️ Detalhes da Proposta</h3>
-          <button onClick={onClose} className="btn btn-close">✕</button>
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal large" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header">
+          <h2>
+            <Eye size={20} />
+            Detalhes da Proposta
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
         </div>
-        
-        <div className="modal-body">
+
+        <div className="common-modal-content">
           <div className="proposta-details">
             {/* Informações principais - REORGANIZADA */}
             <div className="details-section">
-              <h4>📋 Informações Principais</h4>
+              <h4>
+                <FileText size={18} />
+                Informações Principais
+              </h4>
               <div className="details-grid">
                 <div className="detail-item">
                   <label>Cliente:</label>
@@ -1293,7 +1309,10 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
 
             {/* Informações da UC */}
             <div className="details-section">
-              <h4>⚡ Informações da UC</h4>
+              <h4>
+                <TrendingUp size={18} />
+                Informações da UC
+              </h4>
               <div className="details-grid">
                 <div className="detail-item">
                   <label>Apelido:</label>
@@ -1319,7 +1338,10 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
             {/* ✅ CORREÇÃO: Descontos e benefícios - Só mostrar para admin e consultor */}
             {mostrarRecorrencia && (
               <div className="details-section">
-                <h4>💰 Descontos e Benefícios</h4>
+                <h4>
+                  <DollarSign size={18} />
+                  Descontos e Benefícios
+                </h4>
                 <div className="details-grid">
                   <div className="detail-item">
                     <label>Desconto Tarifa:</label>
@@ -1827,23 +1849,31 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
   };
   
   return (
-    <div className="modal-overlay" onClick={handleClose}>
+    <div className="common-modal-overlay" onClick={handleClose}>
       {(() => {
         console.log('🎯 RENDER Modal - consultoresDisponiveis:', consultoresDisponiveis.length, consultoresDisponiveis);
         console.log('🎯 RENDER Modal - dados.consultor_id:', dados.consultor_id);
         return null;
       })()}
-      
-      <div className="modal-content modal-edicao-expandido" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header modal-header-solido">
-          <h3><Edit size={18} /> Editar Proposta</h3>
-          <button onClick={handleClose} className="btn btn-close">✕</button>
+
+      <div className="common-modal large" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header">
+          <h2>
+            <Edit size={20} />
+            Editar Proposta
+          </h2>
+          <button onClick={handleClose} className="common-close-btn">
+            <X size={20} />
+          </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="modal-body modal-body-expandido">
+
+        <form onSubmit={handleSubmit} className="common-modal-content">
           {/* Informações Básicas */}
           <div className="secao-modal">
-            <h4 className="titulo-secao">📋 Informações Básicas</h4>
+            <h4 className="titulo-secao">
+              <FileText size={18} />
+              Informações Básicas
+            </h4>
             
             <div className="form-row">
               <div className="form-group">
@@ -2006,7 +2036,10 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
           
           {/* Tipo de Documento */}
           <div className="secao-modal">
-            <h4 className="titulo-secao">📄 Documentação</h4>
+            <h4 className="titulo-secao">
+              <FileText size={18} />
+              Documentação
+            </h4>
             <div className="form-group">
               <label>Fatura de Energia da UC</label>
               
@@ -2021,7 +2054,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
               {faturaArquivo && (
                 <div className="arquivo-selecionado">
                   <span className="arquivo-info" title={faturaArquivo.name}>
-                    📄 Novo arquivo: {faturaArquivo.name.length > 30 ? faturaArquivo.name.substring(0, 30) + '...' : faturaArquivo.name}
+                    Novo arquivo: {faturaArquivo.name.length > 30 ? faturaArquivo.name.substring(0, 30) + '...' : faturaArquivo.name}
                   </span>
                   <button
                     type="button"
@@ -2045,7 +2078,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   return (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={faturaExistente}>
-                        📄 Fatura atual: {faturaExistente.length > 30 ? faturaExistente.substring(0, 30) + '...' : faturaExistente}
+                        Fatura atual: {faturaExistente.length > 30 ? faturaExistente.substring(0, 30) + '...' : faturaExistente}
                       </span>
                       <div className="arquivo-acoes">
                         <button
@@ -2127,7 +2160,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     {dados.documentoPessoal ? (
                       <div className="arquivo-existente">
                         <span className="arquivo-info" title={typeof dados.documentoPessoal === 'string' ? dados.documentoPessoal : dados.documentoPessoal.name}>
-                          📎 {typeof dados.documentoPessoal === 'string' ? 
+                          {typeof dados.documentoPessoal === 'string' ? 
                             `Doc: ${dados.documentoPessoal.length > 30 ? dados.documentoPessoal.substring(0, 30) + '...' : dados.documentoPessoal}` : 
                             `Arquivo: ${dados.documentoPessoal.name.length > 30 ? dados.documentoPessoal.name.substring(0, 30) + '...' : dados.documentoPessoal.name}`}
                         </span>
@@ -2192,7 +2225,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     />
                     {dados.contratoSocial ? (
                       <div className="arquivo-existente">
-                        <span className="arquivo-info">📎 Contrato Social</span>
+                        <span className="arquivo-info">Contrato Social</span>
                         <BotoesDocumento 
                           nomeArquivo={dados.contratoSocial} 
                           tipoArquivo="contrato social"
@@ -2209,7 +2242,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     />
                     {dados.documentoPessoalRepresentante ? (
                       <div className="arquivo-existente">
-                        <span className="arquivo-info">📎 Doc. Representante</span>
+                        <span className="arquivo-info">Doc. Representante</span>
                         <BotoesDocumento 
                           nomeArquivo={dados.documentoPessoalRepresentante} 
                           tipoArquivo="documento representante"
@@ -2257,7 +2290,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                           />
                           {dados.contratoLocacao ? (
                             <div className="arquivo-existente">
-                              <span className="arquivo-info">📎 Contrato de Locação</span>
+                              <span className="arquivo-info">Contrato de Locação</span>
                               <BotoesDocumento 
                                 nomeArquivo={dados.contratoLocacao} 
                                 tipoArquivo="contrato locação"
@@ -2334,7 +2367,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   {dados.termoAdesao && (
                     <div className="arquivo-existente">
                       <span className="arquivo-info" title={typeof dados.termoAdesao === 'string' ? dados.termoAdesao : dados.termoAdesao.name}>
-                        📎 {typeof dados.termoAdesao === 'string' ?
+                        {typeof dados.termoAdesao === 'string' ?
                           `Termo: ${dados.termoAdesao.length > 30 ? dados.termoAdesao.substring(0, 30) + '...' : dados.termoAdesao}` :
                           `Arquivo: ${dados.termoAdesao.name.length > 30 ? dados.termoAdesao.name.substring(0, 30) + '...' : dados.termoAdesao.name}`}
                       </span>
@@ -2375,29 +2408,17 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                         gap: '4px'
                       }}
                     >
-                      ➕ Adicionar
+                      <Plus size={14} />
+                      Adicionar
                     </button>
                   </div>
 
                   {dados.documentosExtras && dados.documentosExtras.length > 0 && (
                     <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
                       {dados.documentosExtras.map((docExtra, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px',
-                          padding: '12px',
-                          backgroundColor: '#f5f5f5',
-                          borderRadius: '6px',
-                          border: '1px solid #e0e0e0'
-                        }}>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: '4px'
-                          }}>
-                            <span style={{fontSize: '13px', fontWeight: '600', color: '#555'}}>
+                        <div key={index} className="documento-extra-item">
+                          <div className="documento-extra-header">
+                            <span className="documento-extra-titulo">
                               Documento Extra #{index + 1}
                             </span>
                             <button
@@ -2414,11 +2435,15 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                                 border: 'none',
                                 borderRadius: '4px',
                                 cursor: 'pointer',
-                                fontWeight: '500'
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
                               }}
                               title="Remover documento"
                             >
-                              🗑️ Remover
+                              <Trash2 size={14} />
+                              Remover
                             </button>
                           </div>
 
@@ -2454,7 +2479,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                                 justifyContent: 'space-between'
                               }}>
                                 <span className="arquivo-info" style={{fontSize: '13px', color: '#2e7d32'}}>
-                                  📎 {typeof docExtra === 'string' ?
+                                  {typeof docExtra === 'string' ?
                                     (docExtra.length > 35 ? docExtra.substring(0, 35) + '...' : docExtra) :
                                     (docExtra.name.length > 35 ? docExtra.name.substring(0, 35) + '...' : docExtra.name)}
                                 </span>
@@ -2478,7 +2503,10 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
 
           {/* Status Automático - Apenas Visualização */}
           <div className="secao-modal">
-            <h4 className="titulo-secao">📊 Status da UC</h4>
+            <h4 className="titulo-secao">
+              <BarChart3 size={18} />
+              Status da UC
+            </h4>
             <div className="form-row">
               <div className="form-group">
                 <div className="status-display">
@@ -2510,16 +2538,20 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                   Salvando...
                 </>
               ) : (
-                <>💾 Salvar Alterações</>
+                <>
+                  <CheckCircle size={16} />
+                  Salvar Alterações
+                </>
               )}
             </button>
-            <button 
-              type="button" 
-              onClick={handleClose} 
+            <button
+              type="button"
+              onClick={handleClose}
               className="btn btn-secondary"
               disabled={loading}
             >
-              ❌ Cancelar
+              <X size={16} />
+              Cancelar
             </button>
           </div>
         </form>

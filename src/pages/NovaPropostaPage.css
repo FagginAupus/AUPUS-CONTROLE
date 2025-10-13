@@ -1023,19 +1023,37 @@ body.dark-mode .file-help-text {
    ======================================================= */
 
 .btn-action-proposta {
-  /* Resetar qualquer estilo herdado */
-  all: unset;
-  /* Estilos próprios */
+  /* NÃO usar all: unset pois isso remove os tamanhos */
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: visible !important;
 }
 
 .btn-action-proposta svg {
-  /* Garantir que o SVG ocupe 100% do espaço */
-  width: 100% !important;
-  height: 100% !important;
+  /* SVGs do lucide-react com tamanho bem visível - 40px */
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: none !important;
+  max-height: none !important;
   display: block !important;
+  flex-shrink: 0 !important;
+  stroke-width: 2.5 !important; /* Traço um pouco mais grosso para melhor visibilidade */
+}
+
+/* Garantir que o hover não mude o tamanho */
+.btn-action-proposta:hover svg,
+.btn-action-proposta:focus svg,
+.btn-action-proposta:active svg {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
 }

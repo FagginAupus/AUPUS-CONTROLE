@@ -1,0 +1,606 @@
+/* CommonModalsPagesDark.css - Estilos dark para modais das páginas ControlePage, UGsPage, etc */
+
+/* ===============================================
+   MODAIS DAS PÁGINAS - TEMA DARK COMUM
+   =============================================== */
+
+/* Seções de informações */
+.common-modal .proposta-info,
+.common-modal .ug-info {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin-bottom: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .proposta-info p,
+.common-modal .ug-info p {
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin: 8px 0 !important;
+  font-size: 0.9rem !important;
+}
+
+.common-modal .proposta-info strong,
+.common-modal .ug-info strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 600 !important;
+}
+
+/* ===============================================
+   CAMPOS DE FORMULÁRIO GENÉRICOS - DARK
+   =============================================== */
+
+.common-modal .form-group {
+  margin-bottom: 16px !important;
+}
+
+.common-modal .form-group label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+}
+
+.common-modal .form-group input,
+.common-modal .form-group select,
+.common-modal .form-group textarea {
+  width: 100% !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: white !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+  box-sizing: border-box !important;
+}
+
+.common-modal .form-group input:focus,
+.common-modal .form-group select:focus,
+.common-modal .form-group textarea:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.common-modal .form-group input:disabled,
+.common-modal .form-group select:disabled,
+.common-modal .form-group textarea:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Select options com fundo dark */
+.common-modal .form-group select option {
+  background: #1e293b !important;
+  color: white !important;
+}
+
+.common-modal textarea {
+  min-height: 100px !important;
+  resize: vertical !important;
+}
+
+/* ===============================================
+   BADGES DE STATUS - DARK
+   =============================================== */
+
+.common-modal .status-badge {
+  padding: 4px 12px !important;
+  border-radius: 20px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  width: fit-content !important;
+}
+
+.common-modal .status-aguardando,
+.common-modal .status-pendente {
+  background: rgba(251, 191, 36, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+.common-modal .status-finalizado,
+.common-modal .status-associado,
+.common-modal .status-ativo {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+.common-modal .status-em-andamento {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+.common-modal .status-esteira {
+  background: rgba(168, 85, 247, 0.2) !important;
+  color: #a855f7 !important;
+  border: 1px solid rgba(168, 85, 247, 0.3) !important;
+}
+
+.common-modal .status-inativo,
+.common-modal .status-cancelado {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* ===============================================
+   ALERTAS E MENSAGENS - DARK
+   =============================================== */
+
+.common-modal .alert {
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  margin-bottom: 16px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.common-modal .alert-warning {
+  background: rgba(251, 191, 36, 0.1) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+.common-modal .alert-info {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+.common-modal .alert-success {
+  background: rgba(34, 197, 94, 0.1) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+.common-modal .alert-danger,
+.common-modal .alert-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* ===============================================
+   MODAL DE CONFIRMAÇÃO - DARK
+   =============================================== */
+
+.common-modal .confirmacao-body {
+  padding: 24px !important;
+}
+
+.common-modal .confirmacao-body p {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+  margin: 12px 0 !important;
+}
+
+.common-modal .confirmacao-body strong {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* ===============================================
+   BOTÕES ESPECÍFICOS DAS PÁGINAS - DARK
+   =============================================== */
+
+.common-modal .modal-actions {
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: flex-end !important;
+  margin-top: 20px !important;
+}
+
+.common-modal .btn-salvar,
+.common-modal .btn-confirmar {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-size: 0.95rem !important;
+}
+
+.common-modal .btn-salvar:hover:not(:disabled),
+.common-modal .btn-confirmar:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4) !important;
+}
+
+.common-modal .btn-cancelar {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-size: 0.95rem !important;
+}
+
+.common-modal .btn-cancelar:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.common-modal .btn-danger,
+.common-modal .btn-excluir {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: white !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-size: 0.95rem !important;
+}
+
+.common-modal .btn-danger:hover:not(:disabled),
+.common-modal .btn-excluir:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+.common-modal button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ===============================================
+   DETALHES - SEÇÕES - DARK (para modal de visualização)
+   =============================================== */
+
+.common-modal .details-section {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  border-left: 4px solid #3b82f6 !important;
+  margin-bottom: 20px !important;
+}
+
+.common-modal .details-section h4 {
+  color: white !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  margin: 0 0 16px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .details-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.common-modal .detail-item {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.common-modal .detail-item label {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.common-modal .detail-item span {
+  font-size: 1rem !important;
+  color: white !important;
+  font-weight: 500 !important;
+  padding: 10px 12px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  min-height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ===============================================
+   RESPONSIVIDADE
+   =============================================== */
+
+@media (max-width: 768px) {
+  .common-modal .details-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .common-modal .modal-actions {
+    flex-direction: column-reverse !important;
+  }
+
+  .common-modal .modal-actions button {
+    width: 100% !important;
+  }
+
+  .common-modal .proposta-info,
+  .common-modal .ug-info {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .common-modal .proposta-info p,
+  .common-modal .ug-info p {
+    font-size: 0.85rem !important;
+  }
+
+  .common-modal .details-section {
+    padding: 16px !important;
+  }
+
+  .common-modal .detail-item span {
+    padding: 8px 10px !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* ===============================================
+   BOTÕES DE AÇÃO PADRONIZADOS - TABELAS
+   Menos coloridos, ícone colorido
+   =============================================== */
+
+/* Container dos botões de ação */
+.table-actions,
+.action-buttons,
+.action-buttons-controle {
+  display: flex !important;
+  gap: 6px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Estilo base dos botões - FUNDO NEUTRO */
+.action-btn,
+.btn-icon {
+  padding: 6px 10px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 0.85rem !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  text-decoration: none !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Hover - levemente mais claro */
+.action-btn:hover:not(:disabled),
+.btn-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ========== ÍCONES COLORIDOS ========== */
+
+/* Visualizar - Azul ciano */
+.action-btn.view svg,
+.btn-icon.view svg {
+  color: #17a2b8 !important;
+}
+
+.action-btn.view:hover:not(:disabled),
+.btn-icon.view:hover:not(:disabled) {
+  border-color: rgba(23, 162, 184, 0.4) !important;
+}
+
+/* Editar - Azul */
+.action-btn.edit svg,
+.btn-icon.edit svg {
+  color: #3b82f6 !important;
+}
+
+.action-btn.edit:hover:not(:disabled),
+.btn-icon.edit:hover:not(:disabled) {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+/* PDF - Laranja */
+.action-btn.pdf svg,
+.btn-icon.pdf svg {
+  color: #fd7e14 !important;
+}
+
+.action-btn.pdf:hover:not(:disabled),
+.btn-icon.pdf:hover:not(:disabled) {
+  border-color: rgba(253, 126, 20, 0.4) !important;
+}
+
+/* Sucesso/Download - Verde */
+.action-btn.success svg,
+.btn-icon.success svg {
+  color: #28a745 !important;
+}
+
+.action-btn.success:hover:not(:disabled),
+.btn-icon.success:hover:not(:disabled) {
+  border-color: rgba(40, 167, 69, 0.4) !important;
+}
+
+/* Excluir - Vermelho */
+.action-btn.delete svg,
+.btn-icon.delete svg {
+  color: #dc3545 !important;
+}
+
+.action-btn.delete:hover:not(:disabled),
+.btn-icon.delete:hover:not(:disabled) {
+  border-color: rgba(220, 53, 69, 0.4) !important;
+}
+
+/* Desabilitado */
+.action-btn:disabled,
+.btn-icon:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.action-btn:disabled svg,
+.btn-icon:disabled svg {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ========== BOTÕES ESPECÍFICOS DO CONTROLE ========== */
+
+/* Botões UC, UG, Excluir na ControlePage */
+.btn-uc,
+.btn-ug,
+.btn-excluir {
+  width: 45px !important;
+  height: 32px !important;
+  padding: 4px 6px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Ícones coloridos nos botões específicos */
+.btn-uc svg {
+  color: #28a745 !important;
+}
+
+.btn-ug svg {
+  color: #3b82f6 !important;
+}
+
+.btn-excluir svg {
+  color: #dc3545 !important;
+}
+
+/* Hover nos botões específicos */
+.btn-uc:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(40, 167, 69, 0.4) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2) !important;
+}
+
+.btn-ug:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+}
+
+.btn-excluir:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(220, 53, 69, 0.4) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2) !important;
+}
+
+/* Desabilitado para botões específicos */
+.btn-uc:disabled,
+.btn-ug:disabled,
+.btn-excluir:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  cursor: not-allowed !important;
+  opacity: 0.4 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-uc:disabled svg,
+.btn-ug:disabled svg,
+.btn-excluir:disabled svg {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ========== RESPONSIVIDADE ========== */
+
+@media (max-width: 768px) {
+  .action-btn,
+  .btn-icon {
+    padding: 4px 6px !important;
+    font-size: 0.75rem !important;
+    min-width: 28px !important;
+    height: 28px !important;
+  }
+
+  .btn-uc,
+  .btn-ug,
+  .btn-excluir {
+    width: 40px !important;
+    height: 30px !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-actions,
+  .action-buttons,
+  .action-buttons-controle {
+    gap: 4px !important;
+  }
+
+  .action-btn,
+  .btn-icon {
+    padding: 3px 5px !important;
+    font-size: 0.7rem !important;
+    min-width: 26px !important;
+    height: 26px !important;
+  }
+
+  .btn-uc,
+  .btn-ug,
+  .btn-excluir {
+    width: 36px !important;
+    height: 28px !important;
+    font-size: 0.65rem !important;
+  }
+}

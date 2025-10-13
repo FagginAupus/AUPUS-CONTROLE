@@ -1,0 +1,933 @@
+/* ProspecModalDark.css - Estilos dark theme para modal de edição da ProspecPage */
+
+/* ===============================================
+   SEÇÕES DO MODAL - TEMA DARK
+   =============================================== */
+
+.secao-modal {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+  border-left: 4px solid #3b82f6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.titulo-secao {
+  margin: 0 0 16px 0 !important;
+  color: white !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ===============================================
+   CAMPOS DE FORMULÁRIO - TEMA DARK
+   =============================================== */
+
+.common-modal .form-group label {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+}
+
+.common-modal .form-group input,
+.common-modal .form-group select,
+.common-modal .form-group textarea {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: white !important;
+  padding: 12px 16px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.common-modal .form-group input:focus,
+.common-modal .form-group select:focus,
+.common-modal .form-group textarea:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.common-modal .form-group input:disabled,
+.common-modal .form-group select:disabled,
+.common-modal .form-group textarea:disabled,
+.common-modal .input-readonly {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Select options com fundo dark */
+.common-modal .form-group select option {
+  background: #1e293b !important;
+  color: white !important;
+}
+
+/* ===============================================
+   SELETOR DE TIPO DE DOCUMENTO - DARK
+   =============================================== */
+
+.common-modal .document-type-selector {
+  display: flex !important;
+  gap: 16px !important;
+  margin-bottom: 16px !important;
+  padding: 16px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  justify-content: center !important;
+}
+
+.common-modal .radio-option {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 2px solid transparent !important;
+}
+
+.common-modal .radio-option:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.common-modal .radio-option input[type="radio"]:checked + span {
+  font-weight: 600 !important;
+  color: #60a5fa !important;
+}
+
+.common-modal .radio-option:has(input[type="radio"]:checked) {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+}
+
+.common-modal .radio-option span {
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.95rem !important;
+}
+
+/* ===============================================
+   CAMPOS DE DOCUMENTO - DARK
+   =============================================== */
+
+.common-modal .document-fields,
+.common-modal .common-fields {
+  background: rgba(255, 255, 255, 0.03) !important;
+  padding: 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  margin-top: 12px !important;
+}
+
+/* ===============================================
+   CAMPOS DE ARQUIVO - DARK
+   =============================================== */
+
+.common-modal .file-group input[type="file"] {
+  padding: 12px !important;
+  border: 2px dashed rgba(59, 130, 246, 0.5) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  cursor: pointer !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.9rem !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.common-modal .file-group input[type="file"]:hover {
+  border-color: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.common-modal .file-info {
+  color: #4ade80 !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  display: block !important;
+  margin-top: 8px !important;
+  padding: 8px 12px !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-radius: 6px !important;
+  border-left: 3px solid #4ade80 !important;
+}
+
+/* ===============================================
+   CONTAINER DE ARQUIVO COM BOTÃO - DARK
+   =============================================== */
+
+.common-modal .file-with-download {
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  gap: 12px !important;
+  align-items: start !important;
+  width: 100% !important;
+}
+
+.common-modal .btn-download-termo {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: 48px !important;
+}
+
+.common-modal .btn-download-termo:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* ===============================================
+   ARQUIVO EXISTENTE - DARK & EXPANDIDO
+   =============================================== */
+
+.common-modal .arquivo-existente {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 12px 16px !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 8px !important;
+  margin-bottom: 8px !important;
+  min-height: 48px !important;
+}
+
+.common-modal .arquivo-info {
+  flex: 1 !important;
+  font-size: 0.9rem !important;
+  color: #4ade80 !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: none !important;
+  margin-right: 12px !important;
+}
+
+.common-modal .arquivo-acoes {
+  display: flex !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.common-modal .btn-visualizar-doc,
+.common-modal .btn-baixar-doc {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #60a5fa !important;
+}
+
+.common-modal .btn-visualizar-doc:hover,
+.common-modal .btn-baixar-doc:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+.common-modal .sem-arquivo {
+  width: 100% !important;
+  padding: 12px 16px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 0.85rem !important;
+  font-style: italic !important;
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ===============================================
+   CHECKBOX - DARK
+   =============================================== */
+
+.common-modal .checkbox-group-modal {
+  padding: 8px 0 !important;
+}
+
+.common-modal .checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 10px 16px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.9rem !important;
+}
+
+.common-modal .checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+.common-modal .checkbox-label input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  accent-color: #3b82f6 !important;
+}
+
+/* ===============================================
+   INFORMAÇÃO DE STATUS - DARK
+   =============================================== */
+
+.common-modal .status-help small {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+  padding: 10px 16px !important;
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-radius: 6px !important;
+  border-left: 3px solid #fbbf24 !important;
+  display: block !important;
+}
+
+.common-modal .proposta-info {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin-bottom: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .proposta-info p {
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin: 8px 0 !important;
+  font-size: 0.9rem !important;
+}
+
+.common-modal .proposta-info strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 600 !important;
+}
+
+/* ===============================================
+   BADGES DE STATUS NO MODAL - DARK
+   =============================================== */
+
+.common-modal .status-badge {
+  padding: 4px 12px !important;
+  border-radius: 20px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  width: fit-content !important;
+}
+
+.common-modal .status-aguardando {
+  background: rgba(251, 191, 36, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+.common-modal .status-fechado,
+.common-modal .status-finalizado {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+/* ===============================================
+   RESPONSIVIDADE
+   =============================================== */
+
+@media (max-width: 768px) {
+  .secao-modal {
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .titulo-secao {
+    font-size: 1rem !important;
+  }
+
+  .common-modal .file-with-download {
+    grid-template-columns: 1fr !important;
+  }
+
+  .common-modal .btn-download-termo {
+    width: 100% !important;
+    justify-content: center !important;
+    height: 44px !important;
+  }
+
+  .common-modal .document-type-selector {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .common-modal .arquivo-existente {
+    padding: 10px 12px !important;
+    min-height: 44px !important;
+  }
+
+  .common-modal .arquivo-info {
+    font-size: 0.85rem !important;
+  }
+
+  .common-modal .btn-visualizar-doc,
+  .common-modal .btn-baixar-doc {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .secao-modal {
+    padding: 12px !important;
+  }
+
+  .titulo-secao {
+    font-size: 0.95rem !important;
+  }
+
+  .common-modal .arquivo-existente {
+    padding: 8px 10px !important;
+    min-height: 40px !important;
+  }
+
+  .common-modal .arquivo-info {
+    font-size: 0.8rem !important;
+  }
+
+  .common-modal .btn-visualizar-doc,
+  .common-modal .btn-baixar-doc {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .common-modal .btn-download-termo {
+    height: 40px !important;
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ===============================================
+   QUADRO DA AUTENTIQUE E STATUS - DARK
+   =============================================== */
+
+.common-modal .autentique-status-box,
+.common-modal .status-autentique,
+.common-modal .documento-status {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin: 12px 0 !important;
+}
+
+.common-modal .autentique-status-box p,
+.common-modal .status-autentique p,
+.common-modal .documento-status p {
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin: 8px 0 !important;
+}
+
+.common-modal .autentique-status-box strong,
+.common-modal .status-autentique strong,
+.common-modal .documento-status strong {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.common-modal .aguardando-assinatura,
+.common-modal .status-aguardando-assinatura {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.common-modal .documento-assinado,
+.common-modal .status-assinado {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* ===============================================
+   BOTÃO ADICIONAR DOCUMENTO EXTRA - DARK
+   =============================================== */
+
+.common-modal .btn-add-doc-extra {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.common-modal .btn-add-doc-extra:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ===============================================
+   DOCUMENTOS EXTRAS - CONTAINER DARK
+   =============================================== */
+
+.common-modal .documento-extra-item,
+.common-modal .doc-extra-container {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+}
+
+.common-modal .btn-remover-doc-extra {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.common-modal .btn-remover-doc-extra:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+/* ===============================================
+   ARQUIVO SELECIONADO - DARK
+   =============================================== */
+
+.common-modal .arquivo-selecionado {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  margin-top: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.common-modal .arquivo-selecionado .arquivo-info {
+  color: #60a5fa !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+}
+
+.common-modal .btn-remover-arquivo {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+.common-modal .btn-remover-arquivo:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+/* CORREÇÃO FINAL - Sobrescrever fundos brancos no modal de edição */
+
+/* Arquivo selecionado - DARK */
+.common-modal .arquivo-selecionado {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Status display - DARK */
+.common-modal .status-display {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .status-info {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-left: 4px solid #3b82f6 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal .status-info li {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Seções do modal - garantir dark */
+.common-modal .secao-modal {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-left-color: #3b82f6 !important;
+}
+
+/* Document fields e common fields - DARK */
+.common-modal .document-fields,
+.common-modal .common-fields {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Radio options - DARK */
+.common-modal .radio-option {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.common-modal .radio-option:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.common-modal .radio-option:has(input[type="radio"]:checked) {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Document type selector - DARK */
+.common-modal .document-type-selector {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Checkbox label - DARK */
+.common-modal .checkbox-label {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal .checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Status help - DARK */
+.common-modal .status-help small {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-left-color: #fbbf24 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* File info - DARK */
+.common-modal .file-info {
+  background: rgba(34, 197, 94, 0.1) !important;
+  color: #4ade80 !important;
+  border-left-color: #4ade80 !important;
+}
+
+/* ========================================
+   CORREÇÕES ADICIONAIS PARA INLINE STYLES
+   ======================================== */
+
+/* Document extras container - overriding inline backgroundColor */
+.common-modal div[style*="backgroundColor"][style*="#f5f5f5"],
+.common-modal div[style*="background-color"][style*="#f5f5f5"],
+.common-modal div[style*="backgroundColor: '#f5f5f5'"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Arquivo existente com inline styles específicos */
+.common-modal .arquivo-existente[style*="backgroundColor"],
+.common-modal .arquivo-existente[style*="background-color"],
+.common-modal div.arquivo-existente[style] {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Arquivo info spans com inline styles */
+.common-modal .arquivo-info[style*="color"],
+.common-modal span.arquivo-info[style] {
+  color: #4ade80 !important;
+}
+
+/* Status badge no contexto do modal - DARK */
+.common-modal .status-badge.status-aguardando {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.common-modal .status-badge.status-fechada,
+.common-modal .status-badge.status-fechado {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.common-modal .status-badge.status-cancelada {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Status atual container */
+.common-modal .status-atual {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal .status-atual strong {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Sem arquivo indicator - DARK */
+.common-modal .sem-arquivo {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Input file styles - DARK */
+.common-modal input[type="file"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal input[type="file"]:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Buttons com inline styles */
+.common-modal button[style*="backgroundColor: '#4CAF50'"],
+.common-modal button[style*="backgroundColor: '#f44336'"] {
+  /* Keep their specific colors but ensure proper contrast */
+  opacity: 1 !important;
+}
+
+/* Document extra containers inline styles override */
+.common-modal div[style*="flexDirection: 'column'"][style*="gap: '8px'"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Override white backgrounds in any deeply nested inline styles */
+.common-modal div[style*="background"][style*="#fff"],
+.common-modal div[style*="background"][style*="white"],
+.common-modal div[style*="backgroundColor"][style*="#fff"],
+.common-modal div[style*="backgroundColor"][style*="white"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Ensure text visibility */
+.common-modal span[style*="color: '#555'"],
+.common-modal span[style*="color: '#2e7d32'"] {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* File input inside document extras */
+.common-modal input[type="file"][style*="backgroundColor: 'white'"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+
+/* ========================================
+   DOCUMENTOS EXTRAS - DARK THEME
+   ======================================== */
+
+.common-modal .documento-extra-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.common-modal .documento-extra-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.common-modal .documento-extra-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+
+/* ========================================
+   CORREÇÃO DE CONTRASTE - TEXTOS VISÍVEIS
+   ======================================== */
+
+/* Garantir que todos os labels e spans sejam bem visíveis */
+.common-modal label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.common-modal span {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Texto em detalhes e info */
+.common-modal .detail-item label,
+.common-modal .detail-item span,
+.common-modal .details-grid label,
+.common-modal .details-grid span {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Títulos de seções */
+.common-modal h4,
+.common-modal .titulo-secao {
+  color: rgba(255, 255, 255, 0.95) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Textos em arquivo info */
+.common-modal .arquivo-info {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Textos em inputs e textareas */
+.common-modal input::placeholder,
+.common-modal textarea::placeholder,
+.common-modal select::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Sem arquivo text */
+.common-modal .sem-arquivo {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Strong tags */
+.common-modal strong {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Paragraphs */
+.common-modal p {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Detail items */
+.common-modal .proposta-details label {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 600;
+}
+
+.common-modal .proposta-details span:not(.status-badge):not(.arquivo-info) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+
+/* ========================================
+   EXCEÇÕES PARA GRID 1FR 1FR
+   Campos que devem ocupar largura completa
+   ======================================== */
+
+/* Status display - ocupar largura completa */
+.common-modal .form-row:has(.status-display) {
+  grid-template-columns: 1fr !important;
+}
+
+/* Documentos extras container - ocupar largura completa */
+.common-modal .form-row:has(.documento-extra-item) {
+  grid-template-columns: 1fr !important;
+}
+
+/* Qualquer form-row com apenas um form-group - ocupar largura completa */
+.common-modal .form-row:has(.form-group:only-child) {
+  grid-template-columns: 1fr !important;
+}
+
+/* Fatura de energia - ocupar largura completa */
+.common-modal .form-group:has(input[type="file"][accept*="pdf"]):only-child {
+  grid-column: 1 / -1 !important;
+}
+
+/* Gerar termo container - já tem regra mas reforçar */
+.common-modal .form-row:has(.gerar-termo-container) {
+  grid-template-columns: 1fr !important;
+}
+
+/* Container de documentos extras pai - largura completa */
+.common-modal .form-group:has(> div[style*="flexDirection: 'column'"]) {
+  grid-column: 1 / -1 !important;
+}
+
+/* Documentos extras label - largura completa */
+.common-modal .form-group:has(label:contains("Documentos Extras")) {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
+/* Form group com width 100% inline - ocupar tudo */
+.common-modal .form-group[style*="width: 100%"],
+.common-modal .form-group[style*="width:100%"] {
+  grid-column: 1 / -1 !important;
+}
+
+/* Form row com width 100% inline - coluna única */
+.common-modal .form-row[style*="width: 100%"],
+.common-modal .form-row[style*="width:100%"] {
+  grid-template-columns: 1fr !important;
+}
+
