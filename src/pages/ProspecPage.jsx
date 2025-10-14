@@ -1882,7 +1882,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                 <input
                   type="text"
                   value={dados.nomeCliente || ''}
-                  onChange={(e) => setDados({...dados, nomeCliente: formatarPrimeiraMaiuscula(e.target.value)})}
+                  onChange={(e) => setDados({...dados, nomeCliente: formatarPrimeiraMaiuscula(e.target.value, true)})}
                 />
               </div>
               <div className="form-group">
@@ -1890,7 +1890,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                 <input
                   type="text"
                   value={dados.apelido || ''}
-                  onChange={(e) => setDados({...dados, apelido: formatarPrimeiraMaiuscula(e.target.value)})}
+                  onChange={(e) => setDados({...dados, apelido: formatarPrimeiraMaiuscula(e.target.value, true)})}
                 />
               </div>
             </div>

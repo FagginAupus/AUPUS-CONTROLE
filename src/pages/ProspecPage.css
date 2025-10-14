@@ -49,7 +49,7 @@
 .stat-card {
   background: white;
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px 18px;
   text-align: center;
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
   border-left: 4px solid #4CAF50;
@@ -73,7 +73,7 @@
 
 .stat-value {
   display: block;
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: #333;
   text-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -99,10 +99,10 @@
 .stat-item {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }

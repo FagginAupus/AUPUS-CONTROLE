@@ -83,10 +83,10 @@
 .stat-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 15px;
-  padding: 25px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -128,7 +128,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center; /* ✅ Centralizar verticalmente */
-  min-height: 60px;        /* ✅ Altura mínima consistente */
+  min-height: 48px;        /* ✅ Altura mínima consistente */
 }
 
 .stat-label {
@@ -144,7 +144,7 @@
 .stat-value {
   margin: 4px 0 0 0;
   color: #f0f0f0 !important;
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 800;
   text-shadow: 0 1px 3px rgba(0,0,0,0.1);
   line-height: 1.1;
