@@ -2028,6 +2028,7 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                 <label>Média (kWh)</label>
                 <input
                   type="number"
+                  min="250"
                   value={dados.media || ''}
                   onChange={(e) => setDados({...dados, media: parseFloat(e.target.value) || 0})}
                 />

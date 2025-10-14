@@ -985,13 +985,13 @@ const NovaPropostaPage = () => {
                   {/* Campo 5 - Consumo (menor) */}
                   <div className="uc-field">
                     <label>Consumo (kWh) *</label>
-                    <input 
-                      {...register(`ucs.${index}.consumo`, { 
+                    <input
+                      {...register(`ucs.${index}.consumo`, {
                         required: 'Consumo é obrigatório',
-                        min: { value: 1, message: 'Consumo deve ser maior que 0' }
-                      })} 
-                      type="number" 
-                      min="1"
+                        min: { value: 250, message: 'Consumo mínimo é 250 kWh' }
+                      })}
+                      type="number"
+                      min="250"
                       placeholder="Ex: 500"
                       className={errors.ucs?.[index]?.consumo ? 'error' : ''}
                     />
