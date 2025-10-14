@@ -1,6 +1,6 @@
 // src/pages/LogsPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import '../../styles/common/index.css';
+import '../styles/common/index.css';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import Header from '../components/common/Header';

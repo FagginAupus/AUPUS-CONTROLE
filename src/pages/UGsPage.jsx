@@ -1,6 +1,6 @@
 // UGsPage.jsx - CORRIGIDO com modais seguindo padrão PROSPEC
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import '../../styles/common/index.css';
+import '../styles/common/index.css';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';

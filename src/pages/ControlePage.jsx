@@ -1,6 +1,6 @@
 // src/pages/ControlePage.jsx - Com calibragem no estilo original restaurada
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import '../../styles/common/index.css';
+import '../styles/common/index.css';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
