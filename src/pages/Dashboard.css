@@ -714,13 +714,14 @@
    MODAL TEMA CLARO - DASHBOARD
    ======================================================= */
 
+/* Modais de Cadastro - Dark Mode */
 .modal-overlay-light {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -729,13 +730,14 @@
 }
 
 .modal-light {
-  background: white;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border-radius: 16px;
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header-light {
@@ -743,14 +745,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 0;
   padding-bottom: 16px;
 }
 
 .modal-header-light h3 {
   margin: 0;
-  color: #1a1a1a !important;
+  color: white !important;
   font-size: 1.25rem;
   font-weight: 700 !important;
   display: flex;
@@ -761,21 +763,21 @@
 /* Override específico para títulos de modais */
 .modal-overlay-light .modal-header-light h3,
 .modal-light .modal-header-light h3 {
-  color: #1a1a1a !important;
+  color: white !important;
   font-weight: 700 !important;
 }
 
 .modal-header-light h3 svg {
-  color: #007bff;
+  color: #3b82f6;
 }
 
 .btn-close-light {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 8px;
   padding: 8px;
   cursor: pointer;
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.9);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -783,8 +785,8 @@
 }
 
 .btn-close-light:hover {
-  background: #e9ecef;
-  color: #495057;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   transform: scale(1.1);
 }
 
@@ -800,7 +802,7 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #2c3e50;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.9rem;
 }
 
@@ -808,11 +810,11 @@
 .form-group-light select {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #e9ecef;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   font-size: 1rem;
-  background: white;
-  color: #495057;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
@@ -820,12 +822,18 @@
 .form-group-light input:focus,
 .form-group-light select:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .form-group-light input::placeholder {
-  color: #adb5bd;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-group-light select option {
+  background: #1e293b;
+  color: white;
 }
 
 .modal-footer-light {
@@ -836,7 +844,7 @@
 }
 
 .btn-primary-light {
-  background: linear-gradient(135deg, #007bff, #0056b3);
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -848,9 +856,9 @@
 }
 
 .btn-primary-light:hover {
-  background: linear-gradient(135deg, #0056b3, #004085);
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-primary-light:disabled {
@@ -860,9 +868,9 @@
 }
 
 .btn-secondary-light {
-  background: #6c757d;
-  color: white;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -872,9 +880,10 @@
 }
 
 .btn-secondary-light:hover {
-  background: #5a6268;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .loading-modal {
@@ -886,7 +895,7 @@
 }
 
 .loading-modal p {
-  color: #495057;
+  color: white;
   font-size: 1.1rem;
   margin: 0;
 }
@@ -933,23 +942,23 @@
   }
 }
 
-/* OVERRIDE FORÇADO para inputs do modal - máxima especificidade */
+/* OVERRIDE FORÇADO para inputs do modal - Dark Mode */
 .modal-light .form-group-light input,
 .modal-light .form-group-light select,
 .modal-overlay-light .form-group-light input,
 .modal-overlay-light .form-group-light select {
-  background: white !important;
-  color: #495057 !important;
-  border: 2px solid #e9ecef !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .modal-light .form-group-light input:focus,
 .modal-light .form-group-light select:focus,
 .modal-overlay-light .form-group-light input:focus,
 .modal-overlay-light .form-group-light select:focus {
-  background: white !important;
-  color: #495057 !important;
-  border-color: #007bff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
 }
 
 .team-list h3 {

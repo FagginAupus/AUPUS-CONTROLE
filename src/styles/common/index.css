@@ -1,0 +1,46 @@
+/* =======================================================
+   ESTILOS COMUNS - DARK MODE
+   Arquivo principal que importa todos os estilos globais
+
+   Use este arquivo em seus componentes:
+   import '../../styles/common/index.css';
+   ======================================================= */
+
+/* Importar todos os módulos de estilo comuns */
+@import './buttons-dark.css';
+@import './modals-dark.css';
+@import './forms-dark.css';
+@import './utilities-dark.css';
+
+/*
+  NOTA: Este arquivo centraliza todos os estilos comuns da aplicação.
+  Ao invés de duplicar CSS entre páginas, importe este arquivo e use
+  as classes padronizadas.
+
+  Exemplo de uso:
+
+  // No seu componente
+  import '../../styles/common/index.css';
+
+  // No seu JSX
+  <button className="btn btn-primary">
+    <Save size={18} />
+    Salvar
+  </button>
+
+  <div className="common-modal-overlay">
+    <div className="common-modal">
+      <div className="common-modal-header">
+        <h2>Título do Modal</h2>
+        <button className="common-close-btn">×</button>
+      </div>
+      <div className="common-modal-content">
+        Conteúdo aqui
+      </div>
+      <div className="common-modal-footer">
+        <button className="btn btn-secondary">Cancelar</button>
+        <button className="btn btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+*/

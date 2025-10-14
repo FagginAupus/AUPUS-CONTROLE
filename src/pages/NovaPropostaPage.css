@@ -1057,3 +1057,123 @@ body.dark-mode .file-help-text {
   min-width: 40px !important;
   min-height: 40px !important;
 }
+/* =======================================================
+   BOTÕES DE AÇÃO - DARK MODE (Padrão Modal Editar UC)
+   ======================================================= */
+
+.btn-proposta-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 20px 0 !important;
+  border-top: 2px solid rgba(255, 255, 255, 0.1) !important;
+  margin-top: 30px !important;
+}
+
+/* Botão Salvar Proposta - Gradient azul/roxo */
+.btn-primary-proposta {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 14px 20px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.btn-primary-proposta:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+}
+
+.btn-primary-proposta svg {
+  color: white !important;
+  filter: brightness(1.2) !important;
+}
+
+/* Botão Cancelar - Fundo semi-transparente */
+.btn-secondary-proposta {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 14px 20px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.btn-secondary-proposta:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.btn-secondary-proposta svg {
+  color: rgba(255, 255, 255, 0.9) !important;
+  filter: brightness(1.2) !important;
+}
+
+/* Botão Limpar Forms - mesmo estilo do Cancelar */
+.btn-limpar-proposta {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 14px 20px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.btn-limpar-proposta:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.btn-limpar-proposta svg {
+  color: rgba(255, 255, 255, 0.9) !important;
+  filter: brightness(1.2) !important;
+}
+
+/* Estados desabilitados */
+.btn-primary-proposta:disabled,
+.btn-secondary-proposta:disabled,
+.btn-limpar-proposta:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .btn-proposta-footer {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .btn-primary-proposta,
+  .btn-secondary-proposta,
+  .btn-limpar-proposta {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}

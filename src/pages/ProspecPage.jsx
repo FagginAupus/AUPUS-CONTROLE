@@ -1,5 +1,6 @@
 // src/pages/ProspecPage.jsx - Com modal de visualização para todos os perfis
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import '../../styles/common/index.css';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
