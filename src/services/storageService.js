@@ -1098,10 +1098,8 @@ class StorageService {
                 });
 
                 return {
-                    // Tentar múltiplos identificadores (o backend decide qual usar)
-                    id: uc.uc_id || uc.id,
-                    uc_id: uc.uc_id,
-                    numero_unidade: uc.numero_unidade,
+                    // Converter numero_unidade para string (validação do backend exige string)
+                    numero_unidade: String(uc.numero_unidade),
                     consumo_medio: consumoMedio
                 };
             });
