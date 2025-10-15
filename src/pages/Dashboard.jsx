@@ -325,15 +325,20 @@ const Dashboard = () => {
     return botoes;
   };
 
-  const StatCard = ({ icon: Icon, label, value, subtitle }) => (
+  const StatCard = ({ icon: Icon, label, value, subtitle, inlineSubtitle }) => (
     <div className="stat-card">
       <div className="stat-icon">
         <Icon size={32} style={{ color: '#f0f0f0', opacity: 0.8 }} />
       </div>
       <div className="stat-content">
         <span className="stat-label">{label}</span>
-        <span className="stat-value">{value}</span>
-        {subtitle && (
+        <span className="stat-value">
+          {value}
+          {inlineSubtitle && (
+            <span className="stat-label-small"> {inlineSubtitle}</span>
+          )}
+        </span>
+        {subtitle && !inlineSubtitle && (
           <small className="stat-subtitle">
             {subtitle}
           </small>
@@ -360,11 +365,11 @@ const Dashboard = () => {
             label="Total Propostas" 
             value={estadisticas.totalPropostas}
           />
-          <StatCard 
-            icon={Database} 
-            label="Propostas Válidas" 
+          <StatCard
+            icon={Database}
+            label="Propostas Válidas"
             value={estadisticas.propostasValidas}
-            subtitle={`${estadisticas.canceladas} canceladas`}
+            inlineSubtitle={`(${estadisticas.canceladas} canceladas)`}
           />
           <StatCard 
             icon={Clock} 

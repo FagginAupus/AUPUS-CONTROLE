@@ -1,5 +1,8 @@
 /* src/pages/UGsPage.css - LARGURA CORRIGIDA */
 
+/* Importar estilos padronizados de indicadores */
+@import '../styles/indicators.css';
+
 .page-container {
   min-height: 100vh;
   background: #1a1a1a !important; /* ← MUDAR ESTA LINHA */
@@ -35,48 +38,11 @@
 }
 
 /* =======================================================
-   ESTATÍSTICAS RÁPIDAS
+   ESTATÍSTICAS RÁPIDAS - ESTILOS ESPECÍFICOS DA PÁGINA
+   Os estilos base estão em ../styles/indicators.css
    ======================================================= */
 
-.quick-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 14px 18px;
-  text-align: center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  border-left: 4px solid #4CAF50;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #333;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
+/* Nenhum override necessário - usar padrão */
 
 /* =======================================================
    SEÇÃO DE FILTROS

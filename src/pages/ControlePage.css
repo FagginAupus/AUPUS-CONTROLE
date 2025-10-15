@@ -1,5 +1,8 @@
 /* src/pages/ControlePage.css - LARGURA CORRIGIDA */
 
+/* Importar estilos padronizados de indicadores */
+@import '../styles/indicators.css';
+
 .page-container {
   min-height: 100vh;
   background: #1a1a1a !important; /* ← MUDAR ESTA LINHA */
@@ -154,48 +157,11 @@ small {
 
 
 /* =======================================================
-   ESTATÍSTICAS RÁPIDAS
+   ESTATÍSTICAS RÁPIDAS - ESTILOS ESPECÍFICOS DA PÁGINA
+   Os estilos base estão em ../styles/indicators.css
    ======================================================= */
 
-.quick-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 14px 18px;
-  text-align: center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  border-left: 4px solid #4CAF50;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #333;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
+/* Nenhum override necessário - usar padrão */
 
 /* =======================================================
    SEÇÃO DE FILTROS
@@ -712,18 +678,10 @@ small {
     width: 95%;
     padding: 15px;
   }
-  
+
   .quick-stats {
     grid-template-columns: 1fr;
     gap: 15px;
-  }
-  
-  .stat-card {
-    padding: 15px;
-  }
-  
-  .stat-value {
-    font-size: 1.5rem;
   }
   
   .filters-section {
@@ -1085,24 +1043,7 @@ small {
   background: #2d2d2d !important; /* ← Remove o fundo claro das linhas pares */
 }
 
-/* Estilos para indicadores com ícones */
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+/* Estilos para indicadores com ícones - Removido (usando indicators.css) */
 
 /* Botão de ação com ícone */
 .btn-small {
@@ -1356,39 +1297,44 @@ small {
 
 .controle-status-resumo {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 6px;
   width: 100%;
+  justify-content: center;
+  align-items: center;
 }
 
 .controle-status-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 28px;
+  gap: 3px;
+  min-height: auto;
+  flex: 0 1 auto;
 }
 
 .controle-status-item small {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: #b0b0b0;
   font-weight: 500;
-  text-align: left;
-  min-width: 85px;
+  text-align: center;
+  white-space: nowrap;
   flex-shrink: 0;
+  line-height: 1.1;
 }
 
 .controle-status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 45px;
-  width: 45px;
-  height: 24px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  min-width: 32px;
+  width: 32px;
+  height: 22px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
   line-height: 1;
   text-align: center;
   font-family: 'Courier New', monospace;
@@ -1413,14 +1359,7 @@ small {
   border: 1px solid #34ce57;
 }
 
-.stat-card .stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-height: 70px;
-  justify-content: center;
-  padding: 4px 0;
-}
+/* stat-content agora usando padrão de indicators.css */
 
 /* Hover effect específico para controle */
 .controle-status-badge:hover {
@@ -1429,26 +1368,30 @@ small {
   transition: all 0.2s ease;
 }
 
+/* Card de status compacto - sem ocupar colunas extras */
+.quick-stats .stat-card:has(.controle-status-resumo) {
+  min-width: auto;
+}
+
 /* Responsividade específica para controle */
 @media (max-width: 768px) {
+  .quick-stats .stat-card:has(.controle-status-resumo) {
+    grid-column: span 1;
+  }
+
   .controle-status-item {
-    gap: 8px;
+    gap: 4px;
   }
-  
+
   .controle-status-item small {
-    min-width: 70px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
-  
+
   .controle-status-badge {
     min-width: 40px;
     width: 40px;
     height: 22px;
     font-size: 0.75rem;
-  }
-  
-  .stat-card .stat-content {
-    min-height: 65px;
   }
 }
 
@@ -1456,26 +1399,22 @@ small {
   .controle-status-resumo {
     gap: 6px;
   }
-  
+
   .controle-status-item {
     gap: 6px;
   }
-  
+
   .controle-status-item small {
     min-width: 60px;
     font-size: 0.65rem;
   }
-  
+
   .controle-status-badge {
     min-width: 35px;
     width: 35px;
     height: 20px;
     font-size: 0.7rem;
     padding: 2px 4px;
-  }
-  
-  .stat-card .stat-content {
-    min-height: 60px;
   }
 }
 

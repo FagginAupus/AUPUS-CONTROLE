@@ -58,17 +58,19 @@ const UGsPage = () => {
 
   const estatisticas = useMemo(() => {
     const total = dadosFiltrados.length;
-    const capacidadeTotal = dadosFiltrados.reduce((soma, item) => 
+    const capacidadeTotal = dadosFiltrados.reduce((soma, item) =>
       soma + (parseFloat(item.capacidade) || 0), 0
     );
-    const consumoTotal = dadosFiltrados.reduce((soma, item) => 
+    const consumoTotal = dadosFiltrados.reduce((soma, item) =>
       soma + (parseFloat(item.mediaConsumoAtribuido) || 0), 0
-    ); // ✅ ADICIONAR ESTA LINHA
+    );
+    const capacidadeDisponivel = Math.max(0, capacidadeTotal - consumoTotal);
 
     return {
       total,
       capacidadeTotal: Math.round(capacidadeTotal),
-      consumoTotal: Math.round(consumoTotal) // ✅ ADICIONAR ESTA LINHA
+      consumoTotal: Math.round(consumoTotal),
+      capacidadeDisponivel: Math.round(capacidadeDisponivel)
     };
   }, [dadosFiltrados]);
 
@@ -411,6 +413,15 @@ const UGsPage = () => {
             <div className="stat-content">
               <span className="stat-label">Consumo Atribuído</span>
               <span className="stat-value">{estatisticas.consumoTotal.toLocaleString('pt-BR')} kWh</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Zap size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Capacidade Disponível</span>
+              <span className="stat-value">{estatisticas.capacidadeDisponivel.toLocaleString('pt-BR')} kWh</span>
             </div>
           </div>
         </section>
