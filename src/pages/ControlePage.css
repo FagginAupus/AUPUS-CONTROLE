@@ -205,20 +205,51 @@ small {
   order: -1;
 }
 
-.filter-calibragem input[type="number"] {
-  width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e1e1e1;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  background: white;
+/* Layout horizontal inline para calibragem */
+.calibragem-inline-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
-.filter-calibragem input[type="number"]:focus {
+.calibragem-input-small {
+  width: 50px;
+  padding: 8px 6px;
+  border: 2px solid #e1e1e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background: white;
+  text-align: center;
+}
+
+.calibragem-input-small:focus {
   outline: none;
   border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.percent-sign {
+  font-size: 0.85rem;
+  color: #f0f0f0;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.calibragem-atual-inline {
+  font-size: 0.7rem;
+  color: #f0f0f0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-xs {
+  padding: 6px 10px !important;
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Linha de ações compacta - alinhada à direita */

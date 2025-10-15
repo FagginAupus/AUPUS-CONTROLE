@@ -994,7 +994,7 @@ const ControlePage = () => {
               {isAdminOrAnalista && (
                 <div className="filter-group filter-calibragem">
                   <label htmlFor="calibragem-input">Calibragem Global:</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div className="calibragem-inline-wrapper">
                     <input
                       id="calibragem-input"
                       type="number"
@@ -1003,32 +1003,26 @@ const ControlePage = () => {
                       step="1"
                       value={calibragemTemp}
                       onChange={(e) => setCalibragemTemp(parseFloat(e.target.value) || 0)}
-                      placeholder="0.0"
+                      placeholder="0"
                       disabled={calibragem.loading}
-                      style={{ flex: 1 }}
+                      className="calibragem-input-small"
                     />
-                    <span style={{ fontSize: '0.9rem', color: '#f0f0f0' }}>%</span>
+                    <span className="percent-sign">%</span>
+                    <span className="calibragem-atual-inline">Atual: {calibragemGlobal}%</span>
+                    <button
+                      onClick={() => aplicarCalibragemComValor(calibragemTemp)}
+                      disabled={calibragem.loading || calibragemTemp < 0 || calibragemTemp > 100}
+                      className="btn btn-primary btn-xs"
+                    >
+                      {calibragem.loading ? '...' : 'Aplicar'}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Botões de ação e calibragem */}
+            {/* Botões de ação */}
             <div className="actions-row">
-              {isAdminOrAnalista && (
-                <div className="calibragem-info-compact">
-                  <span style={{ fontSize: '0.8rem', color: '#f0f0f0' }}>
-                    Atual: <strong>{calibragemGlobal}%</strong>
-                  </span>
-                  <button
-                    onClick={() => aplicarCalibragemComValor(calibragemTemp)}
-                    disabled={calibragem.loading || calibragemTemp < 0 || calibragemTemp > 100}
-                    className="btn btn-primary btn-sm"
-                  >
-                    {calibragem.loading ? 'Aplicando...' : 'Aplicar'}
-                  </button>
-                </div>
-              )}
 
               {/* Botões de ação */}
               <div className="actions-container">
