@@ -1082,14 +1082,29 @@ class StorageService {
     async atualizarMediasUCs(ucsAtualizadas) {
         try {
             console.log('✏️ Atualizando médias das UCs no banco de dados...');
-            console.log('📊 UCs a atualizar:', ucsAtualizadas);
+            console.log('📊 UCs a atualizar (dados completos):', ucsAtualizadas);
 
-            // Formatar dados para o backend
-            const dadosParaBackend = ucsAtualizadas.map(uc => ({
-                id: uc.id,
-                numero_unidade: uc.numero_unidade,
-                consumo_medio: parseFloat(uc.consumo_calibrado_editado || uc.consumo_calibrado || 0)
-            }));
+            // Formatar dados para o backend - usar numero_unidade como identificador principal
+            const dadosParaBackend = ucsAtualizadas.map(uc => {
+                const consumoMedio = parseFloat(uc.consumo_calibrado_editado || uc.consumo_calibrado || 0);
+
+                console.log(`🔍 Processando UC: ${uc.numero_unidade}`, {
+                    id: uc.id,
+                    uc_id: uc.uc_id,
+                    numero_unidade: uc.numero_unidade,
+                    consumo_calibrado_editado: uc.consumo_calibrado_editado,
+                    consumo_calibrado: uc.consumo_calibrado,
+                    consumo_medio_final: consumoMedio
+                });
+
+                return {
+                    // Tentar múltiplos identificadores (o backend decide qual usar)
+                    id: uc.uc_id || uc.id,
+                    uc_id: uc.uc_id,
+                    numero_unidade: uc.numero_unidade,
+                    consumo_medio: consumoMedio
+                };
+            });
 
             console.log('📤 Dados formatados para backend:', dadosParaBackend);
 
@@ -1102,6 +1117,11 @@ class StorageService {
 
         } catch (error) {
             console.error('❌ Erro ao atualizar médias das UCs:', error);
+            console.error('❌ Detalhes do erro:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
             throw error;
         }
     }
