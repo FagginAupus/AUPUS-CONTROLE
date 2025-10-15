@@ -1079,6 +1079,33 @@ class StorageService {
         }
     }
 
+    async atualizarMediasUCs(ucsAtualizadas) {
+        try {
+            console.log('✏️ Atualizando médias das UCs no banco de dados...');
+            console.log('📊 UCs a atualizar:', ucsAtualizadas);
+
+            // Formatar dados para o backend
+            const dadosParaBackend = ucsAtualizadas.map(uc => ({
+                id: uc.id,
+                numero_unidade: uc.numero_unidade,
+                consumo_medio: parseFloat(uc.consumo_calibrado_editado || uc.consumo_calibrado || 0)
+            }));
+
+            console.log('📤 Dados formatados para backend:', dadosParaBackend);
+
+            const response = await apiService.put('/unidades-consumidoras/atualizar-medias', {
+                ucs: dadosParaBackend
+            });
+
+            console.log('✅ Médias das UCs atualizadas com sucesso:', response);
+            return response;
+
+        } catch (error) {
+            console.error('❌ Erro ao atualizar médias das UCs:', error);
+            throw error;
+        }
+    }
+
     async gerarRelatorioUGs() {
         try {
             console.log('📄 Gerando relatório de UGs');

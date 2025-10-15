@@ -1191,7 +1191,10 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
     return ucsComPorcentagemArredondada;
   };
 
-  const ucsComPorcentagens = calcularPorcentagens(ucsEditadas);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const ucsComPorcentagens = useMemo(() => calcularPorcentagens(ucsEditadas), [ucsEditadas, ug]);
+
+  const capacidadeTotal = parseFloat(ug?.capacidade || 0);
 
   const totalAlocado = ucsComPorcentagens.reduce((sum, uc) =>
     sum + parseFloat(uc.consumo_calibrado_editado || 0), 0
@@ -1201,10 +1204,28 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
     sum + (uc.porcentagem || 0), 0
   );
 
+  // Verificar se a soma ultrapassa a capacidade
+  const ultrapassouCapacidade = totalAlocado > capacidadeTotal;
+  const percentualUtilizacao = capacidadeTotal > 0 ? (totalAlocado / capacidadeTotal) * 100 : 0;
+
   const handleEditarMedia = (index, novoValor) => {
     const novasUCs = [...ucsEditadas];
-    novasUCs[index].consumo_calibrado_editado = parseFloat(novoValor) || 0;
+    const novoConsumo = parseFloat(novoValor) || 0;
+    novasUCs[index].consumo_calibrado_editado = novoConsumo;
     setUcsEditadas(novasUCs);
+
+    // Calcular novo total
+    const novoTotal = novasUCs.reduce((sum, uc) =>
+      sum + parseFloat(uc.consumo_calibrado_editado || 0), 0
+    );
+
+    // Alertar se ultrapassar capacidade
+    if (novoTotal > capacidadeTotal) {
+      showNotification(
+        `⚠️ ATENÇÃO: Total alocado (${novoTotal.toLocaleString('pt-BR')} kWh) ultrapassa a capacidade da UG (${capacidadeTotal.toLocaleString('pt-BR')} kWh)`,
+        'warning'
+      );
+    }
   };
 
   const handleSalvar = () => {
@@ -1213,12 +1234,24 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
 
   const confirmarSalvar = async () => {
     try {
-      // Aqui você implementaria a chamada para salvar as médias editadas
-      // Por enquanto, vou apenas mostrar uma notificação
-      showNotification('Médias atualizadas com sucesso!', 'success');
-      setShowConfirmDialog(false);
-      setModoEdicao(false);
+      console.log('💾 Salvando alterações das médias das UCs...');
+      console.log('📊 UCs editadas:', ucsEditadas);
+
+      // Chamar o storageService para atualizar as médias no banco de dados
+      const response = await storageService.atualizarMediasUCs(ucsEditadas);
+
+      if (response.success) {
+        showNotification('Médias atualizadas com sucesso no banco de dados!', 'success');
+        setShowConfirmDialog(false);
+        setModoEdicao(false);
+
+        // Fechar o modal e recarregar os dados da UG
+        onClose();
+      } else {
+        throw new Error(response.message || 'Erro ao atualizar médias');
+      }
     } catch (error) {
+      console.error('❌ Erro ao salvar médias:', error);
       showNotification(`Erro ao salvar: ${error.message}`, 'error');
     }
   };
@@ -1263,46 +1296,88 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                 <thead>
                   <tr>
                     <th>UC</th>
-                    <th>Média (kWh)</th>
+                    <th>Média Original (kWh)</th>
                     <th>Porcentagem</th>
+                    <th>Energia Alocada (kWh)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ucsComPorcentagens.map((uc, index) => (
-                    <tr key={index}>
-                      <td>{uc.numero_unidade}</td>
-                      <td>
-                        {modoEdicao ? (
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={uc.consumo_calibrado_editado}
-                            onChange={(e) => handleEditarMedia(index, e.target.value)}
-                            className="input-media-edicao"
-                          />
-                        ) : (
-                          <span>{parseFloat(uc.consumo_calibrado_editado || 0).toLocaleString('pt-BR')}</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="porcentagem-valor">{(uc.porcentagem || 0).toFixed(2)}%</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {ucsComPorcentagens.map((uc, index) => {
+                    const mediaOriginal = parseFloat(uc.consumo_calibrado || 0);
+                    const energiaAlocada = (uc.porcentagem / 100) * capacidadeTotal;
+
+                    // Determinar cor baseada na comparação
+                    let corEnergia = '#ffc107'; // Amarelo (igual)
+                    if (Math.abs(energiaAlocada - mediaOriginal) > 0.5) {
+                      corEnergia = energiaAlocada < mediaOriginal ? '#dc3545' : '#28a745'; // Vermelho ou Verde
+                    }
+
+                    return (
+                      <tr key={index}>
+                        <td>{uc.numero_unidade}</td>
+                        <td>
+                          {modoEdicao ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={uc.consumo_calibrado_editado}
+                              onChange={(e) => handleEditarMedia(index, e.target.value)}
+                              className="input-media-edicao"
+                            />
+                          ) : (
+                            <span>{mediaOriginal.toLocaleString('pt-BR')}</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="porcentagem-valor">{(uc.porcentagem || 0).toFixed(2)}%</span>
+                        </td>
+                        <td>
+                          <span
+                            className="energia-alocada-valor"
+                            style={{
+                              color: corEnergia,
+                              fontWeight: '600'
+                            }}
+                          >
+                            {energiaAlocada.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="total-row">
                     <td><strong>TOTAL</strong></td>
-                    <td><strong>{totalAlocado.toLocaleString('pt-BR')} kWh</strong></td>
+                    <td><strong>{ucsComPorcentagens.reduce((sum, uc) => sum + parseFloat(uc.consumo_calibrado_editado || 0), 0).toLocaleString('pt-BR')} kWh</strong></td>
                     <td>
                       <strong className={porcentagemTotal === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'}>
                         {porcentagemTotal.toFixed(2)}%
+                      </strong>
+                    </td>
+                    <td>
+                      <strong style={{ color: ultrapassouCapacidade ? '#dc3545' : '#28a745' }}>
+                        {totalAlocado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kWh
+                        {ultrapassouCapacidade && ' ⚠️'}
                       </strong>
                     </td>
                   </tr>
                 </tfoot>
               </table>
             </div>
+
+            {/* Alertas */}
+            {ultrapassouCapacidade && (
+              <div className="aviso-porcentagem" style={{ backgroundColor: '#dc354520', borderColor: '#dc3545' }}>
+                <AlertCircle size={16} color="#dc3545" />
+                <span style={{ color: '#dc3545' }}>
+                  <strong>ATENÇÃO:</strong> Total alocado ({totalAlocado.toLocaleString('pt-BR')} kWh)
+                  ultrapassa a capacidade da UG ({capacidadeTotal.toLocaleString('pt-BR')} kWh)
+                  em {percentualUtilizacao.toFixed(1)}%
+                </span>
+              </div>
+            )}
 
             {porcentagemTotal !== 100 && (
               <div className="aviso-porcentagem">
@@ -1328,10 +1403,13 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                   <button
                     onClick={handleSalvar}
                     className="btn btn-primary"
-                    disabled={porcentagemTotal !== 100}
+                    style={{
+                      backgroundColor: ultrapassouCapacidade ? '#ffc107' : undefined,
+                      borderColor: ultrapassouCapacidade ? '#ffc107' : undefined
+                    }}
                   >
                     <Save size={16} />
-                    Salvar Alterações
+                    {ultrapassouCapacidade ? 'Salvar (Excedendo Capacidade)' : 'Salvar Alterações'}
                   </button>
                   <button
                     onClick={() => {
@@ -1369,20 +1447,63 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
       {showConfirmDialog && (
         <div className="common-modal-overlay" onClick={() => setShowConfirmDialog(false)}>
           <div className="common-modal modal-confirm-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="common-modal-header">
+            <div className="common-modal-header" style={{
+              backgroundColor: ultrapassouCapacidade ? '#dc3545' : undefined
+            }}>
               <h2>
                 <AlertCircle size={20} />
-                Confirmar Alteração
+                {ultrapassouCapacidade ? '⚠️ CONFIRMAR ALTERAÇÃO COM EXCESSO' : 'Confirmar Alteração'}
               </h2>
             </div>
             <div className="common-modal-content">
-              <p>Tem certeza que deseja alterar as médias das UCs?</p>
-              <p><strong>Esta ação irá recalcular todas as porcentagens.</strong></p>
+              {ultrapassouCapacidade ? (
+                <>
+                  <div style={{
+                    backgroundColor: '#dc354520',
+                    border: '2px solid #dc3545',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    marginBottom: '16px'
+                  }}>
+                    <p style={{ color: '#dc3545', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '12px' }}>
+                      ⚠️ ATENÇÃO: CAPACIDADE EXCEDIDA!
+                    </p>
+                    <p style={{ marginBottom: '8px' }}>
+                      <strong>Total Alocado:</strong> {totalAlocado.toLocaleString('pt-BR')} kWh
+                    </p>
+                    <p style={{ marginBottom: '8px' }}>
+                      <strong>Capacidade da UG:</strong> {capacidadeTotal.toLocaleString('pt-BR')} kWh
+                    </p>
+                    <p style={{ marginBottom: '8px' }}>
+                      <strong>Excesso:</strong> {(totalAlocado - capacidadeTotal).toLocaleString('pt-BR')} kWh ({percentualUtilizacao.toFixed(1)}%)
+                    </p>
+                  </div>
+                  <p style={{ fontWeight: 'bold', color: '#dc3545' }}>
+                    Você está prestes a alocar mais energia do que a capacidade disponível da UG.
+                  </p>
+                  <p style={{ marginTop: '12px' }}>
+                    Tem certeza que deseja confirmar esta alteração?
+                  </p>
+                  <p><strong>Esta ação irá recalcular todas as porcentagens para totalizar 100%.</strong></p>
+                </>
+              ) : (
+                <>
+                  <p>Tem certeza que deseja alterar as médias das UCs?</p>
+                  <p><strong>Esta ação irá recalcular todas as porcentagens para totalizar 100%.</strong></p>
+                </>
+              )}
             </div>
             <div className="modal-footer">
-              <button onClick={confirmarSalvar} className="btn btn-primary">
+              <button
+                onClick={confirmarSalvar}
+                className="btn btn-primary"
+                style={{
+                  backgroundColor: ultrapassouCapacidade ? '#dc3545' : undefined,
+                  borderColor: ultrapassouCapacidade ? '#dc3545' : undefined
+                }}
+              >
                 <Check size={16} />
-                Confirmar
+                {ultrapassouCapacidade ? 'Sim, Confirmar Mesmo Assim' : 'Confirmar'}
               </button>
               <button onClick={() => setShowConfirmDialog(false)} className="btn btn-secondary">
                 Cancelar
