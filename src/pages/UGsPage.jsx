@@ -353,6 +353,84 @@ const UGsPage = () => {
     }
   };
 
+  // Função auxiliar para redistribuir porcentagens garantindo EXATAMENTE 100%
+  const redistribuirPorcentagens = (ucsLista, capacidadeTotal) => {
+    if (capacidadeTotal <= 0 || !ucsLista || ucsLista.length === 0) return ucsLista;
+
+    // 1. Calcular porcentagens naturais (brutas) de cada UC
+    const ucsComPorcentagemNatural = ucsLista.map(uc => {
+      const consumo = parseFloat(uc.consumo_calibrado || uc.consumo_calibrado_editado || 0);
+      const porcentagemNatural = (consumo / capacidadeTotal) * 100;
+      return {
+        ...uc,
+        consumo,
+        porcentagemNatural
+      };
+    });
+
+    // 2. Arredondar para 2 casas decimais
+    const ucsComPorcentagemArredondada = ucsComPorcentagemNatural.map(uc => ({
+      ...uc,
+      porcentagem: Math.round(uc.porcentagemNatural * 100) / 100
+    }));
+
+    // 3. Calcular a soma das porcentagens arredondadas
+    let somaAtual = ucsComPorcentagemArredondada.reduce((sum, uc) =>
+      sum + uc.porcentagem, 0
+    );
+
+    // Arredondar soma para evitar problemas de precisão de ponto flutuante
+    somaAtual = Math.round(somaAtual * 100) / 100;
+
+    // 4. Ajustar para garantir EXATAMENTE 100.00%
+    if (somaAtual !== 100.00) {
+      // Ordenar por porcentagem natural (maior para menor) para ajustar as maiores primeiro
+      const ucsOrdenadas = [...ucsComPorcentagemArredondada].sort((a, b) =>
+        b.porcentagemNatural - a.porcentagemNatural
+      );
+
+      // Calcular diferença que precisa ser ajustada
+      let diferenca = Math.round((100.00 - somaAtual) * 100) / 100;
+
+      // Ajustar de 0.01 em 0.01 começando pelas UCs com maior porcentagem natural
+      let index = 0;
+      while (Math.abs(diferenca) >= 0.01 && index < ucsOrdenadas.length) {
+        if (diferenca > 0) {
+          // Precisa adicionar
+          ucsOrdenadas[index].porcentagem = Math.round((ucsOrdenadas[index].porcentagem + 0.01) * 100) / 100;
+          diferenca = Math.round((diferenca - 0.01) * 100) / 100;
+        } else {
+          // Precisa subtrair
+          ucsOrdenadas[index].porcentagem = Math.round((ucsOrdenadas[index].porcentagem - 0.01) * 100) / 100;
+          diferenca = Math.round((diferenca + 0.01) * 100) / 100;
+        }
+        index++;
+
+        // Circular se necessário (caso precise ajustar mais de uma vez por UC)
+        if (index >= ucsOrdenadas.length && Math.abs(diferenca) >= 0.01) {
+          index = 0;
+        }
+      }
+
+      // Verificação final: garantir que a soma é EXATAMENTE 100.00%
+      const somaFinal = ucsOrdenadas.reduce((sum, uc) =>
+        Math.round((sum + uc.porcentagem) * 100) / 100, 0
+      );
+
+      if (somaFinal !== 100.00) {
+        // Ajuste de emergência: forçar o último item a completar 100%
+        const somaExcetoUltimo = ucsOrdenadas.slice(0, -1).reduce((sum, uc) =>
+          Math.round((sum + uc.porcentagem) * 100) / 100, 0
+        );
+        ucsOrdenadas[ucsOrdenadas.length - 1].porcentagem = Math.round((100.00 - somaExcetoUltimo) * 100) / 100;
+      }
+
+      return ucsOrdenadas;
+    }
+
+    return ucsComPorcentagemArredondada;
+  };
+
   const gerarRateioExcel = async (ugInfo, ucsDetalhes) => {
     // Calcular porcentagens de rateio
     const capacidadeTotal = parseFloat(ugInfo.capacidade || 0);
@@ -361,29 +439,12 @@ const UGsPage = () => {
       throw new Error('UG com capacidade inválida');
     }
 
-    // UCs com consumo calibrado e porcentagem
-    let ucsComRateio = ucsDetalhes.map(uc => {
-      const consumoCalibrado = parseFloat(uc.consumo_calibrado || 0);
-      const porcentagem = (consumoCalibrado / capacidadeTotal) * 100;
-
-      return {
-        numero_uc: uc.numero_unidade,
-        consumo_calibrado: consumoCalibrado,
-        porcentagem: Math.round(porcentagem * 100) / 100 // 2 casas decimais
-      };
-    });
-
-    // Ajustar para somar exatamente 100%
-    const somaAtual = ucsComRateio.reduce((acc, uc) => acc + uc.porcentagem, 0);
-    const diferenca = 100.00 - somaAtual;
-
-    if (Math.abs(diferenca) > 0.01) {
-      // Ajustar a maior UC para fechar em 100%
-      const maiorUC = ucsComRateio.reduce((prev, current) =>
-        current.porcentagem > prev.porcentagem ? current : prev
-      );
-      maiorUC.porcentagem = Math.round((maiorUC.porcentagem + diferenca) * 100) / 100;
-    }
+    // Usar função de redistribuição para garantir 100%
+    const ucsComRateio = redistribuirPorcentagens(ucsDetalhes, capacidadeTotal).map(uc => ({
+      numero_uc: uc.numero_unidade,
+      consumo_calibrado: uc.consumo,
+      porcentagem: uc.porcentagem
+    }));
 
     // Criar estrutura do Excel
     const dadosExcel = [
@@ -1051,19 +1112,83 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
     }
   }, [ucs]);
 
-  // Calcular porcentagens automaticamente
+  // Calcular porcentagens com redistribuição para garantir EXATAMENTE 100%
   const calcularPorcentagens = (ucsLista) => {
     const capacidadeTotal = parseFloat(ug?.capacidade || 0);
-    if (capacidadeTotal <= 0) return ucsLista;
+    if (capacidadeTotal <= 0 || !ucsLista || ucsLista.length === 0) return ucsLista;
 
-    return ucsLista.map(uc => {
+    // 1. Calcular porcentagens naturais (brutas) de cada UC
+    const ucsComPorcentagemNatural = ucsLista.map(uc => {
       const consumo = parseFloat(uc.consumo_calibrado_editado || 0);
-      const porcentagem = (consumo / capacidadeTotal) * 100;
+      const porcentagemNatural = (consumo / capacidadeTotal) * 100;
       return {
         ...uc,
-        porcentagem: Math.round(porcentagem * 100) / 100
+        consumo,
+        porcentagemNatural
       };
     });
+
+    // 2. Arredondar para 2 casas decimais
+    const ucsComPorcentagemArredondada = ucsComPorcentagemNatural.map(uc => ({
+      ...uc,
+      porcentagem: Math.round(uc.porcentagemNatural * 100) / 100
+    }));
+
+    // 3. Calcular a soma das porcentagens arredondadas
+    let somaAtual = ucsComPorcentagemArredondada.reduce((sum, uc) =>
+      sum + uc.porcentagem, 0
+    );
+
+    // Arredondar soma para evitar problemas de precisão de ponto flutuante
+    somaAtual = Math.round(somaAtual * 100) / 100;
+
+    // 4. Ajustar para garantir EXATAMENTE 100.00%
+    if (somaAtual !== 100.00) {
+      // Ordenar por porcentagem natural (maior para menor) para ajustar as maiores primeiro
+      const ucsOrdenadas = [...ucsComPorcentagemArredondada].sort((a, b) =>
+        b.porcentagemNatural - a.porcentagemNatural
+      );
+
+      // Calcular diferença que precisa ser ajustada
+      let diferenca = Math.round((100.00 - somaAtual) * 100) / 100;
+
+      // Ajustar de 0.01 em 0.01 começando pelas UCs com maior porcentagem natural
+      let index = 0;
+      while (Math.abs(diferenca) >= 0.01 && index < ucsOrdenadas.length) {
+        if (diferenca > 0) {
+          // Precisa adicionar
+          ucsOrdenadas[index].porcentagem = Math.round((ucsOrdenadas[index].porcentagem + 0.01) * 100) / 100;
+          diferenca = Math.round((diferenca - 0.01) * 100) / 100;
+        } else {
+          // Precisa subtrair
+          ucsOrdenadas[index].porcentagem = Math.round((ucsOrdenadas[index].porcentagem - 0.01) * 100) / 100;
+          diferenca = Math.round((diferenca + 0.01) * 100) / 100;
+        }
+        index++;
+
+        // Circular se necessário (caso precise ajustar mais de uma vez por UC)
+        if (index >= ucsOrdenadas.length && Math.abs(diferenca) >= 0.01) {
+          index = 0;
+        }
+      }
+
+      // Verificação final: garantir que a soma é EXATAMENTE 100.00%
+      const somaFinal = ucsOrdenadas.reduce((sum, uc) =>
+        Math.round((sum + uc.porcentagem) * 100) / 100, 0
+      );
+
+      if (somaFinal !== 100.00) {
+        // Ajuste de emergência: forçar o último item a completar 100%
+        const somaExcetoUltimo = ucsOrdenadas.slice(0, -1).reduce((sum, uc) =>
+          Math.round((sum + uc.porcentagem) * 100) / 100, 0
+        );
+        ucsOrdenadas[ucsOrdenadas.length - 1].porcentagem = Math.round((100.00 - somaExcetoUltimo) * 100) / 100;
+      }
+
+      return ucsOrdenadas;
+    }
+
+    return ucsComPorcentagemArredondada;
   };
 
   const ucsComPorcentagens = calcularPorcentagens(ucsEditadas);
