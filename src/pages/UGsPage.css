@@ -850,3 +850,215 @@
   cursor: help;
 }
 
+
+/* =======================================================
+   BOTÃO INFO (EYE) - VISUALIZAR UCs
+   ======================================================= */
+
+.action-btn.info {
+  background: rgba(23, 162, 184, 0.1);
+  color: #17a2b8;
+}
+
+.action-btn.info:hover:not(:disabled) {
+  background: rgba(23, 162, 184, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.2);
+}
+
+/* =======================================================
+   MODAL VISUALIZAR UCs
+   ======================================================= */
+
+.modal-visualizar-ucs {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  max-width: 800px !important;
+  width: 90% !important;
+}
+
+.modal-body-visualizar-ucs {
+  padding: 24px !important;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Header de informações da UG */
+.ug-info-header {
+  display: flex;
+  gap: 24px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 3px solid #3b82f6;
+}
+
+.ug-info-item {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ug-info-item strong {
+  color: rgba(255, 255, 255, 0.95);
+  margin-right: 6px;
+}
+
+/* Tabela de UCs */
+.ucs-table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.ucs-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ucs-table thead {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.ucs-table th {
+  padding: 12px 16px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.ucs-table td {
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ucs-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ucs-table tfoot {
+  background: rgba(59, 130, 246, 0.15);
+  border-top: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.ucs-table tfoot td {
+  padding: 14px 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Input de edição de média */
+.input-media-edicao {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.input-media-edicao:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Porcentagens */
+.porcentagem-valor {
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.porcentagem-ok {
+  color: #10b981;
+}
+
+.porcentagem-aviso {
+  color: #f59e0b;
+}
+
+/* Aviso de porcentagem */
+.aviso-porcentagem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+/* Footer do modal */
+.modal-visualizar-ucs .modal-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 24px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  gap: 12px;
+}
+
+/* Modal de confirmação */
+.modal-confirm-dialog {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  max-width: 450px !important;
+  width: 90% !important;
+}
+
+.modal-confirm-dialog .common-modal-content {
+  padding: 24px !important;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.modal-confirm-dialog .common-modal-content p {
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.modal-confirm-dialog .common-modal-content strong {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .modal-visualizar-ucs {
+    width: 95% !important;
+  }
+
+  .ug-info-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ucs-table th,
+  .ucs-table td {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .modal-visualizar-ucs .modal-footer {
+    flex-direction: column;
+  }
+
+  .footer-left,
+  .footer-right {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .footer-left .btn,
+  .footer-right .btn {
+    flex: 1;
+  }
+}

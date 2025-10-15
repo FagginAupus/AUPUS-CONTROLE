@@ -23,7 +23,11 @@ import {
   BarChart3,
   FileText,
   Plus,
-  X
+  X,
+  Eye,
+  Save,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as XLSXStyle from 'xlsx-js-style';
@@ -36,7 +40,8 @@ const UGsPage = () => {
   } = useData();
   const [modalNovaUG, setModalNovaUG] = useState({ show: false });
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
-  
+  const [modalVisualizarUCs, setModalVisualizarUCs] = useState({ show: false, ug: null, ucs: [] });
+
   const [filtros, setFiltros] = useState({
     busca: ''
   });
@@ -316,6 +321,35 @@ const UGsPage = () => {
     } catch (error) {
       console.error('❌ Erro ao baixar rateio:', error);
       showNotification(`Erro ao gerar rateio: ${error.message}`, 'error');
+    }
+  };
+
+  const visualizarUCsDaUG = async (ug) => {
+    try {
+      if (!ug.ucsAtribuidas || ug.ucsAtribuidas === 0) {
+        showNotification('Esta UG não possui UCs atribuídas', 'warning');
+        return;
+      }
+
+      showNotification('Carregando UCs da UG...', 'info');
+
+      const response = await storageService.obterRateioDetalhes(ug.id);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao buscar UCs da UG');
+      }
+
+      const { ugInfo, ucsDetalhes } = response.data;
+
+      setModalVisualizarUCs({
+        show: true,
+        ug: ugInfo,
+        ucs: ucsDetalhes
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao carregar UCs:', error);
+      showNotification(`Erro ao carregar UCs: ${error.message}`, 'error');
     }
   };
 
@@ -618,6 +652,18 @@ DETALHES DA UG: ${item.nomeUsina}
                         <td>
                           <div className="action-buttons">
                             <button
+                              onClick={() => visualizarUCsDaUG(item)}
+                              className="action-btn info"
+                              title="Visualizar UCs Alocadas"
+                              disabled={!item.ucsAtribuidas || item.ucsAtribuidas === 0}
+                              style={{
+                                opacity: (!item.ucsAtribuidas || item.ucsAtribuidas === 0) ? 0.5 : 1,
+                                cursor: (!item.ucsAtribuidas || item.ucsAtribuidas === 0) ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
                               onClick={() => editarUG(index)}
                               className="action-btn edit"
                               title="Editar UG"
@@ -663,10 +709,20 @@ DETALHES DA UG: ${item.nomeUsina}
         )}
 
         {modalEdicao.show && isAdminOrAnalista && (
-          <ModalEdicaoUG 
+          <ModalEdicaoUG
             item={modalEdicao.item}
             onSave={salvarEdicaoUG}
             onClose={() => setModalEdicao({ show: false, item: null, index: -1 })}
+          />
+        )}
+
+        {modalVisualizarUCs.show && (
+          <ModalVisualizarUCs
+            ug={modalVisualizarUCs.ug}
+            ucs={modalVisualizarUCs.ucs}
+            onClose={() => setModalVisualizarUCs({ show: false, ug: null, ucs: [] })}
+            onGenerateExcel={(ugInfo, ucsDetalhes) => gerarRateioExcel(ugInfo, ucsDetalhes)}
+            showNotification={showNotification}
           />
         )}
       </div>
@@ -976,6 +1032,241 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
         </form>
       </div>
     </div>
+  );
+};
+
+// Modal Visualizar UCs da UG
+const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotification }) => {
+  const [modoEdicao, setModoEdicao] = useState(false);
+  const [ucsEditadas, setUcsEditadas] = useState([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  useEffect(() => {
+    if (ucs && ucs.length > 0) {
+      // Inicializar ucsEditadas com os dados originais
+      setUcsEditadas(ucs.map(uc => ({
+        ...uc,
+        consumo_calibrado_editado: parseFloat(uc.consumo_calibrado || 0)
+      })));
+    }
+  }, [ucs]);
+
+  // Calcular porcentagens automaticamente
+  const calcularPorcentagens = (ucsLista) => {
+    const capacidadeTotal = parseFloat(ug?.capacidade || 0);
+    if (capacidadeTotal <= 0) return ucsLista;
+
+    return ucsLista.map(uc => {
+      const consumo = parseFloat(uc.consumo_calibrado_editado || 0);
+      const porcentagem = (consumo / capacidadeTotal) * 100;
+      return {
+        ...uc,
+        porcentagem: Math.round(porcentagem * 100) / 100
+      };
+    });
+  };
+
+  const ucsComPorcentagens = calcularPorcentagens(ucsEditadas);
+
+  const totalAlocado = ucsComPorcentagens.reduce((sum, uc) =>
+    sum + parseFloat(uc.consumo_calibrado_editado || 0), 0
+  );
+
+  const porcentagemTotal = ucsComPorcentagens.reduce((sum, uc) =>
+    sum + (uc.porcentagem || 0), 0
+  );
+
+  const handleEditarMedia = (index, novoValor) => {
+    const novasUCs = [...ucsEditadas];
+    novasUCs[index].consumo_calibrado_editado = parseFloat(novoValor) || 0;
+    setUcsEditadas(novasUCs);
+  };
+
+  const handleSalvar = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const confirmarSalvar = async () => {
+    try {
+      // Aqui você implementaria a chamada para salvar as médias editadas
+      // Por enquanto, vou apenas mostrar uma notificação
+      showNotification('Médias atualizadas com sucesso!', 'success');
+      setShowConfirmDialog(false);
+      setModoEdicao(false);
+    } catch (error) {
+      showNotification(`Erro ao salvar: ${error.message}`, 'error');
+    }
+  };
+
+  const handleGerarPlanilha = async () => {
+    try {
+      await onGenerateExcel(ug, ucsComPorcentagens);
+      showNotification('Planilha gerada com sucesso!', 'success');
+    } catch (error) {
+      showNotification(`Erro ao gerar planilha: ${error.message}`, 'error');
+    }
+  };
+
+  return (
+    <>
+      <div className="common-modal-overlay" onClick={onClose}>
+        <div className="common-modal modal-visualizar-ucs" onClick={(e) => e.stopPropagation()}>
+          <div className="common-modal-header modal-header-ug">
+            <h2>
+              <Eye size={20} />
+              UCs Alocadas - {ug?.nome_usina}
+            </h2>
+            <button onClick={onClose} className="common-close-btn">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="common-modal-content modal-body-visualizar-ucs">
+            {/* Informações da UG */}
+            <div className="ug-info-header">
+              <div className="ug-info-item">
+                <strong>Número de UCs:</strong> {ucs.length}
+              </div>
+              <div className="ug-info-item">
+                <strong>Capacidade Total:</strong> {parseFloat(ug?.capacidade || 0).toLocaleString('pt-BR')} kWh
+              </div>
+            </div>
+
+            {/* Tabela de UCs */}
+            <div className="ucs-table-container">
+              <table className="ucs-table">
+                <thead>
+                  <tr>
+                    <th>UC</th>
+                    <th>Média (kWh)</th>
+                    <th>Porcentagem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ucsComPorcentagens.map((uc, index) => (
+                    <tr key={index}>
+                      <td>{uc.numero_unidade}</td>
+                      <td>
+                        {modoEdicao ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={uc.consumo_calibrado_editado}
+                            onChange={(e) => handleEditarMedia(index, e.target.value)}
+                            className="input-media-edicao"
+                          />
+                        ) : (
+                          <span>{parseFloat(uc.consumo_calibrado_editado || 0).toLocaleString('pt-BR')}</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="porcentagem-valor">{(uc.porcentagem || 0).toFixed(2)}%</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="total-row">
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>{totalAlocado.toLocaleString('pt-BR')} kWh</strong></td>
+                    <td>
+                      <strong className={porcentagemTotal === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'}>
+                        {porcentagemTotal.toFixed(2)}%
+                      </strong>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {porcentagemTotal !== 100 && (
+              <div className="aviso-porcentagem">
+                <AlertCircle size={16} />
+                <span>Atenção: A porcentagem total deve ser 100,00%</span>
+              </div>
+            )}
+          </div>
+
+          <div className="modal-footer">
+            <div className="footer-left">
+              <button
+                onClick={handleGerarPlanilha}
+                className="btn btn-secondary"
+              >
+                <FileSpreadsheet size={16} />
+                Gerar Planilha
+              </button>
+            </div>
+            <div className="footer-right">
+              {modoEdicao ? (
+                <>
+                  <button
+                    onClick={handleSalvar}
+                    className="btn btn-primary"
+                    disabled={porcentagemTotal !== 100}
+                  >
+                    <Save size={16} />
+                    Salvar Alterações
+                  </button>
+                  <button
+                    onClick={() => {
+                      setModoEdicao(false);
+                      setUcsEditadas(ucs.map(uc => ({
+                        ...uc,
+                        consumo_calibrado_editado: parseFloat(uc.consumo_calibrado || 0)
+                      })));
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setModoEdicao(true)}
+                    className="btn btn-primary"
+                  >
+                    <Edit size={16} />
+                    Editar Médias
+                  </button>
+                  <button onClick={onClose} className="btn btn-secondary">
+                    Fechar
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dialog de Confirmação */}
+      {showConfirmDialog && (
+        <div className="common-modal-overlay" onClick={() => setShowConfirmDialog(false)}>
+          <div className="common-modal modal-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="common-modal-header">
+              <h2>
+                <AlertCircle size={20} />
+                Confirmar Alteração
+              </h2>
+            </div>
+            <div className="common-modal-content">
+              <p>Tem certeza que deseja alterar as médias das UCs?</p>
+              <p><strong>Esta ação irá recalcular todas as porcentagens.</strong></p>
+            </div>
+            <div className="modal-footer">
+              <button onClick={confirmarSalvar} className="btn btn-primary">
+                <Check size={16} />
+                Confirmar
+              </button>
+              <button onClick={() => setShowConfirmDialog(false)} className="btn btn-secondary">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

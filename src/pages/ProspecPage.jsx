@@ -1255,8 +1255,8 @@ const ModalVisualizacao = ({ item, user, onClose }) => {
   const mostrarRecorrencia = user?.role === 'admin' || user?.role === 'analista' || user?.role === 'consultor';
 
   return (
-    <div className="common-modal-overlay" onClick={onClose}>
-      <div className="common-modal large" onClick={(e) => e.stopPropagation()}>
+    <div className="common-modal-overlay">
+      <div className="common-modal large">
         <div className="common-modal-header">
           <h2>
             <Eye size={20} />
@@ -1850,14 +1850,14 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
   };
   
   return (
-    <div className="common-modal-overlay" onClick={handleClose}>
+    <div className="common-modal-overlay">
       {(() => {
         console.log('🎯 RENDER Modal - consultoresDisponiveis:', consultoresDisponiveis.length, consultoresDisponiveis);
         console.log('🎯 RENDER Modal - dados.consultor_id:', dados.consultor_id);
         return null;
       })()}
 
-      <div className="common-modal large" onClick={(e) => e.stopPropagation()}>
+      <div className="common-modal large">
         <div className="common-modal-header">
           <h2>
             <Edit size={20} />
