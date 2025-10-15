@@ -1108,8 +1108,8 @@ class StorageService {
 
             console.log('📤 Dados formatados para backend:', dadosParaBackend);
 
-            const response = await apiService.put('/unidades-consumidoras/atualizar-medias', {
-                ucs: dadosParaBackend
+            const response = await apiService.post('/unidades-consumidoras/bulk-update', {
+                updates: dadosParaBackend
             });
 
             console.log('✅ Médias das UCs atualizadas com sucesso:', response);
