@@ -940,7 +940,17 @@ const ControlePage = () => {
         {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
-            <div className="filters-grid">
+            <div className="filters-grid-with-calibragem">
+              <div className="filter-group filter-busca">
+                <label>Buscar:</label>
+                <input
+                  type="text"
+                  placeholder="Cliente, proposta ou UC..."
+                  value={filtros.busca}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
+                />
+              </div>
+
               <div className="filter-group">
                 <label>Consultor</label>
                 <select
@@ -981,62 +991,47 @@ const ControlePage = () => {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Buscar:</label>
-                <input
-                  type="text"
-                  placeholder="Cliente, proposta ou UC..."
-                  value={filtros.busca}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                />
-              </div>
+              {isAdminOrAnalista && (
+                <div className="filter-group filter-calibragem">
+                  <label htmlFor="calibragem-input">Calibragem Global:</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <input
+                      id="calibragem-input"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={calibragemTemp}
+                      onChange={(e) => setCalibragemTemp(parseFloat(e.target.value) || 0)}
+                      placeholder="0.0"
+                      disabled={calibragem.loading}
+                      style={{ flex: 1 }}
+                    />
+                    <span style={{ fontSize: '0.9rem', color: '#f0f0f0' }}>%</span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* ========================================== */}
-            {/* CALIBRAGEM RESTAURADA NO ESTILO ORIGINAL  */}
-            {/* ========================================== */}
-            {isAdminOrAnalista && (
-              <div className="calibragem-controls">
-                <div className="calibragem-group">
-                  <label htmlFor="calibragem-input">Calibragem Global:</label>
-                  <input
-                    id="calibragem-input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={calibragemTemp}
-                    onChange={(e) => setCalibragemTemp(parseFloat(e.target.value) || 0)}
-                    placeholder="0.0"
-                    disabled={calibragem.loading}
-                  />
-                  <span style={{ fontSize: '0.9rem', color: '#666', marginLeft: '5px' }}>%</span>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>
-                    <strong>Atual: {calibragemGlobal}%</strong>
-                    {calibragemGlobal > 0 && (
-                      <span style={{ marginLeft: '10px', color: '#4CAF50' }}>
-                        (Fator: {(1 + calibragemGlobal / 100).toFixed(3)})
-                      </span>
-                    )}
-                  </div>
-                  
+            {/* Botões de ação e calibragem */}
+            <div className="actions-row">
+              {isAdminOrAnalista && (
+                <div className="calibragem-info-compact">
+                  <span style={{ fontSize: '0.8rem', color: '#f0f0f0' }}>
+                    Atual: <strong>{calibragemGlobal}%</strong>
+                  </span>
                   <button
                     onClick={() => aplicarCalibragemComValor(calibragemTemp)}
                     disabled={calibragem.loading || calibragemTemp < 0 || calibragemTemp > 100}
-                    className="btn btn-primary"
-                    style={{ minWidth: '100px' }}
+                    className="btn btn-primary btn-sm"
                   >
                     {calibragem.loading ? 'Aplicando...' : 'Aplicar'}
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Botões de ação */}
-            <div className="actions-container">
+              {/* Botões de ação */}
+              <div className="actions-container">
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
@@ -1065,6 +1060,7 @@ const ControlePage = () => {
                 <FileText size={16} />
                 Relatório Associados
               </button>
+              </div>
             </div>
           </div>
         </section>

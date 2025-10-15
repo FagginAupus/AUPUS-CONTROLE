@@ -170,8 +170,8 @@ small {
 .filters-section {
   background: white;
   border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 35px;
+  padding: 18px;
+  margin-bottom: 18px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
   position: relative;
   z-index: 1;
@@ -180,15 +180,76 @@ small {
 .filters-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 12px;
   align-items: end;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+}
+
+/* Grid com calibragem - 5 colunas, buscar menor */
+.filters-grid-with-calibragem {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.filter-busca {
+  grid-column: span 1;
+  order: -1;
+}
+
+.filter-calibragem input[type="number"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.filter-calibragem input[type="number"]:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+/* Linha de ações compacta - alinhada à direita */
+.actions-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+
+.calibragem-info-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.actions-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-sm {
+  padding: 8px 16px !important;
+  font-size: 0.85rem !important;
 }
 
 .filter-group {

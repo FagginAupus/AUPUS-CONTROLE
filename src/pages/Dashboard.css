@@ -1107,9 +1107,84 @@
     background: #1a1a1a !important;
     border-color: #3498db !important;
   }
-  
+
   .team-member.clickable-consultor::after {
     background: linear-gradient(135deg, #34495e, #2c3e50);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ===============================================
+   BOTÕES COMPACTOS - SEM QUADRO
+   =============================================== */
+
+.compact-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.compact-btn {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.compact-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.compact-btn.analista {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.compact-btn.analista:hover {
+  box-shadow: 0 5px 15px rgba(155, 89, 182, 0.3);
+}
+
+.compact-btn.consultor {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.compact-btn.consultor:hover {
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.compact-btn.gerente {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+.compact-btn.gerente:hover {
+  box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
+}
+
+.compact-btn.vendedor {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+}
+
+.compact-btn.vendedor:hover {
+  box-shadow: 0 5px 15px rgba(26, 188, 156, 0.3);
+}
+
+@media (max-width: 768px) {
+  .compact-actions {
+    flex-direction: column;
+  }
+
+  .compact-btn {
+    width: 100%;
+    justify-content: center;
   }
 }

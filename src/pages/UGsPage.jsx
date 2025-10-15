@@ -429,8 +429,8 @@ const UGsPage = () => {
         {/* Filtros e Controles */}
         <section className="filters-section">
           <div className="filters-container">
-            <div className="filters-grid">
-              <div className="filter-group">
+            <div className="filters-actions-row">
+              <div className="filter-group filter-busca-ugs">
                 <label>Buscar UG</label>
                 <input
                   type="text"
@@ -439,9 +439,8 @@ const UGsPage = () => {
                   onChange={(e) => setFiltros({...filtros, busca: e.target.value})}
                 />
               </div>
-            </div>
 
-            <div className="actions-container">
+              <div className="actions-container-inline">
               <button onClick={limparFiltros} className="btn btn-secondary">
                 Limpar Filtros
               </button>
@@ -471,6 +470,7 @@ const UGsPage = () => {
                   Nova UG
                 </button>
               )}
+              </div>
             </div>
           </div>
         </section>

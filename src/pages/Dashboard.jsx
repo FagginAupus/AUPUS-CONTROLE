@@ -390,32 +390,23 @@ const Dashboard = () => {
           )}
         </section>
 
-        {/* Cadastro de Usuários - Hierarquia Correta */}
+        {/* Botões de Cadastro - Compactos */}
         {botoesDisponiveis.length > 0 && (
-          <section className="user-management">
-            <h2>
-              <Users size={24} />
-              Gerenciar Equipe
-            </h2>
-            
-            <div className="management-actions">
-              {botoesDisponiveis.map((botao) => {
-                const IconComponent = botao.icon;
-                return (
-                  <button 
-                    key={botao.tipo}
-                    onClick={() => abrirModalCadastro(botao.tipo)}
-                    className={`create-user-btn ${botao.tipo}`}
-                  >
-                    <span className="btn-icon">
-                      <IconComponent size={20} />
-                    </span>
-                    <span className="btn-label">{botao.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          <div className="compact-actions">
+            {botoesDisponiveis.map((botao) => {
+              const IconComponent = botao.icon;
+              return (
+                <button
+                  key={botao.tipo}
+                  onClick={() => abrirModalCadastro(botao.tipo)}
+                  className={`compact-btn ${botao.tipo}`}
+                >
+                  <IconComponent size={16} />
+                  <span>{botao.label}</span>
+                </button>
+              );
+            })}
+          </div>
         )}
 
         {/* Consultores para Admin */}
