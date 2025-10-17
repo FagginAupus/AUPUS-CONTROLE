@@ -136,7 +136,7 @@ class ExportExcelService {
    */
   async exportarControleParaExcel(dados, filtros = {}) {
     try {
-      console.log('⚙️ === EXPORTAÇÃO CONTROLE COM DATA PROPOSTA ===');
+      console.log('⚙️ === EXPORTAÇÃO CONTROLE (OTIMIZADA - SEM CHAMADAS API) ===');
       console.log('Total de dados recebidos:', dados.length);
 
       await this.ensureXLSXLoaded();
@@ -149,37 +149,31 @@ class ExportExcelService {
       const dadosFiltrados = this.aplicarFiltrosControle(dados, filtros);
       console.log(`📋 Total após filtros: ${dadosFiltrados.length} registros`);
 
-      // ✅ BUSCAR DADOS DAS UCs E DATA DA PROPOSTA
-      const dadosEnriquecidos = await this.buscarDadosUCsParaControle(dadosFiltrados);
-      const dadosComDataProposta = await this.buscarDataProposta(dadosEnriquecidos);
+      // ✅ USAR DADOS JÁ DISPONÍVEIS - SEM CHAMADAS À API
+      // Os dados já vêm completos do backend, não precisa buscar novamente
 
       // ✅ ESTRUTURAR DADOS PARA EXCEL
-      const registrosParaExcel = dadosComDataProposta.map((item, index) => {
+      const registrosParaExcel = dadosFiltrados.map((item, index) => {
         const repasseCalculado = this.calcularRepasseCorrigido(item);
         
         return {
           'Nº': index + 1,
-          'Consultor': item.consultorNome || item.consultor || '',
+          'Consultor': item.consultorNome || item.consultor_nome || item.consultor || '',
           'Nº UC': item.numeroUC || item.numero_uc || item.numero_unidade || '',
           'Apelido UC': item.apelido || item.apelido_uc || '',
-          // ✅ USAR CONSUMO MÉDIO REAL BUSCADO
-          'Consumo Médio (kWh)': this.formatarNumero(item.consumoMedioReal || item.consumoMedio || item.consumo_medio || 0),
-          // ✅ USAR DESCONTOS REAIS DO CONTROLE_CLUBE
-          'Economia (%)': this.formatarPercentual(item.economiaReal || item.economia || 0),
-          'Desconto Bandeira (%)': this.formatarPercentual(item.bandeiraReal || item.bandeira || 0),
-          // ✅ CONTRIBUIÇÃO: R$ 0,00 ao invés de N/A
+          // ✅ USAR DADOS QUE JÁ VÊM DO BACKEND
+          'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || item.consumoMedio || 0),
+          'Economia (%)': this.formatarPercentual(this.extrairValorNumerico(item.desconto_tarifa || item.economia || 0)),
+          'Desconto Bandeira (%)': this.formatarPercentual(this.extrairValorNumerico(item.desconto_bandeira || item.bandeira || 0)),
           'Contribuição': this.formatarMoeda(0),
-          // ✅ NOVA COLUNA: Nº Cont (padrão 0)
           'Nº Cont': 0,
-          // ✅ COMISSÃO: 25% ao invés de 5%
           'Comissão (%)': this.formatarPercentual(25),
           'Repasse (R$)': this.formatarMoeda(repasseCalculado),
-          // ✅ NOVA COLUNA: Data da Proposta
-          'Data Proposta': this.formatarDataParaExcel(item.dataProposta),
-          'Data Entrada': this.formatarDataParaExcel(item.dataEntradaControle || item.data_entrada_controle),
-          'Status Troca': item.statusTroca || item.status_troca || 'Pendente',
-          'Data Titularidade': item.statusTroca === 'Associado' || item.status_troca === 'Associado' 
-            ? this.formatarDataParaExcel(item.dataTitularidade || item.data_titularidade)
+          'Data Proposta': this.formatarDataParaExcel(item.data_proposta || item.dataProposta),
+          'Data Entrada': this.formatarDataParaExcel(item.data_entrada_controle || item.dataEntradaControle),
+          'Status Troca': item.status_troca || item.statusTroca || 'Pendente',
+          'Data Titularidade': (item.status_troca === 'Associado' || item.statusTroca === 'Associado')
+            ? this.formatarDataParaExcel(item.data_titularidade || item.dataTitularidade)
             : ''
         };
       });
@@ -625,17 +619,17 @@ class ExportExcelService {
    * 💸 CALCULAR REPASSE CORRIGIDO - COM COMISSÃO 25%
    */
   calcularRepasseCorrigido(item) {
-    const consumo = parseFloat(item.consumoMedioReal || item.consumoMedio || item.consumo_medio || 0);
-    const economia = parseFloat(item.economiaReal || item.economia || 0);
+    const consumo = parseFloat(item.consumo_medio || item.consumoMedio || 0);
+    const economia = parseFloat(this.extrairValorNumerico(item.desconto_tarifa || item.economia || 0));
     const valorEstimadoKwh = 0.65;
-    
+
     // Calcular economia em reais
     const economiaReais = (consumo * valorEstimadoKwh) * (economia / 100);
-    
+
     // ✅ COMISSÃO DE 25%
     const comissao = 25;
     const repasse = economiaReais * (comissao / 100);
-    
+
     return repasse;
   }
 
