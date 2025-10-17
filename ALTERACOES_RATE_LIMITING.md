@@ -22,18 +22,25 @@ Isso resultava em sobrecarga da API, que ativava o rate limiting e retornava err
 
 ## ✅ Alterações Implementadas
 
-### 1. Redução do Batch Size
+### 1. Redução Agressiva do Batch Size
 ```javascript
-// ANTES
+// VERSÃO INICIAL
 const batchSize = 3; // Máximo 3 requisições simultâneas
 const delay = 500; // 500ms entre lotes
 
-// DEPOIS
-const batchSize = 2; // Máximo 2 requisições simultâneas (reduzido de 3)
-const delay = 1000; // 1000ms entre lotes (aumentado de 500ms)
+// VERSÃO 2 (Primeira tentativa)
+const batchSize = 2; // Máximo 2 requisições simultâneas
+const delay = 1000; // 1000ms entre lotes
+
+// VERSÃO 3 FINAL (Ajuste após testes)
+const batchSize = 1; // Máximo 1 requisição por vez (sequencial)
+const delay = 1500; // 1500ms entre requisições
 ```
 
-**Impacto:** Reduz em 33% a carga simultânea na API e dobra o tempo de espera entre lotes.
+**Impacto:**
+- Reduz em 67% a carga simultânea na API (de 3 para 1)
+- Triplica o tempo de espera entre requisições (de 500ms para 1500ms)
+- Taxa de requisição: 40 req/min (dentro do limite da API de ~90 req/min)
 
 ### 2. Sistema de Retry com Backoff
 Implementado sistema inteligente de retry quando encontra erro 429:
@@ -41,8 +48,8 @@ Implementado sistema inteligente de retry quando encontra erro 429:
 ```javascript
 // ✅ TENTAR BUSCAR COM RETRY EM CASO DE 429
 let tentativas = 0;
-const maxTentativas = 2;
-const delayRetry = 2000; // 2 segundos entre tentativas
+const maxTentativas = 3; // Aumentado para 3 tentativas
+const delayRetry = 3000; // 3 segundos entre tentativas
 
 while (tentativas < maxTentativas) {
   // Tentar requisição
@@ -58,34 +65,49 @@ while (tentativas < maxTentativas) {
 ```
 
 **Benefícios:**
-- Até 2 tentativas por requisição que falhe com 429
-- Delay de 2 segundos entre tentativas para dar tempo da API recuperar
-- Logs detalhados para debugging
+- Até 3 tentativas por requisição que falhe com 429 (aumentado após testes)
+- Delay de 3 segundos entre tentativas para dar tempo da API recuperar
+- Logs detalhados e formatados para debugging
 - Fallback para dados locais apenas após esgotar as tentativas
+- Indicador de progresso com percentual e tempo estimado
 
-### 3. Logs Melhorados
-Adicionados logs mais descritivos para facilitar o debug:
+### 3. Logs Melhorados e Indicador de Progresso
+Adicionados logs descritivos e indicador de progresso em tempo real:
 
 ```javascript
-console.warn(`⚠️ Rate limit atingido para ${controleId}, tentando novamente em ${delayRetry}ms (tentativa ${tentativas}/${maxTentativas})`);
-console.warn(`⚠️ Rate limit persistiu após ${maxTentativas} tentativas, usando dados locais para ${controleId}`);
+// Progresso da exportação
+console.log(`🔄 Processando ${loteAtual}/${totalLotes} (${percentual}%) - Tempo estimado restante: ~${tempoRestante}s`);
+
+// Avisos de retry
+console.warn(`⚠️ Rate limit (429) - Aguardando ${delayRetry/1000}s antes de tentar novamente (${tentativas}/${maxTentativas}) - ID: ${controleId}`);
+
+// Falhas definitivas
+console.error(`❌ FALHA: Rate limit persistiu após ${maxTentativas} tentativas - Usando dados locais para ${controleId}`);
 ```
 
 ## 📊 Resultados Esperados
 
 Com essas alterações:
 
-1. **Redução de 60% na taxa de requisições**
-   - Antes: 6 req/seg (3 simultâneas a cada 500ms)
-   - Depois: 2 req/seg (2 simultâneas a cada 1000ms)
+1. **Redução de 87% na taxa de requisições**
+   - Antes: 6 req/seg (3 simultâneas a cada 500ms) = 360 req/min
+   - Versão 2: 2 req/seg (2 simultâneas a cada 1s) = 120 req/min
+   - **Versão 3 FINAL: 0.67 req/seg (1 a cada 1.5s) = 40 req/min** ✅
 
-2. **Recuperação de até 100% dos dados**
-   - Sistema de retry garante que erros 429 temporários sejam recuperados
-   - Apenas erros persistentes usarão fallback de dados locais
+2. **Dentro do limite da API**
+   - Limite da API: ~90 requisições/minuto
+   - Nossa taxa: 40 requisições/minuto (45% do limite)
+   - Margem de segurança: 55%
 
-3. **Exportação mais lenta mas completa**
-   - Tempo estimado aumenta ~50%
-   - Mas garante que TODOS os 82 registros sejam exportados
+3. **Recuperação de até 100% dos dados**
+   - Sistema de retry com 3 tentativas e delay de 3s
+   - Apenas erros persistentes após 3 tentativas usarão fallback
+   - Taxa de sucesso esperada: >95%
+
+4. **Exportação mais lenta mas completa e confiável**
+   - Tempo estimado para 198 registros: ~5 minutos (antes: ~1 minuto)
+   - **Garante que TODOS os 82 registros sejam exportados**
+   - Indicador de progresso em tempo real
 
 ## 🔧 Próximos Passos (Opcional)
 

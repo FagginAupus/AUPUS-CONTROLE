@@ -419,16 +419,20 @@ class ExportExcelService {
       const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
 
       // ✅ PROCESSAR EM LOTES PEQUENOS PARA EVITAR RATE LIMITING
-      // AJUSTADO: Reduzido batch size e aumentado delay para evitar erro 429
-      const batchSize = 2; // Máximo 2 requisições simultâneas (reduzido de 3)
-      const delay = 1000; // 1000ms entre lotes (aumentado de 500ms)
+      // AJUSTADO: Batch size 1 e delay 1.5s para evitar erro 429
+      // A API tem rate limiting muito restritivo (~90 req/min)
+      const batchSize = 1; // Máximo 1 requisição por vez (reduzido de 2)
+      const delay = 1500; // 1500ms entre requisições (aumentado de 1000ms)
 
       const dadosEnriquecidos = [];
 
       for (let i = 0; i < dadosControle.length; i += batchSize) {
         const lote = dadosControle.slice(i, i + batchSize);
-        
-        console.log(`🔄 Processando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(dadosControle.length/batchSize)}`);
+        const loteAtual = Math.floor(i/batchSize) + 1;
+        const totalLotes = Math.ceil(dadosControle.length/batchSize);
+        const percentual = Math.round((loteAtual / totalLotes) * 100);
+
+        console.log(`🔄 Processando ${loteAtual}/${totalLotes} (${percentual}%) - Tempo estimado restante: ~${Math.ceil((totalLotes - loteAtual) * delay / 1000)}s`);
 
         const promessasLote = lote.map(async (itemControle) => {
           try {
@@ -440,8 +444,8 @@ class ExportExcelService {
 
             // ✅ TENTAR BUSCAR COM RETRY EM CASO DE 429
             let tentativas = 0;
-            const maxTentativas = 2;
-            const delayRetry = 2000; // 2 segundos entre tentativas
+            const maxTentativas = 3; // Aumentado de 2 para 3 tentativas
+            const delayRetry = 3000; // 3 segundos entre tentativas (aumentado de 2s)
 
             while (tentativas < maxTentativas) {
               try {
@@ -469,11 +473,11 @@ class ExportExcelService {
                 } else if (response.status === 429) {
                   tentativas++;
                   if (tentativas < maxTentativas) {
-                    console.warn(`⚠️ Rate limit atingido para ${controleId}, tentando novamente em ${delayRetry}ms (tentativa ${tentativas}/${maxTentativas})`);
+                    console.warn(`⚠️ Rate limit (429) - Aguardando ${delayRetry/1000}s antes de tentar novamente (${tentativas}/${maxTentativas}) - ID: ${controleId}`);
                     await new Promise(resolve => setTimeout(resolve, delayRetry));
                     continue;
                   } else {
-                    console.warn(`⚠️ Rate limit persistiu após ${maxTentativas} tentativas, usando dados locais para ${controleId}`);
+                    console.error(`❌ FALHA: Rate limit persistiu após ${maxTentativas} tentativas - Usando dados locais para ${controleId}`);
                   }
                 }
 
