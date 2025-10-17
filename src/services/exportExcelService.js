@@ -419,8 +419,9 @@ class ExportExcelService {
       const token = localStorage.getItem('aupus_token') || localStorage.getItem('auth_token');
 
       // ✅ PROCESSAR EM LOTES PEQUENOS PARA EVITAR RATE LIMITING
-      const batchSize = 3; // Máximo 3 requisições simultâneas
-      const delay = 500; // 500ms entre lotes
+      // AJUSTADO: Reduzido batch size e aumentado delay para evitar erro 429
+      const batchSize = 2; // Máximo 2 requisições simultâneas (reduzido de 3)
+      const delay = 1000; // 1000ms entre lotes (aumentado de 500ms)
 
       const dadosEnriquecidos = [];
 
@@ -432,35 +433,55 @@ class ExportExcelService {
         const promessasLote = lote.map(async (itemControle) => {
           try {
             const controleId = itemControle.id || itemControle.controle_id;
-            
+
             if (!controleId) {
               return this.enriquecerComDadosLocais(itemControle);
             }
 
-            // ✅ BUSCAR DADOS COMPLETOS DO CONTROLE VIA API
-            const response = await fetch(`${apiUrl}/controle/${controleId}/uc-detalhes`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
+            // ✅ TENTAR BUSCAR COM RETRY EM CASO DE 429
+            let tentativas = 0;
+            const maxTentativas = 2;
+            const delayRetry = 2000; // 2 segundos entre tentativas
 
-            if (response.ok) {
-              const data = await response.json();
-              
-              if (data.success && data.data) {
-                return {
-                  ...itemControle,
-                  // Dados da UC da tabela unidades_consumidoras
-                  consumoMedioReal: data.data.consumo_medio || 0,
-                  apelidoReal: data.data.apelido || '',
-                  // Descontos do controle_clube
-                  economiaReal: this.extrairValorNumerico(data.data.desconto_tarifa),
-                  bandeiraReal: this.extrairValorNumerico(data.data.desconto_bandeira)
-                };
+            while (tentativas < maxTentativas) {
+              try {
+                const response = await fetch(`${apiUrl}/controle/${controleId}/uc-detalhes`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                if (response.ok) {
+                  const data = await response.json();
+
+                  if (data.success && data.data) {
+                    return {
+                      ...itemControle,
+                      // Dados da UC da tabela unidades_consumidoras
+                      consumoMedioReal: data.data.consumo_medio || 0,
+                      apelidoReal: data.data.apelido || '',
+                      // Descontos do controle_clube
+                      economiaReal: this.extrairValorNumerico(data.data.desconto_tarifa),
+                      bandeiraReal: this.extrairValorNumerico(data.data.desconto_bandeira)
+                    };
+                  }
+                } else if (response.status === 429) {
+                  tentativas++;
+                  if (tentativas < maxTentativas) {
+                    console.warn(`⚠️ Rate limit atingido para ${controleId}, tentando novamente em ${delayRetry}ms (tentativa ${tentativas}/${maxTentativas})`);
+                    await new Promise(resolve => setTimeout(resolve, delayRetry));
+                    continue;
+                  } else {
+                    console.warn(`⚠️ Rate limit persistiu após ${maxTentativas} tentativas, usando dados locais para ${controleId}`);
+                  }
+                }
+
+                break; // Sair do loop se não for 429
+              } catch (fetchError) {
+                console.warn(`⚠️ Erro na requisição para ${controleId}:`, fetchError);
+                break;
               }
-            } else if (response.status === 429) {
-              console.warn('⚠️ Rate limit atingido, usando dados locais');
             }
 
             // Se não conseguiu via API ou rate limit, usar dados locais
