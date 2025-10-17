@@ -100,7 +100,7 @@
 }
 
 .nav-item.active {
-  background: hsl(224.3, 76.3%, 48%); /* ← Azul moderno ativo */
+  background: #1a4d1f; /* Verde muito escuro para sessão ativa */
   color: white;
   font-weight: 600;
 }
@@ -179,6 +179,10 @@
   font-size: 12px;
   transition: all 0.3s ease;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .logout-btn:hover {

@@ -985,14 +985,15 @@ Deseja gerar o PDF apenas para esta UC?
               >
                 {propostas.loading ? '🔄' : '⟳'} Atualizar
               </button>
-              <button onClick={criarNovaProposta} className="btn btn-success">
+              <button onClick={criarNovaProposta} className="btn btn-secondary">
                 <Plus size={16} />
                 Nova Proposta
               </button>
-              <button 
+              <button
                 onClick={abrirModalExportacao}  // ← TROCAR DE exportarDados
                 className="btn btn-primary"
                 disabled={dadosFiltrados.length === 0}
+                style={{ color: 'white' }}
               >
                 <Download size={16} />
                   Exportar Excel
@@ -1018,7 +1019,7 @@ Deseja gerar o PDF apenas para esta UC?
                 <div className="empty-icon">📭</div>
                 <h3>Nenhuma proposta encontrada</h3>
                 <p>Não há propostas que correspondam aos filtros aplicados.</p>
-                <button onClick={criarNovaProposta} className="btn btn-primary">
+                <button onClick={criarNovaProposta} className="btn btn-secondary">
                   <Plus size={16} />
                   Criar Nova Proposta
                 </button>
@@ -2395,15 +2396,11 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                         const novosExtras = [...(dados.documentosExtras || []), null];
                         setDados({...dados, documentosExtras: novosExtras});
                       }}
-                      className="btn-add-doc-extra"
+                      className="btn btn-primary"
                       title="Adicionar novo documento extra"
                       style={{
                         padding: '4px 10px',
                         fontSize: '14px',
-                        backgroundColor: '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',

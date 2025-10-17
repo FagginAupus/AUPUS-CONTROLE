@@ -1041,15 +1041,17 @@ const ControlePage = () => {
                 onClick={abrirModalExportacao}
                 className="btn btn-primary"
                 disabled={dadosFiltrados.length === 0}
+                style={{ color: 'white' }}
               >
                 <Download size={16} />
                 Exportar Excel
               </button>
               <button
                 onClick={exportarAssociados}
-                className="btn btn-success"
+                className="btn btn-primary"
                 disabled={loading}
                 title="Exportar relatório simplificado de UCs associadas"
+                style={{ color: 'white' }}
               >
                 <FileText size={16} />
                 Relatório Associados
@@ -1356,7 +1358,7 @@ const ModalUG = ({ item, onSave, onClose, ugsAnalise }) => {
               Cancelar
             </button>
             <button type="submit" className="btn btn-primary">
-              💾 Atribuir UG
+              <Save size={16} /> Atribuir UG
             </button>
           </div>
         </form>
@@ -1480,7 +1482,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
                 Cancelar
               </button>
               <button type="submit" className="btn btn-primary">
-                💾 Salvar Status
+                <Save size={16} /> Salvar Status
               </button>
             </div>
           </form>

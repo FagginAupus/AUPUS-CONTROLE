@@ -2,7 +2,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { ArrowLeft, Save, Eraser, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Eraser,
+  X,
+  FileText,
+  Building2,
+  DollarSign,
+  Trash2,
+  File,
+  Loader2
+} from 'lucide-react';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
 import { useNotification } from '../context/NotificationContext';
@@ -717,7 +728,10 @@ const NovaPropostaPage = () => {
           
           {/* INFORMAÇÕES BÁSICAS */}
           <section className="form-section">
-            <h2>📋 Informações Básicas</h2>
+            <h2>
+              <FileText size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Informações Básicas
+            </h2>
             
             {/* Primeira linha */}
             <div className="form-grid-uniform">
@@ -887,7 +901,10 @@ const NovaPropostaPage = () => {
 
           {/* UNIDADES CONSUMIDORAS */}
           <section className="form-section">
-            <h2>🏢 Unidades Consumidoras</h2>
+            <h2>
+              <Building2 size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Unidades Consumidoras
+            </h2>
             
             <div className="ucs-list">
               {fields.map((field, index) => (
@@ -900,7 +917,8 @@ const NovaPropostaPage = () => {
                         onClick={() => remove(index)}
                         className="btn-remove-uc"
                       >
-                        ❌ Remover
+                        <Trash2 size={16} style={{ marginRight: '4px' }} />
+                        Remover
                       </button>
                     )}
                   </div>
@@ -1017,13 +1035,15 @@ const NovaPropostaPage = () => {
                       <label htmlFor={`fatura-uc-${index}`} className="file-upload-label">
                         {arquivosFatura[index] ? (
                           <span className="file-selected">
-                            📄 {arquivosFatura[index].name.length > 8 ? 
-                              arquivosFatura[index].name.substring(0, 8) + '...' : 
+                            <File size={16} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                            {arquivosFatura[index].name.length > 8 ?
+                              arquivosFatura[index].name.substring(0, 8) + '...' :
                               arquivosFatura[index].name}
                           </span>
                         ) : (
                           <span className="file-placeholder">
-                            📄 Selecionar PDF
+                            <File size={16} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                            Selecionar PDF
                           </span>
                         )}
                       </label>
@@ -1058,7 +1078,10 @@ const NovaPropostaPage = () => {
 
           {/* BENEFÍCIOS */}
           <section className="form-section">
-            <h2>💰 Benefícios Inclusos</h2>
+            <h2>
+              <DollarSign size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Benefícios Inclusos
+            </h2>
             
             <div className="beneficios-grid">
               <div className="beneficio-item">
@@ -1151,7 +1174,7 @@ const NovaPropostaPage = () => {
                     onClick={() => removerBeneficioAdicional(index)}
                     className="btn-remove"
                   >
-                    ❌
+                    <Trash2 size={16} />
                   </button>
                 </div>
               ))}
@@ -1208,7 +1231,9 @@ const NovaPropostaPage = () => {
         {loading && (
           <div className="loading-overlay">
             <div className="loading-content">
-              <div className="loading-spinner">⏳</div>
+              <div className="loading-spinner">
+                <Loader2 size={32} className="spinning-icon" />
+              </div>
               <p>Salvando proposta...</p>
             </div>
           </div>

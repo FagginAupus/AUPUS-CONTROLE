@@ -33,16 +33,15 @@ body {
     font-size: 2.8rem;
     font-weight: 900;
     margin-bottom: 8px;
-    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    color: #00d4aa !important; /* ← MUDOU: Verde/azul moderno em vez do azul frio */
-    animation: glow 3s ease-in-out infinite alternate;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    color: #2d7a31 !important;
     letter-spacing: -1px;
     line-height: 1.1;
 }
 
 .header h1 span,
 .header h1::before {
-    color: #00d4aa !important; /* ← MUDOU: Mesma cor verde/azul */
+    color: #2d7a31 !important; /* ← MUDOU: Mesma cor verde/azul */
     text-shadow: 0 2px 8px rgba(0,0,0,0.8) !important;
     display: inline-block !important;
     filter: none !important;
@@ -76,17 +75,6 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
     animation: float 4s ease-in-out infinite;
-}
-
-@keyframes glow {
-    from { 
-        text-shadow: 0 2px 15px rgba(255,255,255,0.3);
-        transform: scale(1);
-    }
-    to { 
-        text-shadow: 0 2px 20px rgba(255,255,255,0.6);
-        transform: scale(1.005);
-    }
 }
 
 @keyframes float {
@@ -130,9 +118,9 @@ body {
 }
 
 .nav-item.active {
-    background: rgba(76, 175, 80, 0.8) !important;
-    border-color: #4CAF50 !important;
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    background: #1a4d1f !important;
+    border-color: #1a4d1f !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .nav-icon {
@@ -161,7 +149,7 @@ body {
     padding: 20px;
     text-align: center;
     box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    border-left: 4px solid #4CAF50;
+    border-left: 4px solid #2d7a31;
     transition: all 0.3s ease;
 }
 
@@ -243,7 +231,7 @@ body {
 .filter-group input:focus,
 .filter-group select:focus {
     outline: none;
-    border-color: #4CAF50;
+    border-color: #2d7a31;
 }
 
 .actions-container {
@@ -269,18 +257,32 @@ button[class*="btn"] {
     cursor: pointer;
     transition: all 0.3s ease;
     text-decoration: none;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     text-align: center;
 }
 
+/* Garantir alinhamento vertical de ícones em botões */
+.btn svg,
+.btn-primary svg,
+.btn-secondary svg,
+.btn-danger svg {
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
 .btn-primary {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15) !important;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .btn-secondary {
@@ -328,7 +330,7 @@ button[class*="btn"] {
 }
 
 .table-count {
-    background: #4CAF50;
+    background: #2d7a31;
     color: white;
     padding: 5px 12px;
     border-radius: 20px;
@@ -545,7 +547,7 @@ button[class*="btn"] {
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #4CAF50;
+    border-color: #2d7a31;
 }
 
 .modal-footer {
@@ -639,7 +641,7 @@ button[class*="btn"] {
 
 .calibragem-btn {
   padding: 5px 8px !important;
-  background: #4CAF50 !important;
+  background: #2d7a31 !important;
   color: white !important;
   border: none !important;
   border-radius: 4px !important;
@@ -652,7 +654,7 @@ button[class*="btn"] {
 }
 
 .media-calibrada {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
 }
 
@@ -671,9 +673,9 @@ button[class*="btn"] {
 
 /* UG definida/pendente */
 .ug-definida {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(30, 90, 35, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -685,7 +687,7 @@ button[class*="btn"] {
 
 /* Status de calibragem */
 .calibragem-status.calibrada {
-  color: #4CAF50;
+  color: #2d7a31;
   font-size: 0.8rem;
 }
 
@@ -814,8 +816,8 @@ button[class*="btn"] {
 }
 
 .export-card:hover {
-  border-color: #4CAF50;
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.1);
+  border-color: #2d7a31;
+  box-shadow: 0 5px 15px rgba(30, 90, 35, 0.1);
 }
 
 .export-card h3 {
@@ -909,7 +911,7 @@ button[class*="btn"] {
 }
 
 .calibragem-resultado {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
   margin-top: 2px;
 }
@@ -921,9 +923,9 @@ button[class*="btn"] {
 
 /* Calibragem definida nas UGs */
 .calibragem-definida {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(30, 90, 35, 0.1);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -933,7 +935,7 @@ button[class*="btn"] {
 
 /* Calibragem no Controle - APENAS RESULTADO */
 .calibragem-resultado {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -945,9 +947,9 @@ button[class*="btn"] {
 
 /* Calibragem definida nas UGs */
 .calibragem-definida {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(30, 90, 35, 0.1);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -957,7 +959,7 @@ button[class*="btn"] {
 
 /* Calibragem no Controle - APENAS RESULTADO */
 .calibragem-resultado {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -969,9 +971,9 @@ button[class*="btn"] {
 
 /* Calibragem definida nas UGs */
 .calibragem-definida {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(30, 90, 35, 0.1);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -991,9 +993,9 @@ button[class*="btn"] {
 }
 
 .calibragem-calculada {
-  color: #4CAF50;
+  color: #2d7a31;
   font-weight: 600;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(30, 90, 35, 0.1);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -1148,7 +1150,7 @@ button[class*="btn"] {
 }
 
 .calibragem-resultado {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-weight: 700 !important;
   font-size: 1rem !important;
   margin-bottom: 2px;
@@ -1167,9 +1169,9 @@ button[class*="btn"] {
 }
 
 .calibragem-calculada {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-weight: 700 !important;
-  background: rgba(76, 175, 80, 0.15) !important;
+  background: rgba(30, 90, 35, 0.15) !important;
   padding: 6px 10px !important;
   border-radius: 6px !important;
   font-size: 0.9rem !important;
@@ -1180,9 +1182,9 @@ button[class*="btn"] {
 
 /* UG Status na tabela */
 .ug-definida {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-weight: 600 !important;
-  background: rgba(76, 175, 80, 0.1) !important;
+  background: rgba(30, 90, 35, 0.1) !important;
   padding: 4px 10px !important;
   border-radius: 6px !important;
   font-size: 0.85rem !important;
@@ -1200,7 +1202,7 @@ button[class*="btn"] {
 
 /* Calibragem Status */
 .calibragem-status.calibrada {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-size: 0.8rem !important;
   font-weight: 600;
 }
@@ -1371,7 +1373,7 @@ button[class*="btn"] {
 }
 
 .calibragem-resultado {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-weight: 700 !important;
   font-size: 1rem !important;
   margin-bottom: 2px;
@@ -1390,9 +1392,9 @@ button[class*="btn"] {
 }
 
 .calibragem-calculada {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-weight: 700 !important;
-  background: rgba(76, 175, 80, 0.15) !important;
+  background: rgba(30, 90, 35, 0.15) !important;
   padding: 6px 10px !important;
   border-radius: 6px !important;
   font-size: 0.9rem !important;
@@ -1403,9 +1405,9 @@ button[class*="btn"] {
 
 /* UG Status na tabela */
 .ug-definida {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-weight: 600 !important;
-  background: rgba(76, 175, 80, 0.1) !important;
+  background: rgba(30, 90, 35, 0.1) !important;
   padding: 4px 10px !important;
   border-radius: 6px !important;
   font-size: 0.85rem !important;
@@ -1423,7 +1425,7 @@ button[class*="btn"] {
 
 /* Calibragem Status */
 .calibragem-status.calibrada {
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
   font-size: 0.8rem !important;
   font-weight: 600;
 }

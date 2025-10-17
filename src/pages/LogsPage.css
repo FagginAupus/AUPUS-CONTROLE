@@ -111,9 +111,9 @@
 }
 
 .btn-filter.active {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #2d7a31, #45a049);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 5px 15px rgba(30, 90, 35, 0.3);
 }
 
 .btn-refresh {
@@ -244,8 +244,8 @@
 .filtro-item select:focus,
 .filtro-item input:focus {
     outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    border-color: #2d7a31;
+    box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
 }
 
 .filtros-actions {
@@ -256,7 +256,7 @@
 }
 
 .btn-apply {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #2d7a31, #45a049);
     color: white;
     border: none;
     padding: 12px 25px;
@@ -268,7 +268,7 @@
 
 .btn-apply:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 5px 15px rgba(30, 90, 35, 0.3);
 }
 
 .btn-clear {
@@ -607,16 +607,16 @@
 
 .btn-page:hover {
     background: #444 !important;                /* Hover escuro */
-    border-color: #4CAF50;
+    border-color: #2d7a31;
     transform: translateY(-1px);
 }
 
 .btn-page.active {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #2d7a31, #45a049);
     color: white;
-    border-color: #4CAF50;
+    border-color: #2d7a31;
     transform: translateY(-1px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 5px 15px rgba(30, 90, 35, 0.3);
 }
 
 /* =======================================================
@@ -720,7 +720,7 @@
     background: #f8f9fa;
     padding: 10px 15px;
     border-radius: 10px;
-    border-left: 4px solid #4CAF50;
+    border-left: 4px solid #2d7a31;
 }
 
 .detail-section {
@@ -748,7 +748,7 @@
 
 .contexto-chave {
     font-weight: 600;
-    color: #4CAF50;
+    color: #2d7a31;
     min-width: 140px;
     font-size: 0.9rem;
 }

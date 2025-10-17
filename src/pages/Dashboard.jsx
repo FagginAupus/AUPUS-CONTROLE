@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import storageService from '../services/storageService';
 import './Dashboard.css';
+import '../components/common/CommonModal.css';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const Dashboard = () => {
@@ -729,10 +730,10 @@ const ModalCadastroUsuario = ({ tipo, onClose, onSubmit, gerentes }) => {
           )}
 
           <div className="modal-footer-light">
-            <button type="button" onClick={onClose} className="btn-secondary-light">
+            <button type="button" onClick={onClose} className="common-btn common-btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary-light" disabled={loading}>
+            <button type="submit" className="common-btn common-btn-secondary" disabled={loading}>
               {loading ? 'Salvando...' : `Criar ${getTipoLabel(tipo)}`}
             </button>
           </div>
@@ -821,7 +822,7 @@ const ModalCadastroAnalista = ({ onClose, onSubmit }) => {
                 required
                 style={{ flex: 1 }}
               />
-              <span style={{ margin: '0 8px', fontWeight: 'bold' }}>@aupusenergia.com.br</span>
+              <span style={{ margin: '0 8px', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.9)' }}>@aupusenergia.com.br</span>
             </div>
             <small style={{ color: '#666', fontSize: '12px' }}>
               Digite apenas a parte antes do @. O domínio será adicionado automaticamente.
@@ -884,21 +885,21 @@ const ModalCadastroAnalista = ({ onClose, onSubmit }) => {
             />
           </div>
 
-          <div style={{ backgroundColor: '#f8f9fa', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold' }}>Configurações Padrão:</h4>
-            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#666' }}>
-              <li>Senha inicial: <strong>00000000</strong></li>
-              <li>Status: <strong>Ativo</strong></li>
-              <li>Role: <strong>Analista</strong></li>
-              <li>Permissões: <strong>Mesmas que Admin</strong></li>
+          <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.9)' }}>Configurações Padrão:</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <li>Senha inicial: <strong style={{ color: 'rgba(255, 255, 255, 0.9)' }}>00000000</strong></li>
+              <li>Status: <strong style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Ativo</strong></li>
+              <li>Role: <strong style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Analista</strong></li>
+              <li>Permissões: <strong style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Mesmas que Admin</strong></li>
             </ul>
           </div>
 
           <div className="modal-footer-light">
-            <button type="button" onClick={onClose} className="btn-secondary-light">
+            <button type="button" onClick={onClose} className="common-btn common-btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary-light" disabled={loading}>
+            <button type="submit" className="common-btn common-btn-secondary" disabled={loading}>
               {loading ? 'Salvando...' : 'Criar Analista'}
             </button>
           </div>

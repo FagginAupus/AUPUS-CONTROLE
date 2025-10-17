@@ -31,7 +31,7 @@
   border-radius: 12px;
   padding: 25px;
   margin-bottom: 25px;
-  border-left: 4px solid #4CAF50;
+  border-left: 4px solid #2d7a31;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -170,8 +170,8 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  border-color: #2d7a31;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
 }
 
 /* Campos de erro */
@@ -219,7 +219,7 @@
 }
 
 .uc-row:hover {
-  border-color: #4CAF50;
+  border-color: #2d7a31;
 }
 
 /* Header da UC com título e botão remover */
@@ -321,7 +321,7 @@
 
 .beneficio-item:hover {
   background: #f8f9fa;
-  border-color: #4CAF50;
+  border-color: #2d7a31;
 }
 
 .beneficio-item input[type="checkbox"] {
@@ -397,14 +397,14 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
+  background: linear-gradient(135deg, #2d7a31 0%, #45a049 100%);
+  color: white !important;
 }
 
 .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 5px 15px rgba(30, 90, 35, 0.4);
 }
 
 .btn-secondary {
@@ -540,12 +540,12 @@
 
 .form-group input:focus,
 .form-group select:focus {
-  outline: 2px solid #4CAF50;
+  outline: 2px solid #2d7a31;
   outline-offset: 2px;
 }
 
 .btn:focus {
-  outline: 2px solid #4CAF50;
+  outline: 2px solid #2d7a31;
   outline-offset: 2px;
 }
 
@@ -671,8 +671,8 @@
 
 .input-half input:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  border-color: #2d7a31;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
 }
 
 .input-half input.error {
@@ -698,7 +698,7 @@
 /* TEMA ESCURO ESPECÍFICO PARA NOVA PROPOSTA */
 .form-section {
   background: #2d2d2d !important; /* ← Nível 1: Seções */
-  border-left: 4px solid #00d4aa !important;
+  border-left: 4px solid #2d7a31 !important;
   color: #f0f0f0 !important;
 }
 
@@ -782,7 +782,7 @@
 }
 
 .file-upload-label:hover {
-  border-color: #4CAF50;
+  border-color: #2d7a31;
   background: #f0f9f0;
 }
 
@@ -872,8 +872,8 @@
 .uc-field input:focus,
 .uc-field select:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  border-color: #2d7a31;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
 }
 
 .uc-field input.error,
@@ -915,7 +915,7 @@
 }
 
 .file-upload-label:hover {
-  border-color: #4CAF50;
+  border-color: #2d7a31;
   background: #f0f9f0;
 }
 
@@ -995,7 +995,7 @@ body.dark-mode .file-upload-label {
 }
 
 body.dark-mode .file-upload-label:hover {
-  border-color: #00d4aa !important;
+  border-color: #2d7a31 !important;
   background: #4a4a4a !important;
 }
 
@@ -1006,6 +1006,10 @@ body.dark-mode .file-help-text {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.spinning-icon {
+  animation: spin 1s linear infinite;
 }
 
 .btn-primary:disabled {
@@ -1071,30 +1075,31 @@ body.dark-mode .file-help-text {
   margin-top: 30px !important;
 }
 
-/* Botão Salvar Proposta - Gradient azul/roxo */
+/* Botão Salvar Proposta - Fundo semi-transparente */
 .btn-primary-proposta {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
-  color: white !important;
-  border: none !important;
-  padding: 14px 20px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 10px 16px !important;
   border-radius: 8px !important;
-  font-size: 1rem !important;
+  font-size: 0.9rem !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
+  gap: 6px !important;
 }
 
 .btn-primary-proposta:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .btn-primary-proposta svg {
-  color: white !important;
+  color: rgba(255, 255, 255, 0.9) !important;
   filter: brightness(1.2) !important;
 }
 
@@ -1103,16 +1108,16 @@ body.dark-mode .file-help-text {
   background: rgba(255, 255, 255, 0.1) !important;
   color: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  padding: 14px 20px !important;
+  padding: 10px 16px !important;
   border-radius: 8px !important;
-  font-size: 1rem !important;
+  font-size: 0.9rem !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
+  gap: 6px !important;
 }
 
 .btn-secondary-proposta:hover:not(:disabled) {
@@ -1131,16 +1136,16 @@ body.dark-mode .file-help-text {
   background: rgba(255, 255, 255, 0.1) !important;
   color: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  padding: 14px 20px !important;
+  padding: 10px 16px !important;
   border-radius: 8px !important;
-  font-size: 1rem !important;
+  font-size: 0.9rem !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
+  gap: 6px !important;
 }
 
 .btn-limpar-proposta:hover:not(:disabled) {

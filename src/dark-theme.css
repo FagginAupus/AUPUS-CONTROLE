@@ -15,15 +15,15 @@ input, select, textarea {
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #00d4aa !important;
-  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2) !important;
+  border-color: #2d7a31 !important;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.2) !important;
 }
 
 /* Botões primários */
 .btn-primary,
 .btn.btn-primary {
-  background: #00d4aa !important;
-  border-color: #00d4aa !important;
+  background: #2d7a31 !important;
+  border-color: #2d7a31 !important;
   color: #1a1a1a !important; /* ← Texto escuro em botão claro */
 }
 
@@ -71,7 +71,7 @@ h2, h3 {
 }
 
 .stat-value {
-  color: #00d4aa !important; /* ← MUDOU: Verde/azul para valores */
+  color: #2d7a31 !important; /* ← MUDOU: Verde/azul para valores */
 }
 
 /* TABELA CONTROLE - OVERRIDE ESPECÍFICO */

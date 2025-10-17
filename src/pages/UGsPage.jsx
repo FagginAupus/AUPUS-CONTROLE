@@ -445,6 +445,7 @@ const UGsPage = () => {
     return ucsComPorcentagemArredondada;
   };
 
+  // Função para gerar Excel SIMPLIFICADO (botão fora do modal)
   const gerarRateioExcel = async (ugInfo, ucsDetalhes) => {
     // Calcular porcentagens de rateio
     const capacidadeTotal = parseFloat(ugInfo.capacidade || 0);
@@ -481,6 +482,64 @@ const UGsPage = () => {
 
     // Download
     const nomeArquivo = `Rateio UG_${ugInfo.numero_unidade}.xlsx`;
+    XLSX.writeFile(wb, nomeArquivo);
+  };
+
+  // Função para gerar Excel DETALHADO do modal (com todas as colunas da tabela)
+  const gerarRateioExcelDetalhado = async (ugInfo, ucsComPorcentagens) => {
+    const capacidadeTotal = parseFloat(ugInfo.capacidade || 0);
+
+    if (capacidadeTotal <= 0) {
+      throw new Error('UG com capacidade inválida');
+    }
+
+    // Criar estrutura do Excel com todas as colunas do modal
+    const dadosExcel = [
+      ['Código da UC Geradora:', '', ugInfo.numero_unidade],
+      ['Nome da Usina:', '', ugInfo.nome_usina],
+      ['Capacidade Total:', '', `${capacidadeTotal.toLocaleString('pt-BR')} kWh`],
+      [''],
+      ['UC', 'Média Original (kWh)', 'Porcentagem (%)', 'Energia Alocada (kWh)'],
+      ...ucsComPorcentagens.map(uc => {
+        const mediaOriginal = parseFloat(uc.consumo_calibrado_editado || 0);
+        const porcentagem = parseFloat(uc.porcentagem || 0);
+        const energiaAlocada = (porcentagem / 100) * capacidadeTotal;
+
+        return [
+          uc.numero_unidade,
+          mediaOriginal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          `${porcentagem.toFixed(2)}%`,
+          energiaAlocada.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        ];
+      }),
+      [''],
+      [
+        'TOTAL',
+        ucsComPorcentagens.reduce((sum, uc) => sum + parseFloat(uc.consumo_calibrado_editado || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        `${ucsComPorcentagens.reduce((sum, uc) => sum + (uc.porcentagem || 0), 0).toFixed(2)}%`,
+        ucsComPorcentagens.reduce((sum, uc) => {
+          const energiaAlocada = ((uc.porcentagem || 0) / 100) * capacidadeTotal;
+          return sum + energiaAlocada;
+        }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      ]
+    ];
+
+    // Gerar e baixar Excel usando SheetJS
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
+
+    // Configurar largura das colunas
+    ws['!cols'] = [
+      { wch: 20 }, // UC
+      { wch: 25 }, // Média Original
+      { wch: 18 }, // Porcentagem
+      { wch: 25 }  // Energia Alocada
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Detalhamento UG');
+
+    // Download
+    const nomeArquivo = `Detalhamento_UG_${ugInfo.numero_unidade}.xlsx`;
     XLSX.writeFile(wb, nomeArquivo);
   };
 
@@ -566,19 +625,19 @@ const UGsPage = () => {
                 <BarChart3 size={16} />
                 Exportar CSV
               </button>
-              <button onClick={gerarRelatorioUGs} className="btn btn-secondary">
-                <FileText size={16} />
-                Relatório UGs
-              </button>
               {isAdminOrAnalista && (
                 <button
                   onClick={() => setModalNovaUG({ show: true })}
-                  className="btn btn-primary"
+                  className="btn btn-secondary"
                 >
                   <Plus size={16} />
                   Nova UG
                 </button>
               )}
+              <button onClick={gerarRelatorioUGs} className="btn btn-primary">
+                <FileText size={16} />
+                Relatório UGs
+              </button>
               </div>
             </div>
           </div>
@@ -796,7 +855,7 @@ DETALHES DA UG: ${item.nomeUsina}
             ug={modalVisualizarUCs.ug}
             ucs={modalVisualizarUCs.ucs}
             onClose={() => setModalVisualizarUCs({ show: false, ug: null, ucs: [] })}
-            onGenerateExcel={(ugInfo, ucsDetalhes) => gerarRateioExcel(ugInfo, ucsDetalhes)}
+            onGenerateExcel={(ugInfo, ucsComPorcentagens) => gerarRateioExcelDetalhado(ugInfo, ucsComPorcentagens)}
             showNotification={showNotification}
           />
         )}
@@ -1098,7 +1157,7 @@ const ModalEdicaoUG = ({ item, onClose, onSave }) => {
 
           <div className="modal-footer">
             <button type="submit" className="btn btn-primary">
-              Salvar Alterações
+              <Save size={16} /> Salvar Alterações
             </button>
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancelar
@@ -1330,13 +1389,18 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                 </thead>
                 <tbody>
                   {ucsComPorcentagens.map((uc, index) => {
-                    const mediaOriginal = parseFloat(uc.consumo_calibrado || 0);
+                    // Usar consumo_calibrado_editado como referência (valor atual/editado)
+                    const mediaAtual = parseFloat(uc.consumo_calibrado_editado || 0);
                     const energiaAlocada = (uc.porcentagem / 100) * capacidadeTotal;
 
-                    // Determinar cor baseada na comparação
-                    let corEnergia = '#ffc107'; // Amarelo (igual)
-                    if (Math.abs(energiaAlocada - mediaOriginal) > 0.5) {
-                      corEnergia = energiaAlocada < mediaOriginal ? '#dc3545' : '#28a745'; // Vermelho ou Verde
+                    // Determinar classe CSS baseada na comparação entre energia alocada e média atual
+                    const diferenca = Math.abs(energiaAlocada - mediaAtual);
+                    let classeCor = 'energia-alocada-igual'; // Amarelo (igual)
+
+                    if (diferenca > 0.5) {
+                      // Vermelho se alocado < média (receberá menos)
+                      // Verde se alocado > média (receberá mais)
+                      classeCor = energiaAlocada < mediaAtual ? 'energia-alocada-menor' : 'energia-alocada-maior';
                     }
 
                     return (
@@ -1353,20 +1417,14 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                               className="input-media-edicao"
                             />
                           ) : (
-                            <span>{mediaOriginal.toLocaleString('pt-BR')}</span>
+                            <span>{mediaAtual.toLocaleString('pt-BR')}</span>
                           )}
                         </td>
                         <td>
                           <span className="porcentagem-valor">{(uc.porcentagem || 0).toFixed(2)}%</span>
                         </td>
                         <td>
-                          <span
-                            className="energia-alocada-valor"
-                            style={{
-                              color: corEnergia,
-                              fontWeight: '600'
-                            }}
-                          >
+                          <span className={`energia-alocada-valor ${classeCor}`}>
                             {energiaAlocada.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </td>
@@ -1430,10 +1488,6 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                   <button
                     onClick={handleSalvar}
                     className="btn btn-primary"
-                    style={{
-                      backgroundColor: ultrapassouCapacidade ? '#ffc107' : undefined,
-                      borderColor: ultrapassouCapacidade ? '#ffc107' : undefined
-                    }}
                   >
                     <Save size={16} />
                     {ultrapassouCapacidade ? 'Salvar (Excedendo Capacidade)' : 'Salvar Alterações'}
@@ -1524,10 +1578,6 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
               <button
                 onClick={confirmarSalvar}
                 className="btn btn-primary"
-                style={{
-                  backgroundColor: ultrapassouCapacidade ? '#dc3545' : undefined,
-                  borderColor: ultrapassouCapacidade ? '#dc3545' : undefined
-                }}
               >
                 <Check size={16} />
                 {ultrapassouCapacidade ? 'Sim, Confirmar Mesmo Assim' : 'Confirmar'}

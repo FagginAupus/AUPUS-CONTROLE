@@ -95,7 +95,7 @@
 .filter-group input:focus,
 .filter-group select:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: #2d7a31;
 }
 
 .actions-container {
@@ -123,13 +123,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
+  background: linear-gradient(135deg, #2d7a31 0%, #45a049 100%);
+  color: white !important;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 5px 15px rgba(30, 90, 35, 0.4);
 }
 
 .btn-secondary {
@@ -181,7 +181,7 @@
 }
 
 .table-count {
-  background: #4CAF50;
+  background: #2d7a31;
   color: white;
   padding: 5px 12px;
   border-radius: 20px;
@@ -492,7 +492,7 @@
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: #2d7a31;
 }
 
 /* =======================================================
@@ -1035,7 +1035,7 @@
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #4CAF50;
+  background: #2d7a31;
   border-radius: 4px;
 }
 

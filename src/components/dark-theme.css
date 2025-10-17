@@ -36,8 +36,8 @@ textarea::placeholder {
 input:focus, 
 select:focus, 
 textarea:focus {
-  border-color: #00d4aa !important;
-  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2) !important;
+  border-color: #2d7a31 !important;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.2) !important;
   background: #4d4d4d !important; /* ← Ainda mais claro quando focado */
 }
 
@@ -51,7 +51,7 @@ h2, h3, h4 {
 
 /* Valores em destaque */
 .stat-value {
-  color: #00d4aa !important;
+  color: #2d7a31 !important;
 }
 
 /* Tables - seguindo a hierarquia */
@@ -74,8 +74,8 @@ h2, h3, h4 {
 /* Botões seguindo o padrão */
 .btn-primary,
 .btn.btn-primary {
-  background: #00d4aa !important;
-  border-color: #00d4aa !important;
+  background: #2d7a31 !important;
+  border-color: #2d7a31 !important;
   color: #1a1a1a !important;
 }
 
@@ -140,7 +140,7 @@ select {
 
 .beneficio-item:hover {
   background: #4d4d4d !important;
-  border-color: #00d4aa !important;
+  border-color: #2d7a31 !important;
 }
 
 /* UCs rows (Nova Proposta) */
@@ -183,12 +183,12 @@ html body h3:not(.header h3) {
 .header h1,
 .header h1 span,
 .header h1::before {
-  color: #00d4aa !important;
+  color: #2d7a31 !important;
 }
 
 /* Valores estatísticos podem ser azul */
 .stat-value {
-  color: #00d4aa !important;
+  color: #2d7a31 !important;
 }
 
 /* Específico para input do número da proposta */

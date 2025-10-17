@@ -38,12 +38,12 @@
 .user-avatar {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+  background: linear-gradient(135deg, #2d7a31, #45a049);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 15px rgba(30, 90, 35, 0.3);
 }
 
 .user-icon {
@@ -62,7 +62,7 @@
   margin: 0 0 5px 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #4CAF50;
+  color: #2d7a31;
 }
 
 .user-username {
@@ -83,7 +83,7 @@
 }
 
 .stat-card .stat-value {
-  color: #00d4aa !important;
+  color: #2d7a31 !important;
 }
 
 /* =======================================================
@@ -132,7 +132,7 @@
 }
 
 .action-card.primary {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+  background: linear-gradient(135deg, #2d7a31, #45a049);
   color: white;
 }
 
@@ -244,11 +244,11 @@
 }
 
 .create-user-btn.vendedor {
-  background: linear-gradient(135deg, #1abc9c, #16a085);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
 .create-user-btn.vendedor:hover {
-  box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
 }
 
 .btn-icon {
@@ -291,7 +291,7 @@
 
 .member-icon-svg {
   flex-shrink: 0;
-  color: #4CAF50; /* Cor verde padrão */
+  color: #2d7a31; /* Cor verde padrão */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -322,7 +322,7 @@
 }
 
 .team-member:hover {
-  border-color: #4CAF50;
+  border-color: #2d7a31;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
@@ -349,11 +349,11 @@
 
 .member-role {
   font-weight: 500;
-  color: #4CAF50 !important;
+  color: #2d7a31 !important;
 }
 
 .team-member:hover {
-  border-color: #4CAF50;
+  border-color: #2d7a31;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
@@ -369,7 +369,7 @@
   margin: 0 0 3px 0;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #4CAF50;
+  color: #2d7a31;
 }
 
 .member-username {
@@ -471,8 +471,8 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  border-color: #2d7a31;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
 }
 
 .modal-footer {
@@ -494,14 +494,15 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
-  color: white;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #45a049, #3d8b40);
+  background: rgba(255, 255, 255, 0.15) !important;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .btn-primary:disabled {
@@ -891,7 +892,7 @@
 }
 
 .team-list .table-count {
-  background: #4CAF50;
+  background: #2d7a31;
   color: white;
   padding: 5px 12px;
   border-radius: 20px;
@@ -1126,9 +1127,9 @@
 }
 
 .compact-btn {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   padding: 8px 14px;
   cursor: pointer;
@@ -1142,40 +1143,58 @@
 }
 
 .compact-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .compact-btn.analista {
-  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .compact-btn.analista:hover {
-  box-shadow: 0 5px 15px rgba(155, 89, 182, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .compact-btn.consultor {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .compact-btn.consultor:hover {
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .compact-btn.gerente {
-  background: linear-gradient(135deg, #e67e22, #d35400);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .compact-btn.gerente:hover {
-  box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .compact-btn.vendedor {
-  background: linear-gradient(135deg, #1abc9c, #16a085);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .compact-btn.vendedor:hover {
-  box-shadow: 0 5px 15px rgba(26, 188, 156, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 768px) {

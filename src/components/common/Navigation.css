@@ -41,17 +41,20 @@
 }
 
 .nav-item:hover {
-  background: rgba(0, 212, 170, 0.15); /* ← MUDOU: Hover com a cor verde/azul */
-  border-color: rgba(0, 212, 170, 0.3);
+  background: rgba(34, 139, 34, 0.15);
+  border-color: rgba(34, 139, 34, 0.3);
   transform: translateY(-2px);
-  color: #ffffff; /* ← Manter branco no hover */
+  color: #ffffff;
 }
 
 .nav-item.active {
-  background: #00d4aa; /* ← MUDOU: Cor verde/azul moderna */
-  color: #1a1a1a; /* ← MUDOU: Texto escuro quando ativo */
-  border-color: #00d4aa;
-  box-shadow: 0 4px 15px rgba(0, 212, 170, 0.4);
+  background: linear-gradient(135deg, #2d7a31, #3a9640); /* Verde mais suave e profissional */
+  color: white;
+  border: 2px solid #236b28;
+  box-shadow: 0 2px 6px rgba(45, 122, 49, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15); /* Sombra mais discreta */
+  transform: translateY(-1px); /* Elevação sutil */
+  font-weight: 700;
 }
 
 .nav-icon {
@@ -79,8 +82,9 @@
    ======================================================= */
 
 .logout-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 16px;
   background: linear-gradient(135deg, #e74c3c, #c0392b);
@@ -91,6 +95,11 @@
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.logout-btn svg {
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .logout-btn:hover {
@@ -176,7 +185,7 @@
   }
   
   .nav-menu::-webkit-scrollbar-thumb {
-    background: #4CAF50;
+    background: #1e5a23;
     border-radius: 2px;
   }
 
@@ -296,15 +305,20 @@
    MELHORIAS PARA NOVA PROPOSTA
    ======================================================= */
 
-/* Destaque especial para Nova Proposta quando ativa */
+/* Destaque para Nova Proposta quando ativa - MESMA COR DAS OUTRAS SEÇÕES */
 .nav-item[data-id="nova-proposta"].active {
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+  background: linear-gradient(135deg, #2d7a31, #3a9640); /* Verde mais suave e profissional */
+  color: white;
+  border: 2px solid #236b28;
+  box-shadow: 0 2px 6px rgba(45, 122, 49, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15); /* Sombra mais discreta */
+  transform: translateY(-1px); /* Elevação sutil */
+  font-weight: 700;
 }
 
 .nav-item[data-id="nova-proposta"]:hover:not(.active) {
-  background: rgba(0, 123, 255, 0.1);
-  border-color: rgba(0, 123, 255, 0.2);
+  background: rgba(34, 139, 34, 0.15);
+  border-color: rgba(34, 139, 34, 0.3);
 }
 
 /* Tooltips para mobile quando só mostra ícones */

@@ -501,7 +501,7 @@
    =============================================== */
 
 .common-modal .btn-add-doc-extra {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
   color: white !important;
   border: none !important;
   padding: 8px 16px !important;
@@ -517,7 +517,7 @@
 
 .common-modal .btn-add-doc-extra:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4) !important;
 }
 
 /* ===============================================
@@ -749,7 +749,7 @@
 }
 
 /* Buttons com inline styles */
-.common-modal button[style*="backgroundColor: '#4CAF50'"],
+.common-modal button[style*="backgroundColor: '#2d7a31'"],
 .common-modal button[style*="backgroundColor: '#f44336'"] {
   /* Keep their specific colors but ensure proper contrast */
   opacity: 1 !important;

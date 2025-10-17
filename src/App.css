@@ -172,14 +172,15 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
-  color: white;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #45a049, #3d8b40);
+  background: rgba(255, 255, 255, 0.15) !important;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .btn-secondary {
@@ -206,7 +207,7 @@ body {
 
 .btn-success {
   background: linear-gradient(135deg, #27ae60, #229954);
-  color: white;
+  color: white !important;
 }
 
 .btn-success:hover:not(:disabled) {
@@ -367,8 +368,8 @@ body {
 
 .form-control:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  border-color: #2d7a31;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
 }
 
 .form-control:disabled {
@@ -515,4 +516,23 @@ body {
 
 .slide-down {
   animation: slideDown 0.3s ease-out;
+}
+
+/* =======================================================
+   FORÇA COR CONSISTENTE EM BOTÕES - CATCH-ALL
+   ======================================================= */
+
+/* Garantir consistência em botões primários e de sucesso */
+button.btn-primary,
+a.btn-primary,
+.btn.btn-primary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+button.btn-primary *,
+a.btn-primary *,
+.btn.btn-primary * {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
