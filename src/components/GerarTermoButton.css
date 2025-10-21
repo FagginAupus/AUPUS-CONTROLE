@@ -128,6 +128,12 @@
   border: 1px solid #fed7d7;
   border-radius: 4px;
   font-size: 11px;
+  color: #721c24;
+}
+
+.campos-faltantes strong {
+  color: #721c24;
+  font-weight: 700;
 }
 
 .text-success {
