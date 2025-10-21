@@ -499,15 +499,17 @@ const UGsPage = () => {
       ['Nome da Usina:', '', ugInfo.nome_usina],
       ['Capacidade Total:', '', `${capacidadeTotal.toLocaleString('pt-BR')} kWh`],
       [''],
-      ['UC', 'Média Original (kWh)', 'Porcentagem (%)', 'Energia Alocada (kWh)'],
+      ['UC', 'Média Original (kWh)', 'Média Calibrada (kWh)', 'Porcentagem (%)', 'Energia Alocada (kWh)'],
       ...ucsComPorcentagens.map(uc => {
-        const mediaOriginal = parseFloat(uc.consumo_calibrado_editado || 0);
+        const mediaOriginal = parseFloat(uc.consumo_medio || 0);
+        const mediaCalibradar = parseFloat(uc.consumo_calibrado_editado || 0);
         const porcentagem = parseFloat(uc.porcentagem || 0);
         const energiaAlocada = (porcentagem / 100) * capacidadeTotal;
 
         return [
           uc.numero_unidade,
           mediaOriginal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          mediaCalibradar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           `${porcentagem.toFixed(2)}%`,
           energiaAlocada.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         ];
@@ -515,6 +517,7 @@ const UGsPage = () => {
       [''],
       [
         'TOTAL',
+        ucsComPorcentagens.reduce((sum, uc) => sum + parseFloat(uc.consumo_medio || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         ucsComPorcentagens.reduce((sum, uc) => sum + parseFloat(uc.consumo_calibrado_editado || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         `${ucsComPorcentagens.reduce((sum, uc) => sum + (uc.porcentagem || 0), 0).toFixed(2)}%`,
         ucsComPorcentagens.reduce((sum, uc) => {
@@ -1383,29 +1386,34 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                   <tr>
                     <th>UC</th>
                     <th>Média Original (kWh)</th>
+                    <th>Média Calibrada (kWh)</th>
                     <th>Porcentagem</th>
                     <th>Energia Alocada (kWh)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ucsComPorcentagens.map((uc, index) => {
-                    // Usar consumo_calibrado_editado como referência (valor atual/editado)
-                    const mediaAtual = parseFloat(uc.consumo_calibrado_editado || 0);
+                    // Usar consumo_calibrado_editado como referência (valor calibrado/editado)
+                    const mediaCalibradar = parseFloat(uc.consumo_calibrado_editado || 0);
+                    const mediaOriginal = parseFloat(uc.consumo_medio || 0);
                     const energiaAlocada = (uc.porcentagem / 100) * capacidadeTotal;
 
-                    // Determinar classe CSS baseada na comparação entre energia alocada e média atual
-                    const diferenca = Math.abs(energiaAlocada - mediaAtual);
+                    // Determinar classe CSS baseada na comparação entre energia alocada e média calibrada
+                    const diferenca = Math.abs(energiaAlocada - mediaCalibradar);
                     let classeCor = 'energia-alocada-igual'; // Amarelo (igual)
 
                     if (diferenca > 0.5) {
                       // Vermelho se alocado < média (receberá menos)
                       // Verde se alocado > média (receberá mais)
-                      classeCor = energiaAlocada < mediaAtual ? 'energia-alocada-menor' : 'energia-alocada-maior';
+                      classeCor = energiaAlocada < mediaCalibradar ? 'energia-alocada-menor' : 'energia-alocada-maior';
                     }
 
                     return (
                       <tr key={index}>
                         <td>{uc.numero_unidade}</td>
+                        <td>
+                          <span>{mediaOriginal.toLocaleString('pt-BR')}</span>
+                        </td>
                         <td>
                           {modoEdicao ? (
                             <input
@@ -1417,7 +1425,7 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                               className="input-media-edicao"
                             />
                           ) : (
-                            <span>{mediaAtual.toLocaleString('pt-BR')}</span>
+                            <span>{mediaCalibradar.toLocaleString('pt-BR')}</span>
                           )}
                         </td>
                         <td>
@@ -1435,6 +1443,7 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
                 <tfoot>
                   <tr className="total-row">
                     <td><strong>TOTAL</strong></td>
+                    <td><strong>{ucsComPorcentagens.reduce((sum, uc) => sum + parseFloat(uc.consumo_medio || 0), 0).toLocaleString('pt-BR')} kWh</strong></td>
                     <td><strong>{ucsComPorcentagens.reduce((sum, uc) => sum + parseFloat(uc.consumo_calibrado_editado || 0), 0).toLocaleString('pt-BR')} kWh</strong></td>
                     <td>
                       <strong className={porcentagemTotal === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'}>
