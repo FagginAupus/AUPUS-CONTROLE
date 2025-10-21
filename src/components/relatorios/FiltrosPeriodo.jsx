@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, FileText, Settings, RefreshCw, Calendar, User, BarChart3 } from 'lucide-react';
 import apiService from '../../services/apiService';
+import './FiltrosPeriodo.css';
 
 const FiltrosPeriodo = ({ filters, onFilterChange, loading }) => {
   const [consultores, setConsultores] = useState([]);

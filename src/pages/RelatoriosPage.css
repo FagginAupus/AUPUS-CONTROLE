@@ -1,18 +1,22 @@
-/* RelatoriosPage.css - Sistema Completo de Relatórios */
+/* RelatoriosPage.css - Dark Theme Modern */
 
-/* Ensure consistency with dark theme */
-.relatorios-container .global-filters,
-.relatorios-container .tabs-container {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
+/* ============================================
+   CONTAINER PRINCIPAL - TEMA ESCURO
+   ============================================ */
+.page-container {
+  min-height: 100vh;
+  background: #1a1a1a !important;
 }
 
-.relatorios-container .access-denied-content {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
+.relatorios-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-/* Access Denied */
+/* ============================================
+   ACCESS DENIED
+   ============================================ */
 .access-denied {
   display: flex;
   justify-content: center;
@@ -23,126 +27,89 @@
 
 .access-denied-content {
   text-align: center;
-  background: white;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   max-width: 500px;
 }
 
 .access-denied-content h2 {
-  color: #dc3545;
+  color: #ef4444;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-size: 1.5rem;
 }
 
-.inline-icon {
-  vertical-align: middle;
+.access-denied-content p {
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin-bottom: 12px;
 }
 
-/* Filtros Globais */
+.access-denied-content strong {
+  color: white;
+}
+
+/* ============================================
+   FILTROS GLOBAIS - DARK THEME
+   ============================================ */
 .global-filters {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Cards de Métricas */
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 24px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.card-metrica {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
-
-/* Tabs */
-.tabs-container {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.tabs-header {
-  display: flex;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-  overflow-x: auto;
-}
-
-.tab-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-  font-size: 14px;
-  color: #6c757d;
-}
-
-.tab-icon {
-  flex-shrink: 0;
-}
-
-.tab-button:hover {
-  background: #e9ecef;
-  color: #495057;
-}
-
-.tab-button.active {
-  background: white;
-  color: #007bff;
-  border-bottom: 2px solid #007bff;
-}
-
-.tab-content {
+/* ============================================
+   DASHBOARD CONTENT - SEM TABS
+   ============================================ */
+.dashboard-content {
   position: relative;
   min-height: 400px;
 }
 
 .content-wrapper {
-  padding: 20px;
+  padding: 0;
 }
 
-/* Loading */
+/* ============================================
+   LOADING OVERLAY
+   ============================================ */
 .loading-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(26, 26, 26, 0.95);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 10;
+  border-radius: 16px;
+}
+
+.loading-overlay p {
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 16px;
+  font-size: 1rem;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -150,15 +117,209 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Gráficos */
-.graficos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+/* ============================================
+   SEÇÕES DO DASHBOARD
+   ============================================ */
+.dashboard-executivo section {
+  margin-bottom: 32px;
 }
 
-/* Responsividade */
+.dashboard-executivo section h2 {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard-executivo section h2 .inline-icon {
+  color: #3b82f6;
+}
+
+/* ============================================
+   CARDS DE MÉTRICAS - MODERN DARK
+   ============================================ */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.card-metrica {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-metrica::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-metrica:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.card-metrica:hover::before {
+  opacity: 1;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 10px;
+  color: #3b82f6;
+}
+
+.card-title-container h4 {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.card-body {
+  margin-top: 8px;
+}
+
+.card-value {
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ============================================
+   GRÁFICOS - DARK THEME
+   ============================================ */
+.graficos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.grafico-item {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   RANKING / TABELAS - DARK THEME
+   ============================================ */
+.ranking-consultores {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 32px;
+}
+
+/* ============================================
+   RESUMO DO PERÍODO
+   ============================================ */
+.resumo-periodo {
+  margin-top: 32px;
+}
+
+.resumo-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.resumo-card h3 {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resumo-card h3 .inline-icon {
+  color: #3b82f6;
+}
+
+.resumo-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.resumo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resumo-item strong {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resumo-item span {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ============================================
+   INLINE ICON
+   ============================================ */
+.inline-icon {
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+@media (max-width: 1200px) {
+  .graficos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .relatorios-container {
     padding: 12px;
@@ -168,11 +329,35 @@
     grid-template-columns: 1fr;
   }
 
-  .tabs-header {
-    flex-direction: column;
-  }
-
   .graficos-grid {
     grid-template-columns: 1fr;
+  }
+
+  .resumo-content {
+    grid-template-columns: 1fr;
+  }
+
+  .card-value {
+    font-size: 1.75rem;
+  }
+
+  .dashboard-executivo section h2 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .global-filters,
+  .dashboard-content,
+  .card-metrica,
+  .grafico-item,
+  .ranking-consultores,
+  .resumo-card {
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .card-value {
+    font-size: 1.5rem;
   }
 }

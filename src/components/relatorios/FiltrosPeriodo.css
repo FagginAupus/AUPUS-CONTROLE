@@ -1,0 +1,279 @@
+/* FiltrosPeriodo.css - Dark Theme */
+
+.filtros-periodo {
+  /* Já estilizado no RelatoriosPage.css como .global-filters */
+}
+
+.filtros-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filtros-header h3 {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.filtros-header h3 .inline-icon {
+  color: #3b82f6;
+}
+
+.filtros-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-toggle-advanced,
+.btn-clear-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-advanced:hover,
+.btn-clear-filters:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: white;
+}
+
+.btn-clear-filters:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Conteúdo dos filtros */
+.filtros-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Filtros Básicos */
+.filtros-basicos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-group label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-group label .inline-icon {
+  color: #3b82f6;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-inputs input[type="date"] {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.date-inputs input[type="date"]:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.date-inputs input[type="date"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.date-inputs input[type="date"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cor do calendário no Chrome/Edge/Safari */
+.date-inputs input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.date-inputs span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+}
+
+/* Preset Periods */
+.preset-periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-button {
+  padding: 8px 14px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.preset-button:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.preset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Filtros Avançados */
+.filtros-avancados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-group select {
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-group select:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-group select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-group select option {
+  background: #1e293b;
+  color: white;
+  padding: 8px;
+}
+
+/* Filter Info */
+.filter-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+}
+
+.info-item strong {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.info-item:not(strong) {
+  color: white;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .filtros-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filtros-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .btn-toggle-advanced,
+  .btn-clear-filters {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .date-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-inputs span {
+    text-align: center;
+  }
+
+  .preset-periods {
+    justify-content: center;
+  }
+
+  .filtros-avancados {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
