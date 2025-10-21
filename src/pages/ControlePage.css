@@ -2409,6 +2409,11 @@ button.btn-visualizar-doc {
   color: white !important;
 }
 
+button.btn-visualizar-doc svg {
+  color: white !important;
+  stroke: white !important;
+}
+
 button.btn-visualizar-doc:hover {
   background: #0056b3 !important;
   transform: scale(1.05) !important;
@@ -2428,6 +2433,11 @@ button.btn-remover-doc {
   transition: all 0.2s ease !important;
   background: #dc3545 !important;
   color: white !important;
+}
+
+button.btn-remover-doc svg {
+  color: white !important;
+  stroke: white !important;
 }
 
 button.btn-remover-doc:hover {
