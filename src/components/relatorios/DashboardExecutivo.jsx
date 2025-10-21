@@ -196,7 +196,7 @@ const DashboardExecutivo = ({ filters, loading, setLoading, onNotification }) =>
             ]}
             xAxisKey="periodo"
             loading={loading}
-            formatoTooltip={(value) => `${value.toFixed(1)}%`}
+            formatoTooltip={(value) => `${parseFloat(value || 0).toFixed(1)}%`}
           />
         </section>
       )}
