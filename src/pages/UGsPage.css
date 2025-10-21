@@ -768,7 +768,6 @@
 .lotacao-percentual {
   font-size: 0.8rem !important;
   font-weight: 700 !important;
-  color: #333 !important;
   font-family: monospace;
   margin: 0;
   line-height: 1;
@@ -777,7 +776,6 @@
 .lotacao-status {
   font-size: 0.65rem !important;
   font-weight: 500 !important;
-  color: #6c757d !important;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;
@@ -790,14 +788,29 @@
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
 }
 
+.lotacao-container[data-status="disponível"] .lotacao-percentual,
+.lotacao-container[data-status="disponível"] .lotacao-status {
+  color: #3b82f6 !important;
+}
+
 .lotacao-container[data-status="quase-cheia"] .lotacao-barra-preenchida {
   background: linear-gradient(90deg, #ffc107 0%, #ffcd39 100%) !important;
   box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
 }
 
+.lotacao-container[data-status="quase-cheia"] .lotacao-percentual,
+.lotacao-container[data-status="quase-cheia"] .lotacao-status {
+  color: #ffc107 !important;
+}
+
 .lotacao-container[data-status="cheia"] .lotacao-barra-preenchida {
   background: linear-gradient(90deg, #dc3545 0%, #e55465 100%) !important;
   box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
+}
+
+.lotacao-container[data-status="cheia"] .lotacao-percentual,
+.lotacao-container[data-status="cheia"] .lotacao-status {
+  color: #dc3545 !important;
 }
 
 /* Animação de pulso para UGs cheias */

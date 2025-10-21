@@ -1001,14 +1001,14 @@ small {
 }
 
 .status-troca-btn.status-associado {
-  background: #3b82f6 !important;
+  background: #28a745 !important;
   color: white !important;
 }
 
 .status-troca-btn.status-associado:hover {
-  background: #2563eb !important;
+  background: #218838 !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
 }
 
 /* Status padrão (fallback) */
@@ -1025,7 +1025,7 @@ small {
 
 .status-esteira { background: #ffc107; color: #000; }
 .status-em-andamento { background: #17a2b8; color: white; }
-.status-associado { background: #3b82f6; color: white; }
+.status-associado { background: #28a745; color: white; }
 
 .modal-ug-content { max-width: 600px; }
 .ug-select option.ug-option { padding: 8px; }
@@ -1448,9 +1448,9 @@ small {
 }
 
 .controle-status-badge.controle-status-associado {
-  background: #3b82f6;
+  background: #28a745;
   color: white;
-  border: 1px solid #60a5fa;
+  border: 1px solid #34ce57;
 }
 
 /* stat-content agora usando padrão de indicators.css */
