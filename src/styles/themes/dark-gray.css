@@ -1,0 +1,99 @@
+/*
+  TEMA: Dark Gray
+  Tons de cinza escuro - Padrão atual do sistema
+*/
+
+.theme-dark-gray {
+  /* ===== CORES PRINCIPAIS ===== */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #1e1e1e;
+
+  /* ===== CARDS E CONTAINERS ===== */
+  --card-bg: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --card-hover-border: rgba(255, 255, 255, 0.2);
+
+  /* ===== TEXTOS ===== */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-disabled: rgba(255, 255, 255, 0.3);
+
+  /* ===== ACENTOS E DESTAQUES ===== */
+  --accent-primary: #4ade80;
+  --accent-secondary: #3b82f6;
+  --accent-hover: #22c55e;
+
+  /* ===== INPUTS E FORMS ===== */
+  --input-bg: rgba(0, 0, 0, 0.3);
+  --input-border: rgba(255, 255, 255, 0.2);
+  --input-focus-border: #4ade80;
+  --input-focus-shadow: rgba(74, 222, 128, 0.1);
+
+  /* ===== BOTÕES ===== */
+  --btn-primary-bg: linear-gradient(135deg, #2d7a31, #45a049);
+  --btn-primary-hover: linear-gradient(135deg, #246528, #3a8a3d);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.1);
+  --btn-secondary-hover: rgba(255, 255, 255, 0.2);
+
+  /* ===== MODAIS ===== */
+  --modal-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --modal-header-border: rgba(255, 255, 255, 0.1);
+
+  /* ===== TABELAS ===== */
+  --table-header-bg: #1a1a1a;
+  --table-row-bg: #2d2d2d;
+  --table-row-alt-bg: #333333;
+  --table-row-hover: #3d3d3d;
+  --table-border: #444444;
+
+  /* ===== NAVEGAÇÃO ===== */
+  --nav-bg: #2d2d2d;
+  --nav-active-bg: #3d3d3d;
+  --nav-hover-bg: rgba(255, 255, 255, 0.05);
+
+  /* ===== STATUS E ALERTAS ===== */
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  /* ===== SOMBRAS ===== */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 25px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== CORREÇÕES DE CONTRASTE - STATUS E EVENTOS ===== */
+
+/* Status badges com melhor contraste */
+.theme-dark-gray .status-badge.status-aguardando,
+.theme-dark-gray .status-aguardando {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fcd34d !important;
+}
+
+.theme-dark-gray .status-badge.status-cancelada,
+.theme-dark-gray .status-cancelada {
+  background: #e5e7eb !important;
+  color: #1f2937 !important;
+  border: 1px solid #9ca3af !important;
+}
+
+.theme-dark-gray .status-badge.status-recusada,
+.theme-dark-gray .status-recusada {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
+  border: 1px solid #f87171 !important;
+}
+
+/* Eventos críticos - texto visível */
+.theme-dark-gray .eventos-criticos h3 {
+  color: #ef4444 !important;
+}
+
+.theme-dark-gray .eventos-criticos-icon {
+  color: #ef4444 !important;
+}

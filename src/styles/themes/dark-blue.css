@@ -1,0 +1,103 @@
+/*
+  TEMA: Dark Blue
+  Tons de azul escuro - Visual moderno e tech
+*/
+
+.theme-dark-blue {
+  /* ===== CORES PRINCIPAIS ===== */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #0f1729;
+
+  /* ===== CARDS E CONTAINERS ===== */
+  --card-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --card-border: rgba(59, 130, 246, 0.2);
+  --card-hover-border: rgba(59, 130, 246, 0.4);
+
+  /* ===== TEXTOS ===== */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-tertiary: rgba(255, 255, 255, 0.6);
+  --text-disabled: rgba(255, 255, 255, 0.3);
+
+  /* ===== ACENTOS E DESTAQUES ===== */
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --accent-hover: #2563eb;
+
+  /* ===== INPUTS E FORMS ===== */
+  --input-bg: rgba(15, 23, 42, 0.5);
+  --input-border: rgba(59, 130, 246, 0.3);
+  --input-focus-border: #3b82f6;
+  --input-focus-shadow: rgba(59, 130, 246, 0.2);
+
+  /* ===== BOTÕES ===== */
+  --btn-primary-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+  --btn-primary-hover: linear-gradient(135deg, #2563eb, #1d4ed8);
+  --btn-secondary-bg: rgba(59, 130, 246, 0.1);
+  --btn-secondary-hover: rgba(59, 130, 246, 0.2);
+
+  /* ===== MODAIS ===== */
+  --modal-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --modal-header-border: rgba(59, 130, 246, 0.2);
+
+  /* ===== TABELAS ===== */
+  --table-header-bg: #0f172a;
+  --table-row-bg: #1e293b;
+  --table-row-alt-bg: #1a2332;
+  --table-row-hover: #243447;
+  --table-border: rgba(59, 130, 246, 0.2);
+
+  /* ===== NAVEGAÇÃO ===== */
+  --nav-bg: #1e293b;
+  --nav-active-bg: #243447;
+  --nav-hover-bg: rgba(59, 130, 246, 0.1);
+
+  /* ===== STATUS E ALERTAS ===== */
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  /* ===== SOMBRAS ===== */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 25px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  /* ===== GRADIENTES ESPECIAIS ===== */
+  --gradient-accent: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  --gradient-card-border: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+/* ===== CORREÇÕES DE CONTRASTE - STATUS E EVENTOS ===== */
+
+/* Status badges com melhor contraste */
+.theme-dark-blue .status-badge.status-aguardando,
+.theme-dark-blue .status-aguardando {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fcd34d !important;
+}
+
+.theme-dark-blue .status-badge.status-cancelada,
+.theme-dark-blue .status-cancelada {
+  background: #e5e7eb !important;
+  color: #1f2937 !important;
+  border: 1px solid #9ca3af !important;
+}
+
+.theme-dark-blue .status-badge.status-recusada,
+.theme-dark-blue .status-recusada {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
+  border: 1px solid #f87171 !important;
+}
+
+/* Eventos críticos - texto visível */
+.theme-dark-blue .eventos-criticos h3 {
+  color: #ef4444 !important;
+}
+
+.theme-dark-blue .eventos-criticos-icon {
+  color: #ef4444 !important;
+}

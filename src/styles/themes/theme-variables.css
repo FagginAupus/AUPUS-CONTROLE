@@ -1,0 +1,312 @@
+/*
+  THEME VARIABLES - Aplicação das variáveis CSS nos componentes
+  Este arquivo usa as variáveis CSS definidas nos temas
+*/
+
+/* ===== BACKGROUNDS ===== */
+.page-container,
+body {
+  background: var(--bg-primary) !important;
+}
+
+/* ===== CARDS E CONTAINERS ===== */
+.card-metrica,
+.modal-content,
+.global-filters,
+.grafico-item,
+.ranking-consultores,
+.resumo-card,
+.logs-header,
+.logs-table-container,
+.filtros-panel,
+.common-modal,
+.modal {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.card-metrica:hover {
+  border-color: var(--card-hover-border) !important;
+}
+
+/* ===== TEXTOS ===== */
+h1, h2, h3, h4, h5, h6,
+.dashboard-executivo section h2,
+.logs-title h1,
+.modal-header h2,
+.modal-header h3 {
+  color: var(--text-primary) !important;
+}
+
+p, span, label,
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* ===== INPUTS E FORMS ===== */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+input[type="search"],
+select,
+textarea,
+.filtro-item input,
+.filtro-item select,
+.date-inputs input[type="date"],
+.filter-group select {
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
+  color: var(--text-primary) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--input-focus-border) !important;
+  box-shadow: 0 0 0 3px var(--input-focus-shadow) !important;
+}
+
+/* ===== BOTÕES PRIMÁRIOS ===== */
+.btn-primary,
+.btn-apply,
+.btn-save,
+.btn-confirm {
+  background: var(--btn-primary-bg) !important;
+}
+
+.btn-primary:hover,
+.btn-apply:hover,
+.btn-save:hover,
+.btn-confirm:hover {
+  background: var(--btn-primary-hover) !important;
+}
+
+/* ===== BOTÕES SECUNDÁRIOS ===== */
+.btn-secondary,
+.btn-filter,
+.btn-toggle-advanced,
+.preset-button {
+  background: var(--btn-secondary-bg) !important;
+  border-color: var(--card-border) !important;
+  color: var(--text-secondary) !important;
+}
+
+.btn-secondary:hover,
+.btn-filter:hover,
+.btn-toggle-advanced:hover,
+.preset-button:hover {
+  background: var(--btn-secondary-hover) !important;
+}
+
+/* ===== TABELAS ===== */
+.logs-table thead,
+.table thead {
+  background: var(--table-header-bg) !important;
+  border-bottom: 2px solid var(--table-border) !important;
+}
+
+.logs-table th,
+.table th {
+  background: var(--table-header-bg) !important;
+  border-bottom: 2px solid var(--table-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.logs-table tbody tr,
+.table tbody tr {
+  background: var(--table-row-bg) !important;
+  border-bottom: 1px solid var(--table-border) !important;
+}
+
+.logs-table tbody tr:nth-child(even),
+.table tbody tr:nth-child(even) {
+  background: var(--table-row-alt-bg) !important;
+}
+
+.logs-table tbody tr:hover,
+.table tbody tr:hover {
+  background: var(--table-row-hover) !important;
+}
+
+.logs-table td,
+.table td {
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--table-border) !important;
+}
+
+/* ===== NAVEGAÇÃO ===== */
+.navigation,
+.nav-container {
+  background: var(--nav-bg) !important;
+}
+
+.nav-item.active {
+  background: var(--nav-active-bg) !important;
+}
+
+.nav-item:hover {
+  background: var(--nav-hover-bg) !important;
+}
+
+/* ===== ÍCONES DE DESTAQUE ===== */
+.card-icon,
+.inline-icon,
+.dashboard-executivo section h2 .inline-icon,
+.filtros-header h3 .inline-icon,
+.resumo-card h3 .inline-icon {
+  color: var(--accent-primary) !important;
+}
+
+/* ===== STATUS ===== */
+.status-success,
+.badge.bg-green-100 {
+  background: var(--success) !important;
+}
+
+.status-error,
+.badge.bg-red-100 {
+  background: var(--error) !important;
+}
+
+.status-warning,
+.badge.bg-yellow-100 {
+  background: var(--warning) !important;
+}
+
+.status-info,
+.badge.bg-blue-100 {
+  background: var(--info) !important;
+}
+
+/* ===== EFEITO HOVER NOS CARDS (TEMA AZUL) ===== */
+.theme-dark-blue .card-metrica::before {
+  background: var(--gradient-card-border) !important;
+}
+
+/* ===== PAGINAÇÃO ===== */
+.pagination,
+.btn-page {
+  background: var(--bg-secondary) !important;
+  border-color: var(--table-border) !important;
+}
+
+.btn-page:hover {
+  background: var(--table-row-hover) !important;
+  border-color: var(--accent-primary) !important;
+}
+
+.btn-page.active {
+  background: var(--btn-primary-bg) !important;
+  border-color: var(--accent-primary) !important;
+}
+
+/* ===== SCROLLBAR CUSTOMIZADA ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--input-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--card-border);
+}
+
+/* ===== FORÇAR VARIÁVEIS EM CONTAINERS ESPECÍFICOS ===== */
+.dashboard-container,
+.propostas-container,
+.controle-container,
+.ugs-container,
+.logs-container,
+.relatorios-container {
+  background: var(--bg-primary) !important;
+}
+
+/* ===== HEADERS E TÍTULOS ===== */
+.page-header,
+.section-header,
+.card-header {
+  background: transparent !important;
+}
+
+/* ===== REMOVER BACKGROUNDS HARDCODED ===== */
+div[class*="container"],
+div[class*="wrapper"],
+div[class*="panel"] {
+  background-color: transparent;
+}
+
+/* ===== SEÇÕES E WRAPPERS ===== */
+section[class*="section"],
+div[class*="section"] {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ===== SOBRESCREVER BACKGROUNDS HARDCODED ===== */
+/* Containers principais de todas as páginas */
+.page-container,
+.dashboard-container,
+.propostas-container,
+.controle-container,
+.controle-clube-container,
+.ugs-container,
+.relatorios-container,
+.logs-container,
+.nova-proposta-container,
+body,
+#root {
+  background: var(--bg-primary) !important;
+}
+
+/* Remover bordas de seções e containers wrapper */
+.metricas-principais,
+.graficos-dashboard,
+.resumo-periodo,
+.conversao-periodo,
+.dashboard-content,
+.filtros-periodo,
+.dashboard-executivo section {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Tables e listas */
+table,
+.table-container,
+.list-container {
+  background: var(--bg-secondary) !important;
+}
+
+/* Navegação */
+.nav,
+.navigation,
+.sidebar,
+.menu {
+  background: var(--nav-bg) !important;
+}
+
+/* Forçar border-radius apenas em cards reais, não em seções wrapper */
+.card-metrica,
+.grafico-item,
+.ranking-consultores,
+.resumo-card,
+.modal-content,
+.global-filters,
+.logs-header,
+.logs-table-container,
+.common-modal {
+  border-radius: 16px !important;
+}
