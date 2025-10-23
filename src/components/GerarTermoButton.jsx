@@ -1137,6 +1137,12 @@ const GerarTermoButton = ({
   const camposFaltantes = [];
   if (!dados?.nomeRepresentante) camposFaltantes.push('Nome do Representante');
   if (!dados?.nomeCliente) camposFaltantes.push('Nome do Cliente');
+  if (!dados?.enderecoUC) camposFaltantes.push('Endereço da UC');
+  if (!dados?.CEP_UC) camposFaltantes.push('CEP da UC');
+  if (!dados?.Bairro_UC) camposFaltantes.push('Bairro da UC');
+  if (!dados?.Cidade_UC) camposFaltantes.push('Cidade da UC');
+  if (!dados?.Estado_UC) camposFaltantes.push('Estado da UC');
+  if (!dados?.logradouroUC) camposFaltantes.push('Logradouro da UC');
 
   // RENDERIZAÇÃO BASEADA NA ETAPA
   return (
@@ -1145,15 +1151,15 @@ const GerarTermoButton = ({
       {/* ETAPA INICIAL - Nenhum termo gerado */}
       {etapa === 'inicial' && (
         <>
-          {(!dados?.nomeRepresentante || !dados?.nomeCliente) && (
+          {camposFaltantes.length > 0 && (
             <div className="campos-faltantes">
               <strong>Campos obrigatórios:</strong> {camposFaltantes.join(', ')}
             </div>
           )}
-          
+
           <button
             onClick={gerarPdfApenas}
-            disabled={loading || !dados?.nomeRepresentante || !dados?.nomeCliente}
+            disabled={loading || camposFaltantes.length > 0}
             className={`btn btn-primary ${loading ? 'loading' : ''}`}
           >
             {loading ? (

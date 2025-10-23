@@ -84,6 +84,37 @@ const BotoesDocumento = ({ nomeArquivo, tipoArquivo }) => {
   );
 };
 
+// Lista de estados brasileiros
+const ESTADOS_BRASIL = [
+  { sigla: 'AC', nome: 'Acre' },
+  { sigla: 'AL', nome: 'Alagoas' },
+  { sigla: 'AP', nome: 'Amapá' },
+  { sigla: 'AM', nome: 'Amazonas' },
+  { sigla: 'BA', nome: 'Bahia' },
+  { sigla: 'CE', nome: 'Ceará' },
+  { sigla: 'DF', nome: 'Distrito Federal' },
+  { sigla: 'ES', nome: 'Espírito Santo' },
+  { sigla: 'GO', nome: 'Goiás' },
+  { sigla: 'MA', nome: 'Maranhão' },
+  { sigla: 'MT', nome: 'Mato Grosso' },
+  { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+  { sigla: 'MG', nome: 'Minas Gerais' },
+  { sigla: 'PA', nome: 'Pará' },
+  { sigla: 'PB', nome: 'Paraíba' },
+  { sigla: 'PR', nome: 'Paraná' },
+  { sigla: 'PE', nome: 'Pernambuco' },
+  { sigla: 'PI', nome: 'Piauí' },
+  { sigla: 'RJ', nome: 'Rio de Janeiro' },
+  { sigla: 'RN', nome: 'Rio Grande do Norte' },
+  { sigla: 'RS', nome: 'Rio Grande do Sul' },
+  { sigla: 'RO', nome: 'Rondônia' },
+  { sigla: 'RR', nome: 'Roraima' },
+  { sigla: 'SC', nome: 'Santa Catarina' },
+  { sigla: 'SP', nome: 'São Paulo' },
+  { sigla: 'SE', nome: 'Sergipe' },
+  { sigla: 'TO', nome: 'Tocantins' }
+];
+
 const ProspecPage = () => {
   const navigate = useNavigate();
   const { user, getMyTeam, getConsultorName } = useAuth();
@@ -226,6 +257,10 @@ const ProspecPage = () => {
       contratoSocial: documentacaoUC.contratoSocial || null,
       documentoPessoalRepresentante: documentacaoUC.documentoPessoalRepresentante || null,
       enderecoUC: documentacaoUC.enderecoUC || '',
+      CEP_UC: documentacaoUC.CEP_UC || '',
+      Bairro_UC: documentacaoUC.Bairro_UC || '',
+      Cidade_UC: documentacaoUC.Cidade_UC || '',
+      Estado_UC: documentacaoUC.Estado_UC || '',
       isArrendamento: documentacaoUC.isArrendamento || false,
       contratoLocacao: documentacaoUC.contratoLocacao || null,
       enderecoRepresentante: documentacaoUC.enderecoRepresentante || '',
@@ -389,6 +424,10 @@ const ProspecPage = () => {
           logradouroUC: documentacaoFinal.logradouroUC,
           documentoPessoalRepresentante: documentacaoFinal.documentoPessoalRepresentante,
           enderecoUC: documentacaoFinal.enderecoUC,
+          CEP_UC: documentacaoFinal.CEP_UC,
+          Bairro_UC: documentacaoFinal.Bairro_UC,
+          Cidade_UC: documentacaoFinal.Cidade_UC,
+          Estado_UC: documentacaoFinal.Estado_UC,
           isArrendamento: documentacaoFinal.isArrendamento,
           contratoLocacao: documentacaoFinal.contratoLocacao,
           enderecoRepresentante: documentacaoFinal.enderecoRepresentante,
@@ -1441,6 +1480,10 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
     contratoSocial: item.contratoSocial || null,
     documentoPessoalRepresentante: item.documentoPessoalRepresentante || null,
     enderecoUC: item.enderecoUC || '',
+    CEP_UC: item.CEP_UC || '',
+    Bairro_UC: item.Bairro_UC || '',
+    Cidade_UC: item.Cidade_UC || '',
+    Estado_UC: item.Estado_UC || '',
     isArrendamento: item.isArrendamento || false,
     contratoLocacao: item.contratoLocacao || null,
     enderecoRepresentante: item.enderecoRepresentante || '',
@@ -1538,6 +1581,11 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
       if (!dados.numeroUC) camposObrigatorios.push('Número UC');
       if (!dados.consultor_id && !dados.consultor) camposObrigatorios.push('Consultor Responsável');
       if (!dados.enderecoUC) camposObrigatorios.push('Endereço da UC');
+      if (!dados.CEP_UC) camposObrigatorios.push('CEP da UC');
+      if (!dados.Bairro_UC) camposObrigatorios.push('Bairro da UC');
+      if (!dados.Cidade_UC) camposObrigatorios.push('Cidade da UC');
+      if (!dados.Estado_UC) camposObrigatorios.push('Estado da UC');
+      if (!dados.logradouroUC) camposObrigatorios.push('Logradouro da UC');
       if (!dados.enderecoRepresentante) camposObrigatorios.push('Endereço do Representante');
       
       if (dados.tipoDocumento === 'CPF') {
@@ -2270,6 +2318,55 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                       placeholder="Endereço resumido da Unidade Consumidora"
                     />
                   </div>
+
+                  <div className="form-row" style={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px', marginTop: '10px'}}>
+                    <div className="form-group">
+                      <label>CEP</label>
+                      <input
+                        type="text"
+                        value={dados.CEP_UC || ''}
+                        onChange={(e) => setDados({...dados, CEP_UC: e.target.value})}
+                        placeholder="00000-000"
+                        maxLength="9"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Bairro</label>
+                      <input
+                        type="text"
+                        value={dados.Bairro_UC || ''}
+                        onChange={(e) => setDados({...dados, Bairro_UC: e.target.value})}
+                        placeholder="Nome do bairro"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row" style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px'}}>
+                    <div className="form-group">
+                      <label>Cidade</label>
+                      <input
+                        type="text"
+                        value={dados.Cidade_UC || ''}
+                        onChange={(e) => setDados({...dados, Cidade_UC: e.target.value})}
+                        placeholder="Nome da cidade"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Estado</label>
+                      <select
+                        value={dados.Estado_UC || ''}
+                        onChange={(e) => setDados({...dados, Estado_UC: e.target.value})}
+                      >
+                        <option value="">Selecione</option>
+                        {ESTADOS_BRASIL.map(estado => (
+                          <option key={estado.sigla} value={estado.sigla}>
+                            {estado.sigla} - {estado.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="logradouro-column">
                     <div className="form-group logradouro-field">
                       <label>Logadouro da UC</label>
