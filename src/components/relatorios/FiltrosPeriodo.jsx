@@ -170,7 +170,7 @@ const FiltrosPeriodo = ({ filters, onFilterChange, loading }) => {
               >
                 <option value="">Todos os consultores</option>
                 {consultores.map(consultor => (
-                  <option key={consultor.id} value={consultor.name}>
+                  <option key={consultor.id} value={consultor.id}>
                     {consultor.name} ({consultor.role})
                   </option>
                 ))}
@@ -201,7 +201,7 @@ const FiltrosPeriodo = ({ filters, onFilterChange, loading }) => {
           </div>
           {filters.consultor && (
             <div className="info-item">
-              <strong>Consultor:</strong> {filters.consultor}
+              <strong>Consultor:</strong> {consultores.find(c => c.id === filters.consultor)?.name || filters.consultor}
             </div>
           )}
           {filters.status && (
