@@ -151,31 +151,46 @@ const ProspecPage = () => {
         );
 
         const listaFinal = [
-          ...consultores.map(member => ({ id: member.id, name: member.name })),
-          { id: null, name: 'Sem consultor (AUPUS direto)' }
+          ...consultores.map(member => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            role: member.role
+          })),
+          { id: null, name: 'Sem consultor (AUPUS direto)', email: '', role: '' }
         ];
 
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'consultor') {
-        const funcionarios = team.filter(member => 
+        const funcionarios = team.filter(member =>
           member.role === 'gerente' || member.role === 'vendedor'
         );
         const listaFinal = [
-          { id: user.id, name: user.name },
-          ...funcionarios.map(member => ({ id: member.id, name: member.name }))
+          { id: user.id, name: user.name, email: user.email, role: user.role },
+          ...funcionarios.map(member => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            role: member.role
+          }))
         ];
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'gerente') {
-        const vendedores = team.filter(member => 
+        const vendedores = team.filter(member =>
           member.role === 'vendedor'
         );
         const listaFinal = [
-          { id: user.id, name: user.name },
-          ...vendedores.map(member => ({ id: member.id, name: member.name }))
+          { id: user.id, name: user.name, email: user.email, role: user.role },
+          ...vendedores.map(member => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            role: member.role
+          }))
         ];
         setConsultoresDisponiveis(listaFinal);
       } else if (user?.role === 'vendedor') {
-        const listaFinal = [{ id: user.id, name: user.name }];
+        const listaFinal = [{ id: user.id, name: user.name, email: user.email, role: user.role }];
         setConsultoresDisponiveis(listaFinal);
       }
     } catch (error) {
@@ -2069,11 +2084,19 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                     )}
                     {consultoresDisponiveis
                       .filter(consultor => consultor.id !== null)
-                      .map((consultor, index) => (
-                      <option key={consultor.id || `consultor-${index}`} value={consultor.id}>
-                        {consultor.name}
-                      </option>
-                    ))}
+                      .map((consultor, index) => {
+                        // Verificar se há nomes duplicados para mostrar email
+                        const nomeDuplicado = consultoresDisponiveis.filter(c => c.name === consultor.name && c.id !== null).length > 1;
+                        const displayText = nomeDuplicado && consultor.email
+                          ? `${consultor.name} (${consultor.email})`
+                          : consultor.name;
+
+                        return (
+                          <option key={consultor.id || `consultor-${index}`} value={consultor.id}>
+                            {displayText}
+                          </option>
+                        );
+                      })}
                   </select>
                 )}
               </div>
