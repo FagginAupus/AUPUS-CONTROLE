@@ -9,9 +9,6 @@ class ApiService {
         this.requestQueue = new Map();
         this.lastRequestTime = 0;
         this.minRequestInterval = 100; // 100ms between requests
-
-        console.log('🔗 ApiService inicializado');
-        console.log('🌐 Base URL:', this.baseURL);
     }
 
     // ========================================
@@ -21,7 +18,6 @@ class ApiService {
     setToken(token) {
         this.token = token;
         localStorage.setItem('aupus_token', token);
-        console.log('🔐 Token configurado');
     }
 
     getToken() {
@@ -31,7 +27,6 @@ class ApiService {
     clearToken() {
         this.token = null;
         localStorage.removeItem('aupus_token');
-        console.log('🚪 Token removido');
     }
 
     // ========================================
@@ -110,32 +105,15 @@ class ApiService {
             config.body = options.body;
         }
 
-        console.log(`📡 ${config.method} ${url}`);
-        if (config.body && config.headers['Content-Type'] === 'application/json') {
-            try {
-                console.log('📤 Dados enviados:', JSON.parse(config.body));
-            } catch (e) {
-                console.log('📤 Dados enviados:', config.body);
-            }
-        }
-
-        try {            
+        try {
             const response = await fetch(url, config);
             const responseData = await response.json();
-            
-            if (response.status === 422 && responseData.error_type === 'ucs_com_proposta_ativa') {
-            console.log(`🎯 UC duplicada detectada - modal será exibido`);
-            } else {
-                console.log(`📥 Resposta ${response.status}:`, responseData);
-            }
 
             if (!response.ok) {
                 console.error(`❌ Erro ${response.status}:`, responseData);
 
                 // ✅ TRATAMENTO ESPECÍFICO PARA 429 - RATE LIMITING
                 if (response.status === 429) {
-                    console.warn('🚫 Rate limiting detectado - aplicando delay');
-
                     // Clear request queue to prevent further issues
                     this.requestQueue.clear();
 
@@ -146,7 +124,6 @@ class ApiService {
                     // Reset after 30 seconds
                     setTimeout(() => {
                         this.minRequestInterval = originalInterval;
-                        console.log('⏰ Rate limiting interval resetado');
                     }, 30000);
 
                     const errorMessage = responseData.message || 'Muitas tentativas de login. Tente novamente em alguns minutos.';
@@ -162,26 +139,13 @@ class ApiService {
 
                 // ✅ TRATAMENTO ESPECÍFICO PARA 401 - MELHORADO
                 if (response.status === 401) {
-                    console.log('🔍 Análise detalhada do erro 401:', {
-                        endpoint: endpoint,
-                        isLoginRoute: endpoint.includes('/auth/login'),
-                        isSessionCheck: endpoint.includes('/auth/session-status'),
-                        isRefreshRoute: endpoint.includes('/auth/refresh'),
-                        responseMessage: responseData.message,
-                        errorType: responseData.error_type,
-                        requiresLogin: responseData.requires_login,
-                        tokenPresent: !!this.getToken()
-                    });
-
                     // Se for rota de login, não remover token (credenciais inválidas)
                     if (endpoint.includes('/auth/login')) {
-                        console.log('❌ Falha no login - credenciais inválidas');
                         throw new Error(responseData.message || 'Email ou senha incorretos');
                     }
 
                     // ✅ MELHORADO: Para session-status, se deu 401, significa que está deslogado
                     if (endpoint.includes('/auth/session-status')) {
-                        console.log('🚪 Erro 401 em session-status - sessão expirada, disparando logout');
                         this.clearToken();
 
                         // Disparar evento de sessão expirada
@@ -197,7 +161,6 @@ class ApiService {
 
                     // Para /auth/me também considerar como sessão expirada
                     if (endpoint.includes('/auth/me')) {
-                        console.log('🚪 Erro 401 em /auth/me - sessão expirada');
                         this.clearToken();
 
                         window.dispatchEvent(new CustomEvent('sessionExpired', {
@@ -212,14 +175,12 @@ class ApiService {
 
                     // Se for refresh de token, não disparar eventos
                     if (endpoint.includes('/auth/refresh')) {
-                        console.log('⚠️ Erro 401 no refresh - token não pode ser renovado');
                         throw new Error(responseData.message || 'Token não pode ser renovado');
                     }
 
                     // ✅ MELHORADO: Para QUALQUER outra rota com 401, considerar sessão expirada
                     // Se tem token mas está dando 401, significa que o token é inválido/expirado
                     if (this.getToken()) {
-                        console.log('🚪 401 com token presente - considerando sessão expirada');
                         this.clearToken();
 
                         window.dispatchEvent(new CustomEvent('sessionExpired', {
@@ -233,7 +194,6 @@ class ApiService {
                     }
 
                     // Se não tem token, é apenas erro de autenticação
-                    console.log('⚠️ Erro 401 sem token presente');
                     throw new Error(responseData.message || 'Erro de autenticação');
                 }
                 
@@ -247,7 +207,6 @@ class ApiService {
                 throw error;
             }
 
-            console.log(`✅ Resposta recebida:`, responseData);
             return responseData;
             
         } catch (error) {
@@ -265,21 +224,10 @@ class ApiService {
     }
 
     async post(endpoint, data = {}) {
-        console.log('📤 apiService.post INICIADO:', {
-            endpoint: endpoint,
-            url: `${this.baseURL}${endpoint}`,
-            hasData: !!data,
-            hasToken: !!this.token,
-            dataKeys: Object.keys(data)
-        });
-        
-        const response = await this.request(endpoint, {
+        return this.request(endpoint, {
             method: 'POST',
             body: JSON.stringify(data)
         });
-        
-        console.log('📥 apiService.post - Response:', response);
-        return response;
     }
 
     async put(endpoint, data) {
@@ -323,23 +271,15 @@ class ApiService {
             body: formData,
         };
 
-        console.log(`📤 UPLOAD ${url}`);
-
         try {
             const response = await fetch(url, config);
-            
+
             if (!response.ok) {
-                // Para uploads, ser mais conservador com limpeza de token
-                if (response.status === 401) {
-                    console.log('⚠️ Erro 401 no upload - não limpando token automaticamente');
-                }
-                
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || `HTTP ${response.status}`);
             }
 
             const data = await response.json();
-            console.log(`✅ Upload concluído:`, data);
             return data;
 
         } catch (error) {
@@ -440,14 +380,12 @@ class ApiService {
     // ========================================
 
     async getUGs(filtros = {}) {
-        console.log('📥 Buscando UGs da API...');
         const params = new URLSearchParams(filtros).toString();
         const endpoint = params ? `/ugs?${params}` : '/ugs';
         return this.get(endpoint);
     }
 
     async criarUG(dadosUG) {
-        console.log('💾 Criando UG na API...', dadosUG);
         return this.post('/ugs', dadosUG);
     }
 
@@ -499,14 +437,7 @@ class ApiService {
     // ========================================
 
     async criarAnalista(dadosAnalista) {
-        try {
-            console.log('📊 Criando analista via endpoint específico...');
-            const response = await this.post('/usuarios/criar-analista', dadosAnalista);
-            return response;
-        } catch (error) {
-            console.error('Erro ao criar analista:', error);
-            throw error;
-        }
+        return this.post('/usuarios/criar-analista', dadosAnalista);
     }
 }
 

@@ -4,10 +4,7 @@ import apiService from './apiService';
 class NotificationService {
     async getNotifications() {
         try {
-            console.log('📢 Buscando notificações do backend...');
             const response = await apiService.get('/notificacoes');
-
-            console.log('📢 Resposta da API:', response);
 
             // Verificar diferentes estruturas de resposta possíveis
             let notifications = [];
@@ -27,11 +24,9 @@ class NotificationService {
 
             // Garantir que é sempre um array
             if (!Array.isArray(notifications)) {
-                console.warn('⚠️ Notifications não é array após processamento:', notifications);
                 notifications = [];
             }
 
-            console.log('📢 Notificações processadas:', notifications);
             return notifications;
         } catch (error) {
             console.error('Erro ao buscar notificações:', error);
@@ -41,7 +36,6 @@ class NotificationService {
 
     async markAsRead(notificationId) {
         try {
-            console.log('✅ Marcando notificação como lida:', notificationId);
             await apiService.patch(`/notificacoes/${notificationId}/read`);
             return true;
         } catch (error) {
@@ -52,7 +46,6 @@ class NotificationService {
 
     async markAllAsRead() {
         try {
-            console.log('✅ Marcando todas as notificações como lidas');
             await apiService.post('/notificacoes/mark-all-read');
             return true;
         } catch (error) {

@@ -29,14 +29,11 @@ const GerarTermoButton = ({
     
     const numeroUC = dados.numeroUC || dados.numero_uc;
     if (!numeroUC) {
-      console.log('⚠️ GerarTermoButton: numeroUC não encontrado, resetando estado');
       setEtapa('inicial');
       setStatusDocumento(null);
       setPdfGerado(null);
       return;
     }
-
-    console.log(`🔍 Verificando estado para UC específica: ${numeroUC}`);
 
     const timeoutId = setTimeout(() => {
       verificarEstado();
@@ -48,8 +45,6 @@ const GerarTermoButton = ({
         
         // ✅ PRIORIDADE 1: SEMPRE verificar documento assinado/pendente PRIMEIRO
         const statusUrl = `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/status?numero_uc=${numeroUC}`;
-
-        console.log(`📡 Consultando status para UC: ${numeroUC}`, statusUrl);
 
         const statusResponse = await fetch(statusUrl, {
           headers: {
@@ -63,24 +58,16 @@ const GerarTermoButton = ({
           if (result.success && result.documento) {
             // ✅ VERIFICAÇÃO RIGOROSA: só aceitar se for EXATAMENTE a UC correta
             if (String(result.documento.numero_uc) === String(numeroUC)) {
-              console.log('✅ Documento específico encontrado para UC:', numeroUC, result.documento);
               setStatusDocumento(result.documento);
-              
+
               // ✅ IMPORTANTE: Se encontrou documento, NÃO verificar PDF temporário
               // O documento real sempre tem prioridade sobre PDF temporário
               return;
-            } else {
-              console.log(`❌ Documento retornado é de UC diferente: ${result.documento.numero_uc} (esperado: ${numeroUC})`);
             }
-          } else {
-            console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC}`);
           }
-        } else {
-          console.log(`📭 Nenhum documento encontrado para UC: ${numeroUC} (status: ${statusResponse.status})`);
         }
 
         // ✅ PRIORIDADE 2: Só verificar PDF temporário se NÃO encontrou documento real
-        console.log('📄 Verificando PDF temporário como fallback...');
         
         const pdfTempResponse = await fetch(
           `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/pdf-temporario?numero_uc=${numeroUC}`,
@@ -94,7 +81,6 @@ const GerarTermoButton = ({
         if (pdfTempResponse.ok) {
           const result = await pdfTempResponse.json();
           if (result.success && result.pdf) {
-            console.log('📄 PDF temporário encontrado para UC:', numeroUC, result.pdf);
             setPdfGerado(result.pdf);
             setEtapa('pdf-gerado');
             return;
@@ -102,7 +88,6 @@ const GerarTermoButton = ({
         }
 
         // ✅ PRIORIDADE 3: Se não encontrou nada, resetar estado
-        console.log('🔄 Nenhum documento ou PDF encontrado, resetando estado');
         setStatusDocumento(null);
         setPdfGerado(null);
         setEtapa('inicial');
@@ -178,19 +163,12 @@ const GerarTermoButton = ({
     
     if (!numeroUC) {
       // Se não tem numeroUC, resetar completamente
-      console.log('🔄 GerarTermoButton: Resetando estado (sem numeroUC)');
       setEtapa('inicial');
       setStatusDocumento(null);
       setPdfGerado(null);
       setMostrarOpcoesEnvio(false);
     }
   }, [dados?.numeroUC, dados?.numero_uc, setStatusDocumento]);
-
-  console.log('DEBUG GerarTermoButton:', {
-    etapa,
-    pdfGerado,
-    statusDocumento,
-  });
 
   // NOVA FUNÇÃO: Gerar PDF apenas (sem enviar) - USANDO ENDPOINTS DEFINITIVOS
   const gerarPdfApenas = async () => {
@@ -224,16 +202,6 @@ const GerarTermoButton = ({
     setLoading(true);
 
     try {
-      console.log('📄 Gerando PDF para UC específica:', numeroUC);
-      console.log('🔍 Dados recebidos no GerarTermoButton:', {
-        desconto_tarifa: dados.desconto_tarifa,
-        descontoTarifa: dados.descontoTarifa,
-        economia: dados.economia,
-        desconto_bandeira: dados.desconto_bandeira,
-        descontoBandeira: dados.descontoBandeira,
-        bandeira: dados.bandeira
-      });
-
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/gerar-pdf-apenas`, // ✅ URL CORRIGIDA
         {
@@ -258,7 +226,6 @@ const GerarTermoButton = ({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('✅ PDF gerado para UC:', numeroUC, result.pdf);
         setPdfGerado(result.pdf);
         setEtapa('pdf-gerado');
       } else {
@@ -298,9 +265,8 @@ const GerarTermoButton = ({
     }
 
     setLoading(true);
-    
+
     try {
-      console.log('📤 Enviando PDF para Autentique - UC:', numeroUC);
 
       // ✅ VALIDAÇÃO DOS CAMPOS OBRIGATÓRIOS
       const camposObrigatorios = {
@@ -348,8 +314,6 @@ const GerarTermoButton = ({
         }
       });
 
-      console.log('📋 Dados de envio validados:', dadosEnvio);
-
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/documentos/propostas/${dados.propostaId}/enviar-para-autentique`,
         {
@@ -365,8 +329,6 @@ const GerarTermoButton = ({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('✅ Enviado para Autentique - UC:', numeroUC, result.documento);
-        
         const documento = result.documento;
         
         // ✅ VERIFICAR SE O DOCUMENTO RETORNADO É DA UC CORRETA

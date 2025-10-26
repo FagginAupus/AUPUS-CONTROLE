@@ -1,572 +1,940 @@
-// src/services/pdfGenerator.js - GERADOR PDF COM LAYOUT OTIMIZADO E COMPRESSÃO
+// src/services/pdfGenerator.js - GERADOR DE PDF VIA HTML COM IMAGENS EMBEDADAS
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Globe, Mail, Smartphone } from 'lucide-react';
+
 class PDFGenerator {
   constructor() {
-    this.jsPDFLoaded = false;
+    this.initialized = true;
+    this.imagensBase64 = {}; // Cache de imagens em Base64
   }
 
-  // Carregar jsPDF se não estiver disponível
-  async loadJsPDF() {
-    if (this.jsPDFLoaded && window.jspdf) {
+  // Renderizar ícone Lucide React como SVG string
+  getIconSVG(iconName) {
+    try {
+      let IconComponent;
+
+      switch(iconName) {
+        case 'globe':
+          IconComponent = Globe;
+          break;
+        case 'mail':
+          IconComponent = Mail;
+          break;
+        case 'phone':
+          IconComponent = Smartphone;
+          break;
+        default:
+          return '';
+      }
+
+      // Renderizar o componente React como string HTML
+      const svgString = renderToStaticMarkup(
+        React.createElement(IconComponent, {
+          size: 16,
+          color: '#2c3e50',
+          strokeWidth: 2
+        })
+      );
+
+      return svgString;
+    } catch (error) {
+      console.error('Erro ao renderizar ícone:', error);
+      // Fallback para emoji se falhar
+      const fallbacks = {
+        globe: '🌐',
+        mail: '✉️',
+        phone: '📱'
+      };
+      return fallbacks[iconName] || '';
+    }
+  }
+
+  // Calcular fator de escala baseado no número de UCs
+  calcularScaleFactor(numUCs) {
+    // Escala progressiva MUITO conservadora para garantir que SEMPRE cabe em 1 página
+    // IMPORTANTE: Valores mínimos para não estourar a página
+    // 1-3 UCs: 1.05x (apenas 5% maior)
+    // 4-6 UCs: 1.02x (apenas 2% maior)
+    // 7-10 UCs: 1.0x (padrão)
+    if (numUCs <= 3) return 1.05;
+    if (numUCs <= 6) return 1.02;
+    return 1.0;
+  }
+
+  // Carregar imagem e converter para Base64
+  async carregarImagemComoBase64(caminho) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          // Converter para Base64
+          const dataURL = canvas.toDataURL('image/png');
+          console.log(`✅ Imagem ${caminho} convertida para Base64`);
+          resolve(dataURL);
+        } catch (error) {
+          console.error(`❌ Erro ao converter ${caminho}:`, error);
+          reject(error);
+        }
+      };
+
+      img.onerror = () => {
+        console.error(`❌ Erro ao carregar imagem: ${caminho}`);
+        reject(new Error(`Falha ao carregar: ${caminho}`));
+      };
+
+      img.src = caminho;
+    });
+  }
+
+  // Carregar todas as imagens necessárias
+  async carregarTodasImagens() {
+    try {
+      console.log('🖼️ Carregando imagens...');
+
+      const [logoBase64, sloganBase64, ondaBase64] = await Promise.all([
+        this.carregarImagemComoBase64('/Logo.png'),
+        this.carregarImagemComoBase64('/Frase_interligando.png'),
+        this.carregarImagemComoBase64('/Onda.png')
+      ]);
+
+      this.imagensBase64 = {
+        logo: logoBase64,
+        slogan: sloganBase64,
+        onda: ondaBase64
+      };
+
+      console.log('✅ Todas as imagens carregadas e convertidas para Base64');
+      return true;
+    } catch (error) {
+      console.warn('⚠️ Erro ao carregar algumas imagens:', error);
+      // Continuar mesmo com erro - usar fallbacks
+      return false;
+    }
+  }
+
+  // Carregar biblioteca html2canvas
+  async loadHtml2Canvas() {
+    if (window.html2canvas) {
       return true;
     }
 
     try {
-      if (!window.jspdf) {
-        console.log('📥 Carregando jsPDF...');
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-          script.onload = resolve;
-          script.onerror = () => reject(new Error('Falha ao carregar jsPDF'));
-          document.head.appendChild(script);
-        });
-      }
-      
-      this.jsPDFLoaded = true;
+      console.log('📥 Carregando html2canvas...');
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Falha ao carregar html2canvas'));
+        document.head.appendChild(script);
+      });
+      console.log('✅ html2canvas carregado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('❌ Erro ao carregar html2canvas:', error);
+      throw new Error('Não foi possível carregar html2canvas');
+    }
+  }
+
+  // Carregar jsPDF (já usado no projeto)
+  async loadJsPDF() {
+    if (window.jspdf) {
+      return true;
+    }
+
+    try {
+      console.log('📥 Carregando jsPDF...');
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Falha ao carregar jsPDF'));
+        document.head.appendChild(script);
+      });
       console.log('✅ jsPDF carregado com sucesso');
       return true;
     } catch (error) {
       console.error('❌ Erro ao carregar jsPDF:', error);
-      throw new Error('Não foi possível carregar o gerador de PDF');
+      throw new Error('Não foi possível carregar jsPDF');
     }
   }
 
-  // ========== NOVA FUNÇÃO DE COMPRESSÃO ==========
-  async comprimirPDF(doc) {
+  // Função principal para gerar PDF a partir do HTML
+  async gerarHTML(dadosProposta, autoDownload = true) {
+    let iframe = null;
+    let overlay = null;
+
     try {
-      console.log('🗜️ Iniciando compressão do PDF...');
+      console.log('📄 Iniciando geração de PDF via HTML...', dadosProposta.numeroProposta);
 
-      // Obter array buffer do PDF original
-      const pdfArrayBuffer = doc.output('arraybuffer');
-      const originalSize = pdfArrayBuffer.byteLength;
-      console.log(`📦 Tamanho original: ${(originalSize / 1024).toFixed(2)} KB`);
+      // Mostrar overlay de loading
+      overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 999999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 20px;
+        font-family: Arial, sans-serif;
+      `;
+      overlay.innerHTML = '<div>📄 Gerando PDF...</div>';
+      document.body.appendChild(overlay);
 
-      // Técnica 1: Comprimir usando deflate interno do jsPDF
-      if (doc.internal && doc.internal.deflate) {
-        try {
-          doc.internal.deflate = true;
-          console.log('✅ Compressão deflate ativada');
-        } catch (e) {
-          console.warn('⚠️ Deflate não disponível:', e.message);
-        }
+      // Carregar bibliotecas
+      await Promise.all([
+        this.loadJsPDF(),
+        this.loadHtml2Canvas()
+      ]);
+
+      // Carregar imagens
+      await this.carregarTodasImagens();
+
+      // Criar HTML completo
+      const htmlContent = await this.criarLayoutHTML(dadosProposta);
+
+      // Criar iframe invisível
+      iframe = document.createElement('iframe');
+      iframe.style.cssText = `
+        position: fixed;
+        top: -10000px;
+        left: -10000px;
+        width: 210mm;
+        height: 297mm;
+        border: none;
+        background: white;
+      `;
+      document.body.appendChild(iframe);
+
+      // Escrever HTML no iframe
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
+
+      console.log('📸 Aguardando renderização...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const pageContainer = iframeDoc.querySelector('.page-container');
+      if (!pageContainer) {
+        throw new Error('Elemento .page-container não encontrado');
       }
 
-      // Técnica 2: Otimizar imagens já carregadas
-      await this.otimizarImagensExistentes(doc);
+      console.log('📸 Capturando HTML como imagem...');
 
-      // Técnica 3: Comprimir fontes (remover dados desnecessários)
-      this.otimizarFontes(doc);
-
-      // Técnica 4: Remover metadados desnecessários
-      this.removerMetadadosDesnecessarios(doc);
-
-      // Obter tamanho após otimizações
-      const pdfComprimido = doc.output('arraybuffer');
-      const compressedSize = pdfComprimido.byteLength;
-      const economiaBytes = originalSize - compressedSize;
-      const economiaPercentual = ((economiaBytes / originalSize) * 100).toFixed(1);
-
-      console.log(`📦 Tamanho comprimido: ${(compressedSize / 1024).toFixed(2)} KB`);
-      console.log(`💾 Economia: ${(economiaBytes / 1024).toFixed(2)} KB (${economiaPercentual}%)`);
-
-      return doc;
-    } catch (error) {
-      console.warn('⚠️ Erro na compressão (continuando com PDF original):', error);
-      return doc;
-    }
-  }
-
-  // Otimizar imagens existentes no PDF
-  async otimizarImagensExistentes(doc) {
-    try {
-      if (doc.internal && doc.internal.pageSize) {
-        console.log('🖼️ Otimizando imagens...');
-        
-        // Configurar compressão de imagens
-        if (doc.internal.scaleFactor) {
-          doc.internal.scaleFactor = Math.min(doc.internal.scaleFactor, 2);
-        }
-        
-        // Definir qualidade de compressão para imagens JPEG
-        if (doc.setImageProperties) {
-          doc.setImageProperties = function(imageData) {
-            if (imageData && typeof imageData === 'object') {
-              imageData.compression = 'FAST';
-              imageData.quality = 0.7; // 70% de qualidade
-            }
-          };
-        }
-      }
-    } catch (error) {
-      console.warn('⚠️ Erro ao otimizar imagens:', error);
-    }
-  }
-
-  // Otimizar fontes
-  otimizarFontes(doc) {
-    try {
-      console.log('🔤 Otimizando fontes...');
-      
-      if (doc.internal && doc.internal.events && doc.internal.events.subscribe) {
-        // Limitar conjunto de caracteres das fontes (se possível)
-        doc.internal.events.subscribe('addFont', function(font) {
-          if (font && font.metadata) {
-            // Remover metadados desnecessários da fonte
-            delete font.metadata.description;
-            delete font.metadata.version;
-            delete font.metadata.trademark;
-          }
-        });
-      }
-    } catch (error) {
-      console.warn('⚠️ Erro ao otimizar fontes:', error);
-    }
-  }
-
-  // Remover metadados desnecessários
-  removerMetadadosDesnecessarios(doc) {
-    try {
-      console.log('🧹 Removendo metadados desnecessários...');
-      
-      if (doc.internal && doc.internal.events) {
-        // Definir apenas metadados essenciais
-        doc.setProperties({
-          title: 'Proposta Comercial',
-          creator: 'AUPUS',
-          producer: 'AUPUS PDF Generator',
-          // Remover campos opcionais como: keywords, subject, author details
-        });
-        
-        // Remover comentários e anotações desnecessárias
-        if (doc.internal.annotations) {
-          doc.internal.annotations = doc.internal.annotations.filter(annotation => 
-            annotation.type === 'text' || annotation.type === 'link'
-          );
-        }
-      }
-    } catch (error) {
-      console.warn('⚠️ Erro ao remover metadados:', error);
-    }
-  }
-
-  // Função principal para gerar PDF COM COMPRESSÃO
-  async gerarPDF(dadosProposta, autoDownload = true) {
-    try {
-      console.log('📄 Iniciando geração de PDF...', dadosProposta.numeroProposta);
-      
-      // Carregar jsPDF
-      await this.loadJsPDF();
-      
-      const { jsPDF } = window.jspdf;
-      
-      // Criar PDF com configurações otimizadas
-      const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-        compress: true, // ✅ HABILITAR COMPRESSÃO NATIVA
-        encryption: {
-          userPassword: '',
-          ownerPassword: '',
-          userPermissions: []
-        }
+      // Capturar usando html2canvas
+      const canvas = await window.html2canvas(pageContainer, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false
       });
 
-      // Gerar conteúdo do PDF
-      await this.criarLayoutPDF(doc, dadosProposta);
+      console.log('✅ Captura concluída. Gerando PDF...');
 
-      // ✅ APLICAR COMPRESSÃO ANTES DE FINALIZAR
-      const docComprimido = await this.comprimirPDF(doc);
+      // Criar PDF
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
 
-      // Gerar nome do arquivo
+      // Calcular dimensões
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Adicionar imagem
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+      // Nome do arquivo
       const nomeArquivo = this.gerarNomeArquivo(dadosProposta);
 
-      // Baixar automaticamente se solicitado
+      // Baixar
       if (autoDownload) {
-        docComprimido.save(nomeArquivo);
+        pdf.save(nomeArquivo);
         console.log('✅ PDF baixado:', nomeArquivo);
       }
 
-      // Calcular tamanho final
-      const finalArrayBuffer = docComprimido.output('arraybuffer');
-      const finalSizeKB = (finalArrayBuffer.byteLength / 1024).toFixed(2);
-      console.log(`📊 Tamanho final do PDF: ${finalSizeKB} KB`);
+      // Limpar
+      if (iframe && document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+      if (overlay && document.body.contains(overlay)) {
+        document.body.removeChild(overlay);
+      }
 
       return {
         nomeArquivo,
-        pdfBlob: docComprimido.output('blob'),
-        pdfDataUri: docComprimido.output('datauristring'),
-        tamanhoKB: finalSizeKB,
+        pdfBlob: pdf.output('blob'),
         success: true
       };
 
     } catch (error) {
       console.error('❌ Erro ao gerar PDF:', error);
+
+      // Limpar em caso de erro
+      if (iframe && document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+      if (overlay && document.body.contains(overlay)) {
+        document.body.removeChild(overlay);
+      }
+
       throw error;
     }
   }
 
-  // Função para comprimir imagens - PRESERVANDO TRANSPARÊNCIA
-  async comprimirImagem(imageSrc, maxWidth = 800, qualidade = 0.7, preservarTransparencia = false) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      img.onload = function() {
-        try {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Calcular novas dimensões mantendo proporção
-          let { width, height } = img;
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          // Se preservar transparência, não preencher fundo
-          if (!preservarTransparencia) {
-            // Fundo branco para imagens JPEG
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, width, height);
-          }
-          
-          // Desenhar imagem redimensionada
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Escolher formato baseado na transparência
-          let dataURL;
-          let formato;
-          
-          if (preservarTransparencia) {
-            // PNG para manter transparência (logos)
-            dataURL = canvas.toDataURL('image/png');
-            formato = 'PNG';
-            console.log(`🖼️ Logo redimensionada (PNG transparente): ${width}x${height}`);
-          } else {
-            // JPEG com compressão para outras imagens
-            dataURL = canvas.toDataURL('image/jpeg', qualidade);
-            formato = 'JPEG';
-            console.log(`🖼️ Imagem comprimida (JPEG): ${width}x${height} (qualidade: ${qualidade * 100}%)`);
-          }
-          
-          resolve({
-            dataURL,
-            width,
-            height,
-            aspectRatio: width / height,
-            formato
-          });
-          
-        } catch (error) {
-          reject(error);
+  // Criar layout HTML completo
+  async criarLayoutHTML(dados) {
+    // Calcular número de UCs para responsividade
+    const numUCs = dados.ucs ? dados.ucs.length : 0;
+    const scaleFactor = this.calcularScaleFactor(numUCs);
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposta ${dados.numeroProposta} - ${dados.nomeCliente}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Helvetica', 'Arial', sans-serif;
+      background: white;
+      color: #3c3c3c;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* CSS Responsivo baseado em ${numUCs} UCs - Scale: ${scaleFactor.toFixed(2)} */
+    :root {
+      --scale-factor: ${scaleFactor};
+    }
+
+    .page-container {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: white;
+      position: relative;
+      padding: 0;
+      padding-bottom: 70px; /* Espaço para rodapé - REDUZIDO */
+      border: 0; /* SEM BORDAS */
+      border-top: 15px solid #2c3e50; /* APENAS BORDA SUPERIOR */
+    }
+
+    /* Cabeçalho - RESPONSIVO */
+    .header {
+      background: #2c3e50;
+      padding: calc(8px * var(--scale-factor)) 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: calc(45px * var(--scale-factor));
+    }
+
+    .header img {
+      height: calc(38px * var(--scale-factor));
+      width: auto;
+    }
+
+    .header h1 {
+      color: white;
+      font-size: calc(15px * var(--scale-factor));
+      font-weight: bold;
+      margin-left: 15px;
+    }
+
+    /* Seções - RESPONSIVAS */
+    .section {
+      padding: calc(8px * var(--scale-factor)) calc(25px * var(--scale-factor)) calc(10px * var(--scale-factor)) calc(25px * var(--scale-factor));
+      border-bottom: 1px solid #d0d0d0;
+    }
+
+    .section-title {
+      font-size: calc(13px * var(--scale-factor));
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: calc(6px * var(--scale-factor));
+      padding-bottom: calc(4px * var(--scale-factor));
+      border-bottom: 2px solid #4caf50;
+      display: inline-block;
+      padding-right: 15px;
+    }
+
+    /* Informações do Cliente - RESPONSIVO */
+    .client-info {
+      display: flex;
+      gap: calc(25px * var(--scale-factor));
+      font-size: calc(10px * var(--scale-factor));
+      margin-top: calc(4px * var(--scale-factor));
+      background: #f8f9fa;
+      padding: calc(8px * var(--scale-factor)) calc(12px * var(--scale-factor));
+      border-radius: 3px;
+      border-left: 3px solid #2c3e50;
+    }
+
+    .client-info .field {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .client-info .label {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .client-info .field span:not(.label) {
+      color: #444;
+    }
+
+    /* Plano Economia - RESPONSIVO */
+    .economy-plan {
+      display: flex;
+      align-items: center;
+      gap: calc(40px * var(--scale-factor));
+      margin-top: calc(4px * var(--scale-factor));
+      background: linear-gradient(135deg, #f0f9f4 0%, #e8f5e9 100%);
+      padding: calc(10px * var(--scale-factor)) calc(15px * var(--scale-factor));
+      border-radius: 4px;
+      border: 2px solid #4caf50;
+    }
+
+    .economy-value {
+      display: flex;
+      align-items: center;
+      gap: calc(10px * var(--scale-factor));
+    }
+
+    .economy-value .label {
+      font-weight: bold;
+      font-size: calc(11px * var(--scale-factor));
+      color: #2c3e50;
+    }
+
+    .economy-value .value {
+      font-size: calc(26px * var(--scale-factor));
+      font-weight: bold;
+      color: #2e7d32;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .fidelity {
+      display: flex;
+      align-items: center;
+      gap: calc(8px * var(--scale-factor));
+      background: white;
+      padding: calc(6px * var(--scale-factor)) calc(12px * var(--scale-factor));
+      border-radius: 3px;
+      border: 1px solid #ddd;
+    }
+
+    .fidelity .label {
+      font-weight: bold;
+      font-size: calc(11px * var(--scale-factor));
+      color: #2c3e50;
+    }
+
+    .fidelity .value {
+      font-size: calc(12px * var(--scale-factor));
+      font-weight: bold;
+      color: #d32f2f;
+    }
+
+    /* Tabela de UCs - RESPONSIVA */
+    .uc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: calc(6px * var(--scale-factor));
+      font-size: calc(9px * var(--scale-factor));
+      table-layout: fixed;
+    }
+
+    .uc-table thead {
+      background: #46648a;
+      color: white;
+    }
+
+    .uc-table th {
+      padding: calc(5px * var(--scale-factor)) calc(3px * var(--scale-factor));
+      text-align: left;
+      font-weight: bold;
+      font-size: calc(8px * var(--scale-factor));
+    }
+
+    /* Larguras específicas das colunas */
+    .uc-table th:nth-child(1),
+    .uc-table td:nth-child(1) {
+      width: 22%; /* Nome - AUMENTADO */
+    }
+
+    .uc-table th:nth-child(2),
+    .uc-table td:nth-child(2) {
+      width: 13%; /* Consumo - REDUZIDO */
+    }
+
+    .uc-table th:nth-child(3),
+    .uc-table td:nth-child(3) {
+      width: 12%; /* Sem Assinatura - REDUZIDO */
+    }
+
+    .uc-table th:nth-child(4),
+    .uc-table td:nth-child(4) {
+      width: 12%; /* Com Assinatura - REDUZIDO */
+    }
+
+    .uc-table th:nth-child(5),
+    .uc-table td:nth-child(5) {
+      width: 10%; /* Taxa Fixa - REDUZIDO */
+    }
+
+    .uc-table th:nth-child(6),
+    .uc-table td:nth-child(6) {
+      width: 15%; /* Economia Mensal */
+    }
+
+    .uc-table th:nth-child(7),
+    .uc-table td:nth-child(7) {
+      width: 16%; /* Economia Anual */
+    }
+
+    .uc-table tbody tr:nth-child(even) {
+      background: #f8f8f8;
+    }
+
+    .uc-table td {
+      padding: calc(4px * var(--scale-factor)) calc(3px * var(--scale-factor));
+      font-size: calc(9px * var(--scale-factor));
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Gráfico Economia 5 Anos - RESPONSIVO */
+    .chart-container {
+      margin-top: calc(8px * var(--scale-factor));
+      background: linear-gradient(to bottom, #f5f5f5 0%, #fafafa 100%);
+      padding: calc(12px * var(--scale-factor));
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .bars-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      height: calc(140px * var(--scale-factor));
+      margin-bottom: calc(10px * var(--scale-factor));
+      position: relative;
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: calc(8px * var(--scale-factor));
+    }
+
+    .bar-wrapper {
+      text-align: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+    }
+
+    .bar {
+      background: linear-gradient(to top, #1e3a5f 0%, #2c3e50 100%);
+      border: 2px solid #1e324a;
+      width: 75%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px 4px 0 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
+      /* Altura definida inline para cada barra */
+    }
+
+    .bar-value {
+      color: white;
+      font-weight: bold;
+      font-size: calc(9px * var(--scale-factor));
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .bar-label {
+      margin-top: calc(6px * var(--scale-factor));
+      font-weight: bold;
+      font-size: calc(10px * var(--scale-factor));
+      color: #2c3e50;
+      background: white;
+      padding: calc(3px * var(--scale-factor)) calc(6px * var(--scale-factor));
+      border-radius: 3px;
+      border: 1px solid #ddd;
+    }
+
+    .total-economy {
+      font-size: calc(13px * var(--scale-factor));
+      font-weight: bold;
+      color: #2e7d32;
+      text-align: center;
+      margin-top: calc(10px * var(--scale-factor));
+      padding: calc(8px * var(--scale-factor));
+      background: white;
+      border-radius: 4px;
+      border: 2px solid #4caf50;
+    }
+
+    /* Benefícios - RESPONSIVO */
+    .benefits-list {
+      margin-top: calc(6px * var(--scale-factor));
+      padding-left: calc(18px * var(--scale-factor));
+    }
+
+    .benefits-list li {
+      margin-bottom: calc(4px * var(--scale-factor));
+      font-size: calc(10px * var(--scale-factor));
+      line-height: 1.4;
+    }
+
+    /* Rodapé */
+    .footer {
+      position: absolute;
+      bottom: 25px;
+      left: 40px;
+      right: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-size: 11px;
+    }
+
+    .footer-contacts {
+      text-align: left;
+    }
+
+    .footer-contacts p {
+      margin: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-contacts svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+
+    .footer-slogan {
+      text-align: center;
+      flex: 1;
+    }
+
+    .footer-slogan img {
+      max-width: 350px;
+      height: auto;
+    }
+
+    .footer-wave {
+      text-align: right;
+    }
+
+    .footer-wave img {
+      max-width: 100px;
+      height: auto;
+    }
+
+    @media print {
+      .page-container {
+        border: 12px solid #2c3e50;
+        margin: 0;
+        width: 210mm;
+        min-height: 297mm;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+
+    <!-- Cabeçalho -->
+    <div class="header">
+      ${this.imagensBase64.logo
+        ? `<img src="${this.imagensBase64.logo}" alt="AUPUS Logo">`
+        : '<div style="color: white; font-weight: bold; font-size: 16px;">AUPUS</div>'
+      }
+      <h1>Projeção de eficiência econômica</h1>
+    </div>
+
+    <!-- Informações do Cliente -->
+    <div class="section">
+      <div class="section-title">Cliente</div>
+      <div class="client-info">
+        <div class="field">
+          <span class="label">Nome:</span>
+          <span>${dados.nomeCliente || ''}</span>
+        </div>
+        <div class="field">
+          <span class="label">Proposta:</span>
+          <span>${dados.numeroProposta || ''}</span>
+        </div>
+        <div class="field">
+          <span class="label">Data:</span>
+          <span>${this.formatarData(dados.data)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plano Economia -->
+    <div class="section">
+      <div class="section-title">Plano Economia</div>
+      <div class="economy-plan">
+        <div class="economy-value">
+          <span class="label">Economia Esperada:</span>
+          <span class="value">${this.calcularDescontoPercentual(dados.descontoTarifa)}%</span>
+        </div>
+        <div class="fidelity">
+          <span class="label">Fidelidade:</span>
+          <span class="value">NÃO</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela de Unidades Consumidoras -->
+    ${this.gerarTabelaUCs(dados.ucs)}
+
+    <!-- Gráfico Economia 5 Anos -->
+    ${this.gerarGraficoEconomia(dados)}
+
+    <!-- Benefícios -->
+    ${this.gerarBeneficios(dados.beneficios)}
+
+    <!-- Rodapé -->
+    <div class="footer">
+      <div class="footer-contacts">
+        <p>${this.getIconSVG('globe')} www.aupusenergia.com.br</p>
+        <p>${this.getIconSVG('mail')} smart@aupusenergia.com.br</p>
+        <p>${this.getIconSVG('phone')} (62) 9 9654-7888</p>
+      </div>
+      <div class="footer-slogan">
+        ${this.imagensBase64.slogan
+          ? `<img src="${this.imagensBase64.slogan}" alt="Interligando você com o futuro!">`
+          : '<p style="color: #4caf50; font-style: italic; font-size: 14px;">Interligando você com o futuro!</p>'
         }
-      };
-      
-      img.onerror = () => reject(new Error(`Falha ao carregar imagem: ${imageSrc}`));
-      img.src = imageSrc;
-    });
+      </div>
+      <div class="footer-wave">
+        ${this.imagensBase64.onda
+          ? `<img src="${this.imagensBase64.onda}" alt="Onda">`
+          : ''
+        }
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+    return html;
   }
 
-  // Criar layout otimizado do PDF
-  async criarLayoutPDF(doc, dados) {
-    // Cores do tema
-    const corAzul = [44, 62, 80];
-    const corVerde = [76, 175, 80];
-    const corTexto = [60, 60, 60];
+  // Gerar tabela de UCs
+  gerarTabelaUCs(ucs) {
+    if (!ucs || ucs.length === 0) return '';
 
-    // Faixa preta preenchendo toda a página
-    doc.setDrawColor(...corAzul);
-    doc.setLineWidth(12);
-    doc.rect(1, 1, 208, 295, 'S');
-
-    let y = 10;
-
-    // === CABEÇALHO COM LOGO ===
-    y = await this.adicionarCabecalhoComLogo(doc, y, corAzul);
-
-    // === INFORMAÇÕES DO CLIENTE (COMPACTO) ===
-    y = this.adicionarInformacoesClienteCompacto(doc, dados, y, corTexto);
-
-    // === PLANO ECONOMIA (COMPACTO) ===
-    y = this.adicionarPlanoEconomiaCompacto(doc, dados, y, corTexto);
-
-    // === TABELA DE UNIDADES CONSUMIDORAS (ESPAÇO FIXO) ===
-    if (dados.ucs && dados.ucs.length > 0) {
-      y = this.adicionarTabelaUCs(doc, dados.ucs, y, corTexto);
-    }
-
-    // === GRÁFICO ECONOMIA 5 ANOS ===
-    if (dados.ucs && dados.ucs.length > 0 && dados.tarifaTributos) {
-      y = this.adicionarEconomia5Anos(doc, dados, y, corTexto, corVerde);
-    }
-
-    // === BENEFÍCIOS (ESPAÇO FIXO) ===
-    if (dados.beneficios && dados.beneficios.length > 0) {
-      y = this.adicionarBeneficiosCompactos(doc, dados.beneficios, y, corTexto);
-    }
-
-    // === RODAPÉ ===
-    await this.adicionarRodape(doc);
-  }
-
-  // Cabeçalho com logo PRESERVANDO TRANSPARÊNCIA
-  async adicionarCabecalhoComLogo(doc, y, corAzul) {
-    // Fundo azul
-    doc.setFillColor(...corAzul);
-    doc.rect(0, 0, 210, 18, 'F');
-
-    // Carregar logo MANTENDO transparência
-    try {
-      console.log('🖼️ Carregando logo (preservando transparência)...');
-      // ✅ PRESERVAR TRANSPARÊNCIA DA LOGO (PNG)
-      const logoOtimizada = await this.comprimirImagem('/Logo.png', 200, 0.8, true);
-      
-      // Calcular dimensões para PDF
-      const alturaDesejada = 10;
-      const larguraProporcional = alturaDesejada * logoOtimizada.aspectRatio;
-      const larguraMaxima = 35;
-      const larguraFinal = Math.min(larguraProporcional, larguraMaxima);
-      const alturaFinal = larguraFinal / logoOtimizada.aspectRatio;
-
-      // Adicionar logo como PNG (mantém transparência)
-      doc.addImage(logoOtimizada.dataURL, logoOtimizada.formato, 10, 4, larguraFinal, alturaFinal);
-      console.log(`📐 Logo adicionada (${logoOtimizada.formato}): ${larguraFinal.toFixed(1)}x${alturaFinal.toFixed(1)}mm`);
-      
-    } catch (error) {
-      // Fallback - mostrar texto em vez da logo
-      console.warn('📝 Usando fallback de texto para logo:', error.message);
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('AUPUS', 15, 12);
-    }
-
-    // Título
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Projeção de eficiência econômica', 60, 12);
-
-    return 25;
-  }
-
-  // Informações do cliente - versão compacta COM LETRAS MAIORES
-  adicionarInformacoesClienteCompacto(doc, dados, y, corTexto) {
-    doc.setTextColor(...corTexto);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Cliente', 20, y);
-    y += 6; 
-
-    y += 7;
-    doc.setFontSize(11); // Aumentado de 9 para 11
-    doc.setFont('helvetica', 'normal');
-
-    // Uma linha só com os três dados - LETRAS MAIORES
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10); 
-    doc.text('Nome:', 25, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(dados.nomeCliente || '', 42, y);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('Proposta:', 110, y);
-    doc.setFont('helvetica', 'normal'); 
-    doc.setFontSize(10);
-    doc.text(dados.numeroProposta || '', 133, y);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('Data:', 155, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const dataFormatada = dados.data ? new Date(dados.data).toLocaleDateString('pt-BR') : '';
-    doc.text(dataFormatada, 168, y);
-
-    doc.setDrawColor(160, 160, 160);
-    doc.setLineWidth(0.5);
-    doc.line(20, y + 8, 190, y + 8);
-
-    return y + 15;
-  }
-
-  // Plano economia - MODIFICADO COM FIDELIDADE E DESCONTO MAIS PRÓXIMO
-  adicionarPlanoEconomiaCompacto(doc, dados, y, corTexto) {
-    doc.setTextColor(...corTexto);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Plano Economia', 20, y);
-    y += 6;
-
-    y += 6;
-
-    const descontoTarifa = Math.round((dados.descontoTarifa || 0.2) * 100);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...corTexto); // Preto para "Economia Esperada"
-    doc.setFontSize(10);
-    doc.text('Economia Esperada:', 25, y);
-    
-    doc.setTextColor(76, 175, 80); // Verde para o valor
-    doc.setFontSize(20); 
-    doc.text(`${descontoTarifa}%`, 73, y); // ALTERADO: de 90 para 73 (mais próximo)
-
-    // Adicionar Fidelidade: NÃO ao lado
-    doc.setTextColor(...corTexto); // Preto para "Fidelidade:"
-    doc.setFontSize(10);
-    doc.text('Fidelidade:', 120, y);
-    
-    doc.setTextColor(255, 0, 0); // Vermelho para "NÃO"
-    doc.setFont('helvetica', 'bold');
-    doc.text('NÃO', 150, y);
-
-    // Voltar cor normal
-    doc.setTextColor(...corTexto);
-    doc.setDrawColor(160, 160, 160);
-    doc.setLineWidth(0.5);
-    doc.line(20, y + 8, 190, y + 8);
-
-    return y + 15;
-  }
-
-  // Tabela de UCs expandida - COM LETRAS MAIORES
-  adicionarTabelaUCs(doc, ucs, y, corTexto) {
-    doc.setTextColor(...corTexto);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Unidades Consumidoras', 20, y);
-    y += 6;
-
-    const linhaAltura = 4;
     const maxLinhas = 10;
     const ucsParaMostrar = ucs.slice(0, maxLinhas);
 
-    // Cabeçalho da tabela
-    doc.setFillColor(70, 100, 130);
-    doc.rect(20, y, 170, 10, 'F');
+    let html = `
+    <div class="section">
+      <div class="section-title">Unidades Consumidoras</div>
+      <table class="uc-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Consumo</th>
+            <th>Sem<br>Assinatura</th>
+            <th>Com<br>Assinatura</th>
+            <th>Taxa<br>Fixa</th>
+            <th>Economia<br>Mensal</th>
+            <th>Economia<br>Anual</th>
+          </tr>
+        </thead>
+        <tbody>`;
 
-    doc.setFontSize(8); 
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-
-    // Cabeçalho com novos nomes
-    doc.text('Nome', 22, y + 3);
-    doc.text('Consumo', 55, y + 3);
-    doc.text('Sem', 85, y + 3);
-    doc.text('Com', 110, y + 3);  
-    doc.text('Taxa', 135, y + 3);
-    doc.text('Economia', 155, y + 3);
-    doc.text('Economia', 175, y + 3);
-
-    // Segunda linha do cabeçalho
-    doc.text('', 22, y + 7);
-    doc.text('', 55, y + 7);
-    doc.text('Assinatura', 85, y + 7);
-    doc.text('Assinatura', 110, y + 7);
-    doc.text('Fixa', 135, y + 7);
-    doc.text('Mensal', 155, y + 7);
-    doc.text('Anual', 175, y + 7);
-
-    doc.setTextColor(...corTexto);
-    y += 10;
-
-    // Função para calcular taxa fixa (tarifa mínima)
-    const calcularTaxaFixa = (ligacao) => {
-      switch (ligacao?.toUpperCase()) {
-        case 'TRIFÁSICA':
-        case 'TRIFASICA':
-          return 112;
-        case 'BIFÁSICA':
-        case 'BIFASICA':
-          return 62;
-        case 'MONOFÁSICA':
-        case 'MONOFASICA':
-        default:
-          return 42;
-      }
-    };
-
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-
-    // Linhas da tabela com cálculos
     ucsParaMostrar.forEach((uc, index) => {
-      if (index % 2 === 1) {
-        doc.setFillColor(248, 248, 248);
-        doc.rect(20, y, 170, linhaAltura, 'F');
-      }
-
       const consumo = parseFloat(uc.consumo) || 0;
       const tarifa = 0.8;
       const desconto = 0.2;
-      
-      // Cálculos
-      const semAssinatura = consumo * tarifa; // Valor Distribuidora
+
+      const semAssinatura = consumo * tarifa;
       const economiaMensal = consumo * tarifa * desconto;
       const economiaAnual = economiaMensal * 12;
-      const comAssinatura = consumo * tarifa * (1 - desconto); // Contribuição
-      const taxaFixa = calcularTaxaFixa(uc.ligacao);
+      const comAssinatura = consumo * tarifa * (1 - desconto);
+      const taxaFixa = this.calcularTaxaFixa(uc.ligacao);
 
-      const nomeUC = (uc.apelido || `UC ${index + 1}`).substring(0, 12);
+      const nomeUC = (uc.apelido || `UC ${index + 1}`).substring(0, 25); // AUMENTADO de 12 para 25
 
-      // Dados COM UNIDADES nas linhas
-      doc.text(nomeUC, 22, y + 3);
-      doc.text(`${consumo.toFixed(0)} kWh`, 55, y + 3);
-      doc.text(`R$ ${semAssinatura.toFixed(0)}`, 85, y + 3);
-      doc.text(`R$ ${comAssinatura.toFixed(0)}`, 110, y + 3);
-      doc.text(`R$ ${taxaFixa}`, 135, y + 3);
-      doc.text(`R$ ${economiaMensal.toFixed(0)}`, 155, y + 3);
-      doc.text(`R$ ${economiaAnual.toFixed(0)}`, 175, y + 3);
+      // Formatar valores em reais com separadores de milhares
+      const formatarReais = (valor) => {
+        return valor.toLocaleString('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
 
-      y += linhaAltura;
+      html += `
+          <tr>
+            <td>${nomeUC}</td>
+            <td>${consumo.toFixed(0)} kWh</td>
+            <td>R$ ${formatarReais(semAssinatura)}</td>
+            <td>R$ ${formatarReais(comAssinatura)}</td>
+            <td>R$ ${formatarReais(taxaFixa)}</td>
+            <td>R$ ${formatarReais(economiaMensal)}</td>
+            <td>R$ ${formatarReais(economiaAnual)}</td>
+          </tr>`;
     });
 
+    html += `
+        </tbody>
+      </table>`;
+
     if (ucs.length > maxLinhas) {
-      doc.setFontSize(6);
-      doc.setTextColor(180, 0, 0);
-      doc.text(`+ ${ucs.length - maxLinhas} unidades adicionais`, 22, y + 2);
-      y += 4;
+      html += `<p style="color: #b40000; font-size: 10px; margin-top: 5px;">+ ${ucs.length - maxLinhas} unidades adicionais</p>`;
     }
 
-    doc.setDrawColor(160, 160, 160);
-    doc.setLineWidth(0.5);
-    doc.line(20, y + 8, 190, y + 8);
+    html += `</div>`;
 
-    return y + 15;
+    return html;
   }
 
-  // Calcular economia por UC para os próximos 5 anos
-  calcularEconomia5Anos(uc, tarifaTributos, descontoTarifa, inflacao) {
-    const consumo = parseFloat(uc.consumo) || 0;
-    const tarifa = parseFloat(tarifaTributos) || 0.8;
-    const desconto = parseFloat(descontoTarifa) || 0.2;
-    const inflacaoDecimal = parseFloat(inflacao) || 0.02;
-
-    if (consumo === 0 || tarifa === 0) {
-      return Array(5).fill(0);
+  // Calcular taxa fixa
+  calcularTaxaFixa(ligacao) {
+    switch (ligacao?.toUpperCase()) {
+      case 'TRIFÁSICA':
+      case 'TRIFASICA':
+        return 112;
+      case 'BIFÁSICA':
+      case 'BIFASICA':
+        return 62;
+      case 'MONOFÁSICA':
+      case 'MONOFASICA':
+      default:
+        return 42;
     }
-
-    const economiaMensal = consumo * tarifa * desconto;
-    const economias = [];
-    let economiaAno = economiaMensal * 12;
-    
-    for (let ano = 1; ano <= 5; ano++) {
-      economias.push(economiaAno);
-      economiaAno = economiaAno * (1 + inflacaoDecimal);
-    }
-
-    return economias;
   }
 
+  // Gerar gráfico de economia 5 anos - CORRIGIDO COM LIMITE E MODERAÇÃO E RESPONSIVO
+  gerarGraficoEconomia(dados) {
+    if (!dados.ucs || dados.ucs.length === 0 || !dados.tarifaTributos) {
+      return '';
+    }
+
+    const economiaData = this.calcularEconomiaConsolidada(
+      dados.ucs,
+      dados.tarifaTributos,
+      dados.descontoTarifa,
+      dados.inflacao
+    );
+
+    // Calcular scale factor para responsividade
+    const numUCs = dados.ucs ? dados.ucs.length : 0;
+    const scaleFactor = this.calcularScaleFactor(numUCs);
+
+    const valorMaximo = Math.max(...economiaData.economiasPorAno);
+    const valorMinimo = Math.min(...economiaData.economiasPorAno);
+    const alturaContainer = 140 * scaleFactor; // pixels - responsivo baseado em UCs
+    const alturaMinima = 30 * scaleFactor; // pixels - altura mínima da barra (responsiva)
+    const alturaMaximaPermitida = alturaContainer - (10 * scaleFactor); // Deixar margem no topo
+
+    let html = `
+    <div class="section">
+      <div class="section-title">Economia nos próximos cinco anos</div>
+      <div class="chart-container">
+        <div class="bars-container">`;
+
+    economiaData.economiasPorAno.forEach((valor, index) => {
+      // Calcular altura proporcional com diferença moderada
+      const espacoDisponivel = alturaMaximaPermitida - alturaMinima;
+
+      // Normalizar valores com dampening para moderar a diferença visual
+      // 40% base + 60% variável = diferença mais suave entre anos
+      const range = valorMaximo - valorMinimo;
+      const valorNormalizado = range > 0 ? (valor - valorMinimo) / range : 0;
+      const valorDampened = 0.4 + (valorNormalizado * 0.6); // Dampening factor
+
+      const alturaRelativa = valorDampened * espacoDisponivel;
+      const alturaFinal = Math.min(alturaMinima + alturaRelativa, alturaMaximaPermitida); // Garantir que não ultrapassa
+
+      // Log para debug
+      console.log(`Ano ${index + 1}: Valor=${valor}, AlturaFinal=${alturaFinal}px (max: ${alturaMaximaPermitida}px)`);
+
+      const valorFormatado = valor.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      });
+
+      html += `
+          <div class="bar-wrapper">
+            <div class="bar" style="height: ${alturaFinal}px !important; min-height: ${alturaFinal}px !important; max-height: ${alturaFinal}px !important;">
+              <span class="bar-value">${valorFormatado}</span>
+            </div>
+            <div class="bar-label">Ano ${index + 1}</div>
+          </div>`;
+    });
+
+    const economiaFormatada = economiaData.economiaTotal.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+
+    html += `
+        </div>
+        <div class="total-economy">Economia Total: ${economiaFormatada}</div>
+      </div>
+    </div>`;
+
+    return html;
+  }
+
+  // Calcular economia consolidada
   calcularEconomiaConsolidada(ucs, tarifaTributos, descontoTarifa, inflacao) {
     const economiasConsolidadas = Array(5).fill(0);
-    
+
     ucs.forEach(uc => {
       const economiaUC = this.calcularEconomia5Anos(uc, tarifaTributos, descontoTarifa, inflacao);
       economiaUC.forEach((valor, index) => {
@@ -580,250 +948,69 @@ class PDFGenerator {
     };
   }
 
-  adicionarEconomia5Anos(doc, dados, y, corTexto, corVerde) {
-    if (!dados.ucs || dados.ucs.length === 0 || !dados.tarifaTributos) {
-      return y;
+  // Calcular economia por UC para 5 anos
+  calcularEconomia5Anos(uc, tarifaTributos, descontoTarifa, inflacao) {
+    const consumo = parseFloat(uc.consumo) || 0;
+    const tarifa = parseFloat(tarifaTributos) || 0.8;
+    const desconto = parseFloat(descontoTarifa) || 0.2;
+    const inflacaoDecimal = parseFloat(inflacao) || 0.02;
+
+    if (consumo === 0 || tarifa === 0) {
+      return Array(5).fill(0);
     }
 
-    const economiaData = this.calcularEconomiaConsolidada(
-      dados.ucs,
-      dados.tarifaTributos,
-      dados.descontoTarifa,
-      dados.inflacao
-    );
+    const economiaMensal = consumo * tarifa * desconto;
+    const economias = [];
+    let economiaAno = economiaMensal * 12;
 
-    // Título
-    doc.setTextColor(...corTexto);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Economia nos próximos cinco anos', 20, y);
-    y += 6; 
+    for (let ano = 1; ano <= 5; ano++) {
+      economias.push(economiaAno);
+      economiaAno = economiaAno * (1 + inflacaoDecimal);
+    }
 
-    // Gráfico compacto
-    const graficoDados = {
-      x: 20,
-      y: y,
-      largura: 170,
-      altura: 50
-    };
-
-    const valorMaximo = Math.max(...economiaData.economiasPorAno);
-    const alturaMaximaBarra = graficoDados.altura - 15;
-    const larguraBarra = 25;
-    const espacoEntre = 5;
-    const inicioX = graficoDados.x + 15;
-
-    // Fundo do gráfico
-    doc.setDrawColor(240, 240, 240);
-    doc.setFillColor(250, 250, 250);
-    doc.rect(graficoDados.x, graficoDados.y, graficoDados.largura, graficoDados.altura, 'F');
-
-    // Desenhar barras
-    economiaData.economiasPorAno.forEach((valor, index) => {
-      const alturaRelativa = valorMaximo > 0 ? (valor / valorMaximo) * alturaMaximaBarra : 0;
-      const x = inicioX + (index * (larguraBarra + espacoEntre));
-      const y_barra = graficoDados.y + graficoDados.altura - 10 - alturaRelativa;
-
-      // Barra
-      doc.setFillColor(44, 62, 80);
-      doc.rect(x, y_barra, larguraBarra, alturaRelativa, 'F');
-
-      // Contorno
-      doc.setDrawColor(30, 50, 70);
-      doc.rect(x, y_barra, larguraBarra, alturaRelativa, 'S');
-
-      // Label do ano - CENTRALIZADO E MAIOR
-      doc.setTextColor(...corTexto);
-      doc.setFontSize(10); // Aumentado de 8 para 10
-      doc.setFont('helvetica', 'bold'); // Negrito para os anos
-      const textoAno = `Ano ${index + 1}`;
-      const larguraTextoAno = doc.getTextWidth(textoAno);
-      const xCentralizadoAno = x + (larguraBarra - larguraTextoAno) / 2;
-      doc.text(textoAno, xCentralizadoAno, graficoDados.y + graficoDados.altura - 3);
-
-      // Valor exato - FONTE MAIOR E CENTRALIZADO
-      if (alturaRelativa > 8) {
-        doc.setFontSize(8);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        const valorFormatado = valor.toLocaleString('pt-BR', {
-          style: 'currency',
-          currency: 'BRL',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        });
-        
-        // Centralizar o valor na barra
-        const larguraTextoValor = doc.getTextWidth(valorFormatado);
-        const xCentralizadoValor = x + (larguraBarra - larguraTextoValor) / 2;
-        doc.text(valorFormatado, xCentralizadoValor, y_barra + 6);
-      }
-    });
-
-    y = graficoDados.y + graficoDados.altura + 10;
-
-    // Economia total
-    doc.setTextColor(...corVerde);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    
-    const economiaFormatada = economiaData.economiaTotal.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-
-    doc.text(`Economia Total: ${economiaFormatada}`, 20, y);
-
-    doc.setDrawColor(160, 160, 160);
-    doc.setLineWidth(0.5);
-    doc.line(20, y + 8, 190, y + 8);
-
-    return y + 15;
+    return economias;
   }
 
-  // Benefícios compactos - ALTERADO TÍTULO PARA "INFORMAÇÕES E BENEFÍCIOS"
-  adicionarBeneficiosCompactos(doc, beneficios, y, corTexto) {
-    // Se não há benefícios, pular esta seção
+  // Gerar benefícios
+  gerarBeneficios(beneficios) {
     if (!beneficios || beneficios.length === 0) {
-      return y;
+      return '';
     }
-    
-    doc.setTextColor(...corTexto);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Informações e Benefícios', 20, y); // ALTERADO AQUI
-    y += 6; 
 
-    // Espaço fixo para benefícios
     const maxBeneficios = 10;
-    const alturaPorBeneficio = 4;
     const beneficiosParaMostrar = beneficios.slice(0, maxBeneficios);
 
-    // Calcular tamanho da fonte baseado na quantidade
-    let fontSize = 9; 
-    if (beneficios.length > 8) fontSize = 7;
-    if (beneficios.length > 12) fontSize = 6;
-
-    doc.setFontSize(fontSize);
-    doc.setFont('helvetica', 'normal');
+    let html = `
+    <div class="section">
+      <div class="section-title">Informações e Benefícios</div>
+      <ul class="benefits-list">`;
 
     beneficiosParaMostrar.forEach((beneficio, index) => {
-      // Texto completo do benefício
-      const numeroTexto = `${beneficio.numero || index + 1}.`;
-      let textoCompleto = beneficio.texto || beneficio.toString();
-      
-      // Usar splitTextToSize para quebrar o texto automaticamente em linhas
-      const textoFinal = numeroTexto + ' ' + textoCompleto;
-      const linhas = doc.splitTextToSize(textoFinal, 170); // Largura máxima de 170mm
-      
-      // Desenhar cada linha
-      linhas.forEach((linha) => {
-        // Verificar se ainda há espaço na página
-        if (y > 270) {
-          return; // Parar se chegou no final da página
-        }
-        
-        doc.text(linha, 25, y);
-        y += alturaPorBeneficio;
-      });
-      
-      // Adicionar pequeno espaço entre benefícios
-      y += 1;
+      const numero = beneficio.numero || index + 1;
+      const texto = beneficio.texto || beneficio.toString();
+      html += `<li>${numero}. ${texto}</li>`;
     });
 
-    // Mostrar aviso se houver mais benefícios
+    html += `</ul>`;
+
     if (beneficios.length > maxBeneficios) {
-      doc.setFontSize(7);
-      doc.setTextColor(180, 0, 0);
-      doc.text(`+ ${beneficios.length - maxBeneficios} benefícios adicionais`, 25, y);
-      y += 3;
+      html += `<p style="color: #b40000; font-size: 10px; margin-top: 5px;">+ ${beneficios.length - maxBeneficios} benefícios adicionais</p>`;
     }
 
-    return y + 5;
+    html += `</div>`;
+
+    return html;
   }
 
-  // Rodapé - MODIFICADO COM IMAGENS COMPRIMIDAS
-  async adicionarRodape(doc) {
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(0, 0, 0);
-      
-      // Contatos à esquerda - COM SÍMBOLOS SIMPLES
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(8);
+  // Formatar data
+  formatarData(data) {
+    if (!data) return '';
+    return new Date(data).toLocaleDateString('pt-BR');
+  }
 
-      // Posicionamento dos contatos à esquerda
-      const xContatos = 15;
-      let yContatos = 277; // Ajustado para baixo
-
-      // Website 
-      doc.text('*  www.aupusenergia.com.br', xContatos, yContatos);
-      yContatos += 3; // Menor espaçamento
-
-      // Email
-      doc.text('@ smart@aupusenergia.com.br', xContatos, yContatos);
-      yContatos += 3;
-
-      // WhatsApp
-      doc.text('#  (62) 9 9654-7888', xContatos, yContatos);
-      
-      // Slogan - IMAGEM CURSIVA CENTRALIZADA (COMPRESSÃO SEGURA)
-      try {
-        console.log('🖼️ Carregando slogan...');
-        // ✅ COMPRIMIR APENAS SE NÃO TIVER TRANSPARÊNCIA CRÍTICA
-        const sloganOtimizada = await this.comprimirImagem('/Frase_interligando.png', 400, 0.7, false);
-        
-        // Dimensões para PDF - centralizado
-        const alturaDesejada = 10;
-        const larguraProporcional = alturaDesejada * sloganOtimizada.aspectRatio;
-        const larguraMaxPDF = 100;
-        const larguraFinal = Math.min(larguraProporcional, larguraMaxPDF);
-        const alturaFinal = larguraFinal / sloganOtimizada.aspectRatio;
-        const xCentralizado = (210 - larguraFinal) / 2;
-        
-        // Adicionar imagem ao PDF
-        doc.addImage(sloganOtimizada.dataURL, sloganOtimizada.formato, xCentralizado, 277, larguraFinal, alturaFinal);
-        console.log(`✅ Slogan adicionado (${sloganOtimizada.formato}) ao PDF!`);
-        
-      } catch (error) {
-        console.warn('📝 Usando fallback de texto para slogan:', error.message);
-        // Fallback
-        doc.setFont('times', 'italic');
-        doc.setFontSize(11);
-        doc.setTextColor(76, 175, 80);
-        doc.text('Interligando você com o futuro!', 75, 285);
-      }
-      
-      // Imagem onda à direita - COMPRESSÃO SEGURA
-      try {
-        console.log('🌊 Carregando onda...');
-        // ✅ COMPRIMIR ONDA (sem transparência crítica)
-        const ondaOtimizada = await this.comprimirImagem('/Onda.png', 150, 0.6, false);
-        
-        // Posicionar à direita
-        const alturaDesejada = 12;
-        const larguraProporcional = alturaDesejada * ondaOtimizada.aspectRatio;
-        const larguraFinal = Math.min(larguraProporcional, 30);
-        const alturaFinal = larguraFinal / ondaOtimizada.aspectRatio;
-        const xDireita = 210 - larguraFinal - 8; // 8mm da margem direita
-        
-        // Adicionar imagem ao PDF
-        doc.addImage(ondaOtimizada.dataURL, ondaOtimizada.formato, xDireita, 275, larguraFinal, alturaFinal);
-        console.log(`✅ Imagem onda adicionada (${ondaOtimizada.formato}) ao PDF!`);
-        
-      } catch (error) {
-        console.warn('📝 Usando fallback para paginação:', error.message);
-        // Fallback - mostrar número da página
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
-        doc.text(`Página ${i} de ${pageCount}`, 170, 285);
-      }
-    }
+  // Calcular desconto percentual
+  calcularDescontoPercentual(desconto) {
+    return Math.round((desconto || 0.2) * 100);
   }
 
   // Gerar nome do arquivo
@@ -831,12 +1018,12 @@ class PDFGenerator {
     const proposta = dados.numeroProposta?.replace(/[/\\]/g, '_') || 'Proposta';
     const cliente = dados.nomeCliente?.replace(/[^a-zA-Z0-9]/g, '_') || 'Cliente';
     const timestamp = new Date().toISOString().slice(0, 10);
-    
+
     return `${proposta}_${cliente}_${timestamp}.pdf`;
   }
 
-  // Formatar dados para PDF
-  formatarDadosParaPDF(proposta) {
+  // Formatar dados para HTML
+  formatarDadosParaHTML(proposta) {
     return {
       numeroProposta: proposta.numero_proposta || proposta.numeroProposta,
       nomeCliente: proposta.nome_cliente || proposta.nomeCliente,
@@ -852,7 +1039,7 @@ class PDFGenerator {
     };
   }
 
-  // Formatar UCs para o PDF
+  // Formatar UCs para HTML
   formatarUCs(ucs) {
     if (typeof ucs === 'string') {
       try {
@@ -861,9 +1048,9 @@ class PDFGenerator {
         return [];
       }
     }
-    
+
     if (!Array.isArray(ucs)) return [];
-    
+
     return ucs.map(uc => ({
       apelido: uc.apelido || uc.numero_unidade || 'UC',
       numeroUC: uc.numero_unidade || uc.numeroUC || '',
@@ -872,7 +1059,7 @@ class PDFGenerator {
     }));
   }
 
-  // Formatar benefícios para o PDF
+  // Formatar benefícios para HTML
   formatarBeneficios(beneficios) {
     if (typeof beneficios === 'string') {
       try {
@@ -881,9 +1068,9 @@ class PDFGenerator {
         return [];
       }
     }
-    
+
     if (!Array.isArray(beneficios)) return [];
-    
+
     return beneficios.map((beneficio, index) => ({
       numero: beneficio.numero || (index + 1),
       texto: beneficio.texto || beneficio.toString()
@@ -893,13 +1080,13 @@ class PDFGenerator {
   // Métodos estáticos
   static async baixarPDF(dadosProposta, autoDownload = true) {
     const generator = new PDFGenerator();
-    return await generator.gerarPDF(dadosProposta, autoDownload);
+    return await generator.gerarHTML(dadosProposta, autoDownload);
   }
 
   static async baixarPDFDeProposta(proposta, autoDownload = true) {
     const generator = new PDFGenerator();
-    const dadosFormatados = generator.formatarDadosParaPDF(proposta);
-    return await generator.gerarPDF(dadosFormatados, autoDownload);
+    const dadosFormatados = generator.formatarDadosParaHTML(proposta);
+    return await generator.gerarHTML(dadosFormatados, autoDownload);
   }
 }
 

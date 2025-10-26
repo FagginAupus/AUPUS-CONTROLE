@@ -234,11 +234,15 @@ const ProspecPage = () => {
     // ✅ BUSCAR DOCUMENTAÇÃO ESPECÍFICA DA UC
     const numeroUC = item.numeroUC || item.numero_unidade;
     let documentacaoUC = {};
-    
+
     // Se tem proposta expandida com documentação
     if (item.documentacao && typeof item.documentacao === 'object') {
+      console.log('🔍 DEBUG contratoLocacao - documentacao completa:', item.documentacao);
+      console.log('🔍 DEBUG contratoLocacao - numeroUC:', numeroUC);
+      console.log('🔍 DEBUG contratoLocacao - documentacao[numeroUC]:', item.documentacao[numeroUC]);
       documentacaoUC = item.documentacao[numeroUC] || {};
       console.log('🔍 Documentação da UC encontrada:', documentacaoUC);
+      console.log('🔍 DEBUG contratoLocacao no documentacaoUC:', documentacaoUC.contratoLocacao);
     } else {
       console.log('🔍 Documentação não encontrada ou não é objeto');
     }
@@ -760,7 +764,7 @@ Deseja gerar o PDF apenas para esta UC?
         console.warn('⚠️ Desconto tarifa parece incorreto:', dadosPDF.descontoTarifa);
       }
 
-      // Gerar PDF
+      // Gerar PDF via HTML
       const PDFGenerator = (await import('../services/pdfGenerator.js')).default;
       await PDFGenerator.baixarPDF(dadosPDF, true);
 

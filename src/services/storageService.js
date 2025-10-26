@@ -4,7 +4,7 @@ import { formatarPrimeiraMaiuscula } from '../utils/formatters';
 
 class StorageService {
     constructor() {
-        console.log('🚀 StorageService inicializado - Modo API Apenas');
+        // StorageService inicializado - Modo API Apenas
     }
 
     // ========================================
@@ -12,28 +12,18 @@ class StorageService {
     // ========================================
 
     async login(email, senha) {
-        console.log('🔐 Login via API...');
         const response = await apiService.post('/auth/login', { email, password: senha });
-        console.log('🔍 Resposta do login:', response);
 
         if (response?.success && response?.user && response?.token) {
             // Configurar token no apiService
             apiService.setToken(response.token);
-            
+
             // ✅ CORRIGIDO: Usar 'aupus_token' igual ao apiService
             localStorage.setItem('aupus_token', response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
-            
-            console.log('✅ Login realizado com sucesso');
+
             return response.user;
         } else {
-            console.log('❌ Login failed - response:', {
-                hasSuccess: !!response?.success,
-                hasUser: !!response?.user,
-                hasToken: !!response?.token,
-                response: response
-            });
-            
             throw new Error('Token de acesso ou dados do usuário não recebidos');
         }
     }
@@ -41,12 +31,10 @@ class StorageService {
     logout() {
         // Limpar token do apiService
         apiService.clearToken();
-        
+
         // ✅ CORRIGIDO: Usar 'aupus_token' igual ao apiService
         localStorage.removeItem('aupus_token');
         localStorage.removeItem('user');
-        
-        console.log('🚪 Logout realizado');
     }
 
     
@@ -263,7 +251,6 @@ class StorageService {
     }
 
     async saveProspec(proposta) {
-        console.log('📤 Dados enviados:', proposta);
         
         try {
             const dadosParaBackend = this.mapearPropostaParaBackend(proposta);
@@ -308,18 +295,15 @@ class StorageService {
 
 
     async adicionarProspec(proposta) {
-        console.log('📝 adicionarProspec - Salvando proposta...');
         return await this.saveProspec(proposta);
     }
 
     async updateProspec(id, proposta) {
         try {
-            console.log('✏️ Atualizando proposta na API...');
             
             const dadosBackend = this.mapearPropostaParaBackend(proposta);
             const response = await apiService.put(`/propostas/${id}`, dadosBackend);
             
-            console.log('✅ Proposta atualizada na API com sucesso');
             return response;
             
         } catch (error) {
@@ -330,11 +314,9 @@ class StorageService {
 
     async deleteProspec(id) {
         try {
-            console.log('🗑️ Excluindo proposta da API...');
             
             await apiService.delete(`/propostas/${id}`);
             
-            console.log('✅ Proposta excluída da API com sucesso');
             
         } catch (error) {
             console.error('❌ Erro ao excluir proposta:', error.message);
