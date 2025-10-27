@@ -210,7 +210,7 @@ const NovaPropostaPage = () => {
       economia: 20,
       bandeira: 20,
       inflacao: 2,
-      tarifaTributos: 0.98,
+      tarifaTributos: 1.17,
 
       // ✅ MODIFICAR ESTA LINHA PARA PRÉ-SELECIONAR EQUATORIAL GO
       ucs: [{ distribuidora: 'EQUATORIAL GO', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
@@ -350,7 +350,7 @@ const NovaPropostaPage = () => {
       economia: 20,
       bandeira: 20,
       inflacao: 2,
-      tarifaTributos: 0.98,
+      tarifaTributos: 1.17,
       ucs: [{ distribuidora: 'EQUATORIAL GO', numeroUC: '', apelido: '', ligacao: '', consumo: '' }],
       // Benefícios continuam como false (não obrigatórios)
       beneficio1: true,
@@ -447,7 +447,7 @@ const NovaPropostaPage = () => {
         desconto_tarifa: data.economia || 20,
         desconto_bandeira: data.bandeira || 20,
         inflacao: data.inflacao || 2.00,
-        tarifa_tributos: data.tarifaTributos || 0.98,
+        tarifa_tributos: data.tarifaTributos || 1.17,
         beneficios: [
           ...beneficiosSelecionados,
           ...beneficiosAdicionais.map(b => ({ 
@@ -690,7 +690,7 @@ const NovaPropostaPage = () => {
         descontoBandeira: parseFloat(item.descontoBandeira) || 0.2,
         // ✅ ADICIONAR ESTES CAMPOS:
         inflacao: parseFloat(item.inflacao) / 100 || 0.02,        // Se vem em % do backend
-        tarifaTributos: parseFloat(item.tarifaTributos) || 0.98,  // Se disponível
+        tarifaTributos: parseFloat(item.tarifaTributos) || 1.17,  // Se disponível
         observacoes: item.observacoes || '',
         ucs: [], // Buscar UCs da proposta se disponível
         beneficios: []
@@ -794,11 +794,11 @@ const NovaPropostaPage = () => {
                       {...register('tarifaTributos', { 
                         required: 'Tarifa é obrigatória',
                         min: { value: 0.01, message: 'Valor mínimo 0.01' }
-                      })} 
-                      type="number" 
+                      })}
+                      type="number"
                       step="0.0001"
                       min="0"
-                      placeholder="0.98765"
+                      placeholder="1.17"
                       className={errors.tarifaTributos ? 'error' : ''}
                     />
                     {errors.tarifaTributos && <span className="error-message">{errors.tarifaTributos.message}</span>}

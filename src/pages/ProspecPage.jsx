@@ -729,7 +729,7 @@ Deseja gerar o PDF apenas para esta UC?
         descontoBandeira: parseFloat(item.descontoBandeira) / 100 || 0.2, // 20 → 0.2
         // ✅ USAR VALORES SALVOS NO BANCO DE DADOS DA PROPOSTA
         inflacao: (parseFloat(item.inflacao) || 2) / 100,  // Do banco: proposta.inflacao / 100
-        tarifaTributos: parseFloat(item.tarifaTributos) || 0.98, // Do banco: proposta.tarifa_tributos
+        tarifaTributos: parseFloat(item.tarifaTributos) || 1.17, // Do banco: proposta.tarifa_tributos
         observacoes: item.observacoes || '',
         ucs: ucsParaPDF, // ← CORRIGIDO: usar UCs selecionadas (específica ou todas)
         beneficios: []
