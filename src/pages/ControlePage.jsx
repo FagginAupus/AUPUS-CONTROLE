@@ -200,7 +200,11 @@ const ControlePage = () => {
                   consultor_nome: dadosAPI.consultor_nome || '',
                   ug_nome: dadosAPI.ug_nome || '',
                   ligacao: dadosAPI.ligacao || '',
-                  enderecoCompleto: dadosAPI.endereco_completo || ''
+                  enderecoCompleto: dadosAPI.endereco_completo || '',
+                  cep_uc: dadosAPI.cep_uc || '',
+                  bairro_uc: dadosAPI.bairro_uc || '',
+                  cidade_uc: dadosAPI.cidade_uc || '',
+                  estado_uc: dadosAPI.estado_uc || ''
                 };
               }
 
@@ -216,7 +220,11 @@ const ControlePage = () => {
                 consultor_nome: item.consultor || item.consultorNome || '',
                 ug_nome: item.ug_nome || '',
                 ligacao: item.ligacao || '',
-                enderecoCompleto: ''
+                enderecoCompleto: '',
+                cep_uc: '',
+                bairro_uc: '',
+                cidade_uc: '',
+                estado_uc: ''
               };
             });
           }
@@ -234,7 +242,11 @@ const ControlePage = () => {
             consultor_nome: item.consultor || '',
             ug_nome: '',
             ligacao: item.ligacao || '',
-            enderecoCompleto: ''
+            enderecoCompleto: '',
+            cep_uc: '',
+            bairro_uc: '',
+            cidade_uc: '',
+            estado_uc: ''
           }));
         }
       } catch (error) {
@@ -251,7 +263,11 @@ const ControlePage = () => {
           consultor_nome: item.consultor || '',
           ug_nome: '',
           ligacao: item.ligacao || '',
-          enderecoCompleto: ''
+          enderecoCompleto: '',
+          cep_uc: '',
+          bairro_uc: '',
+          cidade_uc: '',
+          estado_uc: ''
         }));
       }
 

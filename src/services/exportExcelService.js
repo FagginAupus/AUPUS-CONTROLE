@@ -808,7 +808,11 @@ class ExportExcelService {
           'Consumo Médio (kWh)': this.formatarNumero(item.consumo_medio || 0),
           'CORRIGIR COMPENSAÇÃO?': 0,
           'LIGACAO': item.ligacao || '',
-          'ENDERECO': item.enderecoCompleto || ''
+          'ENDERECO': item.enderecoCompleto || '',
+          'CEP_UC': item.cep_uc || '',
+          'Bairro_UC': item.bairro_uc || '',
+          'Cidade_UC': item.cidade_uc || '',
+          'Estado_UC': item.estado_uc || ''
         };
       });
 
@@ -839,7 +843,11 @@ class ExportExcelService {
         { width: 18 },  // Consumo Médio
         { width: 20 },  // CORRIGIR COMPENSAÇÃO?
         { width: 15 },  // LIGACAO
-        { width: 40 }   // ENDERECO
+        { width: 40 },  // ENDERECO
+        { width: 15 },  // CEP_UC
+        { width: 20 },  // Bairro_UC
+        { width: 20 },  // Cidade_UC
+        { width: 10 }   // Estado_UC
       ];
 
       // Adicionar filtros
@@ -857,7 +865,7 @@ class ExportExcelService {
         ['Total de Registros', registrosParaExcel.length],
         ['Filtro', 'Status Troca = Associado'],
         ['Sistema', 'AUPUS Energia - Controle'],
-        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), CORRIGIR COMPENSAÇÃO?, LIGACAO, ENDERECO']
+        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), CORRIGIR COMPENSAÇÃO?, LIGACAO, ENDERECO, CEP_UC, Bairro_UC, Cidade_UC, Estado_UC']
       ];
 
       const worksheetMeta = window.XLSX.utils.aoa_to_sheet(metadados);

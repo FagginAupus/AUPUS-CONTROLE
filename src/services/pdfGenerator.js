@@ -772,7 +772,7 @@ class PDFGenerator {
   gerarTabelaUCs(ucs) {
     if (!ucs || ucs.length === 0) return '';
 
-    const maxLinhas = 10;
+    const maxLinhas = 18;
     const ucsParaMostrar = ucs.slice(0, maxLinhas);
 
     let html = `
