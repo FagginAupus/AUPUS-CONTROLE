@@ -1002,10 +1002,25 @@ class PDFGenerator {
     return html;
   }
 
-  // Formatar data
+  // Formatar data - corrigido para evitar problemas de timezone
   formatarData(data) {
     if (!data) return '';
-    return new Date(data).toLocaleDateString('pt-BR');
+    try {
+      // Extrair apenas a parte da data (YYYY-MM-DD) ignorando timezone
+      const dataString = data.toString();
+
+      // Se a data estiver no formato ISO (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss)
+      if (dataString.includes('-')) {
+        const [ano, mes, dia] = dataString.split('T')[0].split('-');
+        return `${dia.padStart(2, '0')}/${mes.padStart(2, '0')}/${ano}`;
+      }
+
+      // Fallback para formato padrão
+      return new Date(data).toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return '';
+    }
   }
 
   // Calcular desconto percentual
