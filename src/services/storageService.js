@@ -711,8 +711,8 @@ class StorageService {
             recorrencia: proposta.recorrencia || '3%',
             
             // ✅ DESCONTOS COM FORMATO CORRETO (COM %)
-            economia: this.formatarDescontoParaBackend(proposta.economia || proposta.descontoTarifa),
-            bandeira: this.formatarDescontoParaBackend(proposta.bandeira || proposta.descontoBandeira),
+            economia: this.formatarDescontoParaBackend(proposta.economia || proposta.descontoTarifa || proposta.desconto_tarifa),
+            bandeira: this.formatarDescontoParaBackend(proposta.bandeira || proposta.descontoBandeira || proposta.desconto_bandeira),
             
             // Arrays - USAR VARIÁVEL PROCESSADA
             beneficios: this.processarBeneficios(proposta),

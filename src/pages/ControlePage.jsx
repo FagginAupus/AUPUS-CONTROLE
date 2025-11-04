@@ -31,7 +31,9 @@ import {
   Save,
   Download,
   Eye,
-  Trash2
+  Trash2,
+  Smartphone,
+  Mail
 } from 'lucide-react';
 import './ControlePage.css';
 import './CommonModalsPagesDark.css';
@@ -1529,6 +1531,9 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     proposta_desconto_bandeira: 20,
     usa_desconto_proposta: true,
     controleId: '',
+    // CONTATO - INDEPENDENTES DA PROPOSTA
+    whatsapp: '',
+    email: '',
     // DOCUMENTAÇÃO
     documentacao_troca_titularidade: ''
   });
@@ -1607,6 +1612,10 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           desconto_bandeira: inputDescontoBandeira,
 
           controleId: item.controleId,
+
+          // CONTATO - INDEPENDENTES DA PROPOSTA
+          whatsapp: dadosUC.whatsapp || '',
+          email: dadosUC.email || '',
 
           // DOCUMENTAÇÃO
           documentacao_troca_titularidade: dadosUC.documentacao_troca_titularidade || ''
@@ -1693,6 +1702,10 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         usa_calibragem_global: dados.usa_calibragem_global,
         calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
         observacoes: dados.observacoes,
+
+        // ✅ CONTATO - INDEPENDENTES DA PROPOSTA
+        whatsapp: dados.whatsapp,
+        email: dados.email,
 
         // ✅ DESCONTOS CORRIGIDOS
         usa_desconto_proposta: dados.usa_desconto_proposta,
@@ -2208,6 +2221,50 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
             className="form-control"
             placeholder="Observações sobre esta UC..."
           />
+        </div>
+
+        {/* ✅ NOVA SEÇÃO: Informações de Contato (Independentes da Proposta) */}
+        <div className="contato-section">
+          <h4 className="section-title-with-icon">
+            <Users size={16} />
+            Informações de Contato da UC
+          </h4>
+          <p className="info-text" style={{ fontSize: '12px', marginBottom: '15px', color: '#666' }}>
+            Estas informações são específicas desta UC no controle e não afetam a proposta original.
+          </p>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="whatsapp" className="label-with-icon">
+                <Smartphone size={14} />
+                <strong>WhatsApp:</strong>
+              </label>
+              <input
+                type="tel"
+                id="whatsapp"
+                value={dados.whatsapp}
+                onChange={(e) => setDados(prev => ({ ...prev, whatsapp: e.target.value }))}
+                className="form-control"
+                placeholder="(62) 99999-9999"
+                maxLength="20"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email" className="label-with-icon">
+                <Mail size={14} />
+                <strong>Email:</strong>
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={dados.email}
+                onChange={(e) => setDados(prev => ({ ...prev, email: e.target.value }))}
+                className="form-control"
+                placeholder="exemplo@email.com"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Botões */}
