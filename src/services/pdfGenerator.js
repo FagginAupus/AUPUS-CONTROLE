@@ -732,7 +732,7 @@ class PDFGenerator {
     </div>
 
     <!-- Tabela de Unidades Consumidoras -->
-    ${this.gerarTabelaUCs(dados.ucs)}
+    ${this.gerarTabelaUCs(dados.ucs, dados.tarifaTributos, dados.descontoTarifa)}
 
     <!-- Gráfico Economia 5 Anos -->
     ${this.gerarGraficoEconomia(dados)}
@@ -769,7 +769,7 @@ class PDFGenerator {
   }
 
   // Gerar tabela de UCs
-  gerarTabelaUCs(ucs) {
+  gerarTabelaUCs(ucs, tarifaTributos, descontoTarifa) {
     if (!ucs || ucs.length === 0) return '';
 
     const maxLinhas = 18;
@@ -794,8 +794,8 @@ class PDFGenerator {
 
     ucsParaMostrar.forEach((uc, index) => {
       const consumo = parseFloat(uc.consumo) || 0;
-      const tarifa = 0.8;
-      const desconto = 0.2;
+      const tarifa = parseFloat(tarifaTributos) || 0.8;
+      const desconto = parseFloat(descontoTarifa) || 0.2;
 
       const semAssinatura = consumo * tarifa;
       const economiaMensal = consumo * tarifa * desconto;
