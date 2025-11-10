@@ -1204,14 +1204,9 @@ const ControlePage = () => {
                             
                             {/* Botão UG - só para admin */}
                             <button
-                              onClick={item.statusTroca === 'Associado' ? () => editarUG(index) : undefined}
+                              onClick={() => editarUG(index)}
                               className="btn-ug"
-                              title={
-                                item.statusTroca === 'Associado'
-                                  ? "Atribuir UG"
-                                  : `Status deve ser "Associado" para atribuir UG (atual: ${item.statusTroca})`
-                              }
-                              disabled={item.statusTroca !== 'Associado'}
+                              title="Atribuir UG"
                             >
                               <Home size={12} />
                               UG
