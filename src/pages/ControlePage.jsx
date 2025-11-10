@@ -822,7 +822,11 @@ const ControlePage = () => {
         usa_calibragem_global: payload.usa_calibragem_global,
         calibragem_individual: payload.calibragem_individual, // SEMPRE INCLUIR
         observacoes: payload.observacoes,
-        
+
+        // ✅ CONTATO - Independentes da proposta
+        whatsapp: payload.whatsapp,
+        email: payload.email,
+
         // ✅ DESCONTOS - sempre incluir usa_desconto_proposta
         usa_desconto_proposta: payload.usa_desconto_proposta,
         desconto_tarifa: payload.desconto_tarifa,
