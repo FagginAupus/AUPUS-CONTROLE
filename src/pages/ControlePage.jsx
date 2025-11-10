@@ -479,12 +479,6 @@ const ControlePage = () => {
     
     const item = dadosFiltrados[index];
     if (!item) return;
-    
-    // Verificar se status permite atribuição
-    if (item.statusTroca !== 'Associado') {
-      showNotification('Status deve ser "Associado" para atribuir UG', 'warning');
-      return;
-    }
 
     try {
       // ✅ USAR UGs do contexto se disponíveis, senão buscar
