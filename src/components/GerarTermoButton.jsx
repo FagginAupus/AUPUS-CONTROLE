@@ -172,6 +172,14 @@ const GerarTermoButton = ({
 
   // NOVA FUNÇÃO: Gerar PDF apenas (sem enviar) - USANDO ENDPOINTS DEFINITIVOS
   const gerarPdfApenas = async () => {
+    console.log('🔍 DEBUG GerarTermoButton - Validando dados:', {
+      nomeRepresentante: dados.nomeRepresentante,
+      nomeCliente: dados.nomeCliente,
+      whatsappRepresentante: dados.whatsappRepresentante,
+      emailRepresentante: dados.emailRepresentante,
+      numeroUC: dados.numeroUC || dados.numero_uc
+    });
+
     if (!dados.nomeRepresentante || dados.nomeRepresentante.trim() === '') {
       alert('❌ É necessário informar o nome do representante para gerar o termo.');
       return;
@@ -183,15 +191,19 @@ const GerarTermoButton = ({
     }
 
     // ✅ VALIDAÇÃO: WhatsApp e Email obrigatórios para gerar termo
-    if (!dados.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') {
+    if (!dados.whatsappRepresentante || String(dados.whatsappRepresentante).trim() === '') {
+      console.log('❌ Validação falhou: WhatsApp vazio');
       alert('❌ É necessário informar o WhatsApp do cliente para gerar o termo.');
       return;
     }
 
-    if (!dados.emailRepresentante || dados.emailRepresentante.trim() === '') {
+    if (!dados.emailRepresentante || String(dados.emailRepresentante).trim() === '') {
+      console.log('❌ Validação falhou: Email vazio');
       alert('❌ É necessário informar o Email do cliente para gerar o termo.');
       return;
     }
+
+    console.log('✅ Todas as validações passaram, gerando PDF...');
 
     // ✅ ADICIONAR numeroUC obrigatório
     const numeroUC = dados.numeroUC || dados.numero_uc;
@@ -1110,6 +1122,8 @@ const GerarTermoButton = ({
   const camposFaltantes = [];
   if (!dados?.nomeRepresentante) camposFaltantes.push('Nome do Representante');
   if (!dados?.nomeCliente) camposFaltantes.push('Nome do Cliente');
+  if (!dados?.whatsappRepresentante || String(dados.whatsappRepresentante || '').trim() === '') camposFaltantes.push('WhatsApp do cliente');
+  if (!dados?.emailRepresentante || String(dados.emailRepresentante || '').trim() === '') camposFaltantes.push('Email do cliente');
   if (!dados?.enderecoUC) camposFaltantes.push('Endereço da UC');
   if (!dados?.CEP_UC) camposFaltantes.push('CEP da UC');
   if (!dados?.Bairro_UC) camposFaltantes.push('Bairro da UC');
