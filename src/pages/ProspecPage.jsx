@@ -2456,9 +2456,9 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                 <div className="form-group file-group">
                   <label>Termo de Adesão</label>
                   <div className="form-row">
-                    {/* WhatsApp do Representante */}
+                    {/* WhatsApp do Cliente */}
                     <div className="form-group">
-                      <label>WhatsApp do receptor do Termo</label>
+                      <label>WhatsApp do cliente</label>
                       <input
                         type="tel"
                         value={dados.whatsappRepresentante || ''}
@@ -2467,9 +2467,9 @@ const ModalEdicao = ({ item, onSave, onClose, loading, setLoading, consultoresDi
                       />
                     </div>
 
-                    {/* Email do Representante */}
+                    {/* Email do Cliente */}
                     <div className="form-group">
-                      <label>Email do receptor do Termo</label>
+                      <label>Email do cliente</label>
                       <input
                         type="email"
                         value={dados.emailRepresentante || ''}

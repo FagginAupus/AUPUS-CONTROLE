@@ -182,6 +182,17 @@ const GerarTermoButton = ({
       return;
     }
 
+    // ✅ VALIDAÇÃO: WhatsApp e Email obrigatórios para gerar termo
+    if (!dados.whatsappRepresentante || dados.whatsappRepresentante.trim() === '') {
+      alert('❌ É necessário informar o WhatsApp do cliente para gerar o termo.');
+      return;
+    }
+
+    if (!dados.emailRepresentante || dados.emailRepresentante.trim() === '') {
+      alert('❌ É necessário informar o Email do cliente para gerar o termo.');
+      return;
+    }
+
     // ✅ ADICIONAR numeroUC obrigatório
     const numeroUC = dados.numeroUC || dados.numero_uc;
     if (!numeroUC) {
