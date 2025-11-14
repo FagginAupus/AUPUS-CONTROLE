@@ -1179,13 +1179,39 @@ const ControlePage = () => {
                         </td>
                       )}
                       <td>
-                        <button
-                          onClick={() => editarStatusTroca(index)}
-                          className={`btn btn-small status-troca-btn status-${item.statusTroca?.toLowerCase().replace(' ', '-')}`}
-                          title="Clique para alterar status"
-                        >
-                          {item.statusTroca || 'Aguardando'}
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <button
+                            onClick={() => editarStatusTroca(index)}
+                            className={`btn btn-small status-troca-btn status-${item.statusTroca?.toLowerCase().replace(' ', '-')}`}
+                            title="Clique para alterar status"
+                          >
+                            {item.statusTroca || 'Aguardando'}
+                          </button>
+
+                          {/* Indicador de dias no status */}
+                          {item.diasNoStatus !== null && item.diasNoStatus !== undefined && (
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                textAlign: 'center',
+                                backgroundColor:
+                                  item.alertaStatus?.nivel === 'critico' ? '#dc3545' :
+                                  item.alertaStatus?.nivel === 'atencao' ? '#ffc107' :
+                                  '#28a745',
+                                color:
+                                  item.alertaStatus?.nivel === 'critico' ? '#fff' :
+                                  item.alertaStatus?.nivel === 'atencao' ? '#000' :
+                                  '#fff',
+                                fontWeight: '600'
+                              }}
+                              title={item.alertaStatus?.mensagem || `${item.diasNoStatus} dias neste status`}
+                            >
+                              {item.diasNoStatus} {item.diasNoStatus === 1 ? 'dia' : 'dias'}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       
                       {/* CÉLULA DE AÇÕES - CORRIGIDA */}
