@@ -1188,10 +1188,9 @@ const ControlePage = () => {
                             {item.statusTroca || 'Aguardando'}
                           </button>
 
-                          {/* Indicador de dias no status - não mostrar para Associado */}
+                          {/* Indicador de dias no status */}
                           {item.diasNoStatus !== null &&
-                           item.diasNoStatus !== undefined &&
-                           item.statusTroca !== 'Associado' && (
+                           item.diasNoStatus !== undefined && (
                             <span
                               style={{
                                 fontSize: '11px',
@@ -1202,7 +1201,11 @@ const ControlePage = () => {
                                 fontWeight: '600',
                                 whiteSpace: 'nowrap'
                               }}
-                              title={`${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'} em ${item.statusTroca}`}
+                              title={
+                                item.statusTroca === 'Associado' && !item.ugId
+                                  ? `${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'} sem UG atribuída`
+                                  : `${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'} em ${item.statusTroca}`
+                              }
                             >
                               {item.diasNoStatus} {item.diasNoStatus === 1 ? 'dia' : 'dias'}
                             </span>
