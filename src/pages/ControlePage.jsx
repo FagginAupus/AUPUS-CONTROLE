@@ -1179,7 +1179,7 @@ const ControlePage = () => {
                         </td>
                       )}
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
                           <button
                             onClick={() => editarStatusTroca(index)}
                             className={`btn btn-small status-troca-btn status-${item.statusTroca?.toLowerCase().replace(' ', '-')}`}
@@ -1188,28 +1188,24 @@ const ControlePage = () => {
                             {item.statusTroca || 'Aguardando'}
                           </button>
 
-                          {/* Indicador de dias no status */}
-                          {item.diasNoStatus !== null && item.diasNoStatus !== undefined && (
-                            <div
+                          {/* Indicador de dias no status - não mostrar para Associado */}
+                          {item.diasNoStatus !== null &&
+                           item.diasNoStatus !== undefined &&
+                           item.statusTroca !== 'Associado' && (
+                            <span
                               style={{
                                 fontSize: '11px',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                textAlign: 'center',
-                                backgroundColor:
-                                  item.alertaStatus?.nivel === 'critico' ? '#dc3545' :
-                                  item.alertaStatus?.nivel === 'atencao' ? '#ffc107' :
-                                  '#28a745',
                                 color:
-                                  item.alertaStatus?.nivel === 'critico' ? '#fff' :
-                                  item.alertaStatus?.nivel === 'atencao' ? '#000' :
-                                  '#fff',
-                                fontWeight: '600'
+                                  item.diasNoStatus > 7 ? '#dc3545' :
+                                  item.diasNoStatus > 3 ? '#ffc107' :
+                                  '#28a745',
+                                fontWeight: '600',
+                                whiteSpace: 'nowrap'
                               }}
-                              title={item.alertaStatus?.mensagem || `${item.diasNoStatus} dias neste status`}
+                              title={`${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'} em ${item.statusTroca}`}
                             >
                               {item.diasNoStatus} {item.diasNoStatus === 1 ? 'dia' : 'dias'}
-                            </div>
+                            </span>
                           )}
                         </div>
                       </td>
