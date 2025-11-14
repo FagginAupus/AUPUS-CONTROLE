@@ -1353,7 +1353,59 @@ const GerarTermoButton = ({
                   O sistema irá automaticamente alterar o status da UC para "Fechada" e adicionar ao controle.
                 </p>
 
+                {/* ✅ CAMPO DE DATA DE ASSINATURA - MOVIDO PARA CIMA */}
+                <div style={{
+                  marginTop: '15px',
+                  marginBottom: '15px',
+                  padding: '15px',
+                  backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                  borderRadius: '8px',
+                  border: '2px solid #0066cc'
+                }}>
+                  <label htmlFor="data-assinatura-manual" style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '600',
+                    color: '#0066cc',
+                    fontSize: '14px'
+                  }}>
+                    📅 Data de Assinatura do Termo *
+                  </label>
+                  <input
+                    type="date"
+                    id="data-assinatura-manual"
+                    value={dataAssinaturaManual}
+                    onChange={(e) => {
+                      console.log('📅 Data selecionada:', e.target.value);
+                      setDataAssinaturaManual(e.target.value);
+                    }}
+                    max={new Date().toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '4px',
+                      border: '1px solid #555',
+                      backgroundColor: '#2d2d2d',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                    required
+                  />
+                  <small style={{ display: 'block', marginTop: '8px', color: '#aaa', fontStyle: 'italic' }}>
+                    ⚠️ Obrigatório: Informe a data em que o termo foi assinado pelo cliente
+                  </small>
+                </div>
+
                 <div className="upload-area">
+                  <label htmlFor="arquivo-upload-manual" style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '600',
+                    fontSize: '14px'
+                  }}>
+                    📄 Arquivo PDF do Termo *
+                  </label>
                   <input
                     type="file"
                     id="arquivo-upload-manual"
@@ -1382,26 +1434,6 @@ const GerarTermoButton = ({
                       </button>
                     </div>
                   )}
-                </div>
-
-                {/* ✅ CAMPO DE DATA DE ASSINATURA */}
-                <div className="form-group" style={{ marginTop: '15px' }}>
-                  <label htmlFor="data-assinatura-manual" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                    Data de Assinatura do Termo *
-                  </label>
-                  <input
-                    type="date"
-                    id="data-assinatura-manual"
-                    value={dataAssinaturaManual}
-                    onChange={(e) => setDataAssinaturaManual(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="form-control"
-                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    required
-                  />
-                  <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
-                    Informe a data em que o termo foi assinado pelo cliente
-                  </small>
                 </div>
                 
                 <div className="upload-actions">
