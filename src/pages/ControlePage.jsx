@@ -113,6 +113,7 @@ const ControlePage = () => {
         comissaoPercentual: item.comissaoPercentual || item.comissao_percentual || 5,
         dataEntradaControle: item.dataEntradaControle || item.data_entrada_controle,
         statusTroca: item.statusTroca || item.status_troca || 'Pendente',
+        observacaoStatus: item.observacaoStatus || item.observacao_status || '',
         dataTitularidade: item.dataTitularidade || item.data_titularidade,
         observacoes: item.observacoes || ''
       }));
@@ -601,14 +602,23 @@ const ControlePage = () => {
     }
   }, [modalUG, loadControle, controle.filters, loadUgs, showNotification]);
 
-  const salvarStatusTroca = useCallback(async (novoStatus, novaData) => {
+  const salvarStatusTroca = useCallback(async (novoStatus, novaData, observacao = '', limparObs = false) => {
     try {
       const { item } = modalStatusTroca;
-      
-      const response = await apiService.patch(`/controle/${item.id}/status-troca`, {
+
+      const payload = {
         status_troca: novoStatus,
         data_titularidade: novaData
-      });
+      };
+
+      // Se deve limpar observação ou se foi fornecida uma observação
+      if (limparObs) {
+        payload.limpar_observacao = true;
+      } else if (observacao !== undefined) {
+        payload.observacao_status = observacao;
+      }
+
+      const response = await apiService.patch(`/controle/${item.id}/status-troca`, payload);
 
       if (response?.success) {
         // ✅ ADICIONAR: Refresh automático após alterar status
@@ -1411,7 +1421,10 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
   const [dataTitularidade, setDataTitularidade] = useState(
     item.dataTitularidade || new Date().toISOString().split('T')[0]
   );
+  const [observacaoStatus, setObservacaoStatus] = useState(item.observacaoStatus || '');
   const [showConfirmacao, setShowConfirmacao] = useState(false);
+  const [showConfirmacaoObservacao, setShowConfirmacaoObservacao] = useState(false);
+  const [statusAnterior] = useState(item.statusTroca);
 
   // ✅ ADICIONAR: Limpar data quando status muda
   useEffect(() => {
@@ -1426,24 +1439,53 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Se está saindo de "Associado" e tem UG, mostrar confirmação
     if (item.statusTroca === 'Associado' && statusTroca !== 'Associado' && item.ugNome) {
       setShowConfirmacao(true);
       return;
     }
-    
+
+    // Se status mudou e há observação, perguntar se quer limpar
+    if (statusAnterior !== statusTroca && observacaoStatus) {
+      setShowConfirmacaoObservacao(true);
+      return;
+    }
+
     // Sempre enviar uma data - atual se não for "Associado", ou a selecionada se for "Associado"
-    const dataFinal = statusTroca === 'Associado' 
-      ? dataTitularidade 
+    const dataFinal = statusTroca === 'Associado'
+      ? dataTitularidade
       : new Date().toISOString().split('T')[0]; // Data atual como fallback
-    
-    onSave(statusTroca, dataFinal);
+
+    onSave(statusTroca, dataFinal, observacaoStatus, false);
   };
 
   const confirmarMudanca = () => {
     setShowConfirmacao(false);
-    onSave(statusTroca, dataTitularidade);
+
+    // Após confirmar UG, verificar se precisa perguntar sobre observação
+    if (statusAnterior !== statusTroca && observacaoStatus) {
+      setShowConfirmacaoObservacao(true);
+      return;
+    }
+
+    onSave(statusTroca, dataTitularidade, observacaoStatus, false);
+  };
+
+  const manterObservacao = () => {
+    setShowConfirmacaoObservacao(false);
+    const dataFinal = statusTroca === 'Associado'
+      ? dataTitularidade
+      : new Date().toISOString().split('T')[0];
+    onSave(statusTroca, dataFinal, observacaoStatus, false);
+  };
+
+  const limparObservacao = () => {
+    setShowConfirmacaoObservacao(false);
+    const dataFinal = statusTroca === 'Associado'
+      ? dataTitularidade
+      : new Date().toISOString().split('T')[0];
+    onSave(statusTroca, dataFinal, '', true);
   };
 
   const dataMaxima = new Date().toISOString().split('T')[0];
@@ -1466,7 +1508,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             <div className="alert alert-warning">
               <h4>⚠️ Confirmação Necessária</h4>
               <p>
-                Ao alterar o status de <strong>"Associado"</strong> para <strong>"{statusTroca}"</strong>, 
+                Ao alterar o status de <strong>"Associado"</strong> para <strong>"{statusTroca}"</strong>,
                 a UG <strong>"{item.ugNome}"</strong> será automaticamente <strong>desatribuída</strong> desta UC.
               </p>
               <p>Deseja continuar?</p>
@@ -1477,6 +1519,24 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
               </button>
               <button onClick={confirmarMudanca} className="btn btn-warning">
                 ⚠️ Confirmar e Desatribuir
+              </button>
+            </div>
+          </div>
+        ) : showConfirmacaoObservacao ? (
+          <div className="common-modal-content modal-body-controle confirmacao-body">
+            <div className="alert alert-info">
+              <h4>💬 Observação Existente</h4>
+              <p>
+                Existe uma observação no status atual: <strong>"{observacaoStatus}"</strong>
+              </p>
+              <p>Deseja manter ou limpar esta observação ao mudar para <strong>"{statusTroca}"</strong>?</p>
+            </div>
+            <div className="modal-footer">
+              <button onClick={limparObservacao} className="btn btn-secondary">
+                Limpar Observação
+              </button>
+              <button onClick={manterObservacao} className="btn btn-primary">
+                Manter Observação
               </button>
             </div>
           </div>
@@ -1502,7 +1562,7 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             </div>
             
             {/* Campo Data - só aparece quando status é "Finalizado" */}
-            {statusTroca === 'Associado' && ( 
+            {statusTroca === 'Associado' && (
               <div className="form-group">
                 <label>Data da Titularidade:</label>
                 <input
@@ -1515,7 +1575,22 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
                 <small className="form-help">Não é possível selecionar datas futuras</small>
               </div>
             )}
-            
+
+            {/* Campo Observação */}
+            <div className="form-group">
+              <label>Observação do Status:</label>
+              <input
+                type="text"
+                value={observacaoStatus}
+                onChange={(e) => setObservacaoStatus(e.target.value)}
+                maxLength={100}
+                placeholder="Adicione uma observação (opcional, máx. 100 caracteres)"
+              />
+              <small className="form-help">
+                {observacaoStatus.length}/100 caracteres
+              </small>
+            </div>
+
             <div className="modal-footer">
               <button type="button" onClick={onClose} className="btn btn-secondary">
                 Cancelar
