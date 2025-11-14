@@ -1207,7 +1207,10 @@ const ControlePage = () => {
                                   : `${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'} em ${item.statusTroca}`
                               }
                             >
-                              {item.diasNoStatus} {item.diasNoStatus === 1 ? 'dia' : 'dias'}
+                              {item.statusTroca === 'Associado' && !item.ugId
+                                ? `${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'} sem UG atribuída`
+                                : `${item.diasNoStatus} ${item.diasNoStatus === 1 ? 'dia' : 'dias'}`
+                              }
                             </span>
                           )}
                         </div>
