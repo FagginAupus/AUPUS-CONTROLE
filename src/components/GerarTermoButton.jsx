@@ -23,6 +23,7 @@ const GerarTermoButton = ({
   const [arquivoUpload, setArquivoUpload] = useState(null);
   const [mostrarUploadManual, setMostrarUploadManual] = useState(false);
   const [arquivoUploadManual, setArquivoUploadManual] = useState(null);
+  const [dataAssinaturaManual, setDataAssinaturaManual] = useState('');
 
   useEffect(() => {
     if (!dados?.propostaId) return;
@@ -914,6 +915,12 @@ const GerarTermoButton = ({
       return;
     }
 
+    // ✅ VALIDAÇÃO: Data de assinatura obrigatória
+    if (!dataAssinaturaManual || dataAssinaturaManual.trim() === '') {
+      alert('❌ É necessário informar a data de assinatura do termo.');
+      return;
+    }
+
     const numeroUC = dados.numeroUC || dados.numero_uc;
     if (!numeroUC) {
       alert('❌ Número da UC é obrigatório.');
@@ -923,6 +930,7 @@ const GerarTermoButton = ({
     const formData = new FormData();
     formData.append('arquivo', arquivoUploadManual);
     formData.append('numeroUC', numeroUC);
+    formData.append('dataAssinatura', dataAssinaturaManual);
 
     setLoading(true);
     try {
@@ -1116,6 +1124,7 @@ const GerarTermoButton = ({
   const cancelarUploadManual = () => {
     setMostrarUploadManual(false);
     setArquivoUploadManual(null);
+    setDataAssinaturaManual('');
   };
 
   // Campos obrigatórios faltantes
@@ -1374,11 +1383,31 @@ const GerarTermoButton = ({
                     </div>
                   )}
                 </div>
+
+                {/* ✅ CAMPO DE DATA DE ASSINATURA */}
+                <div className="form-group" style={{ marginTop: '15px' }}>
+                  <label htmlFor="data-assinatura-manual" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Data de Assinatura do Termo *
+                  </label>
+                  <input
+                    type="date"
+                    id="data-assinatura-manual"
+                    value={dataAssinaturaManual}
+                    onChange={(e) => setDataAssinaturaManual(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="form-control"
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    required
+                  />
+                  <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+                    Informe a data em que o termo foi assinado pelo cliente
+                  </small>
+                </div>
                 
                 <div className="upload-actions">
                   <button
                     onClick={uploadTermoManual}
-                    disabled={!arquivoUploadManual || loading}
+                    disabled={!arquivoUploadManual || !dataAssinaturaManual || loading}
                     className={`btn btn-primary ${loading ? 'loading' : ''}`}
                   >
                     {loading ? (
