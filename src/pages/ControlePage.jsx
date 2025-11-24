@@ -1631,7 +1631,11 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     whatsapp: '',
     email: '',
     // DOCUMENTAÇÃO
-    documentacao_troca_titularidade: ''
+    documentacao_troca_titularidade: '',
+    // NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
+    compensacao_completa: true,  // Corrigir compensação? - Padrão: SIM
+    cobrar_multa: false,         // Cobrar multa? - Padrão: NÃO
+    dia_vencimento: 20           // Dia do vencimento (1-28) - Padrão: 20
   });
 
 
@@ -1690,19 +1694,19 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           apelido: dadosUC.apelido || '',
           consumo_medio: dadosUC.consumo_medio || '',
           observacoes: dadosUC.observacoes || '',
-          
+
           // CALIBRAGEM
           usa_calibragem_global: usarCalibragemGlobal,
           calibragemIndividual: temCalibragemIndividual ? calibragemIndividualValue.toString() : '',
           calibragem_global: dadosUC.calibragem_global || 0,
-          
+
           // ✅ DESCONTOS CORRIGIDOS
           usa_desconto_proposta: usaDescontoProposta,
-          
+
           // Valores ORIGINAIS da proposta (só para exibição no cabeçalho)
           proposta_desconto_tarifa_original: propostaDescontoTarifa,
           proposta_desconto_bandeira_original: propostaDescontoBandeira,
-          
+
           // Valores para os INPUTS (editáveis)
           desconto_tarifa: inputDescontoTarifa,
           desconto_bandeira: inputDescontoBandeira,
@@ -1714,7 +1718,12 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           email: dadosUC.email || '',
 
           // DOCUMENTAÇÃO
-          documentacao_troca_titularidade: dadosUC.documentacao_troca_titularidade || ''
+          documentacao_troca_titularidade: dadosUC.documentacao_troca_titularidade || '',
+
+          // NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
+          compensacao_completa: dadosUC.compensacao_completa !== undefined ? dadosUC.compensacao_completa : true,
+          cobrar_multa: dadosUC.cobrar_multa !== undefined ? dadosUC.cobrar_multa : false,
+          dia_vencimento: dadosUC.dia_vencimento || 20
         });
 
         console.log('✅ Estado configurado:', {
@@ -1806,7 +1815,12 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         // ✅ DESCONTOS CORRIGIDOS
         usa_desconto_proposta: dados.usa_desconto_proposta,
         desconto_tarifa: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_tarifa),
-        desconto_bandeira: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_bandeira)
+        desconto_bandeira: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_bandeira),
+
+        // ✅ NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
+        compensacao_completa: dados.compensacao_completa,
+        cobrar_multa: dados.cobrar_multa,
+        dia_vencimento: parseInt(dados.dia_vencimento)
       };
 
       console.log('🔍 Payload correto sendo enviado:', payload);
@@ -2249,6 +2263,78 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
               />
             </div>
           )}
+        </div>
+
+        {/* ✅ NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS */}
+        <div className="form-group">
+          <label className="label-with-icon">
+            <Settings size={16} />
+            <strong>Configurações de Faturamento:</strong>
+          </label>
+
+          {/* Corrigir Compensação */}
+          <div className="checkbox-container">
+            <label className="checkbox-label-custom">
+              <input
+                type="checkbox"
+                checked={dados.compensacao_completa}
+                onChange={(e) => setDados(prev => ({ ...prev, compensacao_completa: e.target.checked }))}
+                style={{ display: 'none' }}
+              />
+              <div className="checkbox-icon-custom">
+                {dados.compensacao_completa ? (
+                  <CheckCircle size={14} />
+                ) : (
+                  <Circle size={14} />
+                )}
+              </div>
+              <span className="checkbox-text">
+                Corrigir compensação automaticamente
+              </span>
+            </label>
+          </div>
+
+          {/* Cobrar Multa */}
+          <div className="checkbox-container">
+            <label className="checkbox-label-custom">
+              <input
+                type="checkbox"
+                checked={dados.cobrar_multa}
+                onChange={(e) => setDados(prev => ({ ...prev, cobrar_multa: e.target.checked }))}
+                style={{ display: 'none' }}
+              />
+              <div className="checkbox-icon-custom">
+                {dados.cobrar_multa ? (
+                  <CheckCircle size={14} />
+                ) : (
+                  <Circle size={14} />
+                )}
+              </div>
+              <span className="checkbox-text">
+                Cobrar multa no boleto
+              </span>
+            </label>
+          </div>
+
+          {/* Dia de Vencimento */}
+          <div>
+            <label htmlFor="dia_vencimento">
+              Dia de vencimento da fatura:
+            </label>
+            <select
+              id="dia_vencimento"
+              value={dados.dia_vencimento}
+              onChange={(e) => setDados(prev => ({ ...prev, dia_vencimento: parseInt(e.target.value) }))}
+              className="form-input"
+              required
+            >
+              {Array.from({ length: 28 }, (_, i) => i + 1).map(dia => (
+                <option key={dia} value={dia}>
+                  Dia {dia}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* ✅ SEÇÃO DE DOCUMENTAÇÃO */}
