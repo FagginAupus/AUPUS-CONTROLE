@@ -2267,50 +2267,50 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
         {/* ✅ NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS */}
         <div className="form-group">
-          <label className="label-with-icon">
-            <Settings size={16} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: 600, fontSize: '0.95rem', marginBottom: '12px' }}>
+            <Settings size={16} style={{ color: '#3b82f6' }} />
             <strong>Configurações de Faturamento:</strong>
           </label>
 
           {/* Corrigir Compensação */}
-          <div className="checkbox-container">
-            <label className="checkbox-label-custom">
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
               <input
                 type="checkbox"
                 checked={dados.compensacao_completa}
                 onChange={(e) => setDados(prev => ({ ...prev, compensacao_completa: e.target.checked }))}
                 style={{ display: 'none' }}
               />
-              <div className="checkbox-icon-custom">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: dados.compensacao_completa ? '#22c55e' : 'rgba(255, 255, 255, 0.6)' }}>
                 {dados.compensacao_completa ? (
-                  <CheckCircle size={14} />
+                  <CheckCircle size={18} />
                 ) : (
-                  <Circle size={14} />
+                  <Circle size={18} />
                 )}
               </div>
-              <span className="checkbox-text">
+              <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: 500 }}>
                 Corrigir compensação automaticamente
               </span>
             </label>
           </div>
 
           {/* Cobrar Multa */}
-          <div className="checkbox-container">
-            <label className="checkbox-label-custom">
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
               <input
                 type="checkbox"
                 checked={dados.cobrar_multa}
                 onChange={(e) => setDados(prev => ({ ...prev, cobrar_multa: e.target.checked }))}
                 style={{ display: 'none' }}
               />
-              <div className="checkbox-icon-custom">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: dados.cobrar_multa ? '#22c55e' : 'rgba(255, 255, 255, 0.6)' }}>
                 {dados.cobrar_multa ? (
-                  <CheckCircle size={14} />
+                  <CheckCircle size={18} />
                 ) : (
-                  <Circle size={14} />
+                  <Circle size={18} />
                 )}
               </div>
-              <span className="checkbox-text">
+              <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: 500 }}>
                 Cobrar multa no boleto
               </span>
             </label>
@@ -2318,7 +2318,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
           {/* Dia de Vencimento */}
           <div>
-            <label htmlFor="dia_vencimento">
+            <label htmlFor="dia_vencimento" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: 500, marginBottom: '8px', display: 'block' }}>
               Dia de vencimento da fatura:
             </label>
             <select
