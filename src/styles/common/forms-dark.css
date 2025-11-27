@@ -388,3 +388,61 @@
     font-size: 0.85rem;
   }
 }
+
+/* =======================================================
+   CHECKBOXES CUSTOMIZADOS - CONFIGURAÇÕES DE FATURAMENTO
+   ======================================================= */
+
+.checkbox-container {
+  margin-bottom: 12px;
+}
+
+.checkbox-label-custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.checkbox-label-custom:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.checkbox-icon-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.2s ease;
+}
+
+.checkbox-label-custom:has(input:checked) .checkbox-icon-custom {
+  color: #22c55e;
+}
+
+.checkbox-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Label com ícone (usado em várias seções) */
+.label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+
+.label-with-icon svg {
+  color: #3b82f6;
+}
