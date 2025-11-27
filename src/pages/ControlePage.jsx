@@ -834,7 +834,12 @@ const ControlePage = () => {
         // ✅ DESCONTOS - sempre incluir usa_desconto_proposta
         usa_desconto_proposta: payload.usa_desconto_proposta,
         desconto_tarifa: payload.desconto_tarifa,
-        desconto_bandeira: payload.desconto_bandeira
+        desconto_bandeira: payload.desconto_bandeira,
+
+        // ✅ CONFIGURAÇÕES DE FATURAMENTO - Microserviços
+        compensacao_completa: payload.compensacao_completa,
+        cobrar_multa: payload.cobrar_multa,
+        dia_vencimento: payload.dia_vencimento
       };
 
       console.log('🚀 Payload final sendo enviado:', requestPayload);
