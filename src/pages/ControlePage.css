@@ -2468,3 +2468,81 @@ button.btn-remover-doc:hover {
     gap: 6px !important;
   }
 }
+
+/* =======================================================
+   CONFIGURAÇÕES DE FATURAMENTO - DARK MODE
+   Sobrescreve estilos do GerarTermoButton.css
+   ======================================================= */
+
+.faturamento-checkbox-container {
+  margin-bottom: 12px !important;
+}
+
+.faturamento-checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  padding: 10px 14px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  margin: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.faturamento-checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.faturamento-checkbox-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.faturamento-checkbox-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.faturamento-checkbox-icon.checked {
+  color: #22c55e !important;
+}
+
+.faturamento-checkbox-icon.unchecked {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.faturamento-checkbox-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+}
+
+.faturamento-section-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  margin-bottom: 12px !important;
+}
+
+.faturamento-section-title svg {
+  color: #3b82f6 !important;
+}
+
+.faturamento-vencimento-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
