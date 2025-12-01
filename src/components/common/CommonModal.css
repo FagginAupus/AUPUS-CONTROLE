@@ -156,6 +156,57 @@
   background: linear-gradient(90deg, #3b82f6, #8b5cf6);
 }
 
+/* Alias para modal-tabs (usar em modais específicos) */
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.modal-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-tab.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.modal-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+.modal-tab svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ===============================================
    CONTEÚDO DO MODAL
    =============================================== */

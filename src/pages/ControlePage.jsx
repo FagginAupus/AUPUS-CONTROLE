@@ -1613,17 +1613,20 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
 const ModalUCDetalhes = ({ item, onSave, onClose }) => {
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(true);
+  const [abaAtiva, setAbaAtiva] = useState('configuracoes'); // 'configuracoes', 'cliente', 'endereco'
   const [dados, setDados] = useState({
     numero_proposta: '',
     nome_cliente: '',
+    proposta_nome_cliente: '',
     numero_uc: '',
     apelido: '',
+    apelido_original: '',
     consumo_medio: 0,
     calibragem: 0,
     observacoes: '',
     // CALIBRAGEM - padrão é usar global
     calibragemIndividual: '',
-    usa_calibragem_global: true, // ✅ PADRÃO CORRETO
+    usa_calibragem_global: true,
     calibragem_global: 0,
     // DESCONTOS
     desconto_tarifa: 20,
@@ -1637,10 +1640,20 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     email: '',
     // DOCUMENTAÇÃO
     documentacao_troca_titularidade: '',
+    // CPF/CNPJ
+    cpf_cnpj: '',
+    proposta_cpf_cnpj: '',
+    // ENDEREÇO
+    endereco_completo: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: '',
+    proposta_endereco: '',
     // NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
-    compensacao_completa: true,  // Corrigir compensação? - Padrão: SIM
-    cobrar_multa: false,         // Cobrar multa? - Padrão: NÃO
-    dia_vencimento: 20           // Dia do vencimento (1-28) - Padrão: 20
+    compensacao_completa: true,
+    cobrar_multa: false,
+    dia_vencimento: 20
   });
 
 
@@ -1695,8 +1708,10 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         setDados({
           numero_proposta: dadosUC.numero_proposta || '',
           nome_cliente: dadosUC.nome_cliente || '',
+          proposta_nome_cliente: dadosUC.proposta_nome_cliente || '',
           numero_uc: dadosUC.numero_uc || '',
           apelido: dadosUC.apelido || '',
+          apelido_original: dadosUC.apelido_original || '',
           consumo_medio: dadosUC.consumo_medio || '',
           observacoes: dadosUC.observacoes || '',
 
@@ -1705,27 +1720,35 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           calibragemIndividual: temCalibragemIndividual ? calibragemIndividualValue.toString() : '',
           calibragem_global: dadosUC.calibragem_global || 0,
 
-          // ✅ DESCONTOS CORRIGIDOS
+          // DESCONTOS
           usa_desconto_proposta: usaDescontoProposta,
-
-          // Valores ORIGINAIS da proposta (só para exibição no cabeçalho)
           proposta_desconto_tarifa_original: propostaDescontoTarifa,
           proposta_desconto_bandeira_original: propostaDescontoBandeira,
-
-          // Valores para os INPUTS (editáveis)
           desconto_tarifa: inputDescontoTarifa,
           desconto_bandeira: inputDescontoBandeira,
 
           controleId: item.controleId,
 
-          // CONTATO - INDEPENDENTES DA PROPOSTA
+          // CONTATO
           whatsapp: dadosUC.whatsapp || '',
           email: dadosUC.email || '',
 
           // DOCUMENTAÇÃO
           documentacao_troca_titularidade: dadosUC.documentacao_troca_titularidade || '',
 
-          // NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
+          // CPF/CNPJ
+          cpf_cnpj: dadosUC.cpf_cnpj || '',
+          proposta_cpf_cnpj: dadosUC.proposta_cpf_cnpj || '',
+
+          // ENDEREÇO
+          endereco_completo: dadosUC.endereco_completo || '',
+          bairro: dadosUC.bairro || '',
+          cidade: dadosUC.cidade || '',
+          estado: dadosUC.estado || '',
+          cep: dadosUC.cep || '',
+          proposta_endereco: dadosUC.proposta_endereco || '',
+
+          // CONFIGURAÇÕES DE FATURAMENTO
           compensacao_completa: dadosUC.compensacao_completa !== undefined ? dadosUC.compensacao_completa : true,
           cobrar_multa: dadosUC.cobrar_multa !== undefined ? dadosUC.cobrar_multa : false,
           dia_vencimento: dadosUC.dia_vencimento || 20
@@ -1805,7 +1828,7 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         }
       }
 
-      // ✅ PAYLOAD CORRIGIDO
+      // PAYLOAD COMPLETO
       const payload = {
         controleId: controleId,
         consumo_medio: parseFloat(dados.consumo_medio),
@@ -1813,19 +1836,31 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         calibragem_individual: dados.usa_calibragem_global ? null : parseFloat(dados.calibragemIndividual),
         observacoes: dados.observacoes,
 
-        // ✅ CONTATO - INDEPENDENTES DA PROPOSTA
+        // CONTATO
         whatsapp: dados.whatsapp,
         email: dados.email,
 
-        // ✅ DESCONTOS CORRIGIDOS
+        // DESCONTOS
         usa_desconto_proposta: dados.usa_desconto_proposta,
         desconto_tarifa: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_tarifa),
         desconto_bandeira: dados.usa_desconto_proposta ? null : parseFloat(dados.desconto_bandeira),
 
-        // ✅ NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
+        // CONFIGURAÇÕES DE FATURAMENTO
         compensacao_completa: dados.compensacao_completa,
         cobrar_multa: dados.cobrar_multa,
-        dia_vencimento: parseInt(dados.dia_vencimento)
+        dia_vencimento: parseInt(dados.dia_vencimento),
+
+        // DADOS DO CLIENTE (independentes da proposta)
+        nome_cliente: dados.nome_cliente,
+        apelido_uc: dados.apelido,
+        cpf_cnpj: dados.cpf_cnpj,
+
+        // ENDEREÇO (na tabela unidades_consumidoras)
+        endereco_completo: dados.endereco_completo,
+        bairro: dados.bairro,
+        cidade: dados.cidade,
+        estado: dados.estado,
+        cep: dados.cep
       };
 
       console.log('🔍 Payload correto sendo enviado:', payload);
@@ -2109,350 +2144,512 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="common-modal-content modal-body-controle">
-        {/* Informações da Proposta (Apenas Leitura) */}
-        <div className="proposta-info">
-          <h4 className="section-title-with-icon">
-            <Database size={16} />
-            Informações da Proposta
-          </h4>
-          <p><strong>Proposta:</strong> {dados.numero_proposta}</p>
-          <p><strong>Cliente:</strong> {dados.nome_cliente}</p>
-          <p><strong>UC:</strong> {dados.numero_uc} - {dados.apelido}</p>
-        </div>
-
-        {/* Consumo Médio (Editável) */}
-        <div className="form-group" style={{ marginBottom: '20px' }}>
-          <label htmlFor="consumo_medio" className="label-with-icon">
+        {/* Sistema de Abas */}
+        <div className="modal-tabs">
+          <button
+            type="button"
+            className={`modal-tab ${abaAtiva === 'configuracoes' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('configuracoes')}
+          >
             <Settings size={16} />
-            <strong>Consumo Médio (kWh):</strong>
-          </label>
-          <input
-            type="number"
-            id="consumo_medio"
-            min="0"
-            step="1"
-            value={dados.consumo_medio}
-            onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
-            required
-            className="form-input"
-          />
+            Configurações
+          </button>
+          <button
+            type="button"
+            className={`modal-tab ${abaAtiva === 'cliente' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('cliente')}
+          >
+            <Users size={16} />
+            Cliente
+          </button>
+          <button
+            type="button"
+            className={`modal-tab ${abaAtiva === 'endereco' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('endereco')}
+          >
+            <Home size={16} />
+            Endereço
+          </button>
         </div>
 
-        {/* ✅ NOVA SEÇÃO: Configuração de Descontos */}
-        <div className="desconto-section">
-          <h4 className="section-title-with-icon">
-            <Percent size={16} />
-            Configuração de Descontos
-          </h4>
+        <form onSubmit={handleSubmit} className="common-modal-content modal-body-controle">
 
-          {/* Toggle para usar desconto da proposta */}
-          <div className="form-group desconto-toggle">
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                checked={dados.usa_desconto_proposta}
-                onChange={(e) => toggleDescontoProposta(e.target.checked)}
-              />
-              <span>
-                Usar descontos da proposta original
-              </span>
-            </label>
-          </div>
-
-          {/* Mostrar descontos da proposta original */}
-          <div className="proposta-descontos">
-            <p className="proposta-descontos-title">
-              <strong>Descontos da Proposta:</strong>
-            </p>
-            <p className="proposta-descontos-valores">
-              Tarifa: <strong>{dados.proposta_desconto_tarifa_original}</strong> |
-              Bandeira: <strong>{dados.proposta_desconto_bandeira_original}</strong>
-            </p>
-          </div>
-
-
-          {/* Campos de desconto individual */}
-          <div className={`descontos-individuais ${dados.usa_desconto_proposta ? 'disabled' : ''}`}>
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="desconto_tarifa" className="label-with-icon">
-                  <TrendingUp size={14} />
-                  <strong>Desconto Tarifa (%):</strong>
-                </label>
-                <input
-                  type="number"
-                  id="desconto_tarifa"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={dados.desconto_tarifa}
-                  onChange={(e) => setDados(prev => ({ ...prev, desconto_tarifa: e.target.value }))}
-                  className="form-control"
-                  disabled={dados.usa_desconto_proposta}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="desconto_bandeira" className="label-with-icon">
-                  <Flag size={14} />
-                  <strong>Desconto Bandeira (%):</strong>
-                </label>
-                <input
-                  type="number"
-                  id="desconto_bandeira"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={dados.desconto_bandeira}
-                  onChange={(e) => setDados(prev => ({ ...prev, desconto_bandeira: e.target.value }))}
-                  className="form-control"
-                  disabled={dados.usa_desconto_proposta}
-                />
-              </div>
-            </div>
-
-            {!dados.usa_desconto_proposta && (
-              <p className="warning-text">
-                <AlertTriangle size={14} />
-                Descontos individuais substituem os valores da proposta original
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Calibragem - manter como está */}
-        <div className="form-group">
-          <label className="label-with-icon">
-            <Target size={16} />
-            <strong>Calibragem:</strong>
-          </label>
-          
-          <div style={{ marginBottom: '15px' }}>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={dados.usa_calibragem_global}
-                onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
-                className="checkbox-input"
-              />
-              <div className="checkbox-icon-custom">
-                {dados.usa_calibragem_global ? (
-                  <CheckCircle size={14} />
-                ) : (
-                  <Circle size={14} />
-                )}
-              </div>
-              <span className="checkbox-text">
-                Usar calibragem global ({dados.calibragem_global}%)
-              </span>
-            </label>
-          </div>
-
-          {!dados.usa_calibragem_global && (
-            <div>
-              <label htmlFor="calibragem_individual">
-                Calibragem específica (%):
+        {/* ========== ABA 1: CONFIGURAÇÕES ========== */}
+        {abaAtiva === 'configuracoes' && (
+          <>
+            {/* Consumo Médio */}
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label htmlFor="consumo_medio" className="label-with-icon">
+                <Settings size={16} />
+                <strong>Consumo Médio (kWh):</strong>
               </label>
               <input
                 type="number"
-                id="calibragem_individual"
+                id="consumo_medio"
                 min="0"
-                max="100"
                 step="1"
-                value={dados.calibragemIndividual}
-                onChange={(e) => setDados(prev => ({ ...prev, calibragemIndividual: e.target.value }))}
-                required={!dados.usa_calibragem_global}
+                value={dados.consumo_medio}
+                onChange={(e) => setDados(prev => ({ ...prev, consumo_medio: e.target.value }))}
+                required
                 className="form-input"
-                placeholder="Ex: 5.5"
               />
             </div>
-          )}
-        </div>
 
-        {/* ✅ NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS */}
-        <div className="form-group">
-          <label className="faturamento-section-title">
-            <Settings size={16} />
-            <strong>Configurações de Faturamento:</strong>
-          </label>
+            {/* Configuração de Descontos */}
+            <div className="desconto-section">
+              <h4 className="section-title-with-icon">
+                <Percent size={16} />
+                Configuração de Descontos
+              </h4>
 
-          {/* Corrigir Compensação */}
-          <div className="faturamento-checkbox-container">
-            <label className="faturamento-checkbox-label">
-              <input
-                type="checkbox"
-                checked={dados.compensacao_completa}
-                onChange={(e) => setDados(prev => ({ ...prev, compensacao_completa: e.target.checked }))}
-                style={{ display: 'none' }}
-              />
-              <div className={`faturamento-checkbox-icon ${dados.compensacao_completa ? 'checked' : 'unchecked'}`}>
-                {dados.compensacao_completa ? (
-                  <CheckCircle size={18} />
-                ) : (
-                  <Circle size={18} />
+              <div className="form-group desconto-toggle">
+                <label className="checkbox-container">
+                  <input
+                    type="checkbox"
+                    checked={dados.usa_desconto_proposta}
+                    onChange={(e) => toggleDescontoProposta(e.target.checked)}
+                  />
+                  <span>Usar descontos da proposta original</span>
+                </label>
+              </div>
+
+              <div className="proposta-descontos">
+                <p className="proposta-descontos-title"><strong>Descontos da Proposta:</strong></p>
+                <p className="proposta-descontos-valores">
+                  Tarifa: <strong>{dados.proposta_desconto_tarifa_original}</strong> |
+                  Bandeira: <strong>{dados.proposta_desconto_bandeira_original}</strong>
+                </p>
+              </div>
+
+              <div className={`descontos-individuais ${dados.usa_desconto_proposta ? 'disabled' : ''}`}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="desconto_tarifa" className="label-with-icon">
+                      <TrendingUp size={14} />
+                      <strong>Desconto Tarifa (%):</strong>
+                    </label>
+                    <input
+                      type="number"
+                      id="desconto_tarifa"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={dados.desconto_tarifa}
+                      onChange={(e) => setDados(prev => ({ ...prev, desconto_tarifa: e.target.value }))}
+                      className="form-control"
+                      disabled={dados.usa_desconto_proposta}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="desconto_bandeira" className="label-with-icon">
+                      <Flag size={14} />
+                      <strong>Desconto Bandeira (%):</strong>
+                    </label>
+                    <input
+                      type="number"
+                      id="desconto_bandeira"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={dados.desconto_bandeira}
+                      onChange={(e) => setDados(prev => ({ ...prev, desconto_bandeira: e.target.value }))}
+                      className="form-control"
+                      disabled={dados.usa_desconto_proposta}
+                    />
+                  </div>
+                </div>
+                {!dados.usa_desconto_proposta && (
+                  <p className="warning-text">
+                    <AlertTriangle size={14} />
+                    Descontos individuais substituem os valores da proposta original
+                  </p>
                 )}
               </div>
-              <span className="faturamento-checkbox-text">
-                Corrigir compensação automaticamente
-              </span>
-            </label>
-          </div>
+            </div>
 
-          {/* Cobrar Multa */}
-          <div className="faturamento-checkbox-container">
-            <label className="faturamento-checkbox-label">
-              <input
-                type="checkbox"
-                checked={dados.cobrar_multa}
-                onChange={(e) => setDados(prev => ({ ...prev, cobrar_multa: e.target.checked }))}
-                style={{ display: 'none' }}
+            {/* Calibragem */}
+            <div className="form-group">
+              <label className="label-with-icon">
+                <Target size={16} />
+                <strong>Calibragem:</strong>
+              </label>
+              <div style={{ marginBottom: '15px' }}>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={dados.usa_calibragem_global}
+                    onChange={(e) => handleCalibragemGlobalChange(e.target.checked)}
+                    className="checkbox-input"
+                  />
+                  <div className="checkbox-icon-custom">
+                    {dados.usa_calibragem_global ? <CheckCircle size={14} /> : <Circle size={14} />}
+                  </div>
+                  <span className="checkbox-text">Usar calibragem global ({dados.calibragem_global}%)</span>
+                </label>
+              </div>
+              {!dados.usa_calibragem_global && (
+                <div>
+                  <label htmlFor="calibragem_individual">Calibragem específica (%):</label>
+                  <input
+                    type="number"
+                    id="calibragem_individual"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={dados.calibragemIndividual}
+                    onChange={(e) => setDados(prev => ({ ...prev, calibragemIndividual: e.target.value }))}
+                    required={!dados.usa_calibragem_global}
+                    className="form-input"
+                    placeholder="Ex: 5.5"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Configurações de Faturamento */}
+            <div className="form-group">
+              <label className="faturamento-section-title">
+                <Settings size={16} />
+                <strong>Configurações de Faturamento:</strong>
+              </label>
+              <div className="faturamento-checkbox-container">
+                <label className="faturamento-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={dados.compensacao_completa}
+                    onChange={(e) => setDados(prev => ({ ...prev, compensacao_completa: e.target.checked }))}
+                    style={{ display: 'none' }}
+                  />
+                  <div className={`faturamento-checkbox-icon ${dados.compensacao_completa ? 'checked' : 'unchecked'}`}>
+                    {dados.compensacao_completa ? <CheckCircle size={18} /> : <Circle size={18} />}
+                  </div>
+                  <span className="faturamento-checkbox-text">Corrigir compensação automaticamente</span>
+                </label>
+              </div>
+              <div className="faturamento-checkbox-container">
+                <label className="faturamento-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={dados.cobrar_multa}
+                    onChange={(e) => setDados(prev => ({ ...prev, cobrar_multa: e.target.checked }))}
+                    style={{ display: 'none' }}
+                  />
+                  <div className={`faturamento-checkbox-icon ${dados.cobrar_multa ? 'checked' : 'unchecked'}`}>
+                    {dados.cobrar_multa ? <CheckCircle size={18} /> : <Circle size={18} />}
+                  </div>
+                  <span className="faturamento-checkbox-text">Cobrar multa no boleto</span>
+                </label>
+              </div>
+              <div>
+                <label htmlFor="dia_vencimento" className="faturamento-vencimento-label">
+                  Dia de vencimento da fatura:
+                </label>
+                <select
+                  id="dia_vencimento"
+                  value={dados.dia_vencimento}
+                  onChange={(e) => setDados(prev => ({ ...prev, dia_vencimento: parseInt(e.target.value) }))}
+                  className="form-input"
+                  required
+                >
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map(dia => (
+                    <option key={dia} value={dia}>Dia {dia}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Observações */}
+            <div className="form-group observacoes-group">
+              <label htmlFor="observacoes" className="label-with-icon">
+                <FileText size={16} />
+                <strong>Observações:</strong>
+              </label>
+              <textarea
+                id="observacoes"
+                rows="3"
+                value={dados.observacoes}
+                onChange={(e) => setDados(prev => ({ ...prev, observacoes: e.target.value }))}
+                className="form-control"
+                placeholder="Observações sobre esta UC..."
               />
-              <div className={`faturamento-checkbox-icon ${dados.cobrar_multa ? 'checked' : 'unchecked'}`}>
-                {dados.cobrar_multa ? (
-                  <CheckCircle size={18} />
-                ) : (
-                  <Circle size={18} />
+            </div>
+          </>
+        )}
+
+        {/* ========== ABA 2: CLIENTE ========== */}
+        {abaAtiva === 'cliente' && (
+          <>
+            <div className="form-group">
+              <label htmlFor="nome_cliente" className="label-with-icon">
+                <Users size={16} />
+                <strong>Nome do Cliente:</strong>
+              </label>
+              <input
+                type="text"
+                id="nome_cliente"
+                value={dados.nome_cliente}
+                onChange={(e) => setDados(prev => ({ ...prev, nome_cliente: e.target.value }))}
+                className="form-input"
+                placeholder="Nome completo do cliente"
+              />
+              {dados.proposta_nome_cliente && dados.nome_cliente !== dados.proposta_nome_cliente && (
+                <small className="info-text">Original da proposta: {dados.proposta_nome_cliente}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="apelido" className="label-with-icon">
+                <Home size={16} />
+                <strong>Apelido da UC:</strong>
+              </label>
+              <input
+                type="text"
+                id="apelido"
+                value={dados.apelido}
+                onChange={(e) => setDados(prev => ({ ...prev, apelido: e.target.value }))}
+                className="form-input"
+                placeholder="Apelido para identificação"
+              />
+              {dados.apelido_original && dados.apelido !== dados.apelido_original && (
+                <small className="info-text">Original: {dados.apelido_original}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="label-with-icon">
+                <Database size={16} />
+                <strong>Número da UC:</strong>
+              </label>
+              <input
+                type="text"
+                value={dados.numero_uc}
+                className="form-input"
+                disabled
+                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+              />
+              <small className="info-text">Este campo não pode ser alterado</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="cpf_cnpj" className="label-with-icon">
+                <FileText size={16} />
+                <strong>CPF/CNPJ:</strong>
+              </label>
+              <input
+                type="text"
+                id="cpf_cnpj"
+                value={dados.cpf_cnpj}
+                onChange={(e) => setDados(prev => ({ ...prev, cpf_cnpj: e.target.value }))}
+                className="form-input"
+                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                maxLength="18"
+              />
+              {dados.proposta_cpf_cnpj && dados.cpf_cnpj !== dados.proposta_cpf_cnpj && (
+                <small className="info-text">Original da proposta: {dados.proposta_cpf_cnpj}</small>
+              )}
+            </div>
+
+            {/* Documentação */}
+            <div className="form-group">
+              <label className="label-with-icon">
+                <FileText size={16} />
+                <strong>Documentação:</strong>
+              </label>
+              <div className="form-group file-group">
+                <label>Declaração de Troca de Titularidade</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentUpload(e.target.files[0])}
+                />
+                {dados.documentacao_troca_titularidade && (
+                  <div className="arquivo-existente">
+                    <span className="arquivo-info" title={dados.documentacao_troca_titularidade}>
+                      <FileText size={14} /> {dados.documentacao_troca_titularidade.length > 30 ?
+                        dados.documentacao_troca_titularidade.substring(0, 30) + '...' :
+                        dados.documentacao_troca_titularidade}
+                    </span>
+                    <div className="arquivo-acoes">
+                      <button
+                        type="button"
+                        className="btn-visualizar-doc"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          visualizarDocumento(dados.documentacao_troca_titularidade);
+                        }}
+                        title="Visualizar declaração"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-remover-doc"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removerDocumento();
+                        }}
+                        title="Remover documento"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
-              <span className="faturamento-checkbox-text">
-                Cobrar multa no boleto
-              </span>
-            </label>
-          </div>
+            </div>
 
-          {/* Dia de Vencimento */}
-          <div>
-            <label htmlFor="dia_vencimento" className="faturamento-vencimento-label">
-              Dia de vencimento da fatura:
-            </label>
-            <select
-              id="dia_vencimento"
-              value={dados.dia_vencimento}
-              onChange={(e) => setDados(prev => ({ ...prev, dia_vencimento: parseInt(e.target.value) }))}
-              className="form-input"
-              required
-            >
-              {Array.from({ length: 28 }, (_, i) => i + 1).map(dia => (
-                <option key={dia} value={dia}>
-                  Dia {dia}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* ✅ SEÇÃO DE DOCUMENTAÇÃO */}
-        <div className="form-group">
-          <label className="label-with-icon">
-            <FileText size={16} />
-            <strong>Documentação:</strong>
-          </label>
-
-          <div className="form-group file-group">
-            <label>Declaração de Troca de Titularidade</label>
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => handleDocumentUpload(e.target.files[0])}
-            />
-            {dados.documentacao_troca_titularidade && (
-              <div className="arquivo-existente">
-                <span className="arquivo-info" title={dados.documentacao_troca_titularidade}>
-                  <FileText size={14} /> {dados.documentacao_troca_titularidade.length > 30 ?
-                    dados.documentacao_troca_titularidade.substring(0, 30) + '...' :
-                    dados.documentacao_troca_titularidade}
-                </span>
-                <div className="arquivo-acoes">
-                  <button
-                    type="button"
-                    className="btn-visualizar-doc"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      visualizarDocumento(dados.documentacao_troca_titularidade);
-                    }}
-                    title="Visualizar declaração"
-                  >
-                    <Eye size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-remover-doc"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      removerDocumento();
-                    }}
-                    title="Remover documento"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+            {/* Contato */}
+            <div className="contato-section">
+              <h4 className="section-title-with-icon">
+                <Smartphone size={16} />
+                Informações de Contato
+              </h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="whatsapp" className="label-with-icon">
+                    <Smartphone size={14} />
+                    <strong>WhatsApp:</strong>
+                  </label>
+                  <input
+                    type="tel"
+                    id="whatsapp"
+                    value={dados.whatsapp}
+                    onChange={(e) => setDados(prev => ({ ...prev, whatsapp: e.target.value }))}
+                    className="form-control"
+                    placeholder="(62) 99999-9999"
+                    maxLength="20"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email" className="label-with-icon">
+                    <Mail size={14} />
+                    <strong>Email:</strong>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={dados.email}
+                    onChange={(e) => setDados(prev => ({ ...prev, email: e.target.value }))}
+                    className="form-control"
+                    placeholder="exemplo@email.com"
+                  />
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
 
-        {/* ✅ NOVO CAMPO: Observações */}
-        <div className="form-group observacoes-group">
-          <label htmlFor="observacoes" className="label-with-icon">
-            <FileText size={16} />
-            <strong>Observações:</strong>
-          </label>
-          <textarea
-            id="observacoes"
-            rows="3"
-            value={dados.observacoes}
-            onChange={(e) => setDados(prev => ({ ...prev, observacoes: e.target.value }))}
-            className="form-control"
-            placeholder="Observações sobre esta UC..."
-          />
-        </div>
-
-        {/* ✅ NOVA SEÇÃO: Informações de Contato (Independentes da Proposta) */}
-        <div className="contato-section">
-          <h4 className="section-title-with-icon">
-            <Users size={16} />
-            Informações de Contato da UC
-          </h4>
-          <p className="info-text" style={{ fontSize: '12px', marginBottom: '15px', color: '#666' }}>
-            Estas informações são específicas desta UC no controle e não afetam a proposta original.
-          </p>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="whatsapp" className="label-with-icon">
-                <Smartphone size={14} />
-                <strong>WhatsApp:</strong>
-              </label>
-              <input
-                type="tel"
-                id="whatsapp"
-                value={dados.whatsapp}
-                onChange={(e) => setDados(prev => ({ ...prev, whatsapp: e.target.value }))}
-                className="form-control"
-                placeholder="(62) 99999-9999"
-                maxLength="20"
-              />
+        {/* ========== ABA 3: ENDEREÇO ========== */}
+        {abaAtiva === 'endereco' && (
+          <>
+            <div className="proposta-info" style={{ marginBottom: '20px' }}>
+              <h4 className="section-title-with-icon">
+                <Home size={16} />
+                Endereço da Unidade Consumidora
+              </h4>
+              {dados.proposta_endereco && (
+                <p style={{ fontSize: '12px', color: '#666' }}>
+                  <strong>Endereço na proposta:</strong> {dados.proposta_endereco}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
-              <label htmlFor="email" className="label-with-icon">
-                <Mail size={14} />
-                <strong>Email:</strong>
+              <label htmlFor="endereco_completo" className="label-with-icon">
+                <Home size={16} />
+                <strong>Endereço Completo:</strong>
               </label>
               <input
-                type="email"
-                id="email"
-                value={dados.email}
-                onChange={(e) => setDados(prev => ({ ...prev, email: e.target.value }))}
-                className="form-control"
-                placeholder="exemplo@email.com"
+                type="text"
+                id="endereco_completo"
+                value={dados.endereco_completo}
+                onChange={(e) => setDados(prev => ({ ...prev, endereco_completo: e.target.value }))}
+                className="form-input"
+                placeholder="Rua, número, complemento"
               />
             </div>
-          </div>
-        </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="bairro"><strong>Bairro:</strong></label>
+                <input
+                  type="text"
+                  id="bairro"
+                  value={dados.bairro}
+                  onChange={(e) => setDados(prev => ({ ...prev, bairro: e.target.value }))}
+                  className="form-input"
+                  placeholder="Bairro"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="cidade"><strong>Cidade:</strong></label>
+                <input
+                  type="text"
+                  id="cidade"
+                  value={dados.cidade}
+                  onChange={(e) => setDados(prev => ({ ...prev, cidade: e.target.value }))}
+                  className="form-input"
+                  placeholder="Cidade"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="estado"><strong>Estado:</strong></label>
+                <select
+                  id="estado"
+                  value={dados.estado}
+                  onChange={(e) => setDados(prev => ({ ...prev, estado: e.target.value }))}
+                  className="form-input"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="AC">AC</option>
+                  <option value="AL">AL</option>
+                  <option value="AP">AP</option>
+                  <option value="AM">AM</option>
+                  <option value="BA">BA</option>
+                  <option value="CE">CE</option>
+                  <option value="DF">DF</option>
+                  <option value="ES">ES</option>
+                  <option value="GO">GO</option>
+                  <option value="MA">MA</option>
+                  <option value="MT">MT</option>
+                  <option value="MS">MS</option>
+                  <option value="MG">MG</option>
+                  <option value="PA">PA</option>
+                  <option value="PB">PB</option>
+                  <option value="PR">PR</option>
+                  <option value="PE">PE</option>
+                  <option value="PI">PI</option>
+                  <option value="RJ">RJ</option>
+                  <option value="RN">RN</option>
+                  <option value="RS">RS</option>
+                  <option value="RO">RO</option>
+                  <option value="RR">RR</option>
+                  <option value="SC">SC</option>
+                  <option value="SP">SP</option>
+                  <option value="SE">SE</option>
+                  <option value="TO">TO</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="cep"><strong>CEP:</strong></label>
+                <input
+                  type="text"
+                  id="cep"
+                  value={dados.cep}
+                  onChange={(e) => setDados(prev => ({ ...prev, cep: e.target.value }))}
+                  className="form-input"
+                  placeholder="00000-000"
+                  maxLength="10"
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Botões */}
         <div className="modal-footer modal-footer-controle">
