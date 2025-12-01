@@ -839,7 +839,19 @@ const ControlePage = () => {
         // ✅ CONFIGURAÇÕES DE FATURAMENTO - Microserviços
         compensacao_completa: payload.compensacao_completa,
         cobrar_multa: payload.cobrar_multa,
-        dia_vencimento: payload.dia_vencimento
+        dia_vencimento: payload.dia_vencimento,
+
+        // ✅ DADOS DO CLIENTE - Independentes da proposta
+        nome_cliente: payload.nome_cliente,
+        apelido_uc: payload.apelido_uc,
+        cpf_cnpj: payload.cpf_cnpj,
+
+        // ✅ ENDEREÇO - Tabela unidades_consumidoras
+        endereco_completo: payload.endereco_completo,
+        bairro: payload.bairro,
+        cidade: payload.cidade,
+        estado: payload.estado,
+        cep: payload.cep
       };
 
       console.log('🚀 Payload final sendo enviado:', requestPayload);
