@@ -47,6 +47,47 @@
   color: #ffffff;
 }
 
+/* =======================================================
+   BADGE DE NOTIFICAÇÃO
+   ======================================================= */
+
+.nav-item {
+  position: relative;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+  animation: badgePulse 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+.nav-item.has-badge {
+  overflow: visible;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
 .nav-item.active {
   background: linear-gradient(135deg, #2d7a31, #3a9640); /* Verde mais suave e profissional */
   color: white;
@@ -173,17 +214,17 @@
     overflow-x: auto; /* Permite scroll horizontal se necessário */
     padding-bottom: 5px;
   }
-  
+
   /* Scroll horizontal personalizado */
   .nav-menu::-webkit-scrollbar {
     height: 4px;
   }
-  
+
   .nav-menu::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 2px;
   }
-  
+
   .nav-menu::-webkit-scrollbar-thumb {
     background: #1e5a23;
     border-radius: 2px;
@@ -201,6 +242,16 @@
 
   .nav-icon {
     font-size: 1.3rem; /* Ícone maior quando só o ícone aparece */
+  }
+
+  /* Badge menor em mobile */
+  .nav-badge {
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    padding: 0 4px;
   }
 
   .user-details {

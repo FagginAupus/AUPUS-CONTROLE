@@ -56,6 +56,17 @@ const Sidebar = () => {
     }
     ];
 
+  // Adicionar item de Validação de Associados para admin/analista
+  if (user && (user.role === 'admin' || user.role === 'analista')) {
+    menuItems.push({
+        id: 'validacao-associados',
+        label: 'Validar Associados',
+        icon: '',
+        path: '/validacao-associados',
+        requiredPage: null // Apenas admin/analista
+    });
+  }
+
   // Adicionar item de Logs apenas para administradores
   if (user && user.role === 'admin') {
     menuItems.push({

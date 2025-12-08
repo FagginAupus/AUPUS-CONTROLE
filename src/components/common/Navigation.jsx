@@ -1,7 +1,8 @@
 // src/components/common/Navigation.jsx - Atualizada com ícones Lucide React
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import apiService from '../../services/apiService';
 import {
   Home,
   Plus,
@@ -14,7 +15,8 @@ import {
   Briefcase,
   User,
   Users,
-  ScrollText
+  ScrollText,
+  UserCheck
 } from 'lucide-react';
 import './Navigation.css';
 
@@ -22,6 +24,32 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, canAccessPage, logout } = useAuth();
+  const [pendentesValidacao, setPendentesValidacao] = useState(0);
+
+  // Verificar se usuário é admin ou analista
+  const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
+
+  // Carregar contagem de pendentes de validação
+  const carregarPendentesValidacao = useCallback(async () => {
+    if (!isAdminOrAnalista) return;
+
+    try {
+      const response = await apiService.request('/associados/pendentes-validacao');
+      if (response.success) {
+        setPendentesValidacao(response.data?.length || 0);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar pendentes de validação:', error);
+    }
+  }, [isAdminOrAnalista]);
+
+  // Carregar pendentes ao montar e a cada 60 segundos
+  useEffect(() => {
+    carregarPendentesValidacao();
+
+    const interval = setInterval(carregarPendentesValidacao, 60000);
+    return () => clearInterval(interval);
+  }, [carregarPendentesValidacao]);
 
   const menuItems = [
     { 
@@ -39,16 +67,25 @@ const Navigation = () => {
       path: '/nova-proposta',
       requiredPage: 'prospec'
     },
-    { 
-      id: 'prospec', 
-      label: 'PROSPEC', 
+    {
+      id: 'prospec',
+      label: 'PROSPEC',
       icon: FileSearch,
       path: '/prospec',
       requiredPage: 'prospec'
     },
-    { 
-      id: 'controle', 
-      label: 'CONTROLE', 
+    {
+      id: 'validacao-associados',
+      label: 'VALIDAR',
+      icon: UserCheck,
+      path: '/validacao-associados',
+      requiredPage: null,
+      adminOrAnalista: true,
+      hasBadge: true
+    },
+    {
+      id: 'controle',
+      label: 'CONTROLE',
       icon: Settings,
       path: '/controle',
       requiredPage: 'controle'
@@ -74,6 +111,11 @@ const Navigation = () => {
     // Se é admin only, verificar se o usuário é admin
     if (item.adminOnly) {
       return user?.role === 'admin';
+    }
+
+    // Se é admin ou analista only
+    if (item.adminOrAnalista) {
+      return isAdminOrAnalista;
     }
 
     // Se tem página requerida, verificar permissão
@@ -142,11 +184,13 @@ const Navigation = () => {
         <div className="nav-menu">
           {visibleMenuItems.map((item) => {
             const IconComponent = item.icon;
+            const badgeCount = item.hasBadge ? pendentesValidacao : 0;
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
-                className={`nav-item ${isActive(item) ? 'active' : ''}`}
+                className={`nav-item ${isActive(item) ? 'active' : ''} ${badgeCount > 0 ? 'has-badge' : ''}`}
                 title={item.label}
                 data-id={item.id}
               >
@@ -154,6 +198,9 @@ const Navigation = () => {
                   <IconComponent size={20} />
                 </span>
                 <span className="nav-label">{item.label}</span>
+                {badgeCount > 0 && (
+                  <span className="nav-badge">{badgeCount > 99 ? '99+' : badgeCount}</span>
+                )}
               </button>
             );
           })}

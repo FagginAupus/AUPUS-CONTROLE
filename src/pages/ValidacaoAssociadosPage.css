@@ -1,0 +1,605 @@
+/* ValidacaoAssociadosPage.css - Estilos da página de validação de associados */
+/* Segue os mesmos padrões de ControlePage.css */
+
+/* Importar estilos padronizados de indicadores */
+@import '../styles/indicators.css';
+
+/* =======================================================
+   PAGE CONTAINER - HERDA DO PADRÃO
+   ======================================================= */
+
+.page-container {
+  min-height: 100vh;
+  background: #1a1a1a !important;
+  background-attachment: fixed !important;
+}
+
+.container {
+  width: 90%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Responsividade específica para notebooks (1024px - 1366px) */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container {
+    width: 95% !important;
+    padding: 15px 20px;
+  }
+}
+
+/* =======================================================
+   SEÇÃO DE FILTROS - PADRÃO DAS PÁGINAS
+   ======================================================= */
+
+.filters-section {
+  background: white;
+  border-radius: 15px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.filters-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 12px 15px;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: #2d7a31;
+  box-shadow: 0 0 0 3px rgba(30, 90, 35, 0.1);
+}
+
+.filter-busca {
+  flex: 1;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* =======================================================
+   TABELA - FORMATAÇÃO PADRÃO DARK MODE
+   ======================================================= */
+
+.table-section {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  margin-top: 30px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  max-height: 70vh;
+  position: relative;
+  background: #2d2d2d !important;
+}
+
+/* Tabela - Dark Mode */
+.table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.85rem !important;
+  background: #2d2d2d !important;
+  min-width: 800px !important;
+}
+
+/* Cabeçalho da tabela */
+.table thead {
+  position: sticky !important;
+  top: 0 !important;
+  background: #333 !important;
+  z-index: 10 !important;
+}
+
+.table th {
+  background: #333 !important;
+  padding: 15px 12px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #f0f0f0 !important;
+  border-bottom: 2px solid #555 !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap !important;
+  min-width: 100px !important;
+}
+
+.table th:hover {
+  background: #404040 !important;
+}
+
+/* Células da tabela */
+.table td {
+  padding: 12px !important;
+  border-bottom: 1px solid #444 !important;
+  font-size: 0.85rem !important;
+  vertical-align: middle !important;
+  min-width: 80px !important;
+  color: #f0f0f0 !important;
+  background: #2d2d2d !important;
+}
+
+/* Linhas - sem zebra, hover uniforme */
+.table tbody tr {
+  background: #2d2d2d !important;
+}
+
+.table tbody tr:hover {
+  background: #3d3d3d !important;
+}
+
+/* =======================================================
+   ELEMENTOS ESPECÍFICOS DA TABELA
+   ======================================================= */
+
+.numero-proposta {
+  font-family: monospace;
+  background: #3d3d3d !important;
+  color: #f0f0f0 !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #555;
+}
+
+.cliente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nome-cliente {
+  font-weight: 600;
+  color: #f0f0f0 !important;
+}
+
+.uc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.numero-uc {
+  font-family: monospace;
+  background: #3d3d3d !important;
+  color: #f0f0f0 !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #555;
+}
+
+.uc-apelido {
+  color: #adb5bd !important;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.consultor {
+  color: #d0d0d0 !important;
+  font-size: 0.9rem;
+}
+
+.data {
+  color: #b0b0b0 !important;
+  font-size: 0.85rem;
+}
+
+.acoes-cell {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* =======================================================
+   LOADING E EMPTY STATES
+   ======================================================= */
+
+.loading-container,
+.empty-container,
+.access-denied-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #666;
+  background: #2d2d2d;
+  border-radius: 15px;
+}
+
+.loading-container svg,
+.empty-container svg,
+.access-denied-container svg {
+  margin-bottom: 16px;
+  color: #2d7a31;
+}
+
+.loading-container p,
+.empty-container p,
+.access-denied-container p {
+  color: #adb5bd;
+  margin-top: 8px;
+}
+
+.empty-container h3,
+.access-denied-container h2 {
+  color: #f0f0f0;
+  margin-bottom: 8px;
+}
+
+/* =======================================================
+   BOTÕES - PADRÃO DAS PÁGINAS
+   ======================================================= */
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+}
+
+.btn-primary {
+  background: #2d7a31;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 122, 49, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #218838;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =======================================================
+   MODAL DE VALIDAÇÃO - DARK MODE
+   ======================================================= */
+
+.modal-validacao-associado {
+  max-width: 700px !important;
+  width: 95% !important;
+  max-height: 90vh !important;
+}
+
+.modal-validacao-associado .common-modal-content {
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+}
+
+/* Seções do Modal */
+.modal-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.section-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-title-with-icon svg {
+  color: #3b82f6;
+}
+
+/* Info Row Grid */
+.info-row-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.info-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-item label {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.info-item span {
+  display: block;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* CPF Search Row */
+.cpf-search-row {
+  display: flex;
+  gap: 10px;
+}
+
+.cpf-search-row input {
+  flex: 1;
+}
+
+/* Associado Encontrado Box */
+.associado-encontrado-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: 10px;
+}
+
+.associado-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.associado-info-row svg {
+  color: #28a745;
+}
+
+.associado-dados {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.associado-dados strong {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.associado-dados span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+/* Form Rows */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group.small {
+  max-width: 80px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.form-input,
+.form-group input,
+.form-group select {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input::placeholder,
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: #1e293b;
+  color: #fff;
+}
+
+/* =======================================================
+   STAT VALUE SMALL - PARA TEXTOS NO LUGAR DE NÚMEROS
+   ======================================================= */
+
+.stat-value-small {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fbbf24;
+  line-height: 1.2;
+}
+
+/* =======================================================
+   ANIMAÇÕES
+   ======================================================= */
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* =======================================================
+   RESPONSIVIDADE
+   ======================================================= */
+
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 15px;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .filter-actions {
+    justify-content: flex-end;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 6px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .modal-validacao-associado {
+    max-height: 95vh !important;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .info-row-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cpf-search-row {
+    flex-direction: column;
+  }
+
+  .associado-encontrado-box {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    width: 98%;
+    padding: 10px;
+  }
+
+  .table th,
+  .table td {
+    padding: 6px 4px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+}
