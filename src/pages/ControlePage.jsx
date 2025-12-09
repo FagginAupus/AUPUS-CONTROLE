@@ -115,7 +115,9 @@ const ControlePage = () => {
         statusTroca: item.statusTroca || item.status_troca || 'Pendente',
         observacaoStatus: item.observacaoStatus || item.observacao_status || '',
         dataTitularidade: item.dataTitularidade || item.data_titularidade,
-        observacoes: item.observacoes || ''
+        observacoes: item.observacoes || '',
+        // ✅ NOVA COLUNA: Data de Assinatura
+        dataAssinatura: item.dataAssinatura || item.data_assinatura
       }));
 
       const resultado = await exportExcelService.exportarControleParaExcel(dadosParaExportacao, filtros);
@@ -207,7 +209,11 @@ const ControlePage = () => {
                   cep_uc: dadosAPI.cep_uc || '',
                   bairro_uc: dadosAPI.bairro_uc || '',
                   cidade_uc: dadosAPI.cidade_uc || '',
-                  estado_uc: dadosAPI.estado_uc || ''
+                  estado_uc: dadosAPI.estado_uc || '',
+                  // ✅ NOVAS COLUNAS: Data Assinatura, WhatsApp e Email
+                  data_assinatura: dadosAPI.data_assinatura || '',
+                  whatsapp: dadosAPI.whatsapp || '',
+                  email: dadosAPI.email || ''
                 };
               }
 
@@ -227,7 +233,11 @@ const ControlePage = () => {
                 cep_uc: '',
                 bairro_uc: '',
                 cidade_uc: '',
-                estado_uc: ''
+                estado_uc: '',
+                // ✅ NOVAS COLUNAS: Data Assinatura, WhatsApp e Email
+                data_assinatura: item.dataAssinatura || item.data_assinatura || '',
+                whatsapp: item.whatsapp || '',
+                email: item.email || ''
               };
             });
           }
@@ -249,7 +259,11 @@ const ControlePage = () => {
             cep_uc: '',
             bairro_uc: '',
             cidade_uc: '',
-            estado_uc: ''
+            estado_uc: '',
+            // ✅ NOVAS COLUNAS
+            data_assinatura: item.dataAssinatura || item.data_assinatura || '',
+            whatsapp: item.whatsapp || '',
+            email: item.email || ''
           }));
         }
       } catch (error) {
@@ -270,7 +284,11 @@ const ControlePage = () => {
           cep_uc: '',
           bairro_uc: '',
           cidade_uc: '',
-          estado_uc: ''
+          estado_uc: '',
+          // ✅ NOVAS COLUNAS
+          data_assinatura: item.dataAssinatura || item.data_assinatura || '',
+          whatsapp: item.whatsapp || '',
+          email: item.email || ''
         }));
       }
 

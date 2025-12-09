@@ -174,7 +174,9 @@ class ExportExcelService {
           'Status Troca': item.status_troca || item.statusTroca || 'Pendente',
           'Data Titularidade': (item.status_troca === 'Associado' || item.statusTroca === 'Associado')
             ? this.formatarDataParaExcel(item.data_titularidade || item.dataTitularidade)
-            : ''
+            : '',
+          // ✅ NOVA COLUNA: Data de Assinatura
+          'Data Assinatura': this.formatarDataParaExcel(item.data_assinatura || item.dataAssinatura)
         };
       });
 
@@ -202,7 +204,8 @@ class ExportExcelService {
         { width: 12 },  // Data Proposta
         { width: 12 },  // Data Entrada
         { width: 15 },  // Status Troca
-        { width: 15 }   // Data Titularidade
+        { width: 15 },  // Data Titularidade
+        { width: 15 }   // Data Assinatura
       ];
 
       // ✅ ADICIONAR FILTROS EM TODAS AS COLUNAS
@@ -812,7 +815,11 @@ class ExportExcelService {
           'CEP_UC': item.cep_uc || '',
           'Bairro_UC': item.bairro_uc || '',
           'Cidade_UC': item.cidade_uc || '',
-          'Estado_UC': item.estado_uc || ''
+          'Estado_UC': item.estado_uc || '',
+          // ✅ NOVAS COLUNAS: Data Assinatura, WhatsApp e Email
+          'Data Assinatura': this.formatarDataParaExcel(item.data_assinatura),
+          'WhatsApp': item.whatsapp || '',
+          'Email': item.email || ''
         };
       });
 
@@ -847,7 +854,10 @@ class ExportExcelService {
         { width: 15 },  // CEP_UC
         { width: 20 },  // Bairro_UC
         { width: 20 },  // Cidade_UC
-        { width: 10 }   // Estado_UC
+        { width: 10 },  // Estado_UC
+        { width: 15 },  // Data Assinatura
+        { width: 18 },  // WhatsApp
+        { width: 30 }   // Email
       ];
 
       // Adicionar filtros
@@ -865,7 +875,7 @@ class ExportExcelService {
         ['Total de Registros', registrosParaExcel.length],
         ['Filtro', 'Status Troca = Associado'],
         ['Sistema', 'AUPUS Energia - Controle'],
-        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), CORRIGIR COMPENSAÇÃO?, LIGACAO, ENDERECO, CEP_UC, Bairro_UC, Cidade_UC, Estado_UC']
+        ['Colunas', 'N°, APELIDO, SIGLA, CORRETOR, Número UC, Desconto Tarifa (%), Desconto Bandeira (%), VENCIMENTO AUPUS, MODO CALC, UG, CPF/CNPJ, Consumo Médio (kWh), CORRIGIR COMPENSAÇÃO?, LIGACAO, ENDERECO, CEP_UC, Bairro_UC, Cidade_UC, Estado_UC, Data Assinatura, WhatsApp, Email']
       ];
 
       const worksheetMeta = window.XLSX.utils.aoa_to_sheet(metadados);
