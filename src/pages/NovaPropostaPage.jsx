@@ -34,6 +34,7 @@ const NovaPropostaPage = () => {
   const [numeroProposta, setNumeroProposta] = useState('');
   const [beneficiosAdicionais, setBeneficiosAdicionais] = useState([]);
   const [consultoresDisponiveis, setConsultoresDisponiveis] = useState([]);
+  const [showTitularidadeModal, setShowTitularidadeModal] = useState(true);
   
   const { 
     afterCreateProposta, 
@@ -757,11 +758,14 @@ const NovaPropostaPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Nome do Cliente *</label>
-                <input 
-                  {...register('nomeCliente', { required: 'Nome é obrigatório' })} 
-                  type="text" 
-                  placeholder="Nome completo do cliente"
+                <label>
+                  Nome do Titular da Conta *
+                  <span className="label-hint">(Nome escrito na fatura da Concessionária)</span>
+                </label>
+                <input
+                  {...register('nomeCliente', { required: 'Nome é obrigatório' })}
+                  type="text"
+                  placeholder="Nome completo conforme fatura"
                   onBlur={(e) => setValue('nomeCliente', formatarPrimeiraMaiuscula(e.target.value))}
                   className={errors.nomeCliente ? 'error' : ''}
                 />
@@ -1235,6 +1239,36 @@ const NovaPropostaPage = () => {
                 <Loader2 size={32} className="spinning-icon" />
               </div>
               <p>Salvando proposta...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Atenção sobre Titularidade */}
+        {showTitularidadeModal && (
+          <div className="modal-overlay modal-titularidade">
+            <div className="modal-content modal-titularidade-content">
+              <div className="modal-header modal-titularidade-header">
+                <span className="modal-icon-warning">⚠️</span>
+                <h2>Atenção - Titularidade das UCs</h2>
+              </div>
+              <div className="modal-body modal-titularidade-body">
+                <p className="modal-titularidade-text">
+                  <strong>Só devem ser colocadas na mesma proposta UCs que estão na mesma titularidade</strong>
+                  (mesmo nome em todas as faturas).
+                </p>
+                <p className="modal-titularidade-text modal-titularidade-highlight">
+                  Caso sejam titularidades diferentes, faça propostas separadas.
+                </p>
+              </div>
+              <div className="modal-footer modal-titularidade-footer">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowTitularidadeModal(false)}
+                >
+                  Entendi
+                </button>
+              </div>
             </div>
           </div>
         )}
