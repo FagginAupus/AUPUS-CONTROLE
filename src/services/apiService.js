@@ -50,8 +50,8 @@ class ApiService {
         const now = Date.now();
         const lastRequest = this.requestQueue.get(requestKey);
 
-        // Prevent duplicate requests within 1 second
-        if (lastRequest && (now - lastRequest) < 1000) {
+        // Prevent duplicate requests within 200ms (reduzido para permitir carregamentos de página)
+        if (lastRequest && (now - lastRequest) < 200) {
             console.warn('🚫 Requisição duplicada bloqueada:', requestKey);
             return true;
         }
