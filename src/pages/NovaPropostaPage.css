@@ -1296,19 +1296,24 @@ body.dark-mode .file-help-text {
   border-top: 1px solid #e9ecef;
 }
 
-.modal-titularidade-footer .btn-primary {
-  background: linear-gradient(135deg, #2d7a31 0%, #1e5b24 100%);
-  color: white;
-  border: none;
-  padding: 12px 40px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+.modal-titularidade-footer .btn-primary,
+.modal-titularidade-footer .btn.btn-primary,
+.modal-titularidade-footer button.btn-primary {
+  background: linear-gradient(135deg, #2d7a31 0%, #1e5b24 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 40px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.modal-titularidade-footer .btn-primary:hover {
+.modal-titularidade-footer .btn-primary:hover,
+.modal-titularidade-footer .btn.btn-primary:hover,
+.modal-titularidade-footer button.btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(45, 122, 49, 0.4);
+  background: linear-gradient(135deg, #1e5b24 0%, #145a1a 100%) !important;
 }
