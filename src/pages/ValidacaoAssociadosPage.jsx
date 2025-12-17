@@ -50,12 +50,18 @@ const ValidacaoAssociadosPage = () => {
   // Verificar se usuário tem permissão
   const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
 
-  // Carregar pendentes de validação
-  const carregarPendentes = useCallback(async () => {
+  // Carregar pendentes de validação com delay para evitar conflito com Navigation
+  const carregarPendentes = useCallback(async (forceRefresh = false) => {
     if (!isAdminOrAnalista) return;
 
     try {
       setLoading(true);
+
+      // Aguardar um pouco para o Navigation terminar sua chamada primeiro
+      if (!forceRefresh) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
       const response = await apiService.request('/associados/pendentes-validacao');
 
       if (response.success) {
@@ -91,7 +97,7 @@ const ValidacaoAssociadosPage = () => {
   // Atualizar lista
   const handleRefresh = async () => {
     setRefreshing(true);
-    await carregarPendentes();
+    await carregarPendentes(true); // forceRefresh = true, sem delay
     setRefreshing(false);
     showNotification('Lista atualizada!', 'success');
   };
