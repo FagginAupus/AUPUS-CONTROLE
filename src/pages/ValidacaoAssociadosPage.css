@@ -513,6 +513,30 @@
   color: #fff;
 }
 
+/* Input com sufixo (ex: %) */
+.input-with-suffix {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-with-suffix input {
+  flex: 1;
+  width: auto;
+}
+
+.input-suffix {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Input small dentro do modal */
+.form-input-small {
+  max-width: 80px;
+}
+
 /* =======================================================
    STAT VALUE SMALL - PARA TEXTOS NO LUGAR DE NÚMEROS
    ======================================================= */

@@ -453,23 +453,29 @@ const ValidacaoAssociadosPage = () => {
                   </div>
                   <div className="info-item">
                     <label>Desconto Tarifa</label>
-                    <input
-                      type="text"
-                      className="form-input form-input-small"
-                      value={formData.desconto_tarifa || ''}
-                      onChange={(e) => setFormData({ ...formData, desconto_tarifa: e.target.value })}
-                      placeholder="20%"
-                    />
+                    <div className="input-with-suffix">
+                      <input
+                        type="text"
+                        className="form-input form-input-small"
+                        value={(formData.desconto_tarifa || '').replace(/%/g, '')}
+                        onChange={(e) => setFormData({ ...formData, desconto_tarifa: e.target.value.replace(/%/g, '') })}
+                        placeholder="20"
+                      />
+                      <span className="input-suffix">%</span>
+                    </div>
                   </div>
                   <div className="info-item">
                     <label>Desconto Bandeira</label>
-                    <input
-                      type="text"
-                      className="form-input form-input-small"
-                      value={formData.desconto_bandeira || ''}
-                      onChange={(e) => setFormData({ ...formData, desconto_bandeira: e.target.value })}
-                      placeholder="20%"
-                    />
+                    <div className="input-with-suffix">
+                      <input
+                        type="text"
+                        className="form-input form-input-small"
+                        value={(formData.desconto_bandeira || '').replace(/%/g, '')}
+                        onChange={(e) => setFormData({ ...formData, desconto_bandeira: e.target.value.replace(/%/g, '') })}
+                        placeholder="20"
+                      />
+                      <span className="input-suffix">%</span>
+                    </div>
                   </div>
                 </div>
               </div>
