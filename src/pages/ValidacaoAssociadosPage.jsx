@@ -23,7 +23,8 @@ import {
   RefreshCw,
   Link as LinkIcon,
   Database,
-  Settings
+  Settings,
+  Receipt
 } from 'lucide-react';
 import './ValidacaoAssociadosPage.css';
 import './CommonModalsPagesDark.css';
@@ -46,7 +47,7 @@ const ValidacaoAssociadosPage = () => {
   const [buscandoCpf, setBuscandoCpf] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [consultores, setConsultores] = useState([]);
-  const [abaAtiva, setAbaAtiva] = useState('proposta'); // 'proposta' ou 'associado'
+  const [abaAtiva, setAbaAtiva] = useState('proposta'); // 'proposta', 'associado' ou 'faturamento'
 
   // Verificar se usuário tem permissão
   const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
@@ -134,7 +135,13 @@ const ValidacaoAssociadosPage = () => {
           consumo_medio: dados.uc.consumo_medio || 0,
           consultor_id: dados.proposta.consultor_id || '',
           desconto_tarifa: dados.proposta.desconto_tarifa || '20%',
-          desconto_bandeira: dados.proposta.desconto_bandeira || '20%'
+          desconto_bandeira: dados.proposta.desconto_bandeira || '20%',
+          // Campos de faturamento - inicializados com dados do cliente/proposta
+          nome_faturamento: dados.cliente.nome || dados.proposta.nome_cliente || '',
+          cpf_cnpj_faturamento: dados.cliente.cpf_cnpj || '',
+          whatsapp_faturamento: dados.cliente.whatsapp || '',
+          email_faturamento_1: dados.cliente.email || '',
+          email_faturamento_2: ''
         });
 
         setAssociadoExistente(dados.associado_existente);
@@ -453,6 +460,13 @@ const ValidacaoAssociadosPage = () => {
                 <User size={16} />
                 Associado
               </button>
+              <button
+                className={`modal-tab ${abaAtiva === 'faturamento' ? 'active' : ''}`}
+                onClick={() => setAbaAtiva('faturamento')}
+              >
+                <Receipt size={16} />
+                Faturamento
+              </button>
             </div>
 
             <div className="common-modal-content">
@@ -717,6 +731,91 @@ const ValidacaoAssociadosPage = () => {
                           value={formData.email || ''}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="email@exemplo.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* === ABA 3: FATURAMENTO === */}
+              {abaAtiva === 'faturamento' && (
+                <>
+                  {/* Informações de Faturamento */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <Receipt size={16} />
+                      Informações de Faturamento
+                    </h4>
+                    <p className="section-description">
+                      Dados que serão utilizados para emissão e envio das faturas desta UC.
+                    </p>
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <label>Nome para Faturamento</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.nome_faturamento || ''}
+                          onChange={(e) => setFormData({ ...formData, nome_faturamento: e.target.value })}
+                          placeholder="Nome que aparecerá na fatura"
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>CPF/CNPJ para Faturamento</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.cpf_cnpj_faturamento || ''}
+                          onChange={(e) => setFormData({ ...formData, cpf_cnpj_faturamento: e.target.value })}
+                          placeholder="000.000.000-00"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>WhatsApp para Faturamento</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.whatsapp_faturamento || ''}
+                          onChange={(e) => setFormData({ ...formData, whatsapp_faturamento: e.target.value })}
+                          placeholder="(00) 00000-0000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* E-mails para Envio de Fatura */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <Mail size={16} />
+                      E-mails para Envio de Fatura
+                    </h4>
+                    <p className="section-description">
+                      Informe até dois e-mails para recebimento das faturas.
+                    </p>
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <label>E-mail Principal</label>
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={formData.email_faturamento_1 || ''}
+                          onChange={(e) => setFormData({ ...formData, email_faturamento_1: e.target.value })}
+                          placeholder="email@exemplo.com"
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <label>E-mail Secundário (opcional)</label>
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={formData.email_faturamento_2 || ''}
+                          onChange={(e) => setFormData({ ...formData, email_faturamento_2: e.target.value })}
+                          placeholder="email2@exemplo.com"
                         />
                       </div>
                     </div>

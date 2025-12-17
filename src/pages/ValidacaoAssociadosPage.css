@@ -418,6 +418,13 @@
   color: #3b82f6;
 }
 
+.section-description {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
 /* Info Row Grid */
 .info-row-grid {
   display: grid;
