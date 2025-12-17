@@ -453,11 +453,23 @@ const ValidacaoAssociadosPage = () => {
                   </div>
                   <div className="info-item">
                     <label>Desconto Tarifa</label>
-                    <span>{formData.desconto_tarifa}</span>
+                    <input
+                      type="text"
+                      className="form-input form-input-small"
+                      value={formData.desconto_tarifa || ''}
+                      onChange={(e) => setFormData({ ...formData, desconto_tarifa: e.target.value })}
+                      placeholder="20%"
+                    />
                   </div>
                   <div className="info-item">
                     <label>Desconto Bandeira</label>
-                    <span>{formData.desconto_bandeira}</span>
+                    <input
+                      type="text"
+                      className="form-input form-input-small"
+                      value={formData.desconto_bandeira || ''}
+                      onChange={(e) => setFormData({ ...formData, desconto_bandeira: e.target.value })}
+                      placeholder="20%"
+                    />
                   </div>
                 </div>
               </div>
