@@ -64,13 +64,17 @@ const ValidacaoAssociadosPage = () => {
 
       const response = await apiService.request('/associados/pendentes-validacao');
 
-      if (response.success) {
-        setPendentes(response.data || []);
+      if (response.success && Array.isArray(response.data)) {
+        setPendentes(response.data);
       } else {
-        showNotification('Erro ao carregar pendentes de validação', 'error');
+        setPendentes([]);
+        if (!response.success) {
+          showNotification('Erro ao carregar pendentes de validação', 'error');
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar pendentes:', error);
+      setPendentes([]);
       showNotification('Erro ao carregar dados: ' + error.message, 'error');
     } finally {
       setLoading(false);
@@ -81,11 +85,14 @@ const ValidacaoAssociadosPage = () => {
   const carregarConsultores = useCallback(async () => {
     try {
       const response = await apiService.request('/usuarios?role=consultor');
-      if (response.success) {
-        setConsultores(response.data || []);
+      if (response.success && Array.isArray(response.data)) {
+        setConsultores(response.data);
+      } else {
+        setConsultores([]);
       }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
+      setConsultores([]);
     }
   }, []);
 
@@ -232,7 +239,7 @@ const ValidacaoAssociadosPage = () => {
   };
 
   // Filtrar pendentes
-  const pendentesFiltrados = pendentes.filter(item => {
+  const pendentesFiltrados = Array.isArray(pendentes) ? pendentes.filter(item => {
     if (!filtro) return true;
     const busca = filtro.toLowerCase();
     return (
@@ -240,7 +247,7 @@ const ValidacaoAssociadosPage = () => {
       item.numero_proposta?.toLowerCase().includes(busca) ||
       String(item.uc?.numero_unidade).includes(busca)
     );
-  });
+  }) : [];
 
   // Formatar CPF/CNPJ
   const formatarCpfCnpj = (valor) => {
@@ -661,7 +668,7 @@ const ValidacaoAssociadosPage = () => {
                       onChange={(e) => setFormData({ ...formData, consultor_id: e.target.value })}
                     >
                       <option value="">Selecione...</option>
-                      {consultores.map(c => (
+                      {Array.isArray(consultores) && consultores.map(c => (
                         <option key={c.id} value={c.id}>{c.nome || c.name}</option>
                       ))}
                     </select>
