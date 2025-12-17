@@ -337,8 +337,56 @@
 }
 
 .modal-validacao-associado .common-modal-content {
-  max-height: calc(90vh - 140px);
+  max-height: calc(90vh - 200px);
   overflow-y: auto;
+}
+
+/* =======================================================
+   ABAS DO MODAL
+   ======================================================= */
+
+.modal-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 0 20px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.modal-tab:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.modal-tab.active svg {
+  color: #3b82f6;
+}
+
+.modal-tab svg {
+  transition: color 0.3s ease;
 }
 
 /* Seções do Modal */

@@ -46,6 +46,7 @@ const ValidacaoAssociadosPage = () => {
   const [buscandoCpf, setBuscandoCpf] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [consultores, setConsultores] = useState([]);
+  const [abaAtiva, setAbaAtiva] = useState('proposta'); // 'proposta' ou 'associado'
 
   // Verificar se usuário tem permissão
   const isAdminOrAnalista = user?.role === 'admin' || user?.role === 'analista';
@@ -137,6 +138,7 @@ const ValidacaoAssociadosPage = () => {
         });
 
         setAssociadoExistente(dados.associado_existente);
+        setAbaAtiva('proposta'); // Resetar para primeira aba
         setModalValidacao({ show: true, item: { ...item, dadosCompletos: dados } });
       } else {
         showNotification('Erro ao carregar dados para validação', 'error');
@@ -435,264 +437,292 @@ const ValidacaoAssociadosPage = () => {
               </button>
             </div>
 
+            {/* Abas do Modal */}
+            <div className="modal-tabs">
+              <button
+                className={`modal-tab ${abaAtiva === 'proposta' ? 'active' : ''}`}
+                onClick={() => setAbaAtiva('proposta')}
+              >
+                <FileText size={16} />
+                Proposta / UC
+              </button>
+              <button
+                className={`modal-tab ${abaAtiva === 'associado' ? 'active' : ''}`}
+                onClick={() => setAbaAtiva('associado')}
+              >
+                <User size={16} />
+                Associado
+              </button>
+            </div>
+
             <div className="common-modal-content">
-              {/* Info da Proposta */}
-              <div className="modal-section">
-                <h4 className="section-title-with-icon">
-                  <FileText size={16} />
-                  Informações da Proposta
-                </h4>
-                <div className="info-row-grid">
-                  <div className="info-item">
-                    <label>Proposta</label>
-                    <span>{modalValidacao.item?.numero_proposta}</span>
-                  </div>
-                  <div className="info-item">
-                    <label>UC</label>
-                    <span>{modalValidacao.item?.uc?.numero_unidade}</span>
-                  </div>
-                  <div className="info-item">
-                    <label>Desconto Tarifa</label>
-                    <div className="input-with-suffix">
-                      <input
-                        type="text"
-                        className="form-input form-input-small"
-                        value={(formData.desconto_tarifa || '').replace(/%/g, '')}
-                        onChange={(e) => setFormData({ ...formData, desconto_tarifa: e.target.value.replace(/%/g, '') })}
-                        placeholder="20"
-                      />
-                      <span className="input-suffix">%</span>
-                    </div>
-                  </div>
-                  <div className="info-item">
-                    <label>Desconto Bandeira</label>
-                    <div className="input-with-suffix">
-                      <input
-                        type="text"
-                        className="form-input form-input-small"
-                        value={(formData.desconto_bandeira || '').replace(/%/g, '')}
-                        onChange={(e) => setFormData({ ...formData, desconto_bandeira: e.target.value.replace(/%/g, '') })}
-                        placeholder="20"
-                      />
-                      <span className="input-suffix">%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Busca de Associado Existente */}
-              <div className="modal-section">
-                <h4 className="section-title-with-icon">
-                  <Search size={16} />
-                  Buscar Associado Existente
-                </h4>
-                <div className="cpf-search-row">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Digite o CPF/CNPJ para buscar"
-                    value={formData.cpf_cnpj || ''}
-                    onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
-                  />
-                  <button
-                    className="btn btn-secondary"
-                    onClick={buscarAssociadoPorCpf}
-                    disabled={buscandoCpf}
-                  >
-                    {buscandoCpf ? <RefreshCw size={16} className="spinning" /> : <Search size={16} />}
-                    Buscar
-                  </button>
-                </div>
-
-                {associadoExistente && (
-                  <div className="associado-encontrado-box">
-                    <div className="associado-info-row">
-                      <User size={20} />
-                      <div className="associado-dados">
-                        <strong>{associadoExistente.nome}</strong>
-                        <span>{formatarCpfCnpj(associadoExistente.cpf_cnpj)}</span>
-                        <span>{associadoExistente.unidadesConsumidoras?.length || 0} UCs vinculadas</span>
+              {/* === ABA 1: PROPOSTA E UC === */}
+              {abaAtiva === 'proposta' && (
+                <>
+                  {/* Info da Proposta */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <FileText size={16} />
+                      Informações da Proposta
+                    </h4>
+                    <div className="info-row-grid">
+                      <div className="info-item">
+                        <label>Proposta</label>
+                        <span>{modalValidacao.item?.numero_proposta}</span>
+                      </div>
+                      <div className="info-item">
+                        <label>UC</label>
+                        <span>{modalValidacao.item?.uc?.numero_unidade}</span>
+                      </div>
+                      <div className="info-item">
+                        <label>Desconto Tarifa</label>
+                        <div className="input-with-suffix">
+                          <input
+                            type="text"
+                            className="form-input form-input-small"
+                            value={(formData.desconto_tarifa || '').replace(/%/g, '')}
+                            onChange={(e) => setFormData({ ...formData, desconto_tarifa: e.target.value.replace(/%/g, '') })}
+                            placeholder="20"
+                          />
+                          <span className="input-suffix">%</span>
+                        </div>
+                      </div>
+                      <div className="info-item">
+                        <label>Desconto Bandeira</label>
+                        <div className="input-with-suffix">
+                          <input
+                            type="text"
+                            className="form-input form-input-small"
+                            value={(formData.desconto_bandeira || '').replace(/%/g, '')}
+                            onChange={(e) => setFormData({ ...formData, desconto_bandeira: e.target.value.replace(/%/g, '') })}
+                            placeholder="20"
+                          />
+                          <span className="input-suffix">%</span>
+                        </div>
                       </div>
                     </div>
-                    <button className="btn btn-success btn-sm" onClick={vincularAssociadoExistente}>
-                      <LinkIcon size={14} />
-                      Vincular a este
-                    </button>
                   </div>
-                )}
-              </div>
 
-              {/* Dados do Cliente */}
-              <div className="modal-section">
-                <h4 className="section-title-with-icon">
-                  <User size={16} />
-                  Dados do Cliente / Associado
-                </h4>
-                <div className="form-row">
-                  <div className="form-group full-width">
-                    <label>Nome do Cliente *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.nome || ''}
-                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                      placeholder="Nome completo"
-                    />
+                  {/* Dados da UC */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <Home size={16} />
+                      Dados da UC
+                    </h4>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Apelido da UC</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.apelido_uc || ''}
+                          onChange={(e) => setFormData({ ...formData, apelido_uc: e.target.value })}
+                          placeholder="Ex: Casa, Loja, Fazenda"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Ligação</label>
+                        <select
+                          className="form-input"
+                          value={formData.ligacao || 'Monofásica'}
+                          onChange={(e) => setFormData({ ...formData, ligacao: e.target.value })}
+                        >
+                          <option value="Monofásica">Monofásica</option>
+                          <option value="Bifásica">Bifásica</option>
+                          <option value="Trifásica">Trifásica</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Consumo Médio (kWh)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.consumo_medio || ''}
+                          onChange={(e) => setFormData({ ...formData, consumo_medio: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Consultor Responsável</label>
+                        <select
+                          className="form-input"
+                          value={formData.consultor_id || ''}
+                          onChange={(e) => setFormData({ ...formData, consultor_id: e.target.value })}
+                        >
+                          <option value="">Selecione...</option>
+                          {Array.isArray(consultores) && consultores.map(c => (
+                            <option key={c.id} value={c.id}>{c.nome || c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>CPF/CNPJ *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.cpf_cnpj || ''}
-                      onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
-                      placeholder="000.000.000-00"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>WhatsApp</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.whatsapp || ''}
-                      onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group full-width">
-                    <label>Email</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      value={formData.email || ''}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="email@exemplo.com"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Dados do Endereço */}
-              <div className="modal-section">
-                <h4 className="section-title-with-icon">
-                  <MapPin size={16} />
-                  Endereço da UC
-                </h4>
-                <div className="form-row">
-                  <div className="form-group full-width">
-                    <label>Endereço</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.endereco || ''}
-                      onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                      placeholder="Rua, número, complemento"
-                    />
+                  {/* Dados do Endereço da UC */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <MapPin size={16} />
+                      Endereço da UC
+                    </h4>
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <label>Endereço</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.endereco || ''}
+                          onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                          placeholder="Rua, número, complemento"
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Bairro</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.bairro || ''}
+                          onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Cidade</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.cidade || ''}
+                          onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group small">
+                        <label>UF</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          maxLength={2}
+                          value={formData.estado || ''}
+                          onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>CEP</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.cep || ''}
+                          onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
+                          placeholder="00000-000"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Bairro</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.bairro || ''}
-                      onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Cidade</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.cidade || ''}
-                      onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group small">
-                    <label>UF</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      maxLength={2}
-                      value={formData.estado || ''}
-                      onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>CEP</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.cep || ''}
-                      onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
-                      placeholder="00000-000"
-                    />
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
 
-              {/* Dados da UC */}
-              <div className="modal-section">
-                <h4 className="section-title-with-icon">
-                  <Home size={16} />
-                  Dados da UC
-                </h4>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Apelido da UC</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.apelido_uc || ''}
-                      onChange={(e) => setFormData({ ...formData, apelido_uc: e.target.value })}
-                      placeholder="Ex: Casa, Loja, Fazenda"
-                    />
+              {/* === ABA 2: ASSOCIADO === */}
+              {abaAtiva === 'associado' && (
+                <>
+                  {/* Busca de Associado Existente */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <Search size={16} />
+                      Buscar Associado Existente
+                    </h4>
+                    <div className="cpf-search-row">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Digite o CPF/CNPJ para buscar"
+                        value={formData.cpf_cnpj || ''}
+                        onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
+                      />
+                      <button
+                        className="btn btn-secondary"
+                        onClick={buscarAssociadoPorCpf}
+                        disabled={buscandoCpf}
+                      >
+                        {buscandoCpf ? <RefreshCw size={16} className="spinning" /> : <Search size={16} />}
+                        Buscar
+                      </button>
+                    </div>
+
+                    {associadoExistente && (
+                      <div className="associado-encontrado-box">
+                        <div className="associado-info-row">
+                          <User size={20} />
+                          <div className="associado-dados">
+                            <strong>{associadoExistente.nome}</strong>
+                            <span>{formatarCpfCnpj(associadoExistente.cpf_cnpj)}</span>
+                            <span>{associadoExistente.unidadesConsumidoras?.length || 0} UCs vinculadas</span>
+                          </div>
+                        </div>
+                        <button className="btn btn-success btn-sm" onClick={vincularAssociadoExistente}>
+                          <LinkIcon size={14} />
+                          Vincular a este
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="form-group">
-                    <label>Ligação</label>
-                    <select
-                      className="form-input"
-                      value={formData.ligacao || 'Monofásica'}
-                      onChange={(e) => setFormData({ ...formData, ligacao: e.target.value })}
-                    >
-                      <option value="Monofásica">Monofásica</option>
-                      <option value="Bifásica">Bifásica</option>
-                      <option value="Trifásica">Trifásica</option>
-                    </select>
+
+                  {/* Dados do Cliente / Associado */}
+                  <div className="modal-section">
+                    <h4 className="section-title-with-icon">
+                      <User size={16} />
+                      Dados do Associado
+                    </h4>
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <label>Nome do Cliente *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.nome || ''}
+                          onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                          placeholder="Nome completo"
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>CPF/CNPJ *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.cpf_cnpj || ''}
+                          onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
+                          placeholder="000.000.000-00"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>WhatsApp</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.whatsapp || ''}
+                          onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                          placeholder="(00) 00000-0000"
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <label>Email</label>
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={formData.email || ''}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="email@exemplo.com"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Consumo Médio (kWh)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.consumo_medio || ''}
-                      onChange={(e) => setFormData({ ...formData, consumo_medio: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Consultor Responsável</label>
-                    <select
-                      className="form-input"
-                      value={formData.consultor_id || ''}
-                      onChange={(e) => setFormData({ ...formData, consultor_id: e.target.value })}
-                    >
-                      <option value="">Selecione...</option>
-                      {Array.isArray(consultores) && consultores.map(c => (
-                        <option key={c.id} value={c.id}>{c.nome || c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
 
             <div className="common-modal-footer">
