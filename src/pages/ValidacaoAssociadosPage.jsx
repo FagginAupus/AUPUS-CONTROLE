@@ -45,6 +45,7 @@ const ValidacaoAssociadosPage = () => {
   const [formData, setFormData] = useState({});
   const [associadoExistente, setAssociadoExistente] = useState(null);
   const [associadosEncontrados, setAssociadosEncontrados] = useState([]); // Lista de resultados
+  const [associadosSugeridos, setAssociadosSugeridos] = useState([]); // Sugestões automáticas ao abrir modal
   const [termoBusca, setTermoBusca] = useState(''); // Campo de busca separado
   const [buscandoCpf, setBuscandoCpf] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -116,10 +117,96 @@ const ValidacaoAssociadosPage = () => {
     showNotification('Lista atualizada!', 'success');
   };
 
+  // Buscar associados sugeridos automaticamente (por nome, cpf, email, whatsapp)
+  const buscarAssociadosSugeridos = async (dados) => {
+    try {
+      const sugestoes = [];
+      const idsEncontrados = new Set();
+
+      // Buscar por CPF/CNPJ
+      if (dados.cliente.cpf_cnpj && dados.cliente.cpf_cnpj.length >= 3) {
+        const resp = await apiService.request(`/associados/buscar-cpf-cnpj?busca=${encodeURIComponent(dados.cliente.cpf_cnpj)}`);
+        if (resp.success && resp.encontrado) {
+          const lista = resp.multiplos ? resp.data : [resp.data];
+          lista.forEach(a => {
+            if (!idsEncontrados.has(a.id)) {
+              idsEncontrados.add(a.id);
+              sugestoes.push({ ...a, motivo: 'CPF/CNPJ coincide' });
+            }
+          });
+        }
+      }
+
+      // Buscar por email
+      if (dados.cliente.email && dados.cliente.email.length >= 3) {
+        const resp = await apiService.request(`/associados/buscar-cpf-cnpj?busca=${encodeURIComponent(dados.cliente.email)}`);
+        if (resp.success && resp.encontrado) {
+          const lista = resp.multiplos ? resp.data : [resp.data];
+          lista.forEach(a => {
+            if (!idsEncontrados.has(a.id)) {
+              idsEncontrados.add(a.id);
+              sugestoes.push({ ...a, motivo: 'Email coincide' });
+            } else {
+              // Atualizar motivo se já existir
+              const idx = sugestoes.findIndex(s => s.id === a.id);
+              if (idx >= 0 && !sugestoes[idx].motivo.includes('Email')) {
+                sugestoes[idx].motivo += ' e Email';
+              }
+            }
+          });
+        }
+      }
+
+      // Buscar por nome (exato ou parcial)
+      if (dados.cliente.nome && dados.cliente.nome.length >= 3) {
+        const resp = await apiService.request(`/associados/buscar-cpf-cnpj?busca=${encodeURIComponent(dados.cliente.nome)}`);
+        if (resp.success && resp.encontrado) {
+          const lista = resp.multiplos ? resp.data : [resp.data];
+          lista.forEach(a => {
+            if (!idsEncontrados.has(a.id)) {
+              idsEncontrados.add(a.id);
+              sugestoes.push({ ...a, motivo: 'Nome similar' });
+            } else {
+              const idx = sugestoes.findIndex(s => s.id === a.id);
+              if (idx >= 0 && !sugestoes[idx].motivo.includes('Nome')) {
+                sugestoes[idx].motivo += ' e Nome';
+              }
+            }
+          });
+        }
+      }
+
+      // Buscar por WhatsApp
+      if (dados.cliente.whatsapp && dados.cliente.whatsapp.length >= 8) {
+        const resp = await apiService.request(`/associados/buscar-cpf-cnpj?busca=${encodeURIComponent(dados.cliente.whatsapp)}`);
+        if (resp.success && resp.encontrado) {
+          const lista = resp.multiplos ? resp.data : [resp.data];
+          lista.forEach(a => {
+            if (!idsEncontrados.has(a.id)) {
+              idsEncontrados.add(a.id);
+              sugestoes.push({ ...a, motivo: 'WhatsApp coincide' });
+            }
+          });
+        }
+      }
+
+      setAssociadosSugeridos(sugestoes);
+
+      if (sugestoes.length > 0) {
+        console.log(`✅ ${sugestoes.length} associado(s) sugerido(s) encontrado(s)`);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar sugestões:', error);
+      setAssociadosSugeridos([]);
+    }
+  };
+
   // Abrir modal de validação
   const abrirModalValidacao = async (item) => {
     try {
       setLoading(true);
+      setAssociadosSugeridos([]); // Limpar sugestões anteriores
+
       const response = await apiService.request(`/associados/validar/${item.proposta_id}/${item.uc.numero_unidade}`);
 
       if (response.success) {
@@ -152,6 +239,9 @@ const ValidacaoAssociadosPage = () => {
         setAssociadoExistente(dados.associado_existente);
         setAbaAtiva('proposta'); // Resetar para primeira aba
         setModalValidacao({ show: true, item: { ...item, dadosCompletos: dados } });
+
+        // Buscar sugestões de associados existentes automaticamente
+        buscarAssociadosSugeridos(dados);
       } else {
         showNotification('Erro ao carregar dados para validação', 'error');
       }
@@ -225,6 +315,12 @@ const ValidacaoAssociadosPage = () => {
       return;
     }
 
+    if (!formData.email) {
+      showNotification('Email do associado é obrigatório', 'warning');
+      setAbaAtiva('associado'); // Ir para aba do associado
+      return;
+    }
+
     try {
       setSalvando(true);
       const item = modalValidacao.item;
@@ -247,13 +343,30 @@ const ValidacaoAssociadosPage = () => {
         setModalValidacao({ show: false, item: null });
         setFormData({});
         setAssociadoExistente(null);
+        setAssociadosSugeridos([]);
         carregarPendentes();
       } else {
         showNotification(response.message || 'Erro ao confirmar validação', 'error');
       }
     } catch (error) {
       console.error('Erro ao confirmar validação:', error);
-      showNotification('Erro ao confirmar validação: ' + error.message, 'error');
+
+      // Tratar resposta de conflito (CPF/CNPJ ou email já existe)
+      if (error.response?.status === 409 && error.response?.data?.requer_vinculacao) {
+        const conflitos = error.response.data.conflitos || [];
+        showNotification(error.response.data.message || 'Já existe associado com este CPF/CNPJ ou email. Vincule a um existente.', 'warning');
+
+        // Mostrar os associados conflitantes como sugestões
+        if (conflitos.length > 0) {
+          setAssociadosSugeridos(conflitos.map(c => ({
+            ...c,
+            motivo: c.motivo
+          })));
+          setAbaAtiva('associado'); // Ir para aba do associado
+        }
+      } else {
+        showNotification('Erro ao confirmar validação: ' + error.message, 'error');
+      }
     } finally {
       setSalvando(false);
     }
@@ -265,6 +378,7 @@ const ValidacaoAssociadosPage = () => {
     setFormData({});
     setAssociadoExistente(null);
     setAssociadosEncontrados([]);
+    setAssociadosSugeridos([]);
     setTermoBusca('');
   };
 
@@ -661,46 +775,26 @@ const ValidacaoAssociadosPage = () => {
               {/* === ABA 2: ASSOCIADO === */}
               {abaAtiva === 'associado' && (
                 <>
-                  {/* Busca de Associado Existente */}
-                  <div className="modal-section">
-                    <h4 className="section-title-with-icon">
-                      <Search size={16} />
-                      Buscar Associado Existente
-                    </h4>
-                    <p className="section-description">
-                      Busque por nome, CPF/CNPJ, email ou número da UC para vincular a um associado existente.
-                    </p>
-                    <div className="cpf-search-row">
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Digite nome, CPF/CNPJ, email ou nº UC..."
-                        value={termoBusca}
-                        onChange={(e) => setTermoBusca(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && buscarAssociado()}
-                      />
-                      <button
-                        className="btn btn-secondary"
-                        onClick={buscarAssociado}
-                        disabled={buscandoCpf}
-                      >
-                        {buscandoCpf ? <RefreshCw size={16} className="spinning" /> : <Search size={16} />}
-                        Buscar
-                      </button>
-                    </div>
-
-                    {/* Lista de resultados da busca */}
-                    {associadosEncontrados.length > 0 && (
+                  {/* Sugestões automáticas de associados */}
+                  {associadosSugeridos.length > 0 && !associadoExistente && (
+                    <div className="modal-section sugestoes-section">
+                      <h4 className="section-title-with-icon warning-title">
+                        <AlertCircle size={16} />
+                        Possíveis Associados Existentes
+                      </h4>
+                      <p className="section-description warning-description">
+                        Encontramos associados que podem corresponder a este cliente. Vincule a um existente ou crie um novo.
+                      </p>
                       <div className="associados-lista">
-                        <span className="lista-titulo">{associadosEncontrados.length} resultado(s) encontrado(s):</span>
-                        {associadosEncontrados.map((assoc) => (
-                          <div key={assoc.id} className="associado-encontrado-box">
+                        {associadosSugeridos.map((assoc) => (
+                          <div key={assoc.id} className="associado-encontrado-box sugerido">
                             <div className="associado-info-row">
                               <User size={20} />
                               <div className="associado-dados">
                                 <strong>{assoc.nome}</strong>
                                 <span>{formatarCpfCnpj(assoc.cpf_cnpj)}</span>
-                                <span>{assoc.controles_count ?? assoc.controles?.length ?? 0} contratos</span>
+                                {assoc.email && <span>{assoc.email}</span>}
+                                <span className="motivo-tag">{assoc.motivo}</span>
                               </div>
                             </div>
                             <button
@@ -713,16 +807,24 @@ const ValidacaoAssociadosPage = () => {
                           </div>
                         ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Associado já vinculado */}
-                    {associadoExistente && associadosEncontrados.length === 0 && (
+                  {/* Associado já vinculado */}
+                  {associadoExistente && (
+                    <div className="modal-section">
+                      <h4 className="section-title-with-icon">
+                        <CheckCircle size={16} style={{ color: '#27ae60' }} />
+                        Associado Vinculado
+                      </h4>
                       <div className="associado-vinculado-box">
                         <div className="associado-info-row">
-                          <CheckCircle size={20} style={{ color: '#27ae60' }} />
+                          <User size={24} />
                           <div className="associado-dados">
                             <strong>{associadoExistente.nome}</strong>
                             <span>{formatarCpfCnpj(associadoExistente.cpf_cnpj)}</span>
+                            {associadoExistente.email && <span>{associadoExistente.email}</span>}
+                            {associadoExistente.whatsapp && <span>{associadoExistente.whatsapp}</span>}
                             <span className="vinculado-tag">Vinculado</span>
                           </div>
                         </div>
@@ -737,24 +839,90 @@ const ValidacaoAssociadosPage = () => {
                           Remover vínculo
                         </button>
                       </div>
-                    )}
-                  </div>
+                      <p className="section-description" style={{ marginTop: '12px', color: '#888' }}>
+                        Os dados do associado vinculado não podem ser alterados por este modal.
+                      </p>
+                    </div>
+                  )}
 
-                  {/* Dados do Cliente / Associado */}
+                  {/* Busca de Associado Existente - só mostra se não estiver vinculado */}
+                  {!associadoExistente && (
+                    <div className="modal-section">
+                      <h4 className="section-title-with-icon">
+                        <Search size={16} />
+                        Buscar Associado Existente
+                      </h4>
+                      <p className="section-description">
+                        Busque por nome, CPF/CNPJ, email ou número da UC para vincular a um associado existente.
+                      </p>
+                      <div className="cpf-search-row">
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Digite nome, CPF/CNPJ, email ou nº UC..."
+                          value={termoBusca}
+                          onChange={(e) => setTermoBusca(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && buscarAssociado()}
+                        />
+                        <button
+                          className="btn btn-secondary"
+                          onClick={buscarAssociado}
+                          disabled={buscandoCpf}
+                        >
+                          {buscandoCpf ? <RefreshCw size={16} className="spinning" /> : <Search size={16} />}
+                          Buscar
+                        </button>
+                      </div>
+
+                      {/* Lista de resultados da busca */}
+                      {associadosEncontrados.length > 0 && (
+                        <div className="associados-lista">
+                          <span className="lista-titulo">{associadosEncontrados.length} resultado(s) encontrado(s):</span>
+                          {associadosEncontrados.map((assoc) => (
+                            <div key={assoc.id} className="associado-encontrado-box">
+                              <div className="associado-info-row">
+                                <User size={20} />
+                                <div className="associado-dados">
+                                  <strong>{assoc.nome}</strong>
+                                  <span>{formatarCpfCnpj(assoc.cpf_cnpj)}</span>
+                                  <span>{assoc.controles_count ?? assoc.controles?.length ?? 0} contratos</span>
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => vincularAssociadoExistente(assoc)}
+                              >
+                                <LinkIcon size={14} />
+                                Vincular
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Dados do Cliente / Associado - campos readonly se vinculado */}
                   <div className="modal-section">
                     <h4 className="section-title-with-icon">
                       <User size={16} />
-                      Dados do Associado
+                      {associadoExistente ? 'Dados do Associado (somente leitura)' : 'Dados do Novo Associado'}
                     </h4>
+                    {associadoExistente && (
+                      <p className="section-description" style={{ color: '#f39c12', marginBottom: '12px' }}>
+                        Para editar os dados do associado, remova o vínculo acima.
+                      </p>
+                    )}
                     <div className="form-row">
                       <div className="form-group full-width">
                         <label>Nome do Cliente *</label>
                         <input
                           type="text"
-                          className="form-input"
+                          className={`form-input ${associadoExistente ? 'readonly-input' : ''}`}
                           value={formData.nome || ''}
-                          onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                          onChange={(e) => !associadoExistente && setFormData({ ...formData, nome: e.target.value })}
                           placeholder="Nome completo"
+                          readOnly={!!associadoExistente}
                         />
                       </div>
                     </div>
@@ -763,32 +931,35 @@ const ValidacaoAssociadosPage = () => {
                         <label>CPF/CNPJ *</label>
                         <input
                           type="text"
-                          className="form-input"
+                          className={`form-input ${associadoExistente ? 'readonly-input' : ''}`}
                           value={formData.cpf_cnpj || ''}
-                          onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
+                          onChange={(e) => !associadoExistente && setFormData({ ...formData, cpf_cnpj: e.target.value })}
                           placeholder="000.000.000-00"
+                          readOnly={!!associadoExistente}
                         />
                       </div>
                       <div className="form-group">
                         <label>WhatsApp</label>
                         <input
                           type="text"
-                          className="form-input"
+                          className={`form-input ${associadoExistente ? 'readonly-input' : ''}`}
                           value={formData.whatsapp || ''}
-                          onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                          onChange={(e) => !associadoExistente && setFormData({ ...formData, whatsapp: e.target.value })}
                           placeholder="(00) 00000-0000"
+                          readOnly={!!associadoExistente}
                         />
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group full-width">
-                        <label>Email</label>
+                        <label>Email *</label>
                         <input
                           type="email"
-                          className="form-input"
+                          className={`form-input ${associadoExistente ? 'readonly-input' : ''}`}
                           value={formData.email || ''}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          onChange={(e) => !associadoExistente && setFormData({ ...formData, email: e.target.value })}
                           placeholder="email@exemplo.com"
+                          readOnly={!!associadoExistente}
                         />
                       </div>
                     </div>
