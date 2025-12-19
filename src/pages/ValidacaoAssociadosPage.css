@@ -501,6 +501,65 @@
   font-size: 0.85rem;
 }
 
+/* Lista de associados encontrados */
+.associados-lista {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.associados-lista .lista-titulo {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.associados-lista .associado-encontrado-box {
+  margin-top: 0;
+}
+
+/* Associado já vinculado */
+.associado-vinculado-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(39, 174, 96, 0.15);
+  border: 2px solid rgba(39, 174, 96, 0.5);
+  border-radius: 10px;
+}
+
+.associado-vinculado-box .associado-info-row svg {
+  color: #27ae60;
+}
+
+.vinculado-tag {
+  display: inline-block;
+  background: #27ae60;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Botão outline */
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
 /* Form Rows */
 .form-row {
   display: grid;

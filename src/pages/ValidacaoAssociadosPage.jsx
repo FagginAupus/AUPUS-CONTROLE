@@ -44,6 +44,8 @@ const ValidacaoAssociadosPage = () => {
   const [modalValidacao, setModalValidacao] = useState({ show: false, item: null });
   const [formData, setFormData] = useState({});
   const [associadoExistente, setAssociadoExistente] = useState(null);
+  const [associadosEncontrados, setAssociadosEncontrados] = useState([]); // Lista de resultados
+  const [termoBusca, setTermoBusca] = useState(''); // Campo de busca separado
   const [buscandoCpf, setBuscandoCpf] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [consultores, setConsultores] = useState([]);
@@ -161,23 +163,33 @@ const ValidacaoAssociadosPage = () => {
     }
   };
 
-  // Buscar associado por CPF/CNPJ
-  const buscarAssociadoPorCpf = async () => {
-    if (!formData.cpf_cnpj || formData.cpf_cnpj.length < 11) {
-      showNotification('Digite um CPF/CNPJ válido', 'warning');
+  // Buscar associado por nome, CPF/CNPJ, email ou número UC
+  const buscarAssociado = async () => {
+    if (!termoBusca || termoBusca.length < 3) {
+      showNotification('Digite pelo menos 3 caracteres para buscar', 'warning');
       return;
     }
 
     try {
       setBuscandoCpf(true);
-      const response = await apiService.request(`/associados/buscar-cpf-cnpj?cpf_cnpj=${encodeURIComponent(formData.cpf_cnpj)}`);
+      setAssociadosEncontrados([]);
+      setAssociadoExistente(null);
+
+      const response = await apiService.request(`/associados/buscar-cpf-cnpj?busca=${encodeURIComponent(termoBusca)}`);
 
       if (response.success && response.encontrado) {
-        setAssociadoExistente(response.data);
-        showNotification(`Associado encontrado: ${response.data.nome}`, 'success');
+        // Verifica se retornou múltiplos resultados
+        if (response.multiplos) {
+          setAssociadosEncontrados(response.data);
+          showNotification(`${response.total} associados encontrados`, 'success');
+        } else {
+          // Apenas um resultado
+          setAssociadosEncontrados([response.data]);
+          showNotification(`Associado encontrado: ${response.data.nome}`, 'success');
+        }
       } else {
-        setAssociadoExistente(null);
-        showNotification('Nenhum associado encontrado com este CPF/CNPJ', 'info');
+        setAssociadosEncontrados([]);
+        showNotification('Nenhum associado encontrado', 'info');
       }
     } catch (error) {
       console.error('Erro ao buscar associado:', error);
@@ -187,18 +199,22 @@ const ValidacaoAssociadosPage = () => {
     }
   };
 
-  // Vincular a associado existente
-  const vincularAssociadoExistente = () => {
-    if (associadoExistente) {
+  // Vincular a associado existente (pode receber o associado como parâmetro)
+  const vincularAssociadoExistente = (associado = null) => {
+    const associadoParaVincular = associado || associadoExistente;
+    if (associadoParaVincular) {
       setFormData(prev => ({
         ...prev,
-        nome: associadoExistente.nome,
-        cpf_cnpj: associadoExistente.cpf_cnpj,
-        whatsapp: associadoExistente.whatsapp || prev.whatsapp,
-        email: associadoExistente.email || prev.email,
-        associado_id: associadoExistente.id
+        nome: associadoParaVincular.nome,
+        cpf_cnpj: associadoParaVincular.cpf_cnpj,
+        whatsapp: associadoParaVincular.whatsapp || prev.whatsapp,
+        email: associadoParaVincular.email || prev.email,
+        associado_id: associadoParaVincular.id
       }));
-      showNotification('Dados do associado preenchidos. Confirme a validação.', 'success');
+      setAssociadoExistente(associadoParaVincular);
+      setAssociadosEncontrados([]); // Limpar lista de resultados
+      setTermoBusca(''); // Limpar campo de busca
+      showNotification(`Associado "${associadoParaVincular.nome}" vinculado. Confirme a validação.`, 'success');
     }
   };
 
@@ -248,6 +264,8 @@ const ValidacaoAssociadosPage = () => {
     setModalValidacao({ show: false, item: null });
     setFormData({});
     setAssociadoExistente(null);
+    setAssociadosEncontrados([]);
+    setTermoBusca('');
   };
 
   // Filtrar pendentes
@@ -649,17 +667,21 @@ const ValidacaoAssociadosPage = () => {
                       <Search size={16} />
                       Buscar Associado Existente
                     </h4>
+                    <p className="section-description">
+                      Busque por nome, CPF/CNPJ, email ou número da UC para vincular a um associado existente.
+                    </p>
                     <div className="cpf-search-row">
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="Digite o CPF/CNPJ para buscar"
-                        value={formData.cpf_cnpj || ''}
-                        onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
+                        placeholder="Digite nome, CPF/CNPJ, email ou nº UC..."
+                        value={termoBusca}
+                        onChange={(e) => setTermoBusca(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && buscarAssociado()}
                       />
                       <button
                         className="btn btn-secondary"
-                        onClick={buscarAssociadoPorCpf}
+                        onClick={buscarAssociado}
                         disabled={buscandoCpf}
                       >
                         {buscandoCpf ? <RefreshCw size={16} className="spinning" /> : <Search size={16} />}
@@ -667,19 +689,52 @@ const ValidacaoAssociadosPage = () => {
                       </button>
                     </div>
 
-                    {associadoExistente && (
-                      <div className="associado-encontrado-box">
+                    {/* Lista de resultados da busca */}
+                    {associadosEncontrados.length > 0 && (
+                      <div className="associados-lista">
+                        <span className="lista-titulo">{associadosEncontrados.length} resultado(s) encontrado(s):</span>
+                        {associadosEncontrados.map((assoc) => (
+                          <div key={assoc.id} className="associado-encontrado-box">
+                            <div className="associado-info-row">
+                              <User size={20} />
+                              <div className="associado-dados">
+                                <strong>{assoc.nome}</strong>
+                                <span>{formatarCpfCnpj(assoc.cpf_cnpj)}</span>
+                                <span>{assoc.unidadesConsumidoras?.length || 0} UCs vinculadas</span>
+                              </div>
+                            </div>
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => vincularAssociadoExistente(assoc)}
+                            >
+                              <LinkIcon size={14} />
+                              Vincular
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Associado já vinculado */}
+                    {associadoExistente && associadosEncontrados.length === 0 && (
+                      <div className="associado-vinculado-box">
                         <div className="associado-info-row">
-                          <User size={20} />
+                          <CheckCircle size={20} style={{ color: '#27ae60' }} />
                           <div className="associado-dados">
                             <strong>{associadoExistente.nome}</strong>
                             <span>{formatarCpfCnpj(associadoExistente.cpf_cnpj)}</span>
-                            <span>{associadoExistente.unidadesConsumidoras?.length || 0} UCs vinculadas</span>
+                            <span className="vinculado-tag">Vinculado</span>
                           </div>
                         </div>
-                        <button className="btn btn-success btn-sm" onClick={vincularAssociadoExistente}>
-                          <LinkIcon size={14} />
-                          Vincular a este
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => {
+                            setAssociadoExistente(null);
+                            setFormData(prev => ({ ...prev, associado_id: null }));
+                          }}
+                        >
+                          <X size={14} />
+                          Remover vínculo
                         </button>
                       </div>
                     )}
