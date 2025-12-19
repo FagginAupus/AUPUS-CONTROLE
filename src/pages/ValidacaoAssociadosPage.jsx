@@ -700,7 +700,7 @@ const ValidacaoAssociadosPage = () => {
                               <div className="associado-dados">
                                 <strong>{assoc.nome}</strong>
                                 <span>{formatarCpfCnpj(assoc.cpf_cnpj)}</span>
-                                <span>{assoc.unidadesConsumidoras?.length || 0} UCs vinculadas</span>
+                                <span>{assoc.controles_count ?? assoc.controles?.length ?? 0} contratos</span>
                               </div>
                             </div>
                             <button
