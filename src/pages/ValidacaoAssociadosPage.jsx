@@ -86,9 +86,12 @@ const ValidacaoAssociadosPage = () => {
   // Carregar consultores
   const carregarConsultores = useCallback(async () => {
     try {
-      const response = await apiService.request('/usuarios?role=consultor');
-      if (response.success && Array.isArray(response.data)) {
-        setConsultores(response.data);
+      const response = await apiService.request('/usuarios?role=consultor&per_page=100');
+      if (response.success && response.data) {
+        // O backend retorna dados paginados, então precisamos extrair o array
+        const consultoresData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+        setConsultores(consultoresData);
+        console.log('✅ Consultores carregados:', consultoresData.length);
       } else {
         setConsultores([]);
       }
