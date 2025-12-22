@@ -371,8 +371,8 @@
 }
 
 .uc-card {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
+  background: #3d3d3d;
+  border: 1px solid #555;
   border-radius: 8px;
   padding: 15px;
 }
@@ -389,7 +389,7 @@
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #2d7a31;
+  color: #4ade80;
 }
 
 .status-badge {
@@ -400,28 +400,28 @@
 }
 
 .status-badge.status-associado {
-  background: #d4edda;
-  color: #155724;
+  background: #166534;
+  color: #bbf7d0;
 }
 
 .status-badge.status-esteira {
-  background: #fff3cd;
-  color: #856404;
+  background: #854d0e;
+  color: #fef08a;
 }
 
 .status-badge.status-em-andamento {
-  background: #cce5ff;
-  color: #004085;
+  background: #1e40af;
+  color: #bfdbfe;
 }
 
 .uc-info-details p {
   margin: 4px 0;
   font-size: 0.85rem;
-  color: #666;
+  color: #ccc;
 }
 
 .uc-info-details strong {
-  color: #333;
+  color: #f0f0f0;
 }
 
 /* Tab badge */
