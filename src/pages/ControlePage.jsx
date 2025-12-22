@@ -870,7 +870,14 @@ const ControlePage = () => {
         bairro: payload.bairro,
         cidade: payload.cidade,
         estado: payload.estado,
-        cep: payload.cep
+        cep: payload.cep,
+
+        // ✅ DADOS DE FATURAMENTO - Tabela unidades_consumidoras
+        nome_faturamento: payload.nome_faturamento,
+        cpf_cnpj_faturamento: payload.cpf_cnpj_faturamento,
+        whatsapp_faturamento: payload.whatsapp_faturamento,
+        email_faturamento_1: payload.email_faturamento_1,
+        email_faturamento_2: payload.email_faturamento_2
       };
 
       console.log('🚀 Payload final sendo enviado:', requestPayload);
