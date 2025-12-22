@@ -38,6 +38,7 @@ import {
 import './ControlePage.css';
 import './CommonModalsPagesDark.css';
 import '../components/common/CommonModal.css';
+import { formatarCpfCnpj, formatarWhatsApp } from '../utils/formatters';
 
 const ControlePage = () => {
   const { user, getMyTeam, getConsultorName } = useAuth();
@@ -1765,16 +1766,16 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
 
           controleId: item.controleId,
 
-          // CONTATO
-          whatsapp: dadosUC.whatsapp || '',
+          // CONTATO (formatados)
+          whatsapp: formatarWhatsApp(dadosUC.whatsapp) !== '-' ? formatarWhatsApp(dadosUC.whatsapp) : '',
           email: dadosUC.email || '',
 
           // DOCUMENTAÇÃO
           documentacao_troca_titularidade: dadosUC.documentacao_troca_titularidade || '',
 
-          // CPF/CNPJ
-          cpf_cnpj: dadosUC.cpf_cnpj || '',
-          proposta_cpf_cnpj: dadosUC.proposta_cpf_cnpj || '',
+          // CPF/CNPJ (formatados)
+          cpf_cnpj: formatarCpfCnpj(dadosUC.cpf_cnpj) !== '-' ? formatarCpfCnpj(dadosUC.cpf_cnpj) : '',
+          proposta_cpf_cnpj: formatarCpfCnpj(dadosUC.proposta_cpf_cnpj) !== '-' ? formatarCpfCnpj(dadosUC.proposta_cpf_cnpj) : '',
 
           // ENDEREÇO
           endereco_completo: dadosUC.endereco_completo || '',
@@ -1789,10 +1790,10 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           cobrar_multa: dadosUC.cobrar_multa !== undefined ? dadosUC.cobrar_multa : false,
           dia_vencimento: dadosUC.dia_vencimento || 20,
 
-          // DADOS DE FATURAMENTO
+          // DADOS DE FATURAMENTO (formatados)
           nome_faturamento: dadosUC.nome_faturamento || '',
-          cpf_cnpj_faturamento: dadosUC.cpf_cnpj_faturamento || '',
-          whatsapp_faturamento: dadosUC.whatsapp_faturamento || '',
+          cpf_cnpj_faturamento: formatarCpfCnpj(dadosUC.cpf_cnpj_faturamento) !== '-' ? formatarCpfCnpj(dadosUC.cpf_cnpj_faturamento) : '',
+          whatsapp_faturamento: formatarWhatsApp(dadosUC.whatsapp_faturamento) !== '-' ? formatarWhatsApp(dadosUC.whatsapp_faturamento) : '',
           email_faturamento_1: dadosUC.email_faturamento_1 || '',
           email_faturamento_2: dadosUC.email_faturamento_2 || ''
         });

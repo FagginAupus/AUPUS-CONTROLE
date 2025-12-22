@@ -29,6 +29,7 @@ import {
 import './ValidacaoAssociadosPage.css';
 import './CommonModalsPagesDark.css';
 import '../components/common/CommonModal.css';
+import { formatarCpfCnpj, formatarWhatsApp } from '../utils/formatters';
 
 const ValidacaoAssociadosPage = () => {
   const { user } = useAuth();
@@ -212,10 +213,14 @@ const ValidacaoAssociadosPage = () => {
       if (response.success) {
         const dados = response.data;
 
+        // Formatar valores para exibição
+        const cpfFormatado = formatarCpfCnpj(dados.cliente.cpf_cnpj);
+        const whatsFormatado = formatarWhatsApp(dados.cliente.whatsapp);
+
         setFormData({
           nome: dados.cliente.nome || dados.proposta.nome_cliente || '',
-          cpf_cnpj: dados.cliente.cpf_cnpj || '',
-          whatsapp: dados.cliente.whatsapp || '',
+          cpf_cnpj: cpfFormatado !== '-' ? cpfFormatado : '',
+          whatsapp: whatsFormatado !== '-' ? whatsFormatado : '',
           email: dados.cliente.email || '',
           endereco: dados.cliente.endereco || '',
           bairro: dados.cliente.bairro || '',
@@ -228,10 +233,10 @@ const ValidacaoAssociadosPage = () => {
           consultor_id: dados.proposta.consultor_id || '',
           desconto_tarifa: dados.proposta.desconto_tarifa || '20%',
           desconto_bandeira: dados.proposta.desconto_bandeira || '20%',
-          // Campos de faturamento - inicializados com dados do cliente/proposta
+          // Campos de faturamento - inicializados com dados do cliente/proposta (formatados)
           nome_faturamento: dados.cliente.nome || dados.proposta.nome_cliente || '',
-          cpf_cnpj_faturamento: dados.cliente.cpf_cnpj || '',
-          whatsapp_faturamento: dados.cliente.whatsapp || '',
+          cpf_cnpj_faturamento: cpfFormatado !== '-' ? cpfFormatado : '',
+          whatsapp_faturamento: whatsFormatado !== '-' ? whatsFormatado : '',
           email_faturamento_1: dados.cliente.email || '',
           email_faturamento_2: ''
         });
@@ -293,11 +298,13 @@ const ValidacaoAssociadosPage = () => {
   const vincularAssociadoExistente = (associado = null) => {
     const associadoParaVincular = associado || associadoExistente;
     if (associadoParaVincular) {
+      const cpfFormatado = formatarCpfCnpj(associadoParaVincular.cpf_cnpj);
+      const whatsFormatado = formatarWhatsApp(associadoParaVincular.whatsapp);
       setFormData(prev => ({
         ...prev,
         nome: associadoParaVincular.nome,
-        cpf_cnpj: associadoParaVincular.cpf_cnpj,
-        whatsapp: associadoParaVincular.whatsapp || prev.whatsapp,
+        cpf_cnpj: cpfFormatado !== '-' ? cpfFormatado : '',
+        whatsapp: whatsFormatado !== '-' ? whatsFormatado : prev.whatsapp,
         email: associadoParaVincular.email || prev.email,
         associado_id: associadoParaVincular.id
       }));
@@ -392,16 +399,6 @@ const ValidacaoAssociadosPage = () => {
       String(item.uc?.numero_unidade).includes(busca)
     );
   }) : [];
-
-  // Formatar CPF/CNPJ
-  const formatarCpfCnpj = (valor) => {
-    if (!valor) return '';
-    const numeros = valor.replace(/\D/g, '');
-    if (numeros.length <= 11) {
-      return numeros.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    }
-    return numeros.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-  };
 
   // Formatar data
   const formatarData = (data) => {
