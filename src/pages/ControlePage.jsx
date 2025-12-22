@@ -1683,7 +1683,13 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
     // NOVOS CAMPOS - INTEGRAÇÃO MICROSERVIÇOS
     compensacao_completa: true,
     cobrar_multa: false,
-    dia_vencimento: 20
+    dia_vencimento: 20,
+    // CAMPOS DE FATURAMENTO
+    nome_faturamento: '',
+    cpf_cnpj_faturamento: '',
+    whatsapp_faturamento: '',
+    email_faturamento_1: '',
+    email_faturamento_2: ''
   });
 
 
@@ -1781,7 +1787,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           // CONFIGURAÇÕES DE FATURAMENTO
           compensacao_completa: dadosUC.compensacao_completa !== undefined ? dadosUC.compensacao_completa : true,
           cobrar_multa: dadosUC.cobrar_multa !== undefined ? dadosUC.cobrar_multa : false,
-          dia_vencimento: dadosUC.dia_vencimento || 20
+          dia_vencimento: dadosUC.dia_vencimento || 20,
+
+          // DADOS DE FATURAMENTO
+          nome_faturamento: dadosUC.nome_faturamento || '',
+          cpf_cnpj_faturamento: dadosUC.cpf_cnpj_faturamento || '',
+          whatsapp_faturamento: dadosUC.whatsapp_faturamento || '',
+          email_faturamento_1: dadosUC.email_faturamento_1 || '',
+          email_faturamento_2: dadosUC.email_faturamento_2 || ''
         });
 
         console.log('✅ Estado configurado:', {
@@ -1890,7 +1903,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
         bairro: dados.bairro,
         cidade: dados.cidade,
         estado: dados.estado,
-        cep: dados.cep
+        cep: dados.cep,
+
+        // DADOS DE FATURAMENTO
+        nome_faturamento: dados.nome_faturamento,
+        cpf_cnpj_faturamento: dados.cpf_cnpj_faturamento,
+        whatsapp_faturamento: dados.whatsapp_faturamento,
+        email_faturamento_1: dados.email_faturamento_1,
+        email_faturamento_2: dados.email_faturamento_2
       };
 
       console.log('🔍 Payload correto sendo enviado:', payload);
@@ -2199,6 +2219,14 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
           >
             <Home size={16} />
             Endereço
+          </button>
+          <button
+            type="button"
+            className={`modal-tab ${abaAtiva === 'faturamento' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('faturamento')}
+          >
+            <FileText size={16} />
+            Faturamento
           </button>
         </div>
 
@@ -2675,6 +2703,111 @@ const ModalUCDetalhes = ({ item, onSave, onClose }) => {
                   className="form-input"
                   placeholder="00000-000"
                   maxLength="10"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ========== ABA 4: FATURAMENTO ========== */}
+        {abaAtiva === 'faturamento' && (
+          <>
+            {/* Informações de Faturamento */}
+            <div className="faturamento-info-section">
+              <h4 className="section-title-with-icon">
+                <FileText size={16} />
+                Informações de Faturamento
+              </h4>
+              <p className="section-description">
+                Dados que serão utilizados para emissão e envio das faturas desta UC.
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="nome_faturamento" className="label-with-icon">
+                  <Users size={14} />
+                  <strong>Nome para Faturamento:</strong>
+                </label>
+                <input
+                  type="text"
+                  id="nome_faturamento"
+                  value={dados.nome_faturamento}
+                  onChange={(e) => setDados(prev => ({ ...prev, nome_faturamento: e.target.value }))}
+                  className="form-input"
+                  placeholder="Nome que aparecerá na fatura"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="cpf_cnpj_faturamento" className="label-with-icon">
+                    <FileText size={14} />
+                    <strong>CPF/CNPJ para Faturamento:</strong>
+                  </label>
+                  <input
+                    type="text"
+                    id="cpf_cnpj_faturamento"
+                    value={dados.cpf_cnpj_faturamento}
+                    onChange={(e) => setDados(prev => ({ ...prev, cpf_cnpj_faturamento: e.target.value }))}
+                    className="form-input"
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    maxLength="18"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="whatsapp_faturamento" className="label-with-icon">
+                    <Smartphone size={14} />
+                    <strong>WhatsApp para Faturamento:</strong>
+                  </label>
+                  <input
+                    type="tel"
+                    id="whatsapp_faturamento"
+                    value={dados.whatsapp_faturamento}
+                    onChange={(e) => setDados(prev => ({ ...prev, whatsapp_faturamento: e.target.value }))}
+                    className="form-input"
+                    placeholder="(62) 99999-9999"
+                    maxLength="20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* E-mails para Envio de Fatura */}
+            <div className="faturamento-emails-section">
+              <h4 className="section-title-with-icon">
+                <Mail size={16} />
+                E-mails para Envio de Fatura
+              </h4>
+              <p className="section-description">
+                Informe até dois e-mails para recebimento das faturas.
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="email_faturamento_1" className="label-with-icon">
+                  <Mail size={14} />
+                  <strong>E-mail Principal:</strong>
+                </label>
+                <input
+                  type="email"
+                  id="email_faturamento_1"
+                  value={dados.email_faturamento_1}
+                  onChange={(e) => setDados(prev => ({ ...prev, email_faturamento_1: e.target.value }))}
+                  className="form-input"
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email_faturamento_2" className="label-with-icon">
+                  <Mail size={14} />
+                  <strong>E-mail Secundário (opcional):</strong>
+                </label>
+                <input
+                  type="email"
+                  id="email_faturamento_2"
+                  value={dados.email_faturamento_2}
+                  onChange={(e) => setDados(prev => ({ ...prev, email_faturamento_2: e.target.value }))}
+                  className="form-input"
+                  placeholder="email2@exemplo.com"
                 />
               </div>
             </div>

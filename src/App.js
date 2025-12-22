@@ -19,6 +19,7 @@ import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
 import LogsPage from './pages/LogsPage';
 import ValidacaoAssociadosPage from './pages/ValidacaoAssociadosPage';
+import AssociadosPage from './pages/AssociadosPage';
 
 // Estilos
 import './dark-theme.css';
@@ -171,6 +172,14 @@ const AppContent = () => {
             <ProtectedRoute>
               <SessionManager>
                 <ValidacaoAssociadosPage />
+              </SessionManager>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/associados" element={
+            <ProtectedRoute>
+              <SessionManager>
+                <AssociadosPage />
               </SessionManager>
             </ProtectedRoute>
           } />

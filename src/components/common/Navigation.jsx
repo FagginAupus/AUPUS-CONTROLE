@@ -84,6 +84,14 @@ const Navigation = () => {
       hasBadge: true
     },
     {
+      id: 'associados',
+      label: 'ASSOCIADOS',
+      icon: Users,
+      path: '/associados',
+      requiredPage: null,
+      adminOrAnalista: true
+    },
+    {
       id: 'controle',
       label: 'CONTROLE',
       icon: Settings,
