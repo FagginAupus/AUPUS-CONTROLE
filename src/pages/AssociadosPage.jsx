@@ -21,7 +21,8 @@ import {
   Database,
   Zap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MapPin
 } from 'lucide-react';
 import './AssociadosPage.css';
 import './CommonModalsPagesDark.css';
@@ -97,17 +98,18 @@ const AssociadosPage = () => {
   };
 
   // Buscar com debounce
-  const handleBusca = useCallback((valor) => {
-    setFiltro(valor);
-    setPaginaAtual(1);
-
-    // Debounce de 500ms
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
-      carregarAssociados(1, valor);
+      if (filtro !== '') {
+        setPaginaAtual(1);
+        carregarAssociados(1, filtro);
+      } else {
+        carregarAssociados(paginaAtual, '');
+      }
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [carregarAssociados]);
+  }, [filtro]);
 
   // Paginação
   const irParaPagina = (pagina) => {
@@ -167,13 +169,13 @@ const AssociadosPage = () => {
   // Se não tem permissão
   if (!isAdminOrAnalista) {
     return (
-      <div className="main-container">
-        <Header />
-        <Navigation />
-        <div className="content-area">
-          <div className="access-denied">
+      <div className="page-container">
+        <div className="container">
+          <Header title="Associados" />
+          <Navigation />
+          <div className="empty-container">
             <Users size={48} />
-            <h2>Acesso Restrito</h2>
+            <h3>Acesso Restrito</h3>
             <p>Apenas administradores e analistas podem acessar esta página.</p>
           </div>
         </div>
@@ -182,63 +184,89 @@ const AssociadosPage = () => {
   }
 
   return (
-    <div className="main-container">
-      <Header />
-      <Navigation />
-      <div className="content-area">
-        <section className="associados-section">
-          {/* Header da página */}
-          <div className="section-header">
-            <div className="header-title">
-              <Users size={24} />
-              <h2>Gestão de Associados</h2>
-              <span className="badge-count">{totalRegistros}</span>
+    <div className="page-container">
+      <div className="container">
+        <Header title="Gestão de Associados" />
+        <Navigation />
+
+        {/* Estatísticas Rápidas */}
+        <section className="quick-stats">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Users size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
             </div>
-            <div className="header-actions">
-              <button
-                className="btn btn-secondary"
-                onClick={handleRefresh}
-                disabled={refreshing}
-              >
-                <RefreshCw size={16} className={refreshing ? 'spinning' : ''} />
-                Atualizar
-              </button>
+            <div className="stat-content">
+              <span className="stat-label">Total Associados</span>
+              <span className="stat-value">{totalRegistros}</span>
             </div>
           </div>
 
-          {/* Barra de busca */}
-          <div className="filtros-container">
-            <div className="search-box">
-              <Search size={18} />
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF/CNPJ ou email..."
-                value={filtro}
-                onChange={(e) => handleBusca(e.target.value)}
-              />
-              {filtro && (
-                <button className="clear-search" onClick={() => handleBusca('')}>
-                  <X size={16} />
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Database size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Exibindo</span>
+              <span className="stat-value">{associados.length}</span>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FileText size={24} style={{ color: '#f0f0f0', opacity: 0.8 }} />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Página</span>
+              <span className="stat-value-small">{paginaAtual} de {totalPaginas}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Filtros e Controles */}
+        <section className="filters-section">
+          <div className="filters-container">
+            <div className="filters-grid">
+              <div className="filter-group filter-busca">
+                <label>Buscar:</label>
+                <input
+                  type="text"
+                  placeholder="Nome, CPF/CNPJ ou email..."
+                  value={filtro}
+                  onChange={(e) => setFiltro(e.target.value)}
+                />
+              </div>
+
+              <div className="filter-actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  <RefreshCw size={16} className={refreshing ? 'spinning' : ''} />
+                  Atualizar
                 </button>
-              )}
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Tabela de associados */}
-          <div className="table-container">
-            {loading ? (
-              <div className="loading-state">
-                <RefreshCw size={32} className="spinning" />
-                <p>Carregando associados...</p>
-              </div>
-            ) : associados.length === 0 ? (
-              <div className="empty-state">
-                <Users size={48} />
-                <p>Nenhum associado encontrado</p>
-              </div>
-            ) : (
-              <>
-                <table className="data-table">
+        {/* Tabela de Associados */}
+        <section className="table-section">
+          {loading ? (
+            <div className="loading-container">
+              <RefreshCw size={32} className="spinning" />
+              <p>Carregando associados...</p>
+            </div>
+          ) : associados.length === 0 ? (
+            <div className="empty-container">
+              <Users size={48} />
+              <h3>Nenhum associado encontrado</h3>
+              <p>Não há associados cadastrados ou a busca não retornou resultados.</p>
+            </div>
+          ) : (
+            <>
+              <div className="table-wrapper">
+                <table className="table">
                   <thead>
                     <tr>
                       <th>Nome</th>
@@ -252,71 +280,83 @@ const AssociadosPage = () => {
                   <tbody>
                     {associados.map((associado) => (
                       <tr key={associado.id}>
-                        <td className="nome-cell">
-                          <User size={14} />
-                          <span>{associado.nome}</span>
+                        <td>
+                          <div className="cliente-info">
+                            <span className="nome-cliente">{associado.nome}</span>
+                          </div>
                         </td>
-                        <td>{associado.cpf_cnpj || '-'}</td>
-                        <td>{associado.whatsapp || '-'}</td>
-                        <td className="email-cell">{associado.email || '-'}</td>
-                        <td className="ucs-count">
-                          <span className="badge">
+                        <td>
+                          <span className="numero-proposta">{associado.cpf_cnpj || '-'}</span>
+                        </td>
+                        <td>
+                          <span className="contato">{associado.whatsapp || '-'}</span>
+                        </td>
+                        <td>
+                          <span className="contato email">{associado.email || '-'}</span>
+                        </td>
+                        <td>
+                          <span className="badge-uc">
                             {associado.unidades_consumidoras?.length || associado.controles_count || 0}
                           </span>
                         </td>
-                        <td className="actions-cell">
-                          <button
-                            className="btn-action btn-edit"
-                            onClick={() => abrirDetalhes(associado)}
-                            title="Ver detalhes"
-                          >
-                            <Edit size={16} />
-                          </button>
+                        <td>
+                          <div className="acoes-cell">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => abrirDetalhes(associado)}
+                              title="Ver detalhes"
+                            >
+                              <Edit size={14} />
+                              Editar
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
 
-                {/* Paginação */}
-                <div className="pagination-container">
-                  <div className="pagination-info">
-                    Mostrando {((paginaAtual - 1) * porPagina) + 1} - {Math.min(paginaAtual * porPagina, totalRegistros)} de {totalRegistros}
-                  </div>
-                  <div className="pagination-controls">
-                    <button
-                      className="btn-pagination"
-                      onClick={() => irParaPagina(paginaAtual - 1)}
-                      disabled={paginaAtual <= 1}
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span className="pagination-current">
-                      Página {paginaAtual} de {totalPaginas}
-                    </span>
-                    <button
-                      className="btn-pagination"
-                      onClick={() => irParaPagina(paginaAtual + 1)}
-                      disabled={paginaAtual >= totalPaginas}
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
+              {/* Paginação */}
+              <div className="pagination-bar">
+                <div className="pagination-info">
+                  Mostrando {((paginaAtual - 1) * porPagina) + 1} - {Math.min(paginaAtual * porPagina, totalRegistros)} de {totalRegistros}
                 </div>
-              </>
-            )}
-          </div>
+                <div className="pagination-controls">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => irParaPagina(paginaAtual - 1)}
+                    disabled={paginaAtual <= 1}
+                  >
+                    <ChevronLeft size={16} />
+                    Anterior
+                  </button>
+                  <span className="pagination-current">
+                    Página {paginaAtual} de {totalPaginas}
+                  </span>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => irParaPagina(paginaAtual + 1)}
+                    disabled={paginaAtual >= totalPaginas}
+                  >
+                    Próxima
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </section>
-
-        {/* Modal de Detalhes do Associado */}
-        {modalDetalhes.show && (
-          <ModalAssociadoDetalhes
-            associado={modalDetalhes.associado}
-            onSave={salvarAssociado}
-            onClose={fecharModal}
-          />
-        )}
       </div>
+
+      {/* Modal de Detalhes do Associado */}
+      {modalDetalhes.show && (
+        <ModalAssociadoDetalhes
+          associado={modalDetalhes.associado}
+          onSave={salvarAssociado}
+          onClose={fecharModal}
+        />
+      )}
     </div>
   );
 };
@@ -391,18 +431,18 @@ const ModalAssociadoDetalhes = ({ associado, onSave, onClose }) => {
 
   return (
     <div className="common-modal-overlay" onClick={onClose}>
-      <div className="common-modal modal-associado-detalhes" onClick={(e) => e.stopPropagation()}>
+      <div className="common-modal modal-validacao-associado" onClick={(e) => e.stopPropagation()}>
         <div className="common-modal-header">
           <h3 className="modal-title-with-icon">
             <User size={20} />
             Detalhes do Associado
           </h3>
-          <button onClick={onClose} className="common-close-btn">
+          <button className="common-close-btn" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
 
-        {/* Sistema de Abas */}
+        {/* Abas do Modal */}
         <div className="modal-tabs">
           <button
             type="button"
@@ -417,7 +457,7 @@ const ModalAssociadoDetalhes = ({ associado, onSave, onClose }) => {
             className={`modal-tab ${abaAtiva === 'ucs' ? 'active' : ''}`}
             onClick={() => setAbaAtiva('ucs')}
           >
-            <Home size={16} />
+            <Zap size={16} />
             UCs Vinculadas
             {ucsVinculadas.length > 0 && (
               <span className="tab-badge">{ucsVinculadas.length}</span>
@@ -435,15 +475,17 @@ const ModalAssociadoDetalhes = ({ associado, onSave, onClose }) => {
                   Informações Pessoais
                 </h4>
 
-                <div className="form-group">
-                  <label>Nome Completo *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    required
-                  />
+                <div className="form-row">
+                  <div className="form-group full-width">
+                    <label>Nome Completo *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.nome}
+                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="form-row">
@@ -469,33 +511,37 @@ const ModalAssociadoDetalhes = ({ associado, onSave, onClose }) => {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="email@exemplo.com"
-                  />
+                <div className="form-row">
+                  <div className="form-group full-width">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="modal-section">
                 <h4 className="section-title-with-icon">
-                  <Home size={16} />
+                  <MapPin size={16} />
                   Endereço
                 </h4>
 
-                <div className="form-group">
-                  <label>Endereço Completo</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.endereco}
-                    onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                    placeholder="Rua, número, complemento"
-                  />
+                <div className="form-row">
+                  <div className="form-group full-width">
+                    <label>Endereço Completo</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.endereco}
+                      onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                      placeholder="Rua, número, complemento"
+                    />
+                  </div>
                 </div>
 
                 <div className="form-row">
@@ -600,7 +646,7 @@ const ModalAssociadoDetalhes = ({ associado, onSave, onClose }) => {
                           </span>
                         )}
                       </div>
-                      <div className="uc-info">
+                      <div className="uc-info-details">
                         {uc.apelido && (
                           <p><strong>Apelido:</strong> {uc.apelido}</p>
                         )}
