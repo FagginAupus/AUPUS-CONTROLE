@@ -84,10 +84,11 @@ const AssociadosPage = () => {
     }
   }, [isAdminOrAnalista, showNotification]);
 
-  // Carregar ao montar
+  // Carregar ao montar (apenas uma vez)
   useEffect(() => {
-    carregarAssociados();
-  }, [carregarAssociados]);
+    carregarAssociados(1, '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Atualizar lista
   const handleRefresh = async () => {
@@ -97,15 +98,17 @@ const AssociadosPage = () => {
     showNotification('Lista atualizada!', 'success');
   };
 
-  // Buscar com debounce
+  // Buscar com debounce (só dispara quando filtro muda, não na montagem)
+  const isFirstRender = React.useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
-      if (filtro !== '') {
-        setPaginaAtual(1);
-        carregarAssociados(1, filtro);
-      } else {
-        carregarAssociados(paginaAtual, '');
-      }
+      setPaginaAtual(1);
+      carregarAssociados(1, filtro);
     }, 500);
 
     return () => clearTimeout(timeoutId);
