@@ -22,7 +22,9 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
-  MapPin
+  MapPin,
+  AlertTriangle,
+  ArrowRight
 } from 'lucide-react';
 import './AssociadosPage.css';
 import './CommonModalsPagesDark.css';
@@ -50,6 +52,13 @@ const AssociadosPage = () => {
 
   // Modal de detalhes
   const [modalDetalhes, setModalDetalhes] = useState({ show: false, associado: null });
+
+  // Modal de confirmação de unificação
+  const [modalUnificacao, setModalUnificacao] = useState({
+    show: false,
+    duplicado: null,
+    dadosOriginais: null
+  });
 
   // Carregar associados
   const carregarAssociados = useCallback(async (pagina = 1, busca = '') => {
@@ -150,16 +159,37 @@ const AssociadosPage = () => {
   };
 
   // Salvar alterações do associado
-  const salvarAssociado = async (dadosAtualizados) => {
+  const salvarAssociado = async (dadosAtualizados, confirmarUnificacao = false) => {
     try {
+      const payload = confirmarUnificacao
+        ? { ...dadosAtualizados, confirmar_unificacao: true }
+        : dadosAtualizados;
+
       const response = await apiService.request(`/associados/${dadosAtualizados.id}`, {
         method: 'PUT',
-        body: JSON.stringify(dadosAtualizados)
+        body: JSON.stringify(payload)
       });
 
+      // Verifica se backend pede confirmação de unificação
+      if (response.requer_confirmacao && response.duplicado) {
+        // Mostrar modal de confirmação
+        setModalUnificacao({
+          show: true,
+          duplicado: response.duplicado,
+          dadosOriginais: dadosAtualizados
+        });
+        return;
+      }
+
       if (response.success) {
-        showNotification('Associado atualizado com sucesso!', 'success');
+        // Mensagem especial se houve unificação
+        if (response.unificado) {
+          showNotification('Associados unificados com sucesso! UCs e controles foram transferidos.', 'success');
+        } else {
+          showNotification('Associado atualizado com sucesso!', 'success');
+        }
         fecharModal();
+        setModalUnificacao({ show: false, duplicado: null, dadosOriginais: null });
         carregarAssociados(paginaAtual, filtro);
       } else {
         showNotification(response.message || 'Erro ao atualizar associado', 'error');
@@ -168,6 +198,19 @@ const AssociadosPage = () => {
       console.error('Erro ao salvar:', error);
       showNotification('Erro ao salvar: ' + error.message, 'error');
     }
+  };
+
+  // Confirmar unificação de associados
+  const confirmarUnificacao = async () => {
+    if (modalUnificacao.dadosOriginais) {
+      await salvarAssociado(modalUnificacao.dadosOriginais, true);
+    }
+  };
+
+  // Cancelar unificação
+  const cancelarUnificacao = () => {
+    setModalUnificacao({ show: false, duplicado: null, dadosOriginais: null });
+    showNotification('Unificação cancelada. Nenhuma alteração foi feita.', 'info');
   };
 
   // Se não tem permissão
@@ -361,6 +404,109 @@ const AssociadosPage = () => {
           onClose={fecharModal}
         />
       )}
+
+      {/* Modal de Confirmação de Unificação */}
+      {modalUnificacao.show && (
+        <ModalConfirmacaoUnificacao
+          duplicado={modalUnificacao.duplicado}
+          onConfirm={confirmarUnificacao}
+          onCancel={cancelarUnificacao}
+        />
+      )}
+    </div>
+  );
+};
+
+// Modal de Confirmação de Unificação
+const ModalConfirmacaoUnificacao = ({ duplicado, onConfirm, onCancel }) => {
+  const [confirmando, setConfirmando] = useState(false);
+
+  const handleConfirm = async () => {
+    setConfirmando(true);
+    await onConfirm();
+    setConfirmando(false);
+  };
+
+  return (
+    <div className="common-modal-overlay" onClick={onCancel}>
+      <div className="common-modal modal-unificacao" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-warning">
+          <h3 className="modal-title-with-icon">
+            <AlertTriangle size={20} />
+            Confirmar Unificação de Associados
+          </h3>
+          <button className="common-close-btn" onClick={onCancel}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="common-modal-content">
+          <div className="unificacao-aviso">
+            <AlertTriangle size={32} className="aviso-icon" />
+            <p>
+              Já existe um associado cadastrado com <strong>todos os mesmos dados</strong>.
+              Deseja unificar os registros?
+            </p>
+          </div>
+
+          <div className="unificacao-detalhes">
+            <h4>Associado duplicado encontrado (será removido):</h4>
+            <div className="associado-card">
+              <div className="associado-info">
+                <p><strong>Nome:</strong> {duplicado?.nome || '-'}</p>
+                <p><strong>CPF/CNPJ:</strong> {formatarCpfCnpj(duplicado?.cpf_cnpj)}</p>
+                <p><strong>WhatsApp:</strong> {formatarWhatsApp(duplicado?.whatsapp)}</p>
+                <p><strong>Email:</strong> {duplicado?.email || '-'}</p>
+              </div>
+              {(duplicado?.qtd_ucs > 0 || duplicado?.qtd_controles > 0) && (
+                <div className="associado-stats">
+                  <div className="stat-item">
+                    <Database size={16} />
+                    <span>{duplicado?.qtd_ucs || 0} UCs</span>
+                  </div>
+                  <div className="stat-item">
+                    <FileText size={16} />
+                    <span>{duplicado?.qtd_controles || 0} Controles</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="unificacao-acao">
+            <ArrowRight size={24} className="arrow-icon" />
+            <p>
+              O associado duplicado será <strong>removido</strong> e suas UCs/controles serão
+              <strong> transferidos</strong> para o registro que você está editando.
+            </p>
+          </div>
+        </div>
+
+        <div className="common-modal-footer">
+          <button type="button" className="btn btn-secondary" onClick={onCancel}>
+            <X size={16} />
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn-warning"
+            onClick={handleConfirm}
+            disabled={confirmando}
+          >
+            {confirmando ? (
+              <>
+                <RefreshCw size={16} className="spinning" />
+                Unificando...
+              </>
+            ) : (
+              <>
+                <AlertTriangle size={16} />
+                Confirmar Unificação
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

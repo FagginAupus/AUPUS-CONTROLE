@@ -469,3 +469,140 @@
     max-width: 120px;
   }
 }
+
+/* =======================================================
+   MODAL DE UNIFICAÇÃO DE ASSOCIADOS
+   ======================================================= */
+
+.modal-unificacao {
+  max-width: 550px;
+}
+
+.modal-header-warning {
+  background: linear-gradient(135deg, #d97706, #b45309) !important;
+}
+
+.modal-header-warning .modal-title-with-icon {
+  color: white !important;
+}
+
+.modal-header-warning .modal-title-with-icon svg {
+  color: white !important;
+}
+
+.unificacao-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 20px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.unificacao-aviso .aviso-icon {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.unificacao-aviso p {
+  margin: 0;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.unificacao-detalhes {
+  margin-bottom: 20px;
+}
+
+.unificacao-detalhes h4 {
+  margin: 0 0 12px 0;
+  color: #f0f0f0;
+  font-size: 0.95rem;
+}
+
+.associado-card {
+  background: #3d3d3d;
+  border: 1px solid #555;
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.associado-info p {
+  margin: 4px 0;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.associado-info strong {
+  color: #f0f0f0;
+}
+
+.associado-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2d2d2d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: #4ade80;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stat-item svg {
+  color: #4ade80;
+}
+
+.unificacao-acao {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: #2d2d2d;
+  border-radius: 10px;
+  border-left: 4px solid #f59e0b;
+}
+
+.unificacao-acao .arrow-icon {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.unificacao-acao p {
+  margin: 0;
+  color: #ccc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.unificacao-acao strong {
+  color: #fbbf24;
+}
+
+/* Botão warning */
+.btn-warning {
+  background: linear-gradient(135deg, #d97706, #b45309) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.btn-warning:hover {
+  background: linear-gradient(135deg, #b45309, #92400e) !important;
+}
+
+.btn-warning:disabled {
+  background: #6b7280 !important;
+  cursor: not-allowed;
+}
