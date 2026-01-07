@@ -1038,6 +1038,22 @@ small {
 .alert-warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
 .form-help { color: #6c757d; font-size: 0.8rem; margin-top: 4px; }
 
+/* Warning box para status "Saindo" */
+.warning-box {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin: 10px 0 15px 0;
+  color: #92400e;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.warning-box strong {
+  color: #78350f;
+}
+
 /* Título dos modais - regras movidas para dark mode (linhas 562-572) */
 
 .ug-option-remover {

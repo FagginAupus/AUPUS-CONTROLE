@@ -432,7 +432,7 @@ const ControlePage = () => {
     const statusTroca = dados.reduce((acc, item) => {
       // Usar o campo correto com fallback
       const status = item.status_troca || item.statusTroca || 'Esteira';
-      
+
       switch (status) {
         case 'Esteira':
           acc.esteira++;
@@ -443,12 +443,15 @@ const ControlePage = () => {
         case 'Associado':
           acc.associado++;
           break;
+        case 'Saindo':
+          acc.saindo++;
+          break;
         default:
           console.warn('Status desconhecido encontrado:', status);
           acc.esteira++; // Default para Esteira
       }
       return acc;
-    }, { esteira: 0, emAndamento: 0, associado: 0 });
+    }, { esteira: 0, emAndamento: 0, associado: 0, saindo: 0 });
     
     return {
       total: dados.length,
@@ -1057,6 +1060,7 @@ const ControlePage = () => {
                   <option value="Esteira">Esteira</option>
                   <option value="Em andamento">Em andamento</option>
                   <option value="Associado">Associado</option>
+                  <option value="Saindo">Saindo</option>
                 </select>
               </div>
 
@@ -1483,8 +1487,11 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Se está saindo de "Associado" e tem UG, mostrar confirmação
-    if (item.statusTroca === 'Associado' && statusTroca !== 'Associado' && item.ugNome) {
+    // Se está saindo de "Associado" e tem UG, ou entrando em "Saindo" com UG, mostrar confirmação
+    const sairDeAssociado = item.statusTroca === 'Associado' && statusTroca !== 'Associado' && item.ugNome;
+    const entrarEmSaindo = statusTroca === 'Saindo' && item.ugNome;
+
+    if (sairDeAssociado || entrarEmSaindo) {
       setShowConfirmacao(true);
       return;
     }
@@ -1551,9 +1558,12 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
             <div className="alert alert-warning">
               <h4>⚠️ Confirmação Necessária</h4>
               <p>
-                Ao alterar o status de <strong>"Associado"</strong> para <strong>"{statusTroca}"</strong>,
+                Ao alterar o status para <strong>"{statusTroca}"</strong>,
                 a UG <strong>"{item.ugNome}"</strong> será automaticamente <strong>desatribuída</strong> desta UC.
               </p>
+              {statusTroca === 'Saindo' && (
+                <p><em>O status "Saindo" indica que o cliente está em processo de saída do consórcio.</em></p>
+              )}
               <p>Deseja continuar?</p>
             </div>
             <div className="modal-footer">
@@ -1601,10 +1611,19 @@ const ModalStatusTroca = ({ item, onSave, onClose }) => {
                 <option value="Esteira">Esteira</option>
                 <option value="Em andamento">Em andamento</option>
                 <option value="Associado">Associado</option>
+                <option value="Saindo">Saindo</option>
               </select>
             </div>
-            
-            {/* Campo Data - só aparece quando status é "Finalizado" */}
+
+            {/* Aviso quando status é "Saindo" e tem UG */}
+            {statusTroca === 'Saindo' && item?.ugNome && (
+              <div className="warning-box">
+                <strong>⚠️ Atenção:</strong> Ao definir o status como "Saindo",
+                a UG <strong>"{item.ugNome}"</strong> será desatribuída automaticamente.
+              </div>
+            )}
+
+            {/* Campo Data - só aparece quando status é "Associado" */}
             {statusTroca === 'Associado' && (
               <div className="form-group">
                 <label>Data da Titularidade:</label>
