@@ -1209,13 +1209,38 @@ class StorageService {
         }
     }
 
-    async downloadArquivoRateio(id) {
+    async downloadArquivoRateio(id, filename = 'arquivo.xlsx') {
         try {
             console.log('📥 Baixando arquivo de rateio', id);
-            const response = await apiService.get(`/historico-rateios/${id}/download`, {
-                responseType: 'blob'
+
+            // Fazer download direto via fetch com blob
+            const token = localStorage.getItem('aupus_token');
+            const baseURL = process.env.REACT_APP_API_URL || 'https://staging-api.aupusenergia.com.br/api';
+
+            const response = await fetch(`${baseURL}/historico-rateios/${id}/download`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/octet-stream'
+                }
             });
-            return response;
+
+            if (!response.ok) {
+                throw new Error('Erro ao baixar arquivo');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename || 'arquivo.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            console.log('✅ Arquivo baixado com sucesso');
+            return { success: true };
         } catch (error) {
             console.error('❌ Erro ao baixar arquivo de rateio:', error);
             throw error;
