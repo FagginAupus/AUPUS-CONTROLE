@@ -1046,8 +1046,13 @@ DETALHES DA UG: ${item.nomeUsina}
                                 </button>
                                 {item.arquivo_path && (
                                   <button
-                                    onClick={() => {
-                                      window.open(`${process.env.REACT_APP_API_URL || ''}/storage/${item.arquivo_path}`, '_blank');
+                                    onClick={async () => {
+                                      try {
+                                        await storageService.downloadArquivoRateio(item.id, item.arquivo_nome);
+                                      } catch (error) {
+                                        console.error('Erro ao baixar arquivo:', error);
+                                        showNotification('Erro ao baixar arquivo', 'error');
+                                      }
                                     }}
                                     className="action-btn info"
                                     title="Baixar Arquivo"
