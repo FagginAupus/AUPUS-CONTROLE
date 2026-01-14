@@ -27,20 +27,34 @@ import {
   Eye,
   Save,
   Check,
-  AlertCircle
+  AlertCircle,
+  History,
+  Upload,
+  Download,
+  Calendar
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as XLSXStyle from 'xlsx-js-style';
 const UGsPage = () => {
   const { user } = useAuth();
-  const { 
-    ugs, 
-    loadUgs,  
-    afterCreateUg 
+  const {
+    ugs,
+    loadUgs,
+    afterCreateUg
   } = useData();
   const [modalNovaUG, setModalNovaUG] = useState({ show: false });
   const [modalEdicao, setModalEdicao] = useState({ show: false, item: null, index: -1 });
   const [modalVisualizarUCs, setModalVisualizarUCs] = useState({ show: false, ug: null, ucs: [] });
+
+  // Estado para abas
+  const [abaAtiva, setAbaAtiva] = useState('usinas'); // 'usinas' ou 'historico'
+
+  // Estados para histórico de rateio
+  const [historicoRateios, setHistoricoRateios] = useState([]);
+  const [historicoLoading, setHistoricoLoading] = useState(false);
+  const [modalNovoRateio, setModalNovoRateio] = useState({ show: false });
+  const [modalEditarRateio, setModalEditarRateio] = useState({ show: false, item: null });
+  const [ugsLista, setUgsLista] = useState([]);
 
   const [filtros, setFiltros] = useState({
     busca: ''
@@ -290,6 +304,97 @@ const UGsPage = () => {
     console.log('🔄 Refresh manual dos dados');
     loadUgs(ugs.filters, true);
   }, [loadUgs, ugs.filters]);
+
+  // ========================================
+  // FUNÇÕES PARA HISTÓRICO DE RATEIO
+  // ========================================
+
+  const carregarHistoricoRateios = useCallback(async () => {
+    try {
+      setHistoricoLoading(true);
+      const response = await storageService.listarHistoricoRateios({ per_page: 100 });
+      if (response.success) {
+        setHistoricoRateios(response.data || []);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      showNotification('Erro ao carregar histórico de rateios', 'error');
+    } finally {
+      setHistoricoLoading(false);
+    }
+  }, [showNotification]);
+
+  const carregarUGsLista = useCallback(async () => {
+    try {
+      const response = await storageService.listarUGsParaRateio();
+      if (response.success) {
+        setUgsLista(response.data || []);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar UGs:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (abaAtiva === 'historico') {
+      carregarHistoricoRateios();
+      carregarUGsLista();
+    }
+  }, [abaAtiva, carregarHistoricoRateios, carregarUGsLista]);
+
+  const criarNovoRateio = async (dados) => {
+    try {
+      const response = await storageService.criarHistoricoRateio(dados);
+      if (response.success) {
+        showNotification('Rateio criado com sucesso!', 'success');
+        setModalNovoRateio({ show: false });
+        carregarHistoricoRateios();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('Erro ao criar rateio:', error);
+      showNotification('Erro ao criar rateio: ' + error.message, 'error');
+    }
+  };
+
+  const atualizarRateio = async (id, dados) => {
+    try {
+      const response = await storageService.atualizarHistoricoRateio(id, dados);
+      if (response.success) {
+        showNotification('Rateio atualizado com sucesso!', 'success');
+        setModalEditarRateio({ show: false, item: null });
+        carregarHistoricoRateios();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar rateio:', error);
+      showNotification('Erro ao atualizar rateio: ' + error.message, 'error');
+    }
+  };
+
+  const excluirRateio = async (id) => {
+    if (!window.confirm('Deseja realmente excluir este registro de rateio?')) return;
+
+    try {
+      const response = await storageService.excluirHistoricoRateio(id);
+      if (response.success) {
+        showNotification('Rateio excluído com sucesso!', 'success');
+        carregarHistoricoRateios();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir rateio:', error);
+      showNotification('Erro ao excluir rateio: ' + error.message, 'error');
+    }
+  };
+
+  const formatarData = (data) => {
+    if (!data) return '-';
+    return new Date(data).toLocaleDateString('pt-BR');
+  };
 
   const baixarRateioUG = async (ug, index) => {
     try {
@@ -646,22 +751,42 @@ const UGsPage = () => {
           </div>
         </section>
 
-        {/* Tabela */}
+        {/* Abas */}
         <section className="data-section">
-          <div className="table-header">
-           <h2><Factory /> Usinas Geradoras <span className="table-count">{dadosFiltrados.length}</span></h2>
+          <div className="tabs-container">
+            <button
+              className={`tab-button ${abaAtiva === 'usinas' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('usinas')}
+            >
+              <Factory size={18} />
+              Usinas Geradoras
+            </button>
+            <button
+              className={`tab-button ${abaAtiva === 'historico' ? 'active' : ''}`}
+              onClick={() => setAbaAtiva('historico')}
+            >
+              <History size={18} />
+              Histórico de Rateio
+            </button>
           </div>
-          
-          <div className="table-wrapper">
-            {ugs.loading && ugs.data.length === 0 ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Carregando UGs...</p>
+
+          {/* Conteúdo da aba Usinas */}
+          {abaAtiva === 'usinas' && (
+            <>
+              <div className="table-header">
+                <h2><Factory /> Usinas Geradoras <span className="table-count">{dadosFiltrados.length}</span></h2>
               </div>
-            ) : dadosFiltrados.length === 0 ? (
-              <div className="empty-state">
-                <Factory size={80} style={{ opacity: 0.3, marginBottom: '20px' }} />
-                <h2>Nenhuma UG encontrada</h2>
+
+              <div className="table-wrapper">
+                {ugs.loading && ugs.data.length === 0 ? (
+                  <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Carregando UGs...</p>
+                  </div>
+                ) : dadosFiltrados.length === 0 ? (
+                  <div className="empty-state">
+                    <Factory size={80} style={{ opacity: 0.3, marginBottom: '20px' }} />
+                    <h2>Nenhuma UG encontrada</h2>
                 <p>
                   {ugs.data.length === 0
                     ? 'Não há UGs cadastradas ainda.'
@@ -674,6 +799,7 @@ const UGsPage = () => {
                 <thead>
                   <tr>
                     <th>Nome da Usina</th>
+                    <th>Nº UC</th>
                     <th>Potência CA (kW)</th>
                     <th>Potência CC (kW)</th>
                     <th>Fator de Capacidade</th>
@@ -697,6 +823,9 @@ const UGsPage = () => {
                         <div className="usina-info">
                           <span className="nome-usina">{item.nomeUsina}</span>
                         </div>
+                      </td>
+                      <td>
+                        <span className="numero-uc">{item.numeroUnidade || '-'}</span>
                       </td>
                       <td>
                         <span className="potencia-valor">{item.potenciaCA?.toLocaleString('pt-BR') || '0'}</span>
@@ -835,6 +964,115 @@ DETALHES DA UG: ${item.nomeUsina}
               </table>
             )}
           </div>
+            </>
+          )}
+
+          {/* Conteúdo da aba Histórico de Rateio */}
+          {abaAtiva === 'historico' && (
+            <>
+              <div className="table-header">
+                <h2><History /> Histórico de Rateio <span className="table-count">{historicoRateios.length}</span></h2>
+                {isAdminOrAnalista && (
+                  <button
+                    onClick={() => setModalNovoRateio({ show: true })}
+                    className="btn btn-primary"
+                  >
+                    <Plus size={16} />
+                    Novo Rateio
+                  </button>
+                )}
+              </div>
+
+              <div className="table-wrapper">
+                {historicoLoading ? (
+                  <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Carregando histórico...</p>
+                  </div>
+                ) : historicoRateios.length === 0 ? (
+                  <div className="empty-state">
+                    <History size={80} style={{ opacity: 0.3, marginBottom: '20px' }} />
+                    <h2>Nenhum rateio registrado</h2>
+                    <p>Clique em "Novo Rateio" para adicionar um registro.</p>
+                  </div>
+                ) : (
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Nome da Usina</th>
+                        <th>Nº UC</th>
+                        <th>Data de Envio</th>
+                        <th>Data de Efetivação</th>
+                        <th>Arquivo</th>
+                        {isAdminOrAnalista && <th>Ações</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historicoRateios.map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            <span className="nome-usina">{item.nome_usina || '-'}</span>
+                          </td>
+                          <td>
+                            <span className="numero-uc">{item.numero_unidade || '-'}</span>
+                          </td>
+                          <td>
+                            <span className="data-valor">{formatarData(item.data_envio)}</span>
+                          </td>
+                          <td>
+                            <span className="data-valor">{formatarData(item.data_efetivacao)}</span>
+                          </td>
+                          <td>
+                            {item.arquivo_nome ? (
+                              <span className="arquivo-nome" title={item.arquivo_nome}>
+                                <FileSpreadsheet size={14} />
+                                {item.arquivo_nome.length > 20
+                                  ? item.arquivo_nome.substring(0, 20) + '...'
+                                  : item.arquivo_nome}
+                              </span>
+                            ) : (
+                              <span className="sem-arquivo">-</span>
+                            )}
+                          </td>
+                          {isAdminOrAnalista && (
+                            <td>
+                              <div className="action-buttons">
+                                <button
+                                  onClick={() => setModalEditarRateio({ show: true, item })}
+                                  className="action-btn edit"
+                                  title="Editar"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                {item.arquivo_path && (
+                                  <button
+                                    onClick={() => {
+                                      window.open(`${process.env.REACT_APP_API_URL || ''}/storage/${item.arquivo_path}`, '_blank');
+                                    }}
+                                    className="action-btn info"
+                                    title="Baixar Arquivo"
+                                  >
+                                    <Download size={16} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => excluirRateio(item.id)}
+                                  className="action-btn delete"
+                                  title="Excluir"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
         {/* Modais */}
@@ -860,6 +1098,25 @@ DETALHES DA UG: ${item.nomeUsina}
             onClose={() => setModalVisualizarUCs({ show: false, ug: null, ucs: [] })}
             onGenerateExcel={(ugInfo, ucsComPorcentagens) => gerarRateioExcelDetalhado(ugInfo, ucsComPorcentagens)}
             showNotification={showNotification}
+          />
+        )}
+
+        {/* Modal Novo Rateio */}
+        {modalNovoRateio.show && isAdminOrAnalista && (
+          <ModalRateio
+            ugsLista={ugsLista}
+            onSave={criarNovoRateio}
+            onClose={() => setModalNovoRateio({ show: false })}
+          />
+        )}
+
+        {/* Modal Editar Rateio */}
+        {modalEditarRateio.show && isAdminOrAnalista && (
+          <ModalRateio
+            item={modalEditarRateio.item}
+            ugsLista={ugsLista}
+            onSave={(dados) => atualizarRateio(modalEditarRateio.item.id, dados)}
+            onClose={() => setModalEditarRateio({ show: false, item: null })}
           />
         )}
       </div>
@@ -1599,6 +1856,211 @@ const ModalVisualizarUCs = ({ ug, ucs, onClose, onGenerateExcel, showNotificatio
         </div>
       )}
     </>
+  );
+};
+
+// Modal para Criar/Editar Rateio
+const ModalRateio = ({ item, ugsLista, onSave, onClose }) => {
+  const [formData, setFormData] = useState({
+    ug_id: '',
+    data_envio: '',
+    data_efetivacao: '',
+    observacoes: ''
+  });
+  const [arquivo, setArquivo] = useState(null);
+  const [editandoDataEnvio, setEditandoDataEnvio] = useState(false);
+  const [editandoDataEfetivacao, setEditandoDataEfetivacao] = useState(false);
+
+  useEffect(() => {
+    if (item) {
+      setFormData({
+        ug_id: item.ug_id || '',
+        data_envio: item.data_envio ? item.data_envio.split('T')[0] : '',
+        data_efetivacao: item.data_efetivacao ? item.data_efetivacao.split('T')[0] : '',
+        observacoes: item.observacoes || ''
+      });
+    }
+  }, [item]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!item && !formData.ug_id) {
+      alert('Selecione uma UG');
+      return;
+    }
+
+    const dados = {
+      ...formData,
+      arquivo: arquivo
+    };
+
+    onSave(dados);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'];
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
+        alert('Formato inválido. Aceitos: xlsx, xls, csv');
+        return;
+      }
+      setArquivo(file);
+    }
+  };
+
+  return (
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal modal-rateio" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-ug">
+          <h2>
+            <History size={20} />
+            {item ? 'Editar Rateio' : 'Novo Rateio'}
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="common-modal-content modal-body-ug">
+          <div className="form-grid">
+            {!item && (
+              <div className="form-group form-group-full">
+                <label>Usina Geradora *</label>
+                <select
+                  value={formData.ug_id}
+                  onChange={(e) => setFormData({ ...formData, ug_id: e.target.value })}
+                  required
+                >
+                  <option value="">Selecione uma UG</option>
+                  {ugsLista.map((ug) => (
+                    <option key={ug.id} value={ug.id}>
+                      {ug.nome_usina} - {ug.numero_unidade}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {item && (
+              <div className="form-group form-group-full">
+                <label>Usina Geradora</label>
+                <input
+                  type="text"
+                  value={`${item.nome_usina || ''} - ${item.numero_unidade || ''}`}
+                  disabled
+                  className="input-disabled"
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>
+                Data de Envio
+                {item && formData.data_envio && !editandoDataEnvio && (
+                  <button
+                    type="button"
+                    className="btn-edit-inline"
+                    onClick={() => setEditandoDataEnvio(true)}
+                    title="Editar data"
+                  >
+                    <Edit size={14} />
+                  </button>
+                )}
+              </label>
+              {(!item || editandoDataEnvio || !formData.data_envio) ? (
+                <input
+                  type="date"
+                  value={formData.data_envio}
+                  onChange={(e) => setFormData({ ...formData, data_envio: e.target.value })}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={new Date(formData.data_envio).toLocaleDateString('pt-BR')}
+                  disabled
+                  className="input-disabled"
+                />
+              )}
+            </div>
+
+            <div className="form-group">
+              <label>
+                Data de Efetivação
+                {item && formData.data_efetivacao && !editandoDataEfetivacao && (
+                  <button
+                    type="button"
+                    className="btn-edit-inline"
+                    onClick={() => setEditandoDataEfetivacao(true)}
+                    title="Editar data"
+                  >
+                    <Edit size={14} />
+                  </button>
+                )}
+              </label>
+              {(!item || editandoDataEfetivacao || !formData.data_efetivacao) ? (
+                <input
+                  type="date"
+                  value={formData.data_efetivacao}
+                  onChange={(e) => setFormData({ ...formData, data_efetivacao: e.target.value })}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={new Date(formData.data_efetivacao).toLocaleDateString('pt-BR')}
+                  disabled
+                  className="input-disabled"
+                />
+              )}
+            </div>
+
+            <div className="form-group form-group-full">
+              <label>
+                <Upload size={16} />
+                Arquivo de Rateio (Excel/CSV)
+              </label>
+              <div className="file-upload-container">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileChange}
+                  id="arquivo-rateio"
+                  className="file-input"
+                />
+                <label htmlFor="arquivo-rateio" className="file-label">
+                  <Upload size={16} />
+                  {arquivo ? arquivo.name : (item?.arquivo_nome || 'Escolher arquivo...')}
+                </label>
+              </div>
+              {item?.arquivo_nome && !arquivo && (
+                <small className="file-atual">Arquivo atual: {item.arquivo_nome}</small>
+              )}
+            </div>
+
+            <div className="form-group form-group-full">
+              <label>Observações</label>
+              <textarea
+                value={formData.observacoes}
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                placeholder="Observações adicionais..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <button type="submit" className="btn btn-primary">
+              <Save size={16} />
+              {item ? 'Salvar Alterações' : 'Criar Rateio'}
+            </button>
+            <button type="button" onClick={onClose} className="btn btn-secondary">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 

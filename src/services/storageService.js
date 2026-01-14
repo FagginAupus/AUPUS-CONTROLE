@@ -1117,6 +1117,122 @@ class StorageService {
             throw error;
         }
     }
+
+    // ========================================
+    // HISTÓRICO DE RATEIOS
+    // ========================================
+
+    async listarHistoricoRateios(filtros = {}) {
+        try {
+            console.log('📜 Listando histórico de rateios', filtros);
+            const params = new URLSearchParams();
+            if (filtros.ug_id) params.append('ug_id', filtros.ug_id);
+            if (filtros.per_page) params.append('per_page', filtros.per_page);
+
+            const queryString = params.toString();
+            const url = `/historico-rateios${queryString ? '?' + queryString : ''}`;
+
+            const response = await apiService.get(url);
+            console.log('📜 Histórico de rateios:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao listar histórico de rateios:', error);
+            throw error;
+        }
+    }
+
+    async criarHistoricoRateio(dados) {
+        try {
+            console.log('➕ Criando histórico de rateio', dados);
+
+            // Se tiver arquivo, usar FormData
+            if (dados.arquivo) {
+                const formData = new FormData();
+                formData.append('ug_id', dados.ug_id);
+                if (dados.data_envio) formData.append('data_envio', dados.data_envio);
+                if (dados.data_efetivacao) formData.append('data_efetivacao', dados.data_efetivacao);
+                if (dados.observacoes) formData.append('observacoes', dados.observacoes);
+                formData.append('arquivo', dados.arquivo);
+
+                const response = await apiService.post('/historico-rateios', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                return response;
+            }
+
+            const response = await apiService.post('/historico-rateios', dados);
+            console.log('✅ Histórico de rateio criado:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao criar histórico de rateio:', error);
+            throw error;
+        }
+    }
+
+    async atualizarHistoricoRateio(id, dados) {
+        try {
+            console.log('✏️ Atualizando histórico de rateio', id, dados);
+
+            // Se tiver arquivo, usar FormData com _method para PUT
+            if (dados.arquivo) {
+                const formData = new FormData();
+                formData.append('_method', 'PUT');
+                if (dados.data_envio) formData.append('data_envio', dados.data_envio);
+                if (dados.data_efetivacao) formData.append('data_efetivacao', dados.data_efetivacao);
+                if (dados.observacoes) formData.append('observacoes', dados.observacoes);
+                formData.append('arquivo', dados.arquivo);
+
+                const response = await apiService.post(`/historico-rateios/${id}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                return response;
+            }
+
+            const response = await apiService.put(`/historico-rateios/${id}`, dados);
+            console.log('✅ Histórico de rateio atualizado:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao atualizar histórico de rateio:', error);
+            throw error;
+        }
+    }
+
+    async excluirHistoricoRateio(id) {
+        try {
+            console.log('🗑️ Excluindo histórico de rateio', id);
+            const response = await apiService.delete(`/historico-rateios/${id}`);
+            console.log('✅ Histórico de rateio excluído:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao excluir histórico de rateio:', error);
+            throw error;
+        }
+    }
+
+    async downloadArquivoRateio(id) {
+        try {
+            console.log('📥 Baixando arquivo de rateio', id);
+            const response = await apiService.get(`/historico-rateios/${id}/download`, {
+                responseType: 'blob'
+            });
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao baixar arquivo de rateio:', error);
+            throw error;
+        }
+    }
+
+    async listarUGsParaRateio() {
+        try {
+            console.log('📋 Listando UGs para rateio');
+            const response = await apiService.get('/historico-rateios/ugs');
+            console.log('📋 UGs para rateio:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao listar UGs para rateio:', error);
+            throw error;
+        }
+    }
 }
 
 const storageService = new StorageService();
