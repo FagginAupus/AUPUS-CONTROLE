@@ -1287,43 +1287,7 @@ small {
   background: #fafafa;
 }
 
-/* Scroll customizado para lista de UGs */
-.ugs-lista::-webkit-scrollbar {
-  width: 8px;
-}
-
-.ugs-lista::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.ugs-lista::-webkit-scrollbar-thumb {
-  background: #007bff;
-  border-radius: 4px;
-}
-
-.ugs-lista::-webkit-scrollbar-thumb:hover {
-  background: #0056b3;
-}
-
-/* Scroll customizado para o modal body */
-.modal-body-controle::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modal-body-controle::-webkit-scrollbar-track {
-  background: #f8f9fa;
-  border-radius: 4px;
-}
-
-.modal-body-controle::-webkit-scrollbar-thumb {
-  background: #6c757d;
-  border-radius: 4px;
-}
-
-.modal-body-controle::-webkit-scrollbar-thumb:hover {
-  background: #495057;
-}
+/* Scroll customizado - usar padrão global (tables-global.css) */
 
 /* ===== RESPONSIVIDADE DO MODAL UG ===== */
 @media (max-width: 768px) {

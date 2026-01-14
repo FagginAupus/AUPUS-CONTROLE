@@ -1,5 +1,8 @@
 /* src/index.css - ESTILOS GLOBAIS BASEADOS NO PROJETO ORIGINAL */
 
+/* Importar estilos globais de tabelas */
+@import './styles/tables-global.css';
+
 /* Reset e Base */
 * {
     margin: 0;

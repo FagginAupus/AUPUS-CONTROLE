@@ -1,0 +1,147 @@
+/* =======================================================
+   ESTILOS GLOBAIS DE TABELAS - PADRONIZAÇÃO
+   Importar este arquivo em todas as páginas que usam tabelas
+   ======================================================= */
+
+/* =======================================================
+   PADDING DAS SEÇÕES - PADRONIZADO
+   ======================================================= */
+
+.data-section,
+.table-section {
+  padding: 0 !important;
+  margin: 20px 0 !important;
+}
+
+.table-header {
+  padding: 15px 20px !important;
+}
+
+.table-wrapper,
+.table-container,
+.table-responsive {
+  padding: 0 !important;
+}
+
+/* Padding interno da tabela */
+.table {
+  margin: 0 !important;
+}
+
+.table th {
+  padding: 12px 15px !important;
+}
+
+.table td {
+  padding: 10px 15px !important;
+}
+
+/* =======================================================
+   BARRA DE ROLAGEM - PADRONIZADA CINZA NEUTRA
+   ======================================================= */
+
+/* Reset de todas as barras de rolagem para cinza neutro */
+.table-wrapper::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar,
+.data-section::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+.modal-body-controle::-webkit-scrollbar,
+.modal-body-visualizar-ucs::-webkit-scrollbar,
+.ugs-lista::-webkit-scrollbar,
+.common-modal-content::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.table-wrapper::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track,
+.data-section::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track,
+.modal-body-controle::-webkit-scrollbar-track,
+.modal-body-visualizar-ucs::-webkit-scrollbar-track,
+.ugs-lista::-webkit-scrollbar-track,
+.common-modal-content::-webkit-scrollbar-track {
+  background: #2a2a2a !important;
+  border-radius: 4px !important;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb,
+.data-section::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+.modal-body-controle::-webkit-scrollbar-thumb,
+.modal-body-visualizar-ucs::-webkit-scrollbar-thumb,
+.ugs-lista::-webkit-scrollbar-thumb,
+.common-modal-content::-webkit-scrollbar-thumb {
+  background: #555 !important;
+  border-radius: 4px !important;
+  border: 1px solid #444 !important;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover,
+.table-responsive::-webkit-scrollbar-thumb:hover,
+.data-section::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover,
+.modal-body-controle::-webkit-scrollbar-thumb:hover,
+.modal-body-visualizar-ucs::-webkit-scrollbar-thumb:hover,
+.ugs-lista::-webkit-scrollbar-thumb:hover,
+.common-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #666 !important;
+}
+
+/* Barra de rolagem horizontal */
+.table-wrapper::-webkit-scrollbar:horizontal,
+.table-container::-webkit-scrollbar:horizontal,
+.table-responsive::-webkit-scrollbar:horizontal {
+  height: 8px !important;
+}
+
+/* Firefox */
+.table-wrapper,
+.table-container,
+.table-responsive,
+.data-section,
+.modal-body,
+.modal-body-controle,
+.modal-body-visualizar-ucs,
+.ugs-lista,
+.common-modal-content {
+  scrollbar-width: thin !important;
+  scrollbar-color: #555 #2a2a2a !important;
+}
+
+/* =======================================================
+   CONTAINER COM PADDING ADEQUADO
+   ======================================================= */
+
+.container {
+  width: 90% !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+}
+
+/* Responsividade para notebooks */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container {
+    width: 95% !important;
+    padding: 15px 20px !important;
+  }
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .container {
+    width: 98% !important;
+    padding: 10px !important;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 10px !important;
+  }
+}
