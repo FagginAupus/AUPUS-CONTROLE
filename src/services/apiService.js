@@ -87,13 +87,20 @@ class ApiService {
         const url = `${this.baseURL}${endpoint}`;
         const token = this.getToken();
 
+        // Se for FormData, não definir Content-Type (o browser define automaticamente com boundary)
+        const headers = {
+            'Accept': 'application/json',
+            ...options.headers,
+        };
+
+        // Só adiciona Content-Type: application/json se não for FormData
+        if (!options.isFormData) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         const config = {
             method: options.method || 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...options.headers,
-            },
+            headers,
             ...options,
         };
 
@@ -223,17 +230,23 @@ class ApiService {
         return this.request(endpoint, { method: 'GET' });
     }
 
-    async post(endpoint, data = {}) {
+    async post(endpoint, data = {}, options = {}) {
+        // Se for FormData, não fazer JSON.stringify
+        const isFormData = data instanceof FormData;
         return this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...(isFormData ? { isFormData: true } : {})
         });
     }
 
-    async put(endpoint, data) {
+    async put(endpoint, data, options = {}) {
+        // Se for FormData, não fazer JSON.stringify
+        const isFormData = data instanceof FormData;
         return this.request(endpoint, {
             method: 'PUT',
-            body: JSON.stringify(data),
+            body: isFormData ? data : JSON.stringify(data),
+            ...(isFormData ? { isFormData: true } : {})
         });
     }
 
