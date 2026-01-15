@@ -54,6 +54,7 @@ const UGsPage = () => {
   const [historicoLoading, setHistoricoLoading] = useState(false);
   const [modalNovoRateio, setModalNovoRateio] = useState({ show: false });
   const [modalEditarRateio, setModalEditarRateio] = useState({ show: false, item: null });
+  const [modalItensRateio, setModalItensRateio] = useState({ show: false, rateioId: null, nomeUsina: '' });
   const [ugsLista, setUgsLista] = useState([]);
 
   const [filtros, setFiltros] = useState({
@@ -1004,6 +1005,7 @@ DETALHES DA UG: ${item.nomeUsina}
                         <th>Data de Envio</th>
                         <th>Data de Efetivação</th>
                         <th>Arquivo</th>
+                        <th>UCs Rateio</th>
                         {isAdminOrAnalista && <th>Ações</th>}
                       </tr>
                     </thead>
@@ -1032,6 +1034,20 @@ DETALHES DA UG: ${item.nomeUsina}
                               </span>
                             ) : (
                               <span className="sem-arquivo">-</span>
+                            )}
+                          </td>
+                          <td>
+                            {item.total_itens > 0 ? (
+                              <button
+                                onClick={() => setModalItensRateio({ show: true, rateioId: item.id, nomeUsina: item.nome_usina })}
+                                className="btn-itens-rateio"
+                                title="Ver UCs do rateio"
+                              >
+                                <Users size={14} />
+                                {item.total_itens} UC{item.total_itens > 1 ? 's' : ''}
+                              </button>
+                            ) : (
+                              <span className="sem-itens">-</span>
                             )}
                           </td>
                           {isAdminOrAnalista && (
@@ -1122,6 +1138,16 @@ DETALHES DA UG: ${item.nomeUsina}
             ugsLista={ugsLista}
             onSave={(dados) => atualizarRateio(modalEditarRateio.item.id, dados)}
             onClose={() => setModalEditarRateio({ show: false, item: null })}
+          />
+        )}
+
+        {/* Modal Itens do Rateio */}
+        {modalItensRateio.show && (
+          <ModalItensRateio
+            rateioId={modalItensRateio.rateioId}
+            nomeUsina={modalItensRateio.nomeUsina}
+            onClose={() => setModalItensRateio({ show: false, rateioId: null, nomeUsina: '' })}
+            showNotification={showNotification}
           />
         )}
       </div>
@@ -2064,6 +2090,148 @@ const ModalRateio = ({ item, ugsLista, onSave, onClose }) => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Modal para Visualizar Itens do Rateio (UCs e Porcentagens)
+const ModalItensRateio = ({ rateioId, nomeUsina, onClose, showNotification }) => {
+  const [itens, setItens] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const carregarItens = async () => {
+      try {
+        setLoading(true);
+        const response = await storageService.listarItensRateio(rateioId);
+        if (response.success) {
+          setItens(response.data || []);
+        } else {
+          throw new Error(response.message || 'Erro ao carregar itens');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar itens do rateio:', error);
+        showNotification('Erro ao carregar itens do rateio', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (rateioId) {
+      carregarItens();
+    }
+  }, [rateioId, showNotification]);
+
+  // Calcular totais
+  const totalPorcentagem = itens.reduce((sum, item) => sum + parseFloat(item.porcentagem || 0), 0);
+  const totalConsumo = itens.reduce((sum, item) => sum + parseFloat(item.consumo_kwh || 0), 0);
+
+  return (
+    <div className="common-modal-overlay" onClick={onClose}>
+      <div className="common-modal modal-itens-rateio" onClick={(e) => e.stopPropagation()}>
+        <div className="common-modal-header modal-header-ug">
+          <h2>
+            <Users size={20} />
+            UCs do Rateio - {nomeUsina}
+          </h2>
+          <button onClick={onClose} className="common-close-btn">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="common-modal-content modal-body-visualizar-ucs">
+          {loading ? (
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Carregando itens...</p>
+            </div>
+          ) : itens.length === 0 ? (
+            <div className="empty-state">
+              <Users size={60} style={{ opacity: 0.3, marginBottom: '16px' }} />
+              <h3>Nenhuma UC encontrada</h3>
+              <p>Não foram encontradas UCs neste arquivo de rateio.</p>
+            </div>
+          ) : (
+            <>
+              <div className="ug-info-header">
+                <div className="ug-info-item">
+                  <strong>Total de UCs:</strong> {itens.length}
+                </div>
+                <div className="ug-info-item">
+                  <strong>Total Porcentagem:</strong>
+                  <span className={totalPorcentagem === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'} style={{ marginLeft: '8px' }}>
+                    {totalPorcentagem.toFixed(4)}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="ucs-table-container">
+                <table className="ucs-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Número UC</th>
+                      <th>Porcentagem</th>
+                      <th>Consumo (kWh)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itens.map((item, index) => (
+                      <tr key={item.id || index}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <span className="numero-uc">{item.numero_uc}</span>
+                        </td>
+                        <td>
+                          <span className="porcentagem-valor">
+                            {parseFloat(item.porcentagem).toFixed(4)}%
+                          </span>
+                        </td>
+                        <td>
+                          {item.consumo_kwh ? (
+                            <span>{parseFloat(item.consumo_kwh).toLocaleString('pt-BR')}</span>
+                          ) : (
+                            <span className="sem-valor">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="total-row">
+                      <td colSpan="2"><strong>TOTAL</strong></td>
+                      <td>
+                        <strong className={totalPorcentagem === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'}>
+                          {totalPorcentagem.toFixed(4)}%
+                        </strong>
+                      </td>
+                      <td>
+                        <strong>{totalConsumo > 0 ? totalConsumo.toLocaleString('pt-BR') : '-'}</strong>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {totalPorcentagem !== 100 && (
+                <div className="aviso-porcentagem">
+                  <AlertCircle size={16} />
+                  <span>
+                    Atenção: A soma das porcentagens é {totalPorcentagem.toFixed(4)}%
+                    (diferença de {(100 - totalPorcentagem).toFixed(4)}%)
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button onClick={onClose} className="btn btn-secondary">
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
   );

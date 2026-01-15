@@ -1271,3 +1271,77 @@
 .table-header h2 {
   margin: 0;
 }
+
+/* =====================================================
+   BOTÃO E MODAL ITENS DO RATEIO
+   ===================================================== */
+
+/* Botão para ver itens do rateio */
+.btn-itens-rateio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-itens-rateio:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.sem-itens {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Modal itens do rateio */
+.modal-itens-rateio {
+  max-width: 700px !important;
+  width: 95%;
+}
+
+.modal-itens-rateio .ucs-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.modal-itens-rateio .ucs-table th:first-child,
+.modal-itens-rateio .ucs-table td:first-child {
+  width: 50px;
+  text-align: center;
+}
+
+.modal-itens-rateio .porcentagem-ok {
+  color: #22c55e;
+}
+
+.modal-itens-rateio .porcentagem-aviso {
+  color: #f59e0b;
+}
+
+.modal-itens-rateio .sem-valor {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.modal-itens-rateio .empty-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.modal-itens-rateio .empty-state h3 {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.modal-itens-rateio .empty-state p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+}

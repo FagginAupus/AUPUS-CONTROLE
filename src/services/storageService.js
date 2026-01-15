@@ -1258,6 +1258,18 @@ class StorageService {
             throw error;
         }
     }
+
+    async listarItensRateio(rateioId) {
+        try {
+            console.log('📋 Listando itens do rateio:', rateioId);
+            const response = await apiService.get(`/historico-rateios/${rateioId}/itens`);
+            console.log('📋 Itens do rateio:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao listar itens do rateio:', error);
+            throw error;
+        }
+    }
 }
 
 const storageService = new StorageService();

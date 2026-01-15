@@ -1077,12 +1077,12 @@ const GerarTermoButton = ({
         // ✅ NOTIFICAR COMPONENTE PAI
         if (typeof onSalvarAntes === 'function') {
           console.log('📡 Notificando componente pai...');
-          
+
           const dadosAtualizados = {
             ...dados,
-            status: 'Fechada' // Forçar status fechada
+            status: 'Pendente Validação' // ✅ CORREÇÃO: Ir para validação antes do controle
           };
-          
+
           try {
             await onSalvarAntes(dadosAtualizados);
             console.log('✅ Componente pai notificado');
@@ -1350,7 +1350,7 @@ const GerarTermoButton = ({
                 </h5>
                 <p className="upload-help">
                   Se você já possui o termo assinado pelo cliente, pode fazer o upload direto aqui.
-                  O sistema irá automaticamente alterar o status da UC para "Fechada" e adicionar ao controle.
+                  O sistema irá automaticamente alterar o status da UC para "Pendente Validação".
                 </p>
 
                 {/* ✅ CAMPO DE DATA DE ASSINATURA - MOVIDO PARA CIMA */}
