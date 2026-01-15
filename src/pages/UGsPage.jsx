@@ -2125,7 +2125,6 @@ const ModalItensRateio = ({ rateioId, nomeUsina, onClose, showNotification }) =>
 
   // Calcular totais
   const totalPorcentagem = itens.reduce((sum, item) => sum + parseFloat(item.porcentagem || 0), 0);
-  const totalConsumo = itens.reduce((sum, item) => sum + parseFloat(item.consumo_kwh || 0), 0);
 
   return (
     <div className="common-modal-overlay" onClick={onClose}>
@@ -2160,8 +2159,8 @@ const ModalItensRateio = ({ rateioId, nomeUsina, onClose, showNotification }) =>
                 </div>
                 <div className="ug-info-item">
                   <strong>Total Porcentagem:</strong>
-                  <span className={totalPorcentagem === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'} style={{ marginLeft: '8px' }}>
-                    {totalPorcentagem.toFixed(4)}%
+                  <span className={Math.abs(totalPorcentagem - 100) < 0.01 ? 'porcentagem-ok' : 'porcentagem-aviso'} style={{ marginLeft: '8px' }}>
+                    {totalPorcentagem.toFixed(2)}%
                   </span>
                 </div>
               </div>
@@ -2173,7 +2172,6 @@ const ModalItensRateio = ({ rateioId, nomeUsina, onClose, showNotification }) =>
                       <th>#</th>
                       <th>Número UC</th>
                       <th>Porcentagem</th>
-                      <th>Consumo (kWh)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2185,15 +2183,8 @@ const ModalItensRateio = ({ rateioId, nomeUsina, onClose, showNotification }) =>
                         </td>
                         <td>
                           <span className="porcentagem-valor">
-                            {parseFloat(item.porcentagem).toFixed(4)}%
+                            {parseFloat(item.porcentagem).toFixed(2)}%
                           </span>
-                        </td>
-                        <td>
-                          {item.consumo_kwh ? (
-                            <span>{parseFloat(item.consumo_kwh).toLocaleString('pt-BR')}</span>
-                          ) : (
-                            <span className="sem-valor">-</span>
-                          )}
                         </td>
                       </tr>
                     ))}
@@ -2202,24 +2193,21 @@ const ModalItensRateio = ({ rateioId, nomeUsina, onClose, showNotification }) =>
                     <tr className="total-row">
                       <td colSpan="2"><strong>TOTAL</strong></td>
                       <td>
-                        <strong className={totalPorcentagem === 100 ? 'porcentagem-ok' : 'porcentagem-aviso'}>
-                          {totalPorcentagem.toFixed(4)}%
+                        <strong className={Math.abs(totalPorcentagem - 100) < 0.01 ? 'porcentagem-ok' : 'porcentagem-aviso'}>
+                          {totalPorcentagem.toFixed(2)}%
                         </strong>
-                      </td>
-                      <td>
-                        <strong>{totalConsumo > 0 ? totalConsumo.toLocaleString('pt-BR') : '-'}</strong>
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              {totalPorcentagem !== 100 && (
+              {Math.abs(totalPorcentagem - 100) >= 0.01 && (
                 <div className="aviso-porcentagem">
                   <AlertCircle size={16} />
                   <span>
-                    Atenção: A soma das porcentagens é {totalPorcentagem.toFixed(4)}%
-                    (diferença de {(100 - totalPorcentagem).toFixed(4)}%)
+                    Atenção: A soma das porcentagens é {totalPorcentagem.toFixed(2)}%
+                    (diferença de {(100 - totalPorcentagem).toFixed(2)}%)
                   </span>
                 </div>
               )}
