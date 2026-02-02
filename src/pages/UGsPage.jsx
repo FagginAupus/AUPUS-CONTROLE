@@ -394,7 +394,10 @@ const UGsPage = () => {
 
   const formatarData = (data) => {
     if (!data) return '-';
-    return new Date(data).toLocaleDateString('pt-BR');
+    // Corrigir problema de timezone: adicionar T12:00:00 para evitar conversão UTC
+    const dataStr = data.split('T')[0]; // Pegar apenas YYYY-MM-DD
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
   };
 
   const baixarRateioUG = async (ug, index) => {
@@ -2009,7 +2012,7 @@ const ModalRateio = ({ item, ugsLista, onSave, onClose }) => {
               ) : (
                 <input
                   type="text"
-                  value={new Date(formData.data_envio).toLocaleDateString('pt-BR')}
+                  value={formData.data_envio.split('-').reverse().join('/')}
                   disabled
                   className="input-disabled"
                 />
@@ -2039,7 +2042,7 @@ const ModalRateio = ({ item, ugsLista, onSave, onClose }) => {
               ) : (
                 <input
                   type="text"
-                  value={new Date(formData.data_efetivacao).toLocaleDateString('pt-BR')}
+                  value={formData.data_efetivacao.split('-').reverse().join('/')}
                   disabled
                   className="input-disabled"
                 />
