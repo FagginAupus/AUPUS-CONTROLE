@@ -287,9 +287,9 @@ const ProspecPage = () => {
       termoAdesao: documentacaoUC.termoAdesao || null,
       whatsappRepresentante: documentacaoUC.whatsappRepresentante || '',
       emailRepresentante: documentacaoUC.emailRepresentante || '',
-      documentosExtras: documentacaoUC.documentosExtras || []
+      documentosExtras: documentacaoUC.documentosExtras || item.documentacao?.documentosExtras || []
     };
-    
+
     console.log('🔍 Item final com documentação:', itemComDocumentacao);
     
     setModalEdicao({ show: true, item: itemComDocumentacao, index });
