@@ -345,7 +345,8 @@ const ProspecPage = () => {
             });
 
             if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`);
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.message || `HTTP ${response.status}`);
             }
 
             const result = await response.json();
