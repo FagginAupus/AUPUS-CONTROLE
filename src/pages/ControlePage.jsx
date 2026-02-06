@@ -1,5 +1,6 @@
 // src/pages/ControlePage.jsx - Com calibragem no estilo original restaurada
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/common/index.css';
 import Header from '../components/common/Header';
 import Navigation from '../components/common/Navigation';
@@ -33,7 +34,8 @@ import {
   Eye,
   Trash2,
   Smartphone,
-  Mail
+  Mail,
+  Calendar
 } from 'lucide-react';
 import './ControlePage.css';
 import './CommonModalsPagesDark.css';
@@ -41,6 +43,7 @@ import '../components/common/CommonModal.css';
 import { formatarCpfCnpj, formatarWhatsApp } from '../utils/formatters';
 
 const ControlePage = () => {
+  const navigate = useNavigate();
   const { user, getMyTeam, getConsultorName } = useAuth();
     const { 
     controle, 
@@ -1109,6 +1112,14 @@ const ControlePage = () => {
                 title="Atualizar dados"
               >
                 {controle.loading ? '🔄' : '⟳'} Atualizar
+              </button>
+              <button
+                onClick={() => navigate('/controle/historico')}
+                className="btn btn-secondary"
+                title="Ver histórico mensal de associados"
+              >
+                <Calendar size={16} />
+                Histórico Mensal
               </button>
               <button
                 onClick={abrirModalExportacao}

@@ -8,7 +8,7 @@ const useSessionTimeout = () => {
   
   // Estados básicos
   const [showWarning, setShowWarning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 horas em minutos
+  const [timeLeft, setTimeLeft] = useState(4320); // 72 horas (3 dias) em minutos
   const [isEditingActive, setIsEditingActive] = useState(false);
   
   // Refs para controle
@@ -152,7 +152,7 @@ const useSessionTimeout = () => {
     if (!isAuthenticated) {
       console.log('👤 Usuário não autenticado - resetando estado da sessão');
       setShowWarning(false);
-      setTimeLeft(120);
+      setTimeLeft(4320);
       isLoggingOut.current = false;
       sessionCheckActive.current = false;
       consecutiveErrors.current = 0;
@@ -170,11 +170,16 @@ const useSessionTimeout = () => {
     try {
       console.log('🔄 Tentando estender sessão...');
       const response = await apiService.post('/auth/extend-session');
-      
+
       if (response.success) {
+        // Salvar o novo token retornado pelo refresh
+        if (response.token) {
+          apiService.setToken(response.token);
+          console.log('🔑 Novo token salvo após extensão de sessão');
+        }
         console.log('✅ Sessão estendida pelo usuário');
         setShowWarning(false);
-        setTimeLeft(120); // Reset para 2 horas
+        setTimeLeft(4320); // Reset para 72 horas (3 dias)
         consecutiveErrors.current = 0; // Reset erros
         return true;
       } else {
@@ -203,7 +208,7 @@ const useSessionTimeout = () => {
   const resetActivity = useCallback(() => {
     console.log('🔄 Atividade resetada pelo usuário');
     if (isAuthenticated && !isLoggingOut.current) {
-      setTimeLeft(120);
+      setTimeLeft(4320);
       setShowWarning(false);
       consecutiveErrors.current = 0;
     }

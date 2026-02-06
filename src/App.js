@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard';
 import ProspecPage from './pages/ProspecPage'; // ✅ Esta é a página correta
 import NovaPropostaPage from './pages/NovaPropostaPage';
 import ControlePage from './pages/ControlePage';
+import HistoricoMensalPage from './pages/HistoricoMensalPage';
 import UGsPage from './pages/UGsPage';
 import RelatoriosPage from './pages/RelatoriosPage';
 import LogsPage from './pages/LogsPage';
@@ -143,7 +144,15 @@ const AppContent = () => {
               </SessionManager>
             </ProtectedRoute>
           } />
-          
+
+          <Route path="/controle/historico" element={
+            <ProtectedRoute requirePage="controle">
+              <SessionManager>
+                <HistoricoMensalPage />
+              </SessionManager>
+            </ProtectedRoute>
+          } />
+
           <Route path="/ugs" element={
             <ProtectedRoute requirePage="ugs">
               <SessionManager>

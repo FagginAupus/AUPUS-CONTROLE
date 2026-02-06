@@ -1,0 +1,204 @@
+/* HistoricoMensalPage.css */
+
+.historico-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.historico-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f0f0f0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.historico-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Grid de cards mensais */
+.historico-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.historico-card {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.historico-card:hover {
+  border-color: #555;
+  transform: translateY(-2px);
+}
+
+.historico-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.historico-card-header h3 {
+  color: #f0f0f0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.historico-total {
+  background: #333;
+  color: #94a3b8;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.historico-card-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.historico-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.historico-stat small {
+  color: #888;
+  font-size: 0.75rem;
+  margin-left: 2px;
+}
+
+.historico-card-status {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.historico-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.historico-status-row small {
+  color: #999;
+  font-size: 0.75rem;
+}
+
+.historico-card-ug {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #333;
+}
+
+.historico-card-ug > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+.historico-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.historico-card-actions .btn {
+  font-size: 0.8rem;
+  padding: 5px 12px;
+}
+
+/* Spin animation for loading icon */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Detail table adjustments */
+.text-right {
+  text-align: right;
+}
+
+/* Status badge for "saindo" */
+.controle-status-saindo {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* Responsive for historico grid */
+@media (max-width: 768px) {
+  .historico-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .historico-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .historico-actions {
+    width: 100%;
+  }
+
+  .historico-actions .btn {
+    flex: 1;
+  }
+}
+
+/* Empty state adjustments */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.empty-state h3 {
+  color: #ccc;
+  margin-top: 16px;
+}
+
+.empty-state p {
+  color: #888;
+  margin-top: 8px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #888;
+}
